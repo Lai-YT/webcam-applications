@@ -127,7 +127,7 @@ def show_distance_bar(image: ndarray, faces: ndarray, distance: float,
         face_center: Tuple[int, int] = (int(w/2)+x, int(h/2)+y)
         cv2.circle(image, face_center, 5, (MAGENTA), 1)
         cv2.putText(image, f'distance {distance} cm',
-                    (x-6, y-6), font_3, 0.5, (BLACK), 2)
+                    (x-3, y-6), font_2, 0.6, (BLACK), 1)
 
         if distance < warning_threshold:
             # warning messages
