@@ -158,7 +158,7 @@ while True:
                             (0, 30), cv2.FONT_HERSHEY_DUPLEX, 1, (RED), 2)
             else:
                 cv2.putText(frame, f"PROPER DISTANCE",
-                        (0, 30), cv2.FONT_HERSHEY_DUPLEX, 1, (PURPLE), 2)
+                        (0, 30), cv2.FONT_HERSHEY_DUPLEX, 1, (BLACK), 2)
             
     cv2.imshow("frame", frame)
     # out.write(frame)
