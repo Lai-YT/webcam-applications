@@ -4,6 +4,7 @@ import cv2
 font_*, * is the corresponding enum number in the library.
 You may directly place the number, but having prefix is more expressive.
 '''
+
 font_2: int = cv2.FONT_HERSHEY_DUPLEX
 font_3: int = cv2.FONT_HERSHEY_COMPLEX
 font_4: int = cv2.FONT_HERSHEY_TRIPLEX

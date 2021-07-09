@@ -21,12 +21,15 @@ def get_img_focal_length(image_path: str, distance: float, width: float) -> floa
     return focal_length(distance, width, object_width)
 
 
-# focal length finder function
+# @tech: similar triangles
+#   width_in_rf_img : width = focal_length : distance
+# =>width_in_rf_img * distance = width * focal_length
+# =>focal_length = (width_in_rf_img * distance) / width
 def focal_length(distance: float, width: float, width_in_rf_img: float) -> float:
     '''Calculate the focal length(distance between lens to CMOS sensor).
     @param
       distance: real distance between object and camera
-      width_in_rf_img: object width in the frame /image in our case in the
+      width_in_rf_img: object width in the frame/image in our case in the
                        reference image(found by Face detector)
       width: The actual width (cm) of object in real world
     @retrun: the focal length
@@ -34,7 +37,10 @@ def focal_length(distance: float, width: float, width_in_rf_img: float) -> float
     return (width_in_rf_img * distance) / width
 
 
-# distance estimation function
+# @tech: similar triangles
+#   width_in_frame : real_width = focal_length : estimated distance
+# =>width_in_frame * estimated distance = real_width * focal_length
+# =>estimated distance = (real_width * focal_length) / width_in_frame
 def estimate_distance(focal_length: float, real_width: float, width_in_frame: float) -> float:
     '''Estimates the distance between object and camera.
     @param
@@ -47,9 +53,8 @@ def estimate_distance(focal_length: float, real_width: float, width_in_frame: fl
     return (real_width * focal_length) / width_in_frame
 
 
-# face detection Fauction
 def face_data(image: ndarray) -> Tuple[int, Union[ndarray, Tuple]]:
-    '''This function Detect Face.
+    '''This function detect face from an image.
     @param
       image: simply the frame
     @return
