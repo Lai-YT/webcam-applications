@@ -2,8 +2,8 @@ import cv2
 from numpy import ndarray
 from typing import Tuple, Union
 
-from lib.color import *
-from lib.cv_font import *
+from .color import *
+from .cv_font import *
 
 
 def get_img_focal_length(image_path: str, distance: float, width: float) -> float:
@@ -69,8 +69,7 @@ def face_data(image: ndarray) -> Tuple[int, Union[ndarray, Tuple]]:
 
     gray_image: ndarray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    faces: Union[ndarray, Tuple] = (
-        face_detector.detectMultiScale(gray_image, 1.3, 5))  # type: ndarray[int, int, int, int]
+    faces: Union[ndarray, Tuple] = face_detector.detectMultiScale(gray_image, 1.3, 5)
 
     return faces
 
@@ -95,8 +94,7 @@ def draw_face_area(image: ndarray, faces: ndarray) -> None:
 
         # horizontal corner lines
         cv2.line(image, (x, y+LLV), (x, y+LLV+LLV), (GREEN), line_thickness)
-        cv2.line(image, (x+w, y+LLV), (x+w, y+LLV+LLV),
-                 (GREEN), line_thickness)
+        cv2.line(image, (x+w, y+LLV), (x+w, y+LLV+LLV), (GREEN), line_thickness)
         cv2.line(image, (x, y+h), (x, y+h-LLV), (GREEN), line_thickness)
         cv2.line(image, (x+w, y+h), (x+w, y+h-LLV), (GREEN), line_thickness)
 
@@ -131,13 +129,9 @@ def show_distance_bar(image: ndarray, faces: ndarray, distance: float,
             cv2.line(image, (x, y-45), (x+100, y-45), (RED), 22)
             cv2.line(image, (x, y-11), (x+180, y-11), (RED), 18)
         else:
-            # 120 with empty inner bar, full if shorter than the warning_threshold
-            cv2.line(image, (x, y-11),
-                     (max(x, int(x+(120-distance_level)*180/(120-warning_threshold))), y-11),
-                     (GREEN), 18)
-        # small circle at the center of face
-        face_center: Tuple[int, int] = (int(w/2)+x, int(h/2)+y)
-        cv2.circle(image, face_center, 5, (MAGENTA), 1)
+            # 120 with empty inner bar, full if closer than the warning_threshold
+            inner_bar_x: int = max(x, int(x+(120-distance_level)*180/(120-warning_threshold)))
+            cv2.line(image, (x, y-11), (inner_bar_x, y-11), (GREEN), 18)
 
         # distance bar normal message
         cv2.putText(image, f'distance {distance} cm',
