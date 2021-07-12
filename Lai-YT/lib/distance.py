@@ -101,9 +101,9 @@ def draw_face_area(image: ndarray, faces: ndarray) -> None:
         cv2.line(image, (x+w, y+h), (x+w, y+h-LLV), GREEN, line_thickness)
 
 
-def show_distance_bar(image: ndarray, faces: ndarray, distance: float,
-                      *, warning_threshold: float = 0) -> None:
-    """Show a bar above the face.
+def draw_distance_bar(image: ndarray, faces: ndarray, distance: float,
+                      *, threshold: float = 0) -> None:
+    """Draw a bar above the face.
     The closer the face is, the longer the inner bar is.
 
     Arguments:
@@ -111,12 +111,12 @@ def show_distance_bar(image: ndarray, faces: ndarray, distance: float,
         face: upper-left x, upper-left y, width of face, height of face
         distance: real distance between the user and the screen
     Keyword Arguments:
-        warning_threshold: When the face is closer than the threshold,
-                           bar color turns into red and warning massage shows.
-                           0 implicitly means no warning.
+        threshold: When the face is closer than the threshold,
+                   bar color turns into red and warning massage shows.
+                   0 implicitly means no warning.
     """
 
-    warning_threshold = round(warning_threshold, 2)
+    threshold = round(threshold, 2)
     distance = round(distance, 2)
     distance_level = int(distance)
     if distance_level < 10:
@@ -127,22 +127,22 @@ def show_distance_bar(image: ndarray, faces: ndarray, distance: float,
         cv2.line(image, (x, y-11), (x+180, y-11), ORANGE, 28)
         cv2.line(image, (x, y-11), (x+180, y-11), YELLOW, 20)
 
-        if distance < warning_threshold:
+        if distance < threshold:
             # red distance bar
             cv2.line(image, (x, y-45), (x+100, y-45), RED, 22)
             cv2.line(image, (x, y-11), (x+180, y-11), RED, 18)
         else:
-            # 120 with empty inner bar, full if closer than the warning_threshold
-            inner_bar_x: int = max(x, int(x + (120-distance_level)*180 / (120-warning_threshold)))
+            # 120 with empty inner bar, full if closer than the threshold
+            inner_bar_x: int = max(x, int(x + (120-distance_level)*180 / (120-threshold)))
             cv2.line(image, (x, y-11), (inner_bar_x, y-11), GREEN, 18)
 
         # distance bar normal message
         cv2.putText(image, f"distance {distance} cm",
                     (x-3, y-6), FONT_2, 0.6, BLACK, 1)
 
-        if distance < warning_threshold:
+        if distance < threshold:
             # warning messages
-            cv2.putText(image, "TOO NEAR!!", (x-3, y-40), FONT_2, 0.6, WHITE, 1)
-            cv2.putText(image, "STAY FARTHER, PLEASE.", (0, 30), FONT_2, 1, RED, 2)
+            cv2.putText(image, "Too Near!!", (x-3, y-40), FONT_2, 0.6, WHITE, 1)
+            cv2.putText(image, "Stay farther, please.", (0, 30), FONT_2, 1, RED, 2)
         else:
-            cv2.putText(image, "PROPER DISTANCE", (0, 30), FONT_2, 1, BLACK, 2)
+            cv2.putText(image, "Proper distance", (0, 30), FONT_2, 1, BLACK, 2)

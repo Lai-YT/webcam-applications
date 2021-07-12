@@ -36,7 +36,7 @@ while True:
             distance: float = estimate_distance(
                 focal_length_found, known_width, face_w)
             show_distance_bar(
-                frame, faces, distance, warning_threshold=warning)
+                frame, faces, distance, threshold=warning)
     cv2.imshow("frame", frame)
     key: int = cv2.waitKey(5)
     # q: end detection

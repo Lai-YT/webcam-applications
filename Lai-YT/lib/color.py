@@ -5,6 +5,7 @@ from typing import Tuple
 BGR = Tuple[int, int, int]
 
 BLACK:      BGR = (0, 0, 0)
+BLUE:       BGR = (255, 0, 0)
 CHOCOLATE:  BGR = (30, 105, 210)
 CYAN:       BGR = (255, 255, 0)
 GOLDEN:     BGR = (32, 218, 165)
