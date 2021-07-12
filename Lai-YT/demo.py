@@ -7,6 +7,7 @@ from lib.cv_font import *
 from lib.distance import *
 from lib.gaze_tracking import GazeTracking
 from lib.timer import Timer
+from lib.video_writer import VideoWriter
 
 
 def draw_gazing_direction(image: numpy.ndarray, gaze: GazeTracking) -> None:
@@ -58,6 +59,10 @@ gaze = GazeTracking()
 webcam = cv2.VideoCapture(0)
 timer = Timer()
 
+output_video_path: str = os.path.abspath(os.path.join(cwd, "output_video.avi"))
+# Due to the slow writing rate, the fps can't be too high and might be machine depending.
+video_writer = VideoWriter(output_video_path, fps=7)
+
 timer.start()
 
 while True:
@@ -91,10 +96,12 @@ while True:
 
     """show result"""
     cv2.imshow("demo", output_frame)
+    video_writer.write(output_frame)
     # ESC
     if cv2.waitKey(1) == 27:
         break
 
 webcam.release()
+video_writer.release()
 timer.reset()
 cv2.destroyAllWindows()
