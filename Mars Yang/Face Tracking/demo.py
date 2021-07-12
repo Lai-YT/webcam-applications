@@ -1,7 +1,6 @@
 import cv2
 import numpy
 import os
-import time
 
 from lib.color import *
 from lib.cv_font import *
@@ -94,7 +93,7 @@ while True:
 
     """record screen focus time"""
     draw_time_stamp(output_frame, timer)
-    
+
     """show result"""
     cv2.imshow("demo", output_frame)
     # ESC

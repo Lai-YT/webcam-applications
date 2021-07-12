@@ -1,13 +1,12 @@
 import cv2
 import numpy
 import os
-import time
 
 from lib.color import *
 from lib.cv_font import *
 from lib.distance import *
 from lib.gaze_tracking import GazeTracking
-from lib.timer import *
+from lib.timer import Timer
 
 
 def draw_gazing_direction(image: numpy.ndarray, gaze: GazeTracking) -> None:
@@ -27,7 +26,7 @@ def draw_gazing_direction(image: numpy.ndarray, gaze: GazeTracking) -> None:
     elif gaze.is_center():
         text = "Looking center"
 
-    cv2.putText(image, text, (60, 60), FONT_2, 1, CYAN, 2)
+    cv2.putText(image, text, (0, 60), FONT_3, 1, BLUE, 2)
 
 
 def draw_time_stamp(image: numpy.ndarray, timer: Timer) -> None:
@@ -37,8 +36,8 @@ def draw_time_stamp(image: numpy.ndarray, timer: Timer) -> None:
         image (numpy.ndarray): The image to draw on
         timer (Timer): The timer which records the time
     """
-    time_duration: str = f"duration: {timer.time() // 60}m {timer.time() % 60}s"
-    cv2.putText(image, time_duration, (400, 30), FONT_3, 0.6, BLUE, 1)
+    time_duration: str = f"duration {(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
+    cv2.putText(image, time_duration, (432, 20), FONT_3, 0.8, BLUE, 1)
 
 
 """variables (should be set by the user)"""
@@ -71,16 +70,17 @@ while True:
     # This method returns a frame copy to draw on,
     # remember to make sure all following methods draw on the same frame.
     output_frame: numpy.ndarray = gaze.annotated_frame()
-
     draw_gazing_direction(output_frame, gaze)
 
     """do distance measurement"""
     faces: numpy.ndarray = face_data(original_frame)
 
-    if len(faces) == 0:
+    if len(faces) == 0 and not gaze.pupils_located:
         timer.pause()
-    for (x, y, w, h) in faces:
+        cv2.putText(output_frame, "timer paused", (432, 40), FONT_3, 0.6, RED, 1)
+    else:
         timer.start()
+    for (x, y, w, h) in faces:
         draw_face_area(output_frame, faces)
         if to_draw_dist_bar:
             distance: float = estimate_distance(focal_length_in_ref, personal_face_width, w)
