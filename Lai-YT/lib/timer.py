@@ -16,7 +16,6 @@ class Timer:
         """Start counting.
         No effects when the Timer is already started and not paused.
         """
-
         if self.is_paused():
             self._pause_duration += self._get_time() - self._pause_start
             self._pause_start = 0
@@ -27,27 +26,23 @@ class Timer:
         """Stop the time count.
         No effects when the Timer is already paused.
         """
-
         if not self.is_paused():
             self._pause_start = self._get_time()
 
     def reset(self) -> None:
         """Reset the Timer."""
-
         self._start: int = 0
         self._pause_start: int = 0
         self._pause_duration: int = 0
 
     def time(self) -> int:
         """Returns the time count in seconds."""
-
         if self.is_paused():
             return self._pause_start - self._start - self._pause_duration
         return self._get_time() - self._start - self._pause_duration
 
     def is_paused(self) -> bool:
         """Returns True if the Timer is paused, otherwise False."""
-
         return self._pause_start != 0
 
     @staticmethod

@@ -82,7 +82,6 @@ def draw_face_area(image: ndarray, faces: ndarray) -> None:
         image: simply the frame
         face: upper-left x, upper-left y, width of face, height of face
     """
-
     for (x, y, w, h) in faces:
         line_thickness: int = 2
         # affects the length of corner line
@@ -115,7 +114,6 @@ def draw_distance_bar(image: ndarray, faces: ndarray, distance: float,
                    bar color turns into red and warning massage shows.
                    0 implicitly means no warning.
     """
-
     threshold = round(threshold, 2)
     distance = round(distance, 2)
     distance_level = int(distance)

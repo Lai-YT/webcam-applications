@@ -17,7 +17,6 @@ def draw_gazing_direction(image: numpy.ndarray, gaze: GazeTracking) -> None:
         image (numpy.ndarray): The image to draw on
         gaze (GazeTracking): The gaze dealing with
     """
-
     text: str = ""
     if gaze.is_blinking():
         text = "Blinking"
@@ -38,7 +37,6 @@ def draw_time_stamp(image: numpy.ndarray, timer: Timer) -> None:
         image (numpy.ndarray): The image to draw on
         timer (Timer): The timer which records the time
     """
-
     time_duration: str = f"duration: {timer.time() // 60}m {timer.time() % 60}s"
     cv2.putText(image, time_duration, (400, 30), FONT_3, 0.6, BLUE, 1)
 
@@ -90,7 +88,7 @@ while True:
 
     """record screen focus time"""
     draw_time_stamp(output_frame, timer)
-    
+
     """show result"""
     cv2.imshow("demo", output_frame)
     # ESC
