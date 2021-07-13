@@ -9,28 +9,6 @@ from lib.distance import *
 from lib.gaze_tracking import GazeTracking
 from lib.timer import *
 
-
-def draw_gazing_direction(image: numpy.ndarray, gaze: GazeTracking) -> None:
-    """Draw where the user is gazing at: right, left, center or blinking.
-
-    Arguments:
-        image (numpy.ndarray): The image to draw on
-        gaze (GazeTracking): The gaze dealing with
-    """
-
-    text: str = ""
-    if gaze.is_blinking():
-        text = "Blinking"
-    elif gaze.is_right():
-        text = "Looking right"
-    elif gaze.is_left():
-        text = "Looking left"
-    elif gaze.is_center():
-        text = "Looking center"
-
-    cv2.putText(image, text, (0, 60), FONT_3, 1, BLUE, 2)
-
-
 def draw_time_stamp(image: numpy.ndarray, timer: Timer) -> None:
     """Draw the time of the timer on the upper right of the image.
 
@@ -40,19 +18,31 @@ def draw_time_stamp(image: numpy.ndarray, timer: Timer) -> None:
     """
 
     time_duration: str = f"duration {(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
-    cv2.putText(image, time_duration, (432, 20), FONT_3, 0.8, BLUE, 1)
+    cv2.putText(image, time_duration, (0, 55), FONT_2, 2, BLUE, 2)
+    
+def warning(image: numpy.ndarray, timer: Timer, message: str, focus_time: int) -> None:
+    '''Put a message to warn user if focus time is too long.
 
+    Arguments:
+        image (numpy.ndarray): The image to draw on
+        timer (Timer): The timer which records the time
+        message (str): Warning message
+        focus_time (int): Threshold of focus time to warn
+    '''
+    if timer.time() > focus_time:
+        cv2.putText(image, message, (0, 150), FONT_2, 1, RED, 1)
 
 """variables (should be set by the user)"""
 face_to_cam_dist_in_ref: float = 45  # centi-meter
 personal_face_width: float = 12.5  # centi-meter
 ref_image_path: str = "img/ref_img.jpg"
 to_draw_dist_bar: bool = True
-warn_dist: int = 30  # centi-meter
+warn_dist: int = 40  # centi-meter
 
 cwd: str = os.path.abspath(os.path.dirname(__file__))
 ref_image_path = os.path.abspath(os.path.join(cwd, ref_image_path))
 
+# Focal length is the imaginary distance from webcam to image
 focal_length_in_ref: float = (
     get_img_focal_length(ref_image_path, face_to_cam_dist_in_ref, personal_face_width))
 
@@ -65,6 +55,8 @@ timer.start()
 
 while True:
     _, original_frame = webcam.read()
+    bg = cv2.imread("img/bg.jpg")
+    bg = cv2.resize(bg, (960, 540))
 
     """do gaze tracking"""
     # We send this frame to GazeTracking to analyze it
@@ -74,29 +66,32 @@ while True:
     # remember to make sure all following methods draw on the same frame.
     output_frame: numpy.ndarray = gaze.annotated_frame()
 
-    draw_gazing_direction(output_frame, gaze)
-
     """do distance measurement"""
     faces: numpy.ndarray = face_data(original_frame)
 
     # If gaze is not detected, pause the timer
-    if not gaze.pupils_located:
+    if len(faces) == 0:
         timer.pause()
-        cv2.putText(output_frame, "timer paused", (432, 40), FONT_3, 0.6, RED, 1)
+        cv2.putText(bg, "Face not detected", (0, 55), FONT_2, 2, RED, 2)
     else:
         timer.start()
+        """record screen focus time"""
+        draw_time_stamp(bg, timer)
 
+    # If focus time is too long, put a message to warn user
+    warning_message: str = "Focusing on the screen too long"
+    warning(bg, timer, warning_message, 5)
+
+    # detect the distance and give warning if too close to screen
     for (x, y, w, h) in faces:
-        draw_face_area(output_frame, faces)
-        if to_draw_dist_bar:
-            distance: float = estimate_distance(focal_length_in_ref, personal_face_width, w)
-            draw_distance_bar(output_frame, faces, distance, threshold=warn_dist)
-
-    """record screen focus time"""
-    draw_time_stamp(output_frame, timer)
+        distance: float = estimate_distance(focal_length_in_ref, personal_face_width, w)
+        if distance < warn_dist:
+            # warning message
+            cv2.putText(bg, "Stay farther, please.", (5, 90), FONT_2, 1, RED, 1)
     
+
     """show result"""
-    cv2.imshow("demo", output_frame)
+    cv2.imshow("demo", bg)
     # ESC
     if cv2.waitKey(1) == 27:
         break
