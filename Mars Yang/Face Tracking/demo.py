@@ -49,14 +49,13 @@ focal_length_in_ref: float = (
 gaze = GazeTracking()
 webcam = cv2.VideoCapture(0)
 timer = Timer()
-
 timer.start()
 
 while True:
     _, original_frame = webcam.read()
     bg = cv2.imread("img/bg.jpg")
     bg = cv2.resize(bg, (960, 540))
-
+    
     """do gaze tracking"""
     # We send this frame to GazeTracking to analyze it
     gaze.refresh(original_frame)
@@ -81,7 +80,6 @@ while True:
     warning_message: str = "Focusing on the screen too long"
     warning(bg, timer, warning_message, 5)
 
-<<<<<<< HEAD
     # detect the distance and give warning if too close to screen
     for (x, y, w, h) in faces:
         distance: float = estimate_distance(focal_length_in_ref, personal_face_width, w)
@@ -89,10 +87,6 @@ while True:
             # warning message
             cv2.putText(bg, "Stay farther, please.", (5, 90), FONT_2, 1, RED, 1)
     
-=======
-    """record screen focus time"""
-    draw_time_stamp(output_frame, timer)
->>>>>>> 4e9dd99ed0806c84c7dbe391f471bd0f3a4d8708
 
     """show result"""
     cv2.imshow("demo", bg)
