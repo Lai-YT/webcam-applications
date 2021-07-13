@@ -31,9 +31,9 @@ class Timer:
 
     def reset(self) -> None:
         """Reset the Timer."""
-        self._start: int = 0
-        self._pause_start: int = 0
-        self._pause_duration: int = 0
+        self._start = 0
+        self._pause_start = 0
+        self._pause_duration = 0
 
     def time(self) -> int:
         """Returns the time count in seconds."""
