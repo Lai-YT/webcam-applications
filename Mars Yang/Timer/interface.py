@@ -25,7 +25,7 @@ distance_detector = FaceDistanceDetector(cv2.imread(to_abs_path(ref_image_path))
 gaze = GazeTracking()
 timer = Timer()
 
-warning_message = cv2.imread(to_abs_path("img/warning.png"))
+warning_message = cv2.imread(to_abs_path("img/warning.jpg"))
 
 timer_width = 192 # width of timer
 timer_height = 85 # height of timer
