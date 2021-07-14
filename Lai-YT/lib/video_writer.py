@@ -8,7 +8,7 @@ class VideoWriter:
     preset some parameters so simpler to use.
     """
 
-    def __init__(self, video_path: str, *, fps: float = 5.0) -> None:
+    def __init__(self, video_path: str, *, fps: float = 10.0) -> None:
         """
         Arguments:
             video_path (str): The path to output the video
