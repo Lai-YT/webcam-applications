@@ -4,4 +4,5 @@ __pycache__
 *.mp3
 *.jpg
 *.png
-!warning.png
+!warning.jpg
+!timer_bg.jpg

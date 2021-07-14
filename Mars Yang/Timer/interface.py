@@ -50,13 +50,13 @@ while webcam.isOpened() and cv2.waitKey(1) != 27:  # ESC
         distance = distance_detector.distance()
         text = str(round(distance, 2))
         if distance < warn_dist:
-            # show the warning window at the center of the screen
+            # Show the warning window at the center of the screen
             warning = "warning"
             cv2.namedWindow(warning)
             cv2.moveWindow(warning, int(screen_width/2 - 245.5), int(screen_height/2 - 80.5))
             cv2.imshow(warning, warning_message)
         elif cv2.getWindowProperty("warning", cv2.WND_PROP_VISIBLE) >= 1:
-            # if warning window is on the screen and the distance becomes proper, remove the windowS
+            # If warning window is on the screen and the distance becomes proper, remove the window
             cv2.destroyWindow("warning")
 
     """detect faces"""
