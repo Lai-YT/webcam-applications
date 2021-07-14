@@ -28,8 +28,7 @@ class FaceDistanceDetector:
         """
         face: int = self.face_data(ref_image)
         if face is None:
-            # throw exception
-            pass
+            raise ValueError("can't detect any face from the reference image")
         self._focal_length: float = (
             self._focal_length(face_to_cam_dist, face_width, face[2]))
         self._face_width = face_width
@@ -53,8 +52,12 @@ class FaceDistanceDetector:
         """
         return self._distance
 
-    def annotated_frame(self) -> None:
-        """Returns the frame with the face indicated with angles."""
+    def annotated_frame(self, *, color: BGR = GREEN) -> numpy.ndarray:
+        """Returns the frame with the face indicated with angles.
+
+        Keyword Arguments:
+            color (color.BGR): Color of the lines, green (0, 255, 0) in default
+        """
         frame: numpy.ndarray = self._frame.copy()
         if self.has_face:
             x, y, w, h = self.face_data(frame)
@@ -63,16 +66,16 @@ class FaceDistanceDetector:
             LLV = int(h*0.12)
 
             # vertical corner lines
-            cv2.line(frame, (x, y+LLV), (x+LLV, y+LLV), GREEN, line_thickness)
-            cv2.line(frame, (x+w-LLV, y+LLV), (x+w, y+LLV), GREEN, line_thickness)
-            cv2.line(frame, (x, y+h), (x+LLV, y+h), GREEN, line_thickness)
-            cv2.line(frame, (x+w-LLV, y+h), (x+w, y+h), GREEN, line_thickness)
+            cv2.line(frame, (x, y+LLV), (x+LLV, y+LLV), color, line_thickness)
+            cv2.line(frame, (x+w-LLV, y+LLV), (x+w, y+LLV), color, line_thickness)
+            cv2.line(frame, (x, y+h), (x+LLV, y+h), color, line_thickness)
+            cv2.line(frame, (x+w-LLV, y+h), (x+w, y+h), color, line_thickness)
 
             # horizontal corner lines
-            cv2.line(frame, (x, y+LLV), (x, y+LLV+LLV), GREEN, line_thickness)
-            cv2.line(frame, (x+w, y+LLV), (x+w, y+LLV+LLV), GREEN, line_thickness)
-            cv2.line(frame, (x, y+h), (x, y+h-LLV), GREEN, line_thickness)
-            cv2.line(frame, (x+w, y+h), (x+w, y+h-LLV), GREEN, line_thickness)
+            cv2.line(frame, (x, y+LLV), (x, y+LLV+LLV), color, line_thickness)
+            cv2.line(frame, (x+w, y+LLV), (x+w, y+LLV+LLV), color, line_thickness)
+            cv2.line(frame, (x, y+h), (x, y+h-LLV), color, line_thickness)
+            cv2.line(frame, (x+w, y+h), (x+w, y+h-LLV), color, line_thickness)
         return frame
 
     @property
