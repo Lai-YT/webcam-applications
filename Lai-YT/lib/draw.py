@@ -75,10 +75,11 @@ def draw_gazing_direction(image: numpy.ndarray, gaze: GazeTracking) -> None:
 
 def draw_time_stamp(image: numpy.ndarray, timer: Timer) -> None:
     """Draws the time of the timer on the upper right of the image.
+    Note that this function is designed for the timer window.
 
     Arguments:
         image (numpy.ndarray): The image to draw on
         timer (Timer): The timer which records the time
     """
-    time_duration: str = f"duration {(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
-    cv2.putText(image, time_duration, (432, 20), FONT_3, 0.8, BLUE, 1)
+    time_duration: str = f"{(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
+    cv2.putText(image, time_duration, (2, 70), FONT_3, 2, WHITE, 2)
