@@ -34,20 +34,26 @@ root = tk.Tk()
 
 
 Image = numpy.ndarray
-"""designed variables"""
-warning_message: Image = cv2.imread(to_abs_path("img/warning.jpg"))
-screen_width: int = root.winfo_screenwidth()
+"""designed parameters"""
+
+screen_width:  int = root.winfo_screenwidth()
 screen_height: int = root.winfo_screenheight()
 screen_center: Tuple[int, int] = (
     int(screen_width/2 - 245.5), int(screen_height/2 - 80.5))
+
 timer_width:  int = 192
 timer_height: int = 85
 timer_bg: Image = cv2.imread(to_abs_path("img/timer_bg.jpg"))
 timer_bg = cv2.resize(timer_bg, (timer_width, timer_height))
 timer_window_name: str = "timer"
+timer_window_pos: Tuple[int, int] = (screen_width - timer_width, 0)  # upper right
+
+message_width:  int = 490
+message_height: int = 161
+warning_message: Image = cv2.imread(to_abs_path("img/warning.jpg"))
+warning_message = cv2.resize(warning_message, (message_width, message_height))
 warning_window_name: str = "warning"
-# upper right
-timer_window_pos: Tuple[int, int] = (screen_width - timer_width, 0)
+
 
 timer.start()
 
