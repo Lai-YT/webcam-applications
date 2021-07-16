@@ -1,3 +1,8 @@
+"""
+Helper functions for specific draiwng conditions.
+The output coordinates aren't general-purpose.
+"""
+
 import cv2
 import numpy
 from typing import Tuple

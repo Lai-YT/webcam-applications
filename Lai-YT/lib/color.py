@@ -1,6 +1,7 @@
+"""This file defines Colors in BGR Format(BLUE, GREEN, RED)."""
+
 from typing import Tuple
 
-"""This file defines Colors in BGR Format(BLUE, GREEN, RED)."""
 
 BGR = Tuple[int, int, int]
 

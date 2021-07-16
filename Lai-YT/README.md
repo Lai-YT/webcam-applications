@@ -16,7 +16,7 @@ It's the visualized version that shows the detection result and has no warnings.
 ## Applications
 
 Command `python real.py` to see what we want to bring in practice. \
-All detections proccess in the background. Warnings pop when conditions meet.
+All detections process in the background. Warnings pop when conditions meet.
 
 ## Topics
 

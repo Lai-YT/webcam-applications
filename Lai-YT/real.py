@@ -31,7 +31,6 @@ distance_detector = FaceDistanceDetector(cv2.imread(to_abs_path(ref_image_path))
 gaze = GazeTracking()
 timer = Timer()
 root = tk.Tk()
-# video_writer = VideoWriter(to_abs_path("output_video.avi"))
 
 
 Image = numpy.ndarray
