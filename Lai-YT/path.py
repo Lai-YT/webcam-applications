@@ -1,9 +1,10 @@
-import os
-
 """
 This file is path sensitive.
 To make it work correctly, put under the current working directiory.
 """
+
+import os
+
 
 def to_abs_path(path: str) -> str:
     """Returns the absolute path."""

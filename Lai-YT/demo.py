@@ -1,5 +1,7 @@
 import cv2
 import numpy
+import tkinter as tk
+from typing import List
 
 from lib.color import *
 from lib.cv_font import *
@@ -11,11 +13,14 @@ from lib.video_writer import VideoWriter
 from path import to_abs_path
 
 
-"""variables (should be set by the user)"""
-face_to_cam_dist_in_ref: float = 45  # centi-meter
-personal_face_width: float = 12.5  # centi-meter
+"""parameters set by the user"""
 ref_image_path: str = "img/ref_img.jpg"
-warn_dist: int = 40  # centi-meter
+params: List[float] = []
+with open(to_abs_path("parameters.txt")) as f:
+    for line in f:
+        params.append(float(line.rstrip('\n').split()[-1]))
+face_to_cam_dist_in_ref: float = params[0]
+personal_face_width: float = params[1]
 
 """initialize the detection objects"""
 webcam = cv2.VideoCapture(0)
@@ -24,9 +29,7 @@ distance_detector = FaceDistanceDetector(cv2.imread(to_abs_path(ref_image_path))
                                          personal_face_width)
 gaze = GazeTracking()
 timer = Timer()
-
 # video_writer = VideoWriter(to_abs_path("output_video.avi"))
-warning_message = cv2.imread(to_abs_path("img/warning.png"))
 
 timer.start()
 
@@ -40,11 +43,7 @@ while webcam.isOpened() and cv2.waitKey(1) != 27:  # ESC
     text: str = ""
     if distance_detector.has_face:
         distance = distance_detector.distance()
-        text = str(round(distance, 2))
-        if distance < warn_dist:
-            cv2.imshow("warning", warning_message)
-        else:
-            cv2.destroyWindow("warning")
+        text = str(int(distance))
     else:
         text = "No face detected."
     cv2.putText(frame, text, (60, 60), FONT_3, 0.9, MAGENTA, 1)
@@ -60,9 +59,10 @@ while webcam.isOpened() and cv2.waitKey(1) != 27:  # ESC
         cv2.putText(frame, "timer paused", (432, 40), FONT_3, 0.6, RED, 1)
     else:
         timer.start()
-    draw_time_stamp(frame, timer)
+    time_duration: str = f"{(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
+    cv2.putText(frame, time_duration, (500, 20), FONT_3, 0.8, BLUE, 1)
 
-    """show result"""
+    """show visualized detection result"""
     cv2.imshow("demo", frame)
     # video_writer.write(frame)
 
