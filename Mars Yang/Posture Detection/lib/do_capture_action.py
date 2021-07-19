@@ -5,7 +5,7 @@ from pathlib import Path
 keyboard_spacebar = 32
 training_dir = 'train'
 
-def do_capture_action(action_n, action_label):
+def do_capture_action(action_n):
     img_count = 0
     output_folder = '{}/action_{:02}'.format(training_dir, action_n)
     print('Capturing samples for {} into folder {}'.format(action_n, output_folder))
@@ -21,7 +21,7 @@ def do_capture_action(action_n, action_label):
         filename = '{}/{:08}.png'.format(output_folder, img_count)
         cv2.imwrite(filename, frame)
         img_count += 1
-        key = cv2.waitKey(1000)
+        key = cv2.waitKey(500)
         cv2.imshow('', frame)
 
         if key == keyboard_spacebar:

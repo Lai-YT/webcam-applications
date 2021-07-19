@@ -6,3 +6,6 @@ __pycache__
 *.png
 !warning.jpg
 !timer_bg.jpg
+
+train/*
+*.h5

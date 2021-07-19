@@ -3,6 +3,7 @@ import os
 import cv2
 from tensorflow.keras import layers, models
 from sklearn.utils import class_weight
+from typing import Dict
 
 # Config settings
 image_dimensions = (224, 224) 
@@ -37,7 +38,8 @@ def do_training():
     n = len(train_images)
     train_images = train_images.reshape(n, image_dimensions[0], image_dimensions[1], 1)
 
-    class_weights = class_weight.compute_sample_weight('balanced', train_labels)
+    class_weights: np.ndarray = class_weight.compute_sample_weight('balanced', train_labels)
+    weights: Dict[int, float] = {i: weight for i, weight in enumerate(class_weights)}
     model = models.Sequential()
     model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(image_dimensions[0], image_dimensions[1], 1)))
     model.add(layers.MaxPooling2D((2, 2)))
@@ -48,5 +50,5 @@ def do_training():
     model.add(layers.Dense(64, activation='relu'))
     model.add(layers.Dense(len(class_folders), activation='softmax'))
     model.compile(optimizer='adam', loss='sparse_categorical_crossentropy',  metrics=['accuracy'])
-    model.fit(train_images, train_labels, epochs=epochs, class_weight = class_weights)
+    model.fit(train_images, train_labels, epochs=epochs, class_weight = weights)
     model.save(model_name)
