@@ -41,3 +41,7 @@ Based on [Asadullah-Dal17/Distance_measurement_using_single_camera](https://gith
 ### Gaze Tracking
 
 Using the library provided at [antoinelame/GazeTracking](https://github.com/antoinelame/GazeTracking).
+
+### Posture Watch
+
+Base on [saubury/posture-watch](https://github.com/saubury/posture-watch).
