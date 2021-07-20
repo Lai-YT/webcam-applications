@@ -55,11 +55,11 @@ def do_live_view(soundson: bool) -> None:
         else:
             im_color = cv2.putText(im_color, 'Good posture', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), thickness=2)
 
-        msg: str = 'Confidence {}%'.format(round(int(conf*100)))
+        msg: str = f'Confidence {round(int(conf*100))}%'
         im_color = cv2.putText(im_color, msg, (15, 110), cv2.FONT_HERSHEY_SIMPLEX, 1, (200, 200, 255), thickness=2)
 
-        cv2.imshow('posture watch', im_color)
-        cv2.moveWindow('posture watch', 20, 20);
+        cv2.imshow('posture watching...', im_color)
+        cv2.moveWindow('posture watching...', 20, 20);
         key: int = cv2.waitKey(20)
 
         if key == keyboard_spacebar:
@@ -71,8 +71,8 @@ def do_live_view(soundson: bool) -> None:
 
 def do_capture_action(action_n: int, action_label: str) -> None:
     img_count: int = 0
-    output_folder: str = '{}/action_{:02}'.format(training_dir, action_n)
-    print('Capturing samples for {} into folder {}'.format(action_n, output_folder))
+    output_folder: str = f'{training_dir}/action_{action_n:02}'
+    print(f'Capturing samples for {action_n} into folder {output_folder}')
     Path(output_folder).mkdir(parents=True, exist_ok=True)
 
     # Video capture stuff
@@ -82,11 +82,11 @@ def do_capture_action(action_n: int, action_label: str) -> None:
 
     while True:
         _, frame = videocapture.read()
-        filename: str = '{}/{:08}.png'.format(output_folder, img_count)
+        filename: str = f'{output_folder}/{img_count:08}.jpg'
         cv2.imwrite(filename, frame)
         img_count += 1
         key: int = cv2.waitKey(1000)
-        cv2.imshow('', frame)
+        cv2.imshow('sample capturing...', frame)
 
         if key == keyboard_spacebar:
             break
@@ -102,9 +102,9 @@ def do_training() -> None:
 
     class_label_indexer: int = 0
     for c in class_folders:
-        print('Training with class {}'.format(c))
-        for f in os.listdir('{}/{}'.format(training_dir, c)):
-            im: Image = cv2.imread('{}/{}/{}'.format(training_dir, c, f), cv2.IMREAD_GRAYSCALE)
+        print(f'Training with class {c}')
+        for f in os.listdir(f'{training_dir}/{c}'):
+            im: Image = cv2.imread(f'{training_dir}/{c}/{f}', cv2.IMREAD_GRAYSCALE)
             im = cv2.resize(im, image_dimensions)
             train_images.append(im)
             train_labels.append(class_label_indexer)
