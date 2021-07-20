@@ -41,10 +41,14 @@ def do_live_view(soundson):
         im_color = cv2.resize(im_color, (800, 480), interpolation = cv2.INTER_AREA)
         im_color = cv2.flip(im_color, flipCode=1) # flip horizontally
 
-        if (class_pred==1):
+        if (class_pred == 1):
             # Slumped
             im_color = cv2.putText(im_color, 'Slumped posture', (10, 70),  cv2.FONT_HERSHEY_SIMPLEX, 2,  (0, 0, 255), thickness = 3)
+        elif (class_pred == 2):
+            # Writing
+            im_color = cv2.putText(im_color, 'Writing', (10, 70),  cv2.FONT_HERSHEY_SIMPLEX, 2,  (255, 0, ), thickness = 3)
         else:
+            # Good
             im_color = cv2.putText(im_color, 'Good posture', (10, 70),  cv2.FONT_HERSHEY_SIMPLEX, 2,  (0, 255, 0), thickness = 2)
 
         msg = 'Confidence {}%'.format(round(int(conf*100)))

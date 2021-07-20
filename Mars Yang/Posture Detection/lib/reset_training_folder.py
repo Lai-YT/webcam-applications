@@ -4,6 +4,7 @@ import shutil
 # Config settings
 path1 = "train/action_01"
 path2 = "train/action_02"
+path3 = "train/action_03"
 
 def reset_training_folder():
     '''
@@ -17,3 +18,5 @@ def reset_training_folder():
             shutil.rmtree(path1, ignore_errors=True)
         if os.path.isdir(path2):
             shutil.rmtree(path2, ignore_errors=True)
+        if os.path.isdir(path3):
+            shutil.rmtree(path3, ignore_errors=True)

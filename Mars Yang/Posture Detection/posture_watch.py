@@ -9,6 +9,7 @@ def main():
     parser = argparse.ArgumentParser(description='Posture monitor')
     parser.add_argument('--capture-good', help='capture example of good, healthy posture', action='store_true')
     parser.add_argument('--capture-slump', help='capture example of poor, slumped posture', action='store_true')
+    parser.add_argument('--capture-writing', help='capture example of writing posture', action='store_true')
     parser.add_argument('--reset', help='reset the training folder', action='store_true')
     parser.add_argument('--train', help='train model with captured images', action='store_true')
     parser.add_argument('--live', help='live view applying model to each frame', action='store_true')
@@ -27,6 +28,9 @@ def main():
     elif args.capture_slump:
         # python posture_watch.py --capture-slump
         do_capture_action(2)
+    elif args.capture_writing:
+        # python posture_watch.py --capture-writing
+        do_capture_action(3)
     elif args.reset:
         # python posture_watch.py --reset
         reset_training_folder()

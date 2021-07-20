@@ -21,7 +21,7 @@ def do_capture_action(action_n):
         filename = '{}/{:08}.png'.format(output_folder, img_count)
         cv2.imwrite(filename, frame)
         img_count += 1
-        key = cv2.waitKey(500)
+        key = cv2.waitKey(100)
         cv2.imshow('', frame)
 
         if key == keyboard_spacebar:
