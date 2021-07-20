@@ -6,12 +6,26 @@ only 1 camera, which is the webcam.
 ## Settings
 
 Put a front-face picture of yours named **ref_img.jpg** in folder **img** \
-and set the parameters in **parameters.txt**.
+and set the parameters in **parameters.txt**. \
+For posture watching, provide some samples and train the model. \
+Please check out the usage of **demo.py**.
 
-## Demo
+## demo
 
-Command `python demo.py` to have a quick veiw on what we can do! \
-It's the visualized version that shows the detection result and has no warnings.
+It's the visualized version that shows the detection result without warnings.
+
+```
+usage: demo.py [-h] [-cg] [-cs] [-t] [-a]
+
+webcam applications with distance measurement, eye focus timing and posture watch
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -cg, --capture-good   capture example of good, healthy posture
+  -cs, --capture-slump  capture example of poor, slumped posture
+  -t, --train           train model with captured images
+  -a, --applications    visualized detection with all applications
+```
 
 ## Applications
 

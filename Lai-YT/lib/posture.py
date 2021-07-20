@@ -6,62 +6,48 @@ from tensorflow.keras import layers, models
 from typing import Dict, List, Tuple
 from pathlib import Path
 
+from .color import *
+from .cv_font import *
 
 # Add this in if you require sounds
-# from playsound import playsound
+from playsound import playsound
 
 # Config settings
 image_dimensions: Tuple[int, int] = (224, 224)
 epochs: int = 10
 keyboard_spacebar: int = 32
 
+# type hints
 Image = np.ndarray
 
-def do_live_view(model_path: str, soundson: bool, mp3file: str) -> None:
-    mymodel = models.load_model(model_path)
 
-    # Video capture stuff
-    videocapture = cv2.VideoCapture(0)
-    if not videocapture.isOpened():
-        raise IOError('Cannot open webcam')
+def load_model(model_path: str):
+    return models.load_model(model_path)
 
-    while True:
-        _, im_color = videocapture.read()
-        im: Image = cv2.cvtColor(im_color, cv2.COLOR_BGR2GRAY)
+def do_posture_watch(im_color: Image, mymodel , soundson: bool, mp3file: str) -> Image:
+    im: Image = cv2.cvtColor(im_color, cv2.COLOR_BGR2GRAY)
 
-        im = cv2.resize(im, image_dimensions)
-        im = im / 255  # Normalize the image
-        im = im.reshape(1, *image_dimensions, 1)
+    im = cv2.resize(im, image_dimensions)
+    im = im / 255  # Normalize the image
+    im = im.reshape(1, *image_dimensions, 1)
 
-        predictions: np.ndarray = mymodel.predict(im)
-        class_pred: np.int64 = np.argmax(predictions)
-        conf: np.float32 = predictions[0][class_pred]
+    predictions: np.ndarray = mymodel.predict(im)
+    class_pred: np.int64 = np.argmax(predictions)
+    conf: np.float32 = predictions[0][class_pred]
 
-        if soundson and class_pred == 1:
-            # If slumped with sounds on
+    im_color = cv2.resize(im_color, (640, 480), interpolation=cv2.INTER_AREA)
+
+    if class_pred == 1:
+        # Slumped
+        im_color = cv2.putText(im_color, 'Slumped', (10, 70), FONT_0, 1, RED, thickness=3)
+        if soundson:
             playsound(mp3file)
+    else:
+        im_color = cv2.putText(im_color, 'Good', (10, 70), FONT_0, 1, GREEN, thickness=2)
 
-        im_color = cv2.resize(im_color, (640, 480), interpolation=cv2.INTER_AREA)
-        im_color = cv2.flip(im_color, flipCode=1) # flip horizontally
-
-        if class_pred == 1:
-            # Slumped
-            im_color = cv2.putText(im_color, 'Slumped posture', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), thickness=3)
-        else:
-            im_color = cv2.putText(im_color, 'Good posture', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), thickness=2)
-
-        msg: str = f'Confidence {round(int(conf*100))}%'
-        im_color = cv2.putText(im_color, msg, (15, 110), cv2.FONT_HERSHEY_SIMPLEX, 1, (200, 200, 255), thickness=2)
-
-        cv2.imshow('posture watching...', im_color)
-        cv2.moveWindow('posture watching...', 20, 20);
-        key: int = cv2.waitKey(20)
-
-        if key == keyboard_spacebar:
-            break
-
-    videocapture.release()
-    cv2.destroyAllWindows()
+    msg: str = f'Confidence {round(int(conf*100))}%'
+    im_color = cv2.putText(im_color, msg, (15, 110), FONT_0, 0.6, (200, 200, 255), thickness=2)
+    return im_color
 
 
 def do_capture_action(action_n: int, action_label: str) -> None:
