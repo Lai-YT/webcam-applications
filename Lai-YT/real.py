@@ -56,8 +56,7 @@ warning_window_name: str = "warning"
 
 
 timer.start()
-
-while webcam.isOpened() and cv2.waitKey(1) != 27:  # ESC
+while webcam.isOpened():
     _, frame = webcam.read()
 
     """do distance measurement"""
@@ -88,6 +87,12 @@ while webcam.isOpened() and cv2.waitKey(1) != 27:  # ESC
     cv2.namedWindow(timer_window_name)
     cv2.moveWindow(timer_window_name, *timer_window_pos)
     cv2.imshow(timer_window_name, timer_window)
+
+    # ESC
+    if cv2.waitKey(1) == 27:
+        break
+else:
+    raise IOError('Cannot open webcam')
 
 webcam.release()
 timer.reset()

@@ -1,18 +1,24 @@
 import cv2
 import numpy as np
 import os
+from pathlib import Path
+from playsound import playsound
 from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
 from typing import Dict, List, Tuple
-from pathlib import Path
 
+from .application import *
 from .color import *
 from .cv_font import *
-
-# Add this in if you require sounds
-from playsound import playsound
+from .draw import *
+from .face_distance_detector import FaceDistanceDetector
+from .gaze_tracking import GazeTracking
+from .timer import Timer
 
 # Config settings
+training_dir: str = "train"
+model_path:   str = "trained_models/posture_model.h5"
+mp3file:      str = "sounds/what.mp3"
 image_dimensions: Tuple[int, int] = (224, 224)
 epochs: int = 10
 keyboard_spacebar: int = 32
@@ -21,10 +27,60 @@ keyboard_spacebar: int = 32
 Image = np.ndarray
 
 
-def load_model(model_path: str):
+def do_distance_measurement(frame: Image, distance_detector: FaceDistanceDetector, *, face_only: bool = False) -> Tuple[Image, FaceDistanceDetector]:
+    """
+    Estimates the distance in the frame by FaceDistanceDetector.
+    Returns the frame with distance text and the FaceDistanceDetector that contains data of frame.
+
+    Arguments:
+        face_only (bool): No distance text on frame if True
+    """
+    frame = frame.copy()
+    distance_detector.estimate(frame)
+    frame = distance_detector.annotated_frame()
+    if not face_only:
+        text: str = ""
+        if distance_detector.has_face:
+            distance = distance_detector.distance()
+            text = "dist. " + str(int(distance))
+        else:
+            text = "No face detected."
+        cv2.putText(frame, text, (60, 30), FONT_3, 0.9, MAGENTA, 1)
+
+    return frame, distance_detector
+
+
+def do_gaze_tracking(frame: Image, gaze: GazeTracking) -> Tuple[Image, GazeTracking]:
+    frame = frame.copy()
+    # We send this frame to GazeTracking to analyze it
+    gaze.refresh(frame)
+    frame = gaze.annotated_frame()
+    return frame, gaze
+
+
+def do_focus_time_record(frame: Image, timer: Timer, distance_detector: FaceDistanceDetector, gaze: GazeTracking) -> Tuple[Image, Timer]:
+    frame = frame.copy()
+    if not distance_detector.has_face and not gaze.pupils_located:
+        timer.pause()
+        cv2.putText(frame, "timer paused", (432, 40), FONT_3, 0.6, RED, 1)
+    else:
+        timer.start()
+    time_duration: str = f"t. {(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
+    cv2.putText(frame, time_duration, (500, 20), FONT_3, 0.8, BLUE, 1)
+
+    return frame, timer
+
+
+def load_posture_model():
     return models.load_model(model_path)
 
-def do_posture_watch(im_color: Image, mymodel , soundson: bool, mp3file: str) -> Image:
+
+def do_posture_watch(frame: Image, mymodel, soundson: bool = False) -> Image:
+    """Returns the frame with posture label text.
+    mymodel is used to predict the label of frame.
+    If soundson is True, sound will be played when posture slumpled.
+    """
+    im_color: Image = frame.copy()
     im: Image = cv2.cvtColor(im_color, cv2.COLOR_BGR2GRAY)
 
     im = cv2.resize(im, image_dimensions)
@@ -56,12 +112,9 @@ def do_capture_action(action_n: int, action_label: str) -> None:
     print(f'Capturing samples for {action_n} into folder {output_folder}...')
     Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-    # Video capture stuff
     videocapture = cv2.VideoCapture(0)
-    if not videocapture.isOpened():
-        raise IOError('Cannot open webcam')
 
-    while True:
+    while videocapture.isOpened():
         _, frame = videocapture.read()
         filename: str = f'{output_folder}/{img_count:08}.jpg'
         cv2.imwrite(filename, frame)
@@ -71,12 +124,13 @@ def do_capture_action(action_n: int, action_label: str) -> None:
 
         if key == keyboard_spacebar:
             break
+    else:
+        raise IOError('Cannot open webcam')
 
     videocapture.release()
     cv2.destroyAllWindows()
 
-
-def do_training(training_dir: str, model_path: str) -> None:
+def do_training() -> None:
     train_images:  List[Image] = []
     train_labels:  List[int] = []
     class_folders: List[str] = os.listdir(training_dir)

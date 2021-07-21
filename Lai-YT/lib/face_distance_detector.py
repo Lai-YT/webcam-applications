@@ -1,6 +1,6 @@
 import cv2
 import numpy
-from typing import Tuple, Union
+from typing import Optional, Tuple
 
 from .color import *
 
@@ -46,7 +46,7 @@ class FaceDistanceDetector:
         else:
             self._distance = (self._face_width * self._focal_length) / face[2]
 
-    def distance(self) -> Union[float, None]:
+    def distance(self) -> Optional[float]:
         """Returns the estimated distance between face and camera,
         None if no face in the frame.
         """
@@ -96,7 +96,7 @@ class FaceDistanceDetector:
         return (face_width_in_frame * face_to_cam_dist) / face_width
 
     @classmethod
-    def face_data(cls, frame: numpy.ndarray) -> Union[Tuple[int, int, int, int], None]:
+    def face_data(cls, frame: numpy.ndarray) -> Optional[Tuple[int, int, int, int]]:
         """Returns the coordinate and size of the face.
 
         Arguments:

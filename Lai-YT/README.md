@@ -7,30 +7,43 @@ only 1 camera, which is the webcam.
 
 Put a front-face picture of yours named **ref_img.jpg** in folder **img** \
 and set the parameters in **parameters.txt**. \
-For posture watching, provide some samples and train the model. \
-Please check out the usage of **demo.py**.
-
-## demo
-
-It's the visualized version that shows the detection result without warnings.
+Also run train_posture.py to set the model.
 
 ```
-usage: demo.py [-h] [-cg] [-cs] [-t] [-a]
+usage: train_posture.py [-h] [-cg | -cs | -t]
 
-webcam applications with distance measurement, eye focus timing and posture watch
+Capture images and train the model before using the functon of posture
+watching (demo.py and real.py).
 
 optional arguments:
   -h, --help            show this help message and exit
   -cg, --capture-good   capture example of good, healthy posture
   -cs, --capture-slump  capture example of poor, slumped posture
   -t, --train           train model with captured images
-  -a, --applications    visualized detection with all applications
+```
+
+## demo
+
+It's the visualized version that shows the detection result without warnings.
+
+```
+usage: demo.py [-h] [-d] [-t] [-p]
+
+visualized ver. of webcam applications with distance measurement, eye focus
+timing and posture watch
+
+optional arguments:
+  -h, --help      show this help message and exit
+  -d, --distance  enable distance measurement
+  -t, --time      enable eye focus timing
+  -p, --posture   enable posture watching
 ```
 
 ## Applications
 
 Command `python real.py` to see what we want to bring in practice. \
-All detections process in the background. Warnings pop when conditions meet.
+All detections process in the background. Warnings pop when conditions meet. \
+Note that posture watch aren't ready.
 
 ## Topics
 
