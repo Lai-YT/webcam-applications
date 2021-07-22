@@ -1,6 +1,6 @@
 import argparse
 
-from lib.application import do_capture_action, do_training
+from lib.app import capture_action, train
 
 
 if __name__ == '__main__':
@@ -12,10 +12,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.train:
-        do_training()
+        train()
     elif args.capture_good:
-        do_capture_action(1, 'good')
+        capture_action(1, 'good')
     elif args.capture_slump:
-        do_capture_action(2, 'slump')
+        capture_action(2, 'slump')
     else:
         parser.print_help()

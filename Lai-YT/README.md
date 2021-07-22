@@ -22,7 +22,7 @@ optional arguments:
   -t, --train           train model with captured images
 ```
 
-## demo
+## Demo
 
 It's the visualized version that shows the detection result without warnings.
 
@@ -30,7 +30,7 @@ It's the visualized version that shows the detection result without warnings.
 usage: demo.py [-h] [-d] [-t] [-p]
 
 visualized ver. of webcam applications with distance measurement, eye focus
-timing and posture watch
+timing and posture watching
 
 optional arguments:
   -h, --help      show this help message and exit
@@ -41,9 +41,21 @@ optional arguments:
 
 ## Applications
 
-Command `python real.py` to see what we want to bring in practice. \
-All detections process in the background. Warnings pop when conditions meet. \
-Note that posture watch aren't ready.
+This is what we want to bring into practice. \
+All detections process in the background. Warnings pop when conditions meet.
+
+```
+usage: real.py [-h] [-d] [-t] [-p]
+
+webcam applications with distance measurement, eye focus timing and posture
+watching
+
+optional arguments:
+  -h, --help      show this help message and exit
+  -d, --distance  enable distance measurement
+  -t, --time      enable eye focus timing
+  -p, --posture   enable posture watching
+```
 
 ## Topics
 

@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import tkinter as tk
 import os
 from pathlib import Path
 from playsound import playsound
@@ -7,86 +8,82 @@ from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
 from typing import Dict, List, Tuple
 
-from .application import *
 from .color import *
 from .cv_font import *
-from .draw import *
 from .face_distance_detector import FaceDistanceDetector
 from .gaze_tracking import GazeTracking
+from .path import to_abs_path
 from .timer import Timer
-
-# Config settings
-training_dir: str = "train"
-model_path:   str = "trained_models/posture_model.h5"
-image_dimensions: Tuple[int, int] = (224, 224)
-epochs: int = 10
-keyboard_spacebar: int = 32
 
 # type hints
 Image = np.ndarray
 
+# window position config
+root = tk.Tk()
+screen_width:  int = root.winfo_screenwidth()
+screen_height: int = root.winfo_screenheight()
 
-def do_distance_measurement(frame: Image, distance_detector: FaceDistanceDetector, *, face_only: bool = False) -> Image:
-    """Estimates the distance in the frame by FaceDistanceDetector.
-    Returns the frame with distance text.
+# for eye focus timing
+timer_width:  int = 192
+timer_height: int = 85
+timer_bg: Image = cv2.imread(to_abs_path("../img/timer_bg.jpg"))
+timer_bg = cv2.resize(timer_bg, (timer_width, timer_height))
+timer_window_name: str = "timer"
+timer_window_pos: Tuple[int, int] = (screen_width - timer_width, 0)  # upper right
 
-    Arguments:
-        frame (numpy.ndarray): Imgae with face to be detected
-        distance_detector (FaceDistanceDetector): The detector used to detect the face and estimate the distance
+# for distance measurement
+message_width:  int = 490
+message_height: int = 160
+warning_message: Image = cv2.imread(to_abs_path("../img/warning.jpg"))
+warning_message = cv2.resize(warning_message, (message_width, message_height))
+warning_window_name: str = "warning"
+screen_center: Tuple[int, int] = (
+int(screen_width/2 - 245.5), int(screen_height/2 - 80.5))
 
-    Keyword Arguments:
-        face_only (bool): No distance text on frame if True
-    """
-    frame = frame.copy()
-    distance_detector.estimate(frame)
-    frame = distance_detector.annotated_frame()
-    if not face_only:
-        text: str = ""
-        if distance_detector.has_face:
-            distance = distance_detector.distance()
-            text = "dist. " + str(int(distance))
-        else:
-            text = "No face detected."
-        cv2.putText(frame, text, (60, 30), FONT_3, 0.9, MAGENTA, 1)
-
-    return frame
-
-
-def do_gaze_tracking(frame: Image, gaze: GazeTracking) -> Image:
-    """Locate the position of eyes in frame.
-    Returns the frame with eye marked.
-
-    Arguments:
-        frame (numpy.ndarray): Imgae with eyes to be located
-        gaze (GazeTracking): Used to locate the position
-    """
-    frame = frame.copy()
-    # We send this frame to GazeTracking to analyze it
-    gaze.refresh(frame)
-    frame = gaze.annotated_frame()
-    return frame
+# for posture watching
+training_dir: str = to_abs_path("train")
+model_path: str = to_abs_path("trained_models/posture_model.h5")
+mp3file: str = to_abs_path("sounds/what.mp3")
+image_dimensions: Tuple[int, int] = (224, 224)
+epochs: int = 10
+keyboard_spacebar: int = 32
 
 
-def do_focus_time_record(frame: Image, timer: Timer, face_detector: FaceDistanceDetector, gaze: GazeTracking) -> Image:
-    """If theres face or eyes in the frame, the timer wil keep timing, otherwise stops.
-    Returns the frame with time stamp.
+def update_time(timer: Timer, face_detector: FaceDistanceDetector, gaze: GazeTracking) -> None:
+    """Update time in the timer and show a window at the upper right corner of the screen.
+    The timer wil keep timing if there's a face or pair of eyes, otherwise stops.
 
     Arguments:
-        frame (numpy.ndarray): The image to detect whether the user is gazing
-        timer (Timer): The timer object that records the time
-        face_detector (FaceDistanceDetector): Detect face in the frame
-        gaze (GazeTracking): Detect eyes in the frame
+        timer (Timer): Contains time to be updated
+        face_detector (FaceDistanceDetector): Tells whether there's a face or not
+        gaze (GazeTracking): Tells whether there's a pair of eyes or not
     """
-    frame = frame.copy()
     if not face_detector.has_face and not gaze.pupils_located:
         timer.pause()
-        cv2.putText(frame, "timer paused", (432, 40), FONT_3, 0.6, RED, 1)
     else:
         timer.start()
-    time_duration: str = f"t. {(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
-    cv2.putText(frame, time_duration, (500, 20), FONT_3, 0.8, BLUE, 1)
+    timer_window: Image = timer_bg.copy()
 
-    return frame
+    time_duration: str = f"{(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
+    cv2.putText(timer_window, time_duration, (2, 70), FONT_3, 2, WHITE, 2)
+
+    cv2.namedWindow(timer_window_name)
+    cv2.moveWindow(timer_window_name, *timer_window_pos)
+    cv2.imshow(timer_window_name, timer_window)
+
+
+def warn_if_too_close(face_distance_detector: FaceDistanceDetector, warn_dist: float) -> None:
+    """Warning message shows when the distance measured in face_distance_detector is less than warn_dist."""
+    text: str = ""
+    if face_distance_detector.has_face:
+        distance = face_distance_detector.distance()
+        text = str(int(distance))
+        if distance < warn_dist:
+            cv2.namedWindow(warning_window_name)
+            cv2.moveWindow(warning_window_name, *screen_center)
+            cv2.imshow(warning_window_name, warning_message)
+        elif cv2.getWindowProperty(warning_window_name, cv2.WND_PROP_VISIBLE):
+            cv2.destroyWindow(warning_window_name)
 
 
 def load_posture_model():
@@ -94,17 +91,14 @@ def load_posture_model():
     return models.load_model(model_path)
 
 
-def do_posture_watch(frame: Image, mymodel, soundson: bool, mp3file: str) -> Image:
-    """Returns the frame with posture label text.
+def watch_posture(frame: Image, mymodel) -> None:
+    """mp3 will be played when posture slumpled.
 
     Arguments:
-        frame (numpy.ndarray): The image contains posture to be watched
-        mymodel (tensorflow.keras.Model): To predict the label of frame
-        soundson (bool): If True, mp3 will be played when posture slumpled
-        mp3file (str): The file path of mp3
+        frame (numpy.ndarray): Contains posture to be watched
+        mymodel (tensorflow.keras.Model): Predicts the label of frame
     """
-    im_color: Image = frame.copy()
-    im: Image = cv2.cvtColor(im_color, cv2.COLOR_BGR2GRAY)
+    im: Image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     im = cv2.resize(im, image_dimensions)
     im = im / 255  # Normalize the image
@@ -114,23 +108,13 @@ def do_posture_watch(frame: Image, mymodel, soundson: bool, mp3file: str) -> Ima
     class_pred: np.int64 = np.argmax(predictions)
     conf: np.float32 = predictions[0][class_pred]
 
-    im_color = cv2.resize(im_color, (640, 480), interpolation=cv2.INTER_AREA)
-
+    # slumped
     if class_pred == 1:
-        # Slumped
-        im_color = cv2.putText(im_color, 'Slumped', (10, 70), FONT_0, 1, RED, thickness=3)
-        if soundson:
-            playsound(mp3file)
-    else:
-        im_color = cv2.putText(im_color, 'Good', (10, 70), FONT_0, 1, GREEN, thickness=2)
-
-    msg: str = f'Confidence {round(int(conf*100))}%'
-    im_color = cv2.putText(im_color, msg, (15, 110), FONT_0, 0.6, (200, 200, 255), thickness=2)
-    return im_color
+        playsound(mp3file)
 
 
-def do_capture_action(action_n: int, action_label: str) -> None:
-    """Capture an image per second aand put them under training_dir with name action_{action_n:02}.
+def capture_action(action_n: int, action_label: str) -> None:
+    """Capture an image per second and put them under training_dir with name action_{action_n:02}.
 
     Arguments:
         action_n (str): Folder name of the images
@@ -160,7 +144,7 @@ def do_capture_action(action_n: int, action_label: str) -> None:
     cv2.destroyAllWindows()
 
 
-def do_training() -> None:
+def train() -> None:
     """The images captured by do_capture_action() will be used to train a model."""
     train_images:  List[Image] = []
     train_labels:  List[int] = []
