@@ -19,6 +19,10 @@ with open(to_abs_path("parameters.txt")) as f:
 face_to_cam_dist_in_ref: float = params[0]
 personal_face_width:     float = params[1]
 
+# UnicodeDecodeError occurs when I put in application.py,
+# might due to broken path.
+mp3file: str = to_abs_path("lib/sounds/what.mp3")
+
 
 def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
     webcam = cv2.VideoCapture(0)
@@ -38,15 +42,15 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
         frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
 
         if dist_measure:
-            frame, distance_detector = do_distance_measurement(frame, distance_detector)
+            frame = do_distance_measurement(frame, distance_detector)
         if focus_time:
             # Need face detection
             if not dist_measure:
-                frame, distance_detector = do_distance_measurement(frame, distance_detector, face_only=True)
-            frame, gaze = do_gaze_tracking(frame, gaze)
-            frame, timer = do_focus_time_record(frame, timer, distance_detector, gaze)
+                frame = do_distance_measurement(frame, distance_detector, face_only=True)
+            frame = do_gaze_tracking(frame, gaze)
+            frame = do_focus_time_record(frame, timer, distance_detector, gaze)
         if post_watch:
-            frame = do_posture_watch(frame, model, True)
+            frame = do_posture_watch(frame, model, True, mp3file)
 
         cv2.imshow("demo", frame)
         # ESC
