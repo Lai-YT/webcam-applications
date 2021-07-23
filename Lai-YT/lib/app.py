@@ -181,7 +181,7 @@ def capture_action(action_n: int, action_label: str) -> None:
         filename: str = f'{output_folder}/{img_count:08}.jpg'
         cv2.imwrite(filename, frame)
         img_count += 1
-        key: int = cv2.waitKey(1000)
+        key: int = cv2.waitKey(100)
         cv2.imshow('sample capturing...', frame)
 
         if key == keyboard_spacebar:
