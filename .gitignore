@@ -4,8 +4,10 @@ __pycache__
 *.mp3
 *.jpg
 *.png
+
 !warning.jpg
 !timer_bg.jpg
+!break_bg.jpg
 !what.mp3
 
 train/*

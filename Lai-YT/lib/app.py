@@ -22,6 +22,8 @@ Image = np.ndarray
 root = tk.Tk()
 screen_width:  int = root.winfo_screenwidth()
 screen_height: int = root.winfo_screenheight()
+screen_center: Tuple[int, int] = (
+int(screen_width/2 - 245.5), int(screen_height/2 - 80.5))
 
 # for eye focus timing
 timer_width:  int = 192
@@ -30,6 +32,12 @@ timer_bg: Image = cv2.imread(to_abs_path("../img/timer_bg.jpg"))
 timer_bg = cv2.resize(timer_bg, (timer_width, timer_height))
 timer_window_name: str = "timer"
 timer_window_pos: Tuple[int, int] = (screen_width - timer_width, 0)  # upper right
+# break countdown
+break_width:  int = 580
+break_height: int = 315
+break_bg: Image = cv2.imread(to_abs_path("../img/break_bg.jpg"))
+break_bg = cv2.resize(break_bg, (break_width, break_height))
+break_window_name: str = "break time"
 
 # for distance measurement
 message_width:  int = 490
@@ -37,8 +45,6 @@ message_height: int = 160
 warning_message: Image = cv2.imread(to_abs_path("../img/warning.jpg"))
 warning_message = cv2.resize(warning_message, (message_width, message_height))
 warning_window_name: str = "warning"
-screen_center: Tuple[int, int] = (
-int(screen_width/2 - 245.5), int(screen_height/2 - 80.5))
 
 # for posture watching
 training_dir: str = to_abs_path("train")
@@ -63,8 +69,8 @@ def update_time(timer: Timer, face_detector: FaceDistanceDetector, gaze: GazeTra
     else:
         timer.start()
     timer_window: Image = timer_bg.copy()
-
-    time_duration: str = f"{(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
+    time: int = timer.time()  # sec
+    time_duration: str = f"{(time // 60):02d}:{(time % 60):02d}"
     cv2.putText(timer_window, time_duration, (2, 70), FONT_3, 2, WHITE, 2)
 
     cv2.namedWindow(timer_window_name)
@@ -72,8 +78,50 @@ def update_time(timer: Timer, face_detector: FaceDistanceDetector, gaze: GazeTra
     cv2.imshow(timer_window_name, timer_window)
 
 
+def break_time_if_too_long(timer: Timer, time_limit: int, break_time: int, camera: cv2.VideoCapture) -> None:
+    """If the time record in the Timer object exceeds time limit, a break time countdown window shows in the center of screen.
+    Camera turned off and all detections stop during the break. Also the Timer resets after it.
+
+    Arguments:
+        timer (Timer): Contains time record
+        time_limit (int): Triggers a break if reached (minutes)
+        break_time (int): How long the break should be (minutes)
+        camera (cv2.VideoCapture): Turns off during break time, reopens after the break
+    """
+    # not the time to take a break
+    if timer.time() < time_limit:
+        return
+    # stops camera and all detections
+    camera.release()
+    timer.reset()
+    cv2.destroyAllWindows()
+    # break time timer
+    break_timer = Timer()
+    break_timer.start()
+    break_time *= 60  # minute to second
+    # break time countdown window
+    cv2.namedWindow(break_window_name)
+    cv2.moveWindow(break_window_name, *screen_center)
+    while break_timer.time() < break_time:
+        break_time_window: Image = break_bg.copy()
+        # in sec
+        countdown: int = break_time - break_timer.time()
+        time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
+        cv2.putText(break_time_window, time_left, (220, 200), FONT_3, 1.5, BLACK, 2)
+        cv2.imshow(break_window_name, break_time_window)
+        cv2.waitKey(200)  # wait since only have to update once per second
+    # break time over
+    cv2.destroyWindow(break_window_name)
+    camera.open(0)
+
+
 def warn_if_too_close(face_distance_detector: FaceDistanceDetector, warn_dist: float) -> None:
-    """Warning message shows when the distance measured in face_distance_detector is less than warn_dist."""
+    """Warning message shows in the center of screen when the distance measured by FaceDistanceDetector is less than warn dist.
+
+    Arguments:
+        face_distance_detector (FaceDistanceDetector)
+        warn_dist (float)
+    """
     text: str = ""
     if face_distance_detector.has_face:
         distance = face_distance_detector.distance()
@@ -91,7 +139,7 @@ def load_posture_model():
     return models.load_model(model_path)
 
 
-def watch_posture(frame: Image, mymodel) -> None:
+def warn_if_slumped(frame: Image, mymodel) -> None:
     """mp3 will be played when posture slumpled.
 
     Arguments:

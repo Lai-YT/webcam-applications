@@ -5,15 +5,18 @@ only 1 camera, which is the webcam.
 
 ## Settings
 
-Put a front-face picture of yours named **ref_img.jpg** in folder **img** \
-and set the parameters in **parameters.txt**. \
-Also run train_posture.py to set the model.
+1. Put a front-face picture of yours named **ref_img.jpg** in folder **img**.
+1. Set the parameters in **parameters.txt**.
+1. Also run train_posture.py to set the model.
+  - First, run the capture modes whilst moving a bit in space to give a variety amongst the images. \
+  Press the "space" bar to stop capture after about 30 seconds.
+  - Then, run the train mode to train model with images.
 
 ```
 usage: train_posture.py [-h] [-cg | -cs | -t]
 
 Capture images and train the model before using the functon of posture
-watching (demo.py and real.py).
+watching.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -22,33 +25,36 @@ optional arguments:
   -t, --train           train model with captured images
 ```
 
-## Demo
+## demo
 
-It's the visualized version that shows the detection result without warnings.
+This is what we want to bring into practice. \
+All detections process in the background. Warnings pop when conditions meet. \
+Press "esc" to end the program.
 
 ```
 usage: demo.py [-h] [-d] [-t] [-p]
 
-visualized ver. of webcam applications with distance measurement, eye focus
-timing and posture watching
+Webcam applications with distance measurement, eye focus timing and posture watching.
+Press "esc" to end the program.
 
 optional arguments:
   -h, --help      show this help message and exit
-  -d, --distance  enable distance measurement
-  -t, --time      enable eye focus timing
-  -p, --posture   enable posture watching
+  -d, --distance  warning shows if the user gets too close to the screen
+  -t, --time      reminds when it's time to take a break
+  -p, --posture   sound plays when the user has bad posture
 ```
 
-## Applications
+## alpha
 
-This is what we want to bring into practice. \
-All detections process in the background. Warnings pop when conditions meet.
+It's the visualized version that shows the detection result without warnings. \
+Press "esc" to end the program. \
+Use for detection adjustments.
 
 ```
-usage: real.py [-h] [-d] [-t] [-p]
+usage: alpha.py [-h] [-d] [-t] [-p]
 
-webcam applications with distance measurement, eye focus timing and posture
-watching
+visualized ver. of webcam applications with distance measurement, eye focus
+timing and posture watching
 
 optional arguments:
   -h, --help      show this help message and exit
