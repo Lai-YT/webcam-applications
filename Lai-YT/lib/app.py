@@ -88,6 +88,7 @@ def break_time_if_too_long(timer: Timer, time_limit: int, break_time: int, camer
         break_time (int): How long the break should be (minutes)
         camera (cv2.VideoCapture): Turns off during break time, reopens after the break
     """
+    time_limit *= 60 # minute to second
     # not the time to take a break
     if timer.time() < time_limit:
         return
