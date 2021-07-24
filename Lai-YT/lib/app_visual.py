@@ -111,7 +111,7 @@ def do_posture_watch(frame: Image, mymodel) -> Image:
 
     im_color = cv2.resize(im_color, (640, 480), interpolation=cv2.INTER_AREA)
 
-    if class_pred == 1:
+    if class_pred == 1 or class_pred == 3:
         # Slumped
         im_color = cv2.putText(im_color, 'Slumped', (10, 70), FONT_0, 1, RED, thickness=3)
         playsound(mp3file)

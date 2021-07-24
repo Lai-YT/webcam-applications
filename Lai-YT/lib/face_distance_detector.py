@@ -26,25 +26,24 @@ class FaceDistanceDetector:
                                       taking the reference image
             face_width (float): The actual face width of the user
         """
-        face: int = self.face_data(ref_image)
+        face: Optional[Tuple[int, int, int, int]] = self.face_data(ref_image)
         if face is None:
             raise ValueError("can't detect any face from the reference image")
-        self._focal_length: float = (
-            self._focal_length(face_to_cam_dist, face_width, face[2]))
+        self._focal: float = self._focal_length(face_to_cam_dist, face_width, face[2])
         self._face_width = face_width
         self._frame = ref_image
-        self._distance: float = None
+        self._distance: Optional[float] = None
 
     def estimate(self, frame: numpy.ndarray) -> None:
         """Estimates the face distance in the frame.
         It's safe to pass a frame that contains no faces.
         """
-        face: Tuple[int, int, int, int] = self.face_data(frame)
+        face: Optional[Tuple[int, int, int, int]] = self.face_data(frame)
         self._frame = frame
         if face is None:
             self._distance = None
         else:
-            self._distance = (self._face_width * self._focal_length) / face[2]
+            self._distance = (self._face_width * self._focal) / face[2]
 
     def distance(self) -> Optional[float]:
         """Returns the estimated distance between face and camera,
@@ -108,6 +107,5 @@ class FaceDistanceDetector:
         """
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces: numpy.ndarray = cls._face_detector.detectMultiScale(frame, 1.3, 5)
-        if len(faces) == 0:
-            return None
-        return tuple(faces[0])
+
+        return None if len(faces) == 0 else tuple(faces[0])

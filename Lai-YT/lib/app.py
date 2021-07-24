@@ -2,11 +2,13 @@ import cv2
 import numpy as np
 import tkinter as tk
 import os
+import shutil
+from enum import IntEnum
 from pathlib import Path
 from playsound import playsound
 from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 from .color import *
 from .cv_font import *
@@ -108,7 +110,8 @@ def break_time_if_too_long(timer: Timer, time_limit: int, break_time: int, camer
         # in sec
         countdown: int = break_time - break_timer.time()
         time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
-        cv2.putText(break_time_window, time_left, (220, 200), FONT_3, 1.5, BLACK, 2)
+        cv2.putText(break_time_window, str(break_time//60), (100, 175), FONT_3, 1.5, BLACK, 2)
+        cv2.putText(break_time_window, time_left, (165, 287), FONT_3, 0.9, BLACK, 1)
         cv2.imshow(break_window_name, break_time_window)
         cv2.waitKey(200)  # wait since only have to update once per second
     # break time over
@@ -125,7 +128,7 @@ def warn_if_too_close(face_distance_detector: FaceDistanceDetector, warn_dist: f
     """
     text: str = ""
     if face_distance_detector.has_face:
-        distance = face_distance_detector.distance()
+        distance: float = face_distance_detector.distance()
         text = str(int(distance))
         if distance < warn_dist:
             cv2.namedWindow(warning_window_name)
@@ -138,6 +141,13 @@ def warn_if_too_close(face_distance_detector: FaceDistanceDetector, warn_dist: f
 def load_posture_model():
     """Returns the model trained by do_training()"""
     return models.load_model(model_path)
+
+
+class PostureLabel(IntEnum):
+    gaze_good:   int = 0
+    gaze_slump:  int = 1
+    write_good:  int = 2
+    write_slump: int = 3
 
 
 def warn_if_slumped(frame: Image, mymodel) -> None:
@@ -154,20 +164,18 @@ def warn_if_slumped(frame: Image, mymodel) -> None:
     im = im.reshape(1, *image_dimensions, 1)
 
     predictions: np.ndarray = mymodel.predict(im)
-    class_pred: np.int64 = np.argmax(predictions)
-    conf: np.float32 = predictions[0][class_pred]
+    label_pred: np.int64 = np.argmax(predictions)
 
-    # slumped
-    if class_pred == 1:
+    if (label_pred == PostureLabel.gaze_slump or
+        label_pred == PostureLabel.write_slump):
         playsound(mp3file)
 
 
-def capture_action(action_n: int, action_label: str) -> None:
+def capture_action(action_n: int) -> None:
     """Capture an image per second and put them under training_dir with name action_{action_n:02}.
 
     Arguments:
-        action_n (str): Folder name of the images
-        action_label (str): Label of the images
+        action_n (str): Folder number of the images, which affects the label when training
     """
     img_count: int = 0
     output_folder: str = f'{training_dir}/action_{action_n:02}'
@@ -181,7 +189,7 @@ def capture_action(action_n: int, action_label: str) -> None:
         filename: str = f'{output_folder}/{img_count:08}.jpg'
         cv2.imwrite(filename, frame)
         img_count += 1
-        key: int = cv2.waitKey(100)
+        key: int = cv2.waitKey(300)  # ms, approximately the capture period
         cv2.imshow('sample capturing...', frame)
 
         if key == keyboard_spacebar:
@@ -195,8 +203,8 @@ def capture_action(action_n: int, action_label: str) -> None:
 
 def train() -> None:
     """The images captured by do_capture_action() will be used to train a model."""
-    train_images:  List[Image] = []
-    train_labels:  List[int] = []
+    train_images:  Union[List[Image], np.ndarray] = []
+    train_labels:  Union[List[int], np.ndarray] = []
     class_folders: List[str] = os.listdir(training_dir)
 
     class_label_indexer: int = 0
@@ -209,8 +217,8 @@ def train() -> None:
             train_labels.append(class_label_indexer)
         class_label_indexer += 1
 
-    train_images: np.ndarray = np.array(train_images)
-    train_labels: np.ndarray = np.array(train_labels)
+    train_images = np.array(train_images)
+    train_labels = np.array(train_labels)
 
     indices: np.ndarray = np.arange(train_labels.shape[0])
     np.random.shuffle(indices)
@@ -234,3 +242,10 @@ def train() -> None:
     model.compile(optimizer='adam', loss='sparse_categorical_crossentropy',  metrics=['accuracy'])
     model.fit(train_images, train_labels, epochs=epochs, class_weight=weights)
     model.save(model_path)
+
+
+def remove_sample_images() -> None:
+    """Removes the train folder under directory lib.
+    Ignore errors when folder not exist.
+    """
+    shutil.rmtree(to_abs_path("train"), ignore_errors=True)
