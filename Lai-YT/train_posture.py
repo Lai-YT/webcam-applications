@@ -1,6 +1,6 @@
 import argparse
 
-import lib.app as app
+from lib.train import *
 
 
 if __name__ == '__main__':
@@ -15,16 +15,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.train:
-        app.train()
+        train_model()
     elif args.capture_gaze_good:
-        app.capture_action(1)
+        capture_action(PostureMode.gaze, PostureLabel.good)
     elif args.capture_gaze_slump:
-        app.capture_action(2)
+        capture_action(PostureMode.gaze, PostureLabel.slump)
     elif args.capture_write_good:
-        app.capture_action(3)
+        capture_action(PostureMode.write, PostureLabel.good)
     elif args.capture_write_slump:
-        app.capture_action(4)
+        capture_action(PostureMode.write, PostureLabel.slump)
     elif args.reset:
-        app.remove_sample_images()
+        remove_sample_images()
     else:
         parser.print_help()

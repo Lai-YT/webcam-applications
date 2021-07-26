@@ -14,6 +14,7 @@ from .face_distance_detector import FaceDistanceDetector
 from .gaze_tracking import GazeTracking
 from .path import to_abs_path
 from .timer import Timer
+from .train import PostureLabel
 
 # for posture watch
 model_path: str = to_abs_path("trained_models/posture_model.h5")
@@ -111,13 +112,12 @@ def do_posture_watch(frame: Image, mymodel) -> Image:
 
     im_color = cv2.resize(im_color, (640, 480), interpolation=cv2.INTER_AREA)
 
-    if class_pred == 1 or class_pred == 3:
-        # Slumped
-        im_color = cv2.putText(im_color, 'Slumped', (10, 70), FONT_0, 1, RED, thickness=3)
+    if class_pred == PostureLabel.slump.value:
+        im_color = cv2.putText(im_color, 'slump', (10, 70), FONT_0, 1, RED, thickness=2)
         playsound(mp3file)
     else:
-        im_color = cv2.putText(im_color, 'Good', (10, 70), FONT_0, 1, GREEN, thickness=2)
+        im_color = cv2.putText(im_color, 'good', (10, 70), FONT_0, 1, GREEN, thickness=2)
 
-    msg: str = f'Confidence {round(int(conf*100))}%'
+    msg: str = f'confidence {round(int(conf*100))}%'
     im_color = cv2.putText(im_color, msg, (15, 110), FONT_0, 0.6, (200, 200, 255), thickness=2)
     return im_color

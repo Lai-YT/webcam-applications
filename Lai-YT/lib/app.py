@@ -1,14 +1,9 @@
 import cv2
 import numpy as np
 import tkinter as tk
-import os
-import shutil
-from enum import IntEnum
-from pathlib import Path
 from playsound import playsound
-from sklearn.utils import class_weight
-from tensorflow.keras import layers, models
-from typing import Dict, List, Tuple, Union
+from tensorflow.keras import models
+from typing import Tuple
 
 from .color import *
 from .cv_font import *
@@ -16,6 +11,7 @@ from .face_distance_detector import FaceDistanceDetector
 from .gaze_tracking import GazeTracking
 from .path import to_abs_path
 from .timer import Timer
+from .train import PostureLabel
 
 # type hints
 Image = np.ndarray
@@ -49,12 +45,7 @@ warning_message = cv2.resize(warning_message, (message_width, message_height))
 warning_window_name: str = "warning"
 
 # for posture watching
-training_dir: str = to_abs_path("train")
-model_path: str = to_abs_path("trained_models/posture_model.h5")
 mp3file: str = to_abs_path("sounds/what.mp3")
-image_dimensions: Tuple[int, int] = (224, 224)
-epochs: int = 10
-keyboard_spacebar: int = 32
 
 
 def update_time(timer: Timer, face_detector: FaceDistanceDetector, gaze: GazeTracking) -> None:
@@ -138,18 +129,6 @@ def warn_if_too_close(face_distance_detector: FaceDistanceDetector, warn_dist: f
             cv2.destroyWindow(warning_window_name)
 
 
-def load_posture_model():
-    """Returns the model trained by do_training()"""
-    return models.load_model(model_path)
-
-
-class PostureLabel(IntEnum):
-    gaze_good:   int = 0
-    gaze_slump:  int = 1
-    write_good:  int = 2
-    write_slump: int = 3
-
-
 def warn_if_slumped(frame: Image, mymodel) -> None:
     """mp3 will be played when posture slumpled.
 
@@ -166,86 +145,5 @@ def warn_if_slumped(frame: Image, mymodel) -> None:
     predictions: np.ndarray = mymodel.predict(im)
     label_pred: np.int64 = np.argmax(predictions)
 
-    if (label_pred == PostureLabel.gaze_slump or
-        label_pred == PostureLabel.write_slump):
+    if label_pred == PostureLabel.slump.value:
         playsound(mp3file)
-
-
-def capture_action(action_n: int) -> None:
-    """Capture an image per second and put them under training_dir with name action_{action_n:02}.
-
-    Arguments:
-        action_n (str): Folder number of the images, which affects the label when training
-    """
-    img_count: int = 0
-    output_folder: str = f'{training_dir}/action_{action_n:02}'
-    print(f'Capturing samples for {action_n} into folder {output_folder}...')
-    Path(output_folder).mkdir(parents=True, exist_ok=True)
-
-    videocapture = cv2.VideoCapture(0)
-
-    while videocapture.isOpened():
-        _, frame = videocapture.read()
-        filename: str = f'{output_folder}/{img_count:08}.jpg'
-        cv2.imwrite(filename, frame)
-        img_count += 1
-        key: int = cv2.waitKey(300)  # ms, approximately the capture period
-        cv2.imshow('sample capturing...', frame)
-
-        if key == keyboard_spacebar:
-            break
-    else:
-        raise IOError('Cannot open webcam')
-
-    videocapture.release()
-    cv2.destroyAllWindows()
-
-
-def train() -> None:
-    """The images captured by do_capture_action() will be used to train a model."""
-    train_images:  Union[List[Image], np.ndarray] = []
-    train_labels:  Union[List[int], np.ndarray] = []
-    class_folders: List[str] = os.listdir(training_dir)
-
-    class_label_indexer: int = 0
-    for c in class_folders:
-        print(f'Training with class {c}')
-        for f in os.listdir(f'{training_dir}/{c}'):
-            im: Image = cv2.imread(f'{training_dir}/{c}/{f}', cv2.IMREAD_GRAYSCALE)
-            im = cv2.resize(im, image_dimensions)
-            train_images.append(im)
-            train_labels.append(class_label_indexer)
-        class_label_indexer += 1
-
-    train_images = np.array(train_images)
-    train_labels = np.array(train_labels)
-
-    indices: np.ndarray = np.arange(train_labels.shape[0])
-    np.random.shuffle(indices)
-    images: np.ndarray = train_images[indices]
-    labels: np.ndarray = train_labels[indices]
-    train_images = np.array(train_images)
-    train_images = train_images / 255  # Normalize image
-    train_images = train_images.reshape(len(train_images), *image_dimensions, 1)
-
-    class_weights: np.ndarray = class_weight.compute_sample_weight('balanced', train_labels)
-    weights: Dict[int, float] = {i : weight for i, weight in enumerate(class_weights)}
-    model = models.Sequential()
-    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(*image_dimensions, 1)))
-    model.add(layers.MaxPooling2D((2, 2)))
-    model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-    model.add(layers.MaxPooling2D((2, 2)))
-    model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-    model.add(layers.Flatten())
-    model.add(layers.Dense(64, activation='relu'))
-    model.add(layers.Dense(len(class_folders), activation='softmax'))
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy',  metrics=['accuracy'])
-    model.fit(train_images, train_labels, epochs=epochs, class_weight=weights)
-    model.save(model_path)
-
-
-def remove_sample_images() -> None:
-    """Removes the train folder under directory lib.
-    Ignore errors when folder not exist.
-    """
-    shutil.rmtree(to_abs_path("train"), ignore_errors=True)

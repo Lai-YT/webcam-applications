@@ -11,5 +11,6 @@ __pycache__
 !break_bg.jpg
 !what.mp3
 
-train/*
+train_sample/
+train/
 *.h5
