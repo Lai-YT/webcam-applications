@@ -119,8 +119,8 @@ def load_posture_model() -> Dict:
     their corresponding model is the value.
     """
     models: Dict = {}
-    models[PostureMode.gaze] = models.load_model(gaze_model_path)
-    models[PostureMode.write] = models.load_model(write_model_path)
+    models[PostureMode.gaze] = models.load_model(model_paths[PostureMode.gaze])
+    models[PostureMode.write] = models.load_model(model_paths[PostureMode.gaze])
     return models
 
 
