@@ -1,12 +1,13 @@
 import argparse
 import cv2
 import numpy
-from typing import List
+from typing import Any, Dict, List
 
 import lib.app_visual as vs
-from lib.face_distance_detector import FaceDistanceDetector
+from lib.face_distance_detector import DistanceDetector, FaceDetector
 from lib.gaze_tracking import GazeTracking
 from lib.timer import Timer
+from lib.train import PostureMode, load_posture_model
 from path import to_abs_path
 
 
@@ -24,13 +25,18 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
     """Enable the applications that are marked True."""
     webcam = cv2.VideoCapture(0)
 
-    if dist_measure or focus_time:
-        distance_detector = FaceDistanceDetector(
+    # commons
+    if dist_measure or post_watch or focus_time:
+        face_detector = FaceDetector()
+    if post_watch or focus_time:
+        gaze = GazeTracking()
+
+    if dist_measure:
+        distance_detector = DistanceDetector(
             cv2.imread(ref_image_path), face_to_cam_dist_in_ref, personal_face_width)
     if post_watch:
-        model = vs.load_posture_model()
+        models: Dict[PostureMode, Any] = load_posture_model()
     if focus_time:
-        gaze = GazeTracking()
         timer = Timer()
         timer.start()
 
@@ -38,18 +44,27 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
         _, frame = webcam.read()
         frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
 
-        if dist_measure:
-            frame = vs.do_distance_measurement(frame, distance_detector)
-        if focus_time:
-            # Need face detection
-            if not dist_measure:
-                frame = vs.do_distance_measurement(frame, distance_detector, face_only=True)
-            frame = vs.do_gaze_tracking(frame, gaze)
-            frame = vs.do_focus_time_record(frame, timer, distance_detector, gaze)
-        if post_watch:
-            frame = vs.do_posture_watch(frame, model)
+        # commons
+        if dist_measure or post_watch or focus_time:
+            face_detector.refresh(frame)
+            frame = face_detector.annotated_frame()
+        if post_watch or focus_time:
+            gaze.refresh(frame)
+            frame = gaze.annotated_frame()
 
-        cv2.imshow("demo", frame)
+        if dist_measure:
+            distance_detector.estimate(frame)
+            frame = vs.do_distance_measurement(frame, distance_detector)
+        if post_watch:
+            if face_detector.has_face or gaze.pupils_located:
+                mode = PostureMode.gaze
+            else:
+                mode = PostureMode.write
+            frame = vs.do_posture_watch(frame, models[mode], mode)
+        if focus_time:
+            frame = vs.do_focus_time_record(frame, timer, face_detector, gaze)
+
+        cv2.imshow("alpha", frame)
         # ESC
         if cv2.waitKey(1) == 27:
             break

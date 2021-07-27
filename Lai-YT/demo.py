@@ -29,38 +29,38 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
     # Initializations
     webcam = cv2.VideoCapture(0)
 
+    # commons
+    if post_watch or focus_time:
+        face_detector = FaceDetector()
+        gaze = GazeTracking()
+
     if dist_measure:
         distance_detector = DistanceDetector(
             cv2.imread(ref_image_path), face_to_cam_dist_in_ref, personal_face_width)
     if post_watch:
-        face_detector = FaceDetector()
-        gaze = GazeTracking()
         models: Dict[PostureMode, Any] = load_posture_model()
     if focus_time:
-        if not post_watch:  # otherwise we have them already
-            face_detector = FaceDetector()
-            gaze = GazeTracking()
         timer = Timer()
         timer.start()
     # Do
     while webcam.isOpened():
         _, frame = webcam.read()
 
+        # commons
+        if post_watch or focus_time:
+            face_detector.refresh(frame)
+            gaze.refresh(frame)
+
         if dist_measure:
             distance_detector.estimate(frame)
             app.warn_if_too_close(distance_detector, warn_dist)
         if post_watch:
-            face_detector.refresh(frame)
-            gaze.refresh(frame)
-            if face_detector.has_face and gaze.pupils_located:
+            if face_detector.has_face or gaze.pupils_located:
                 mode = PostureMode.gaze
             else:
                 mode = PostureMode.write
             app.warn_if_slumped(frame, models[mode])
         if focus_time:
-            if not post_watch:  # otherwise they were refreshed already
-                face_detector.refresh(frame)
-                gaze.refresh(frame)
             if not face_detector.has_face and not gaze.pupils_located:
                 timer.pause()
             else:
