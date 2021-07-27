@@ -28,6 +28,9 @@ image_dimensions: Tuple[int, int] = (224, 224)
 epochs: int = 10
 keyboard_spacebar: int = 32
 
+# type hints
+Image = np.ndarray
+
 
 def capture_action(mode: PostureMode, label: PostureLabel) -> None:
     """Capture images for train_model().
@@ -71,10 +74,10 @@ def train_model() -> None:
     class_folders[PostureMode.write] = [PostureLabel.good, PostureLabel.slump]
 
     def train(mode: PostureMode) -> None:
-        classes: List[PostureLabel] = class_folders[mode]
         images: Union[List[Image], np.ndarray] = train_images[mode]
-        labels: Union[List[int], nd.ndarray] = train_labels[mode]
-
+        labels: Union[List[int], np.ndarray] = train_labels[mode]
+        classes: List[PostureLabel] = class_folders[mode]
+        print(f'For {mode.name} mode:')
         class_label_indexer: int = 0
         for c in classes:
             print(f'Training with label {c.name}')
@@ -88,8 +91,6 @@ def train_model() -> None:
         images = np.array(images)
         labels = np.array(labels)
 
-        indices: np.ndarray = np.arange(labels.shape[0])
-        np.random.shuffle(indices)
         images = np.array(images)
         images = images / 255  # Normalize image
         images = images.reshape(len(images), *image_dimensions, 1)
@@ -118,10 +119,10 @@ def load_posture_model() -> Dict:
     Key of the dictionary (Dict[PostureMode, tensorflow.keras.Model]) is the PostureMode,
     their corresponding model is the value.
     """
-    models: Dict = {}
-    models[PostureMode.gaze] = models.load_model(model_paths[PostureMode.gaze])
-    models[PostureMode.write] = models.load_model(model_paths[PostureMode.gaze])
-    return models
+    model: Dict = {}
+    model[PostureMode.gaze] = models.load_model(model_paths[PostureMode.gaze])
+    model[PostureMode.write] = models.load_model(model_paths[PostureMode.gaze])
+    return model
 
 
 def remove_sample_images() -> None:

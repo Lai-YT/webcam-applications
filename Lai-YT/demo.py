@@ -1,16 +1,17 @@
 import argparse
 import cv2
-from typing import List
+from typing import Any, Dict, List
 
 import lib.app as app
-from lib.face_distance_detector import FaceDistanceDetector
+from lib.face_distance_detector import DistanceDetector, FaceDetector
 from lib.gaze_tracking import GazeTracking
 from lib.timer import Timer
+from lib.train import PostureMode, load_posture_model
 from path import to_abs_path
 
 
 """parameters set by the user"""
-params: List[float] = []
+params: List[str] = []
 with open(to_abs_path("parameters.txt")) as f:
     for line in f:
         params.append(line.rstrip('\n').split()[-1])
@@ -28,13 +29,17 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
     # Initializations
     webcam = cv2.VideoCapture(0)
 
-    if dist_measure or focus_time:
-        face_distance_detector = FaceDistanceDetector(
+    if dist_measure:
+        distance_detector = DistanceDetector(
             cv2.imread(ref_image_path), face_to_cam_dist_in_ref, personal_face_width)
     if post_watch:
-        model = app.load_posture_model()
-    if focus_time:
+        face_detector = FaceDetector()
         gaze = GazeTracking()
+        models: Dict[PostureMode, Any] = load_posture_model()
+    if focus_time:
+        if not post_watch:  # otherwise we have them already
+            face_detector = FaceDetector()
+            gaze = GazeTracking()
         timer = Timer()
         timer.start()
     # Do
@@ -42,18 +47,26 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
         _, frame = webcam.read()
 
         if dist_measure:
-            face_distance_detector.estimate(frame)
-            app.warn_if_too_close(face_distance_detector, warn_dist)
-        if focus_time:
-            # need face detection
-            if not dist_measure:
-                face_distance_detector.estimate(frame)
-            # We send this frame to GazeTracking to analyze it
-            gaze.refresh(frame)
-            app.update_time(timer, face_distance_detector, gaze)
-            app.break_time_if_too_long(timer, time_limit, break_time, webcam)
+            distance_detector.estimate(frame)
+            app.warn_if_too_close(distance_detector, warn_dist)
         if post_watch:
-            app.warn_if_slumped(frame, model)
+            face_detector.refresh(frame)
+            gaze.refresh(frame)
+            if face_detector.has_face and gaze.pupils_located:
+                mode = PostureMode.gaze
+            else:
+                mode = PostureMode.write
+            app.warn_if_slumped(frame, models[mode])
+        if focus_time:
+            if not post_watch:  # otherwise they were refreshed already
+                face_detector.refresh(frame)
+                gaze.refresh(frame)
+            if not face_detector.has_face and not gaze.pupils_located:
+                timer.pause()
+            else:
+                timer.start()
+            app.update_time(timer)
+            app.break_time_if_too_long(timer, time_limit, break_time, webcam)
         # ESC
         if cv2.waitKey(1) == 27:
             break

@@ -3,15 +3,15 @@ import numpy as np
 import tkinter as tk
 from playsound import playsound
 from tensorflow.keras import models
-from typing import Tuple
+from typing import Optional, Tuple
 
 from .color import *
 from .cv_font import *
-from .face_distance_detector import FaceDistanceDetector
+from .face_distance_detector import DistanceDetector, FaceDetector
 from .gaze_tracking import GazeTracking
 from .path import to_abs_path
 from .timer import Timer
-from .train import PostureLabel
+from .train import PostureLabel, image_dimensions
 
 # type hints
 Image = np.ndarray
@@ -48,19 +48,13 @@ warning_window_name: str = "warning"
 mp3file: str = to_abs_path("sounds/what.mp3")
 
 
-def update_time(timer: Timer, face_detector: FaceDistanceDetector, gaze: GazeTracking) -> None:
+def update_time(timer: Timer) -> None:
     """Update time in the timer and show a window at the upper right corner of the screen.
-    The timer wil keep timing if there's a face or pair of eyes, otherwise stops.
 
     Arguments:
         timer (Timer): Contains time to be updated
-        face_detector (FaceDistanceDetector): Tells whether there's a face or not
-        gaze (GazeTracking): Tells whether there's a pair of eyes or not
     """
-    if not face_detector.has_face and not gaze.pupils_located:
-        timer.pause()
-    else:
-        timer.start()
+
     timer_window: Image = timer_bg.copy()
     time: int = timer.time()  # sec
     time_duration: str = f"{(time // 60):02d}:{(time % 60):02d}"
@@ -110,17 +104,15 @@ def break_time_if_too_long(timer: Timer, time_limit: int, break_time: int, camer
     camera.open(0)
 
 
-def warn_if_too_close(face_distance_detector: FaceDistanceDetector, warn_dist: float) -> None:
-    """Warning message shows in the center of screen when the distance measured by FaceDistanceDetector is less than warn dist.
+def warn_if_too_close(distance_detector: DistanceDetector, warn_dist: float) -> None:
+    """Warning message shows in the center of screen when the distance measured by DistanceDetector is less than warn dist.
 
     Arguments:
-        face_distance_detector (FaceDistanceDetector)
+        distance_detector (DistanceDetector)
         warn_dist (float)
     """
-    text: str = ""
-    if face_distance_detector.has_face:
-        distance: float = face_distance_detector.distance()
-        text = str(int(distance))
+    distance: Optional[float] = distance_detector.distance()
+    if distance is not None:
         if distance < warn_dist:
             cv2.namedWindow(warning_window_name)
             cv2.moveWindow(warning_window_name, *screen_center)
