@@ -117,7 +117,7 @@ class GazeTracking(object):
             blinking_ratio = (self.eye_left.blinking + self.eye_right.blinking) / 2
             return blinking_ratio > 3.8
 
-    def annotated_frame(self):
+    def mark_pupils(self):
         """Returns the main frame with pupils highlighted"""
         frame = self.frame.copy()
 

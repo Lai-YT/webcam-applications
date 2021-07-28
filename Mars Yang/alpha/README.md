@@ -6,23 +6,30 @@ only 1 camera, which is the webcam.
 ## Settings
 
 1. Put a front-face picture of yours named **ref_img.jpg** in folder **img**.
-1. Set the parameters in **parameters.txt**.
-1. Also run train_posture.py to set the model.
+2. Set the parameters in **parameters.txt**.
+3. Also run train_posture.py to set the model.
   - First, run the capture modes whilst moving a bit in space to give a variety amongst the images. \
   Press the "space" bar to stop capture after about 30 seconds.
   - Then, run the train mode to train model with images.
 
 ```
-usage: train_posture.py [-h] [-cg | -cs | -t]
+usage: train_posture.py [-h] [-gg | -gs | -wg | -ws | -t | -r]
 
-Capture images and train the model before using the functon of posture
-watching.
+Capture images and train the model before using the functon of posture watching (in demo.py and alpha.py).
+
 
 optional arguments:
   -h, --help            show this help message and exit
-  -cg, --capture-good   capture example of good, healthy posture
-  -cs, --capture-slump  capture example of poor, slumped posture
+  -gg, --capture-gaze-good
+                        capture sample images of good, healthy posture when gazing the screen
+  -gs, --capture-gaze-slump
+                        capture sample images of poor, slumped posture when gazing the screen
+  -wg, --capture-write-good
+                        capture sample images of good, healthy posture when writing in front of the screen
+  -ws, --capture-write-slump
+                        capture sample images of poor, slumped posture when writing in front of the screen
   -t, --train           train model with captured images
+  -r, --reset           remove sample images before starting a new series of capture
 ```
 
 ## demo
