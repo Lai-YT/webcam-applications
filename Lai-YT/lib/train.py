@@ -3,11 +3,13 @@ import numpy as np
 import os
 import shutil
 from enum import Enum, unique
+from nptyping import Float, Int, NDArray, UInt8
 from pathlib import Path
 from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
+from .image_type import ColorImage, GrayImage
 from .path import to_abs_path
 
 
@@ -33,10 +35,6 @@ model_paths[PostureMode.write] = to_abs_path("trained_models/write_model.h5")
 image_dimensions: Tuple[int, int] = (224, 224)
 epochs: int = 10
 keyboard_spacebar: int = 32
-
-# type hints
-Image = np.ndarray
-
 
 def capture_action(mode: PostureMode, label: PostureLabel) -> None:
     """Capture images for train_model().
@@ -73,8 +71,8 @@ def train_model() -> None:
     """The images captured by capture_action() will be used to train 2 models.
     First is the gaze-mode model; second is the write-mode model.
     """
-    train_images:  Dict[PostureMode, List[Image]] = {PostureMode.gaze: [], PostureMode.write: []}
-    train_labels:  Dict[PostureMode, List[int]]   = {PostureMode.gaze: [], PostureMode.write: []}
+    train_images: Dict[PostureMode, List[GrayImage]] = {PostureMode.gaze: [], PostureMode.write: []}
+    train_labels: Dict[PostureMode, List[int]] = {PostureMode.gaze: [], PostureMode.write: []}
 
     # The order(index) of the class is the order of the ints that PostureLabels represent.
     # i.e., good.value = 0, slump.value = 1
@@ -88,15 +86,16 @@ def train_model() -> None:
         The outer train method does the classification
         and this inner method does the real training.
         """
-        images: Union[List[Image], np.ndarray] = train_images[mode]
-        labels: Union[List[int], np.ndarray] = train_labels[mode]
+        # The second type is a numpy array with GrayImages.
+        images: Union[List[GrayImage], NDArray[(Any, Any, Any), UInt8]] = train_images[mode]
+        labels: Union[List[int], NDArray[(Any,), Int[32]]] = train_labels[mode]
         classes: List[PostureLabel] = class_folders[mode]
         print(f'For {mode.name} mode:')
         class_label_indexer: int = 0
         for c in classes:
             print(f'Training with label {c.name}...')
             for f in os.listdir(f'{sample_dir}/{mode.name}/{c.name}'):
-                im: Image = cv2.imread(f'{sample_dir}/{mode.name}/{c.name}/{f}', cv2.IMREAD_GRAYSCALE)
+                im: GrayImage = cv2.imread(f'{sample_dir}/{mode.name}/{c.name}/{f}', cv2.IMREAD_GRAYSCALE)
                 im = cv2.resize(im, image_dimensions)
                 images.append(im)
                 labels.append(class_label_indexer)
@@ -104,11 +103,10 @@ def train_model() -> None:
 
         images = np.array(images)
         labels = np.array(labels)
-        images = np.array(images)
         images = images / 255  # Normalize image
         images = images.reshape(len(images), *image_dimensions, 1)
 
-        class_weights: np.ndarray = class_weight.compute_sample_weight('balanced', labels)
+        class_weights: NDArray[(Any,), Float[64]] = class_weight.compute_sample_weight('balanced', labels)
         weights: Dict[int, float] = {i : weight for i, weight in enumerate(class_weights)}
         model = models.Sequential()
         model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(*image_dimensions, 1)))
