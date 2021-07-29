@@ -1,20 +1,19 @@
 import cv2
 import numpy as np
 import tkinter as tk
+from nptyping import Float, Int, NDArray
 from playsound import playsound
 from tensorflow.keras import models
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from .color import *
 from .cv_font import *
 from .face_distance_detector import DistanceDetector, FaceDetector
 from .gaze_tracking import GazeTracking
+from .image_type import ColorImage, GrayImage
 from .path import to_abs_path
 from .timer import Timer
 from .train import PostureLabel, image_dimensions
-
-# type hints
-Image = np.ndarray
 
 # window position config
 root = tk.Tk()
@@ -26,21 +25,21 @@ int(screen_width/2 - 245.5), int(screen_height/2 - 80.5))
 # for eye focus timing
 timer_width:  int = 192
 timer_height: int = 85
-timer_bg: Image = cv2.imread(to_abs_path("../img/timer_bg.jpg"))
+timer_bg: ColorImage = cv2.imread(to_abs_path("../img/timer_bg.jpg"))
 timer_bg = cv2.resize(timer_bg, (timer_width, timer_height))
 timer_window_name: str = "timer"
 timer_window_pos: Tuple[int, int] = (screen_width - timer_width, 0)  # upper right
 # break countdown
 break_width:  int = 580
 break_height: int = 315
-break_bg: Image = cv2.imread(to_abs_path("../img/break_bg.jpg"))
+break_bg: ColorImage = cv2.imread(to_abs_path("../img/break_bg.jpg"))
 break_bg = cv2.resize(break_bg, (break_width, break_height))
 break_window_name: str = "break time"
 
 # for distance measurement
 message_width:  int = 490
 message_height: int = 160
-warning_message: Image = cv2.imread(to_abs_path("../img/warning.jpg"))
+warning_message: ColorImage = cv2.imread(to_abs_path("../img/warning.jpg"))
 warning_message = cv2.resize(warning_message, (message_width, message_height))
 warning_window_name: str = "warning"
 
@@ -55,7 +54,7 @@ def update_time(timer: Timer) -> None:
         timer (Timer): Contains time to be updated
     """
 
-    timer_window: Image = timer_bg.copy()
+    timer_window: ColorImage = timer_bg.copy()
     time: int = timer.time()  # sec
     time_duration: str = f"{(time // 60):02d}:{(time % 60):02d}"
     cv2.putText(timer_window, time_duration, (2, 70), FONT_3, 2, WHITE, 2)
@@ -91,7 +90,7 @@ def break_time_if_too_long(timer: Timer, time_limit: int, break_time: int, camer
     cv2.namedWindow(break_window_name)
     cv2.moveWindow(break_window_name, *screen_center)
     while break_timer.time() < break_time:
-        break_time_window: Image = break_bg.copy()
+        break_time_window: ColorImage = break_bg.copy()
         # in sec
         countdown: int = break_time - break_timer.time()
         time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
@@ -121,21 +120,20 @@ def warn_if_too_close(distance_detector: DistanceDetector, warn_dist: float) -> 
             cv2.destroyWindow(warning_window_name)
 
 
-def warn_if_slumped(frame: Image, mymodel) -> None:
+def warn_if_slumped(frame: ColorImage, mymodel) -> None:
     """mp3 will be played when posture slumpled.
 
     Arguments:
-        frame (numpy.ndarray): Contains posture to be watched
+        frame (NDArray[(Any, Any, 3), UInt8]): Contains posture to be watched
         mymodel (tensorflow.keras.Model): Predicts the label of frame
     """
-    im: Image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
+    im: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     im = cv2.resize(im, image_dimensions)
     im = im / 255  # Normalize the image
     im = im.reshape(1, *image_dimensions, 1)
 
-    predictions: np.ndarray = mymodel.predict(im)
-    label_pred: np.int64 = np.argmax(predictions)
+    predictions: NDArray[(2,), Float[32]] = mymodel.predict(im)
+    label_pred: Int[64] = np.argmax(predictions)
 
     if label_pred == PostureLabel.slump.value:
         playsound(mp3file)

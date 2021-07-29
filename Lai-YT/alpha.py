@@ -1,7 +1,5 @@
 import argparse
 import cv2
-import numpy
-from face_recognition import face_locations
 from typing import Any, Dict, List
 
 import lib.app_visual as vs
@@ -10,34 +8,6 @@ from lib.gaze_tracking import GazeTracking
 from lib.timer import Timer
 from lib.train import PostureMode, load_posture_model
 from path import to_abs_path
-
-
-def draw_face_area(frame, *, color = (255, 0, 0)) -> numpy.ndarray:
-    """Returns the frame with the face indicated with angles.
-
-    Keyword Arguments:
-        color (color.BGR): Color of the lines, green (0, 255, 0) in default
-    """
-    frame: numpy.ndarray = frame.copy()
-    face_location = face_locations(frame)
-    for upper_y, lower_x, lower_y, upper_x in face_location:
-        x, y, w, h = upper_x, upper_y, lower_x - upper_x, lower_y - upper_y
-        line_thickness: int = 2
-        # affects the length of corner line
-        LLV = int(h*0.12)
-
-        # vertical corner lines
-        cv2.line(frame, (x, y+LLV), (x+LLV, y+LLV), color, line_thickness)
-        cv2.line(frame, (x+w-LLV, y+LLV), (x+w, y+LLV), color, line_thickness)
-        cv2.line(frame, (x, y+h), (x+LLV, y+h), color, line_thickness)
-        cv2.line(frame, (x+w-LLV, y+h), (x+w, y+h), color, line_thickness)
-
-        # horizontal corner lines
-        cv2.line(frame, (x, y+LLV), (x, y+LLV+LLV), color, line_thickness)
-        cv2.line(frame, (x+w, y+LLV), (x+w, y+LLV+LLV), color, line_thickness)
-        cv2.line(frame, (x, y+h), (x, y+h-LLV), color, line_thickness)
-        cv2.line(frame, (x+w, y+h), (x+w, y+h-LLV), color, line_thickness)
-    return frame
 
 
 """parameters set by the user"""
@@ -92,9 +62,6 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
             frame = vs.do_posture_watch(frame, models[mode], mode)
         if focus_time:
             frame = vs.do_focus_time_record(frame, timer, face_detector, gaze)
-
-        # face_recognition
-        frame = draw_face_area(frame)
 
         cv2.imshow("alpha", frame)
         # ESC
