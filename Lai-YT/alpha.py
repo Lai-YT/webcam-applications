@@ -16,8 +16,8 @@ params: List[float] = []
 with open(to_abs_path("parameters.txt")) as f:
     for line in f:
         params.append(float(line.rstrip("\n").split()[-1]))
-face_to_cam_dist_in_ref: float = params[0]
-personal_face_width:     float = params[1]
+face_dist_in_ref: float = params[0]
+real_face_width:     float = params[1]
 
 
 def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
@@ -32,7 +32,7 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
 
     if dist_measure:
         distance_detector = DistanceDetector(
-            cv2.imread(ref_image_path), face_to_cam_dist_in_ref, personal_face_width)
+            cv2.imread(ref_image_path), face_dist_in_ref, real_face_width)
     if post_watch:
         models: Dict[PostureMode, Any] = load_posture_model()
     if focus_time:
