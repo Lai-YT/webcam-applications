@@ -1,5 +1,6 @@
 import cv2
 import face_recognition
+from dlib import get_frontal_face_detector
 from typing import Any, List, Optional, Tuple
 
 from .color import *
@@ -11,6 +12,8 @@ class FaceDetector:
     This class detects whether there are faces in the image or not.
     It also holds the latest image that passed, so can annotate the face positions.
     """
+
+    _detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
 
     def __init__(self) -> None:
         self._frame: Optional[ColorImage] = None
@@ -32,28 +35,7 @@ class FaceDetector:
             raise AttributeError("no current frame, please refresh first")
         return len(self._faces) != 0
 
-    @staticmethod
-    def face_data(frame: ColorImage) -> List[Tuple[int, int, int, int]]:
-        """Returns the coordinate and size of the face.
-
-        Arguments:
-            frame (NDArray[(Any, Any, 3), UInt8]): The frame to detect face in
-
-        Returns:
-            faces (list[tuple(int, int, int, int)]): upper-left x and y, face width and height;
-            empty if no face in the frame
-        """
-        face_locations: List[Tuple[int, int, int, int]] = face_recognition.face_locations(frame)
-        faces: List[Tuple[int, int, int, int]] = []
-        for face_location in face_locations:
-            # this is the return order of face_recognition.face_locations()
-            # rearrange since it's not what we want
-            up_left_y, low_right_x, low_right_y, up_left_x = face_location
-            # x, y, width, height
-            faces.append((up_left_x, up_left_y, low_right_x-up_left_x, low_right_y-up_left_y))
-        return faces
-
-    def annotated_frame(self, color: BGR = GREEN) -> ColorImage:
+    def mark_face(self, color: BGR = GREEN) -> ColorImage:
         """Returns the frame with the face indicated with angles.
 
         Arguments:
@@ -81,22 +63,66 @@ class FaceDetector:
             cv2.line(frame, (x+w, y+h), (x+w, y+h-LLV), color, line_thickness)
         return frame
 
-    # this method is now used to test the difference between
-    # cv2.CascadeClassifier.detectMultiScale() and face_recognition.face_locations()
-    @staticmethod
-    def face_data_2(frame: ColorImage) -> Optional[Tuple[int, int, int, int]]:
+    @classmethod
+    def face_data(cls, frame: ColorImage) -> List[Tuple[int, int, int, int]]:
         """Returns the coordinate and size of the face.
+        Using OpenCV library.
+
         Arguments:
             frame (NDArray[Any, Any, 3], UInt8): The frame to detect face in
+
         Returns:
             face (int, int, int, int): upper-left x and y, face width and height;
             None if no face in the frame
         """
-        classifier = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
         frame: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces: numpy.ndarray = classifier.detectMultiScale(frame, 1.3, 5)
+        faces: numpy.ndarray = cls._detector.detectMultiScale(frame, 1.3, 5)
 
-        return None if len(faces) == 0 else tuple(faces[0])
+        return [(x, w, y, z) for x, w, y, z in faces]
+
+    @staticmethod
+    def face_data_rec(frame: ColorImage) -> List[Tuple[int, int, int, int]]:
+        """Returns the coordinate and size of the face.
+        Using face_recognition library.
+
+        Arguments:
+            frame (NDArray[(Any, Any, 3), UInt8]): The frame to detect face in
+
+        Returns:
+            faces (list[tuple(int, int, int, int)]): upper-left x and y, face width and height;
+            empty if no face in the frame
+        """
+        face_locations: List[Tuple[int, int, int, int]] = face_recognition.face_locations(frame)
+        faces: List[Tuple[int, int, int, int]] = []
+        for face_location in face_locations:
+            # face_locations: (top, right, bottom, left) for each face
+            # Suppose the up-left point is (x1, y1), the right-bottom point is (x2, y2)
+            y1, x2, y2, x1 = face
+            faces.append((x1, y1, x2 - x1, y2 - y1)) # (x, y, w, h)
+        return faces
+
+    @staticmethod
+    def face_data_dlib(frame: ColorImage) -> List[Tuple[int, int, int, int]]:
+        """Returns the coordinate and size of the face.
+        Using Dlib library.
+
+        Arguments:
+            frame (NDArray[(Any, Any, 3), UInt8]): The frame to detect face in
+
+        Returns:
+            faces (list[tuple(int, int, int, int)]): upper-left x and y, face width and height;
+            empty if no face in the frame
+        """
+        detector = get_frontal_face_detector()
+        face_locations: List[Tuple[int, int, int, int]] = detector(frame)
+        faces: List[Tuple[int, int, int, int]] = []
+        for face_location in face_locations:
+            # x, y, width, height
+            faces.append((face_location.left(),
+                          face_location.top(),
+                          face_location.right()-face_location.left(),
+                          face_location.bottom()-face_location.top()))
+        return faces
 
 
 class DistanceDetector:
@@ -136,7 +162,6 @@ class DistanceDetector:
         if not faces or len(faces) > 1:
             self._distance = None
         else:
-
             self._distance = (self._face_width * self._focal) / faces[0][2]  # take the first and only face, 2 is the width
 
     def distance(self) -> Optional[float]:

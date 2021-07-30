@@ -46,10 +46,10 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
         # commons
         if dist_measure or post_watch or focus_time:
             face_detector.refresh(frame)
-            frame = face_detector.annotated_frame()
+            frame = face_detector.mark_face()
         if post_watch or focus_time:
             gaze.refresh(frame)
-            frame = gaze.annotated_frame()
+            frame = gaze.mark_pupils()
 
         if dist_measure:
             distance_detector.estimate(frame)
