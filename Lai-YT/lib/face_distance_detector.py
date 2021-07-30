@@ -32,8 +32,8 @@ class FaceDetector:
             raise AttributeError("no current frame, please refresh first")
         return len(self._faces) != 0
 
-    @classmethod
-    def face_data(cls, frame: ColorImage) -> List[Tuple[int, int, int, int]]:
+    @staticmethod
+    def face_data(frame: ColorImage) -> List[Tuple[int, int, int, int]]:
         """Returns the coordinate and size of the face.
 
         Arguments:
@@ -80,6 +80,23 @@ class FaceDetector:
             cv2.line(frame, (x, y+h), (x, y+h-LLV), color, line_thickness)
             cv2.line(frame, (x+w, y+h), (x+w, y+h-LLV), color, line_thickness)
         return frame
+
+    # this method is now used to test the difference between
+    # cv2.CascadeClassifier.detectMultiScale() and face_recognition.face_locations()
+    @staticmethod
+    def face_data_2(frame: ColorImage) -> Optional[Tuple[int, int, int, int]]:
+        """Returns the coordinate and size of the face.
+        Arguments:
+            frame (NDArray[Any, Any, 3], UInt8): The frame to detect face in
+        Returns:
+            face (int, int, int, int): upper-left x and y, face width and height;
+            None if no face in the frame
+        """
+        classifier = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+        frame: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces: numpy.ndarray = classifier.detectMultiScale(frame, 1.3, 5)
+
+        return None if len(faces) == 0 else tuple(faces[0])
 
 
 class DistanceDetector:
