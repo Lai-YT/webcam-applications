@@ -119,6 +119,7 @@ class DistanceDetector:
         if not faces or len(faces) > 1:
             self._distance = None
         else:
+
             self._distance = (self._face_width * self._focal) / faces[0][2]  # take the first and only face, 2 is the width
 
     def distance(self) -> Optional[float]:

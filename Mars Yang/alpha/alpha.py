@@ -4,6 +4,7 @@ import numpy
 from typing import Any, Dict, List
 
 import lib.app_visual as vs
+from lib.color import *
 from lib.face_distance_detector import DistanceDetector, FaceDetector
 from lib.gaze_tracking import GazeTracking
 from lib.timer import Timer
@@ -18,6 +19,7 @@ with open(to_abs_path("parameters.txt")) as f:
         params.append(float(line.rstrip("\n").split()[-1]))
 face_to_cam_dist_in_ref: float = params[0]
 personal_face_width:     float = params[1]
+distance_threshold:      float = params[2]
 
 
 def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
@@ -53,6 +55,9 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
 
         if dist_measure:
             distance_detector.estimate(frame)
+            # if distance_detector.distance() < distance_threshold:
+                # face_detector.refresh(_frame)
+                # frame = face_detector.mark_face(RED)
             frame = vs.do_distance_measurement(frame, distance_detector)
         if post_watch:
             if face_detector.has_face or gaze.pupils_located:

@@ -34,7 +34,7 @@ def do_distance_measurement(frame: ColorImage, distance_detector: DistanceDetect
         text = "dist. " + str(round(distance, 2))
     else:
         text = "No face detected."
-    cv2.putText(frame, text, (60, 30), FONT_3, 0.9, MAGENTA, 1)
+    cv2.putText(frame, text, (10, 30), FONT_3, 0.9, MAGENTA, 1)
 
     return frame
 
@@ -52,11 +52,11 @@ def do_focus_time_record(frame: ColorImage, timer: Timer, face_detector: FaceDet
     frame = frame.copy()
     if not face_detector.has_face and not gaze.pupils_located:
         timer.pause()
-        cv2.putText(frame, "timer paused", (432, 40), FONT_3, 0.6, RED, 1)
+        cv2.putText(frame, "time pause", (520, 40), FONT_3, 0.6, RED, 1)
     else:
         timer.start()
     time_duration: str = f"t. {(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
-    cv2.putText(frame, time_duration, (500, 20), FONT_3, 0.8, BLUE, 1)
+    cv2.putText(frame, time_duration, (520, 20), FONT_3, 0.8, BLUE, 1)
 
     return frame
 

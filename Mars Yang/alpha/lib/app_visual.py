@@ -6,12 +6,14 @@ Specific design for alpha.py.
 import cv2
 import numpy as np
 from playsound import playsound
+from nptyping import Float, Int, NDArray
 from typing import Optional
 
 from .color import *
 from .cv_font import *
 from .face_distance_detector import FaceDetector, DistanceDetector
 from .gaze_tracking import GazeTracking
+from .image_type import ColorImage, GrayImage
 from .timer import Timer
 from .train import PostureMode, PostureLabel, image_dimensions
 
@@ -31,7 +33,7 @@ def do_distance_measurement(frame: Image, distance_detector: DistanceDetector) -
     text: str = ""
     if distance is not None:
         distance = distance_detector.distance()
-        text = "dist. " + str(int(distance))
+        text = "dist. " + str(round(distance, 2))
     else:
         text = "No face detected."
     cv2.putText(frame, text, (10, 30), FONT_3, 0.9, MAGENTA, 1)
@@ -61,24 +63,25 @@ def do_focus_time_record(frame: Image, timer: Timer,face: FaceDetector, gaze: Ga
     return frame
 
 
-def do_posture_watch(frame: Image, mymodel, mode: PostureMode) -> Image:
+def do_posture_watch(frame: ColorImage, mymodel, mode: PostureMode) -> ColorImage:
     """Returns the frame with posture label text.
 
     Arguments:
-        frame (numpy.ndarray): The image contains posture to be watched
+        frame (NDArray[(Any, Any, 3), UInt8]): The image contains posture to be watched
         mymodel (tensorflow.keras.Model): To predict the label of frame
         mode (PostureMode): The mode will also be part of the text
     """
-    im_color: Image = frame.copy()
+    im_color: ColorImage = frame.copy()
     im: Image = cv2.cvtColor(im_color, cv2.COLOR_BGR2GRAY)
 
     im = cv2.resize(im, image_dimensions)
     im = im / 255  # Normalize the image
     im = im.reshape(1, *image_dimensions, 1)
 
-    predictions: np.ndarray = mymodel.predict(im)
-    class_pred: np.int64 = np.argmax(predictions)
-    conf: np.float32 = predictions[0][class_pred]
+    # 2 cuz there are 2 PostureLabels
+    predictions: NDArray[(1, 2), Float[32]] = mymodel.predict(im)
+    class_pred: Int[64] = np.argmax(predictions)
+    conf: Float[32] = predictions[0][class_pred]
 
     im_color = cv2.resize(im_color, (640, 480), interpolation=cv2.INTER_AREA)
 
