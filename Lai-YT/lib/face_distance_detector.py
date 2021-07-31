@@ -97,7 +97,7 @@ class FaceDetector:
         for face_location in face_locations:
             # face_locations: (top, right, bottom, left) for each face
             # Suppose the up-left point is (x1, y1), the right-bottom point is (x2, y2)
-            y1, x2, y2, x1 = face
+            y1, x2, y2, x1 = face_location
             faces.append((x1, y1, x2 - x1, y2 - y1)) # (x, y, w, h)
         return faces
 
