@@ -59,14 +59,9 @@ def capture_action(mode: PostureMode, label: PostureLabel) -> None:
     while videocapture.isOpened():
         _, frame = videocapture.read()
 
-        has_face: bool = True if FaceDetector.face_data(frame) else False
-        # to increse the accuracy prediction
-        # only face image in gaze mode and no face image in write mode
-        if (mode == PostureMode.gaze and has_face or
-            mode == PostureMode.write and not has_face):
-            filename: str = f'{output_folder}/{img_count:08}.jpg'
-            cv2.imwrite(filename, frame)
-            img_count += 1
+        filename: str = f'{output_folder}/{img_count:08}.jpg'
+        cv2.imwrite(filename, frame)
+        img_count += 1
         key: int = cv2.waitKey(300)  # ms, approximately the capture period
         cv2.imshow('sample capturing...', frame)
 
