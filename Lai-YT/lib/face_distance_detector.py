@@ -1,5 +1,6 @@
 import cv2
 import face_recognition
+import numpy
 from dlib import get_frontal_face_detector
 from typing import Any, List, Optional, Tuple
 

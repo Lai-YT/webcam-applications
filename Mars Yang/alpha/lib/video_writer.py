@@ -1,5 +1,6 @@
 import cv2
-import numpy
+
+from .image_type import ColorImage
 
 
 class VideoWriter:
@@ -8,7 +9,7 @@ class VideoWriter:
     preset some parameters so simpler to use.
     """
 
-    def __init__(self, video_path: str, *, fps: float = 10.0) -> None:
+    def __init__(self, video_path: str, fps: float = 10.0) -> None:
         """
         Arguments:
             video_path (str): The path to output the video
@@ -18,7 +19,7 @@ class VideoWriter:
         fourcc: int = cv2.VideoWriter_fourcc(*"XVID")
         self._video_writer = cv2.VideoWriter(video_path, fourcc, fps, (640, 480))
 
-    def write(self, image: numpy.ndarray) -> None:
+    def write(self, image: ColorImage) -> None:
         """Writes the next video frame."""
         self._video_writer.write(image)
 

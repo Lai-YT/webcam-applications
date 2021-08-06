@@ -1,25 +1,24 @@
 import argparse
 import cv2
-import numpy
 from typing import Any, Dict, List
 
 import lib.app_visual as vs
-from lib.color import *
 from lib.face_distance_detector import DistanceDetector, FaceDetector
 from lib.gaze_tracking import GazeTracking
 from lib.timer import Timer
-from lib.train import PostureMode, load_posture_model
+from lib.train import *
 from path import to_abs_path
+
 
 """parameters set by the user"""
 ref_image_path: str = to_abs_path("img/ref_img.jpg")
+model_path: str = to_abs_path("trained_model/posture_detection_model.h5")
 params: List[float] = []
 with open(to_abs_path("parameters.txt")) as f:
     for line in f:
         params.append(float(line.rstrip("\n").split()[-1]))
-face_to_cam_dist_in_ref: float = params[0]
-personal_face_width:     float = params[1]
-distance_threshold:      float = params[2]
+face_dist_in_ref: float = params[0]
+real_face_width:  float = params[1]
 
 
 def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
@@ -34,9 +33,9 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
 
     if dist_measure:
         distance_detector = DistanceDetector(
-            cv2.imread(ref_image_path), face_to_cam_dist_in_ref, personal_face_width)
+            cv2.imread(ref_image_path), face_dist_in_ref, real_face_width)
     if post_watch:
-        models: Dict[PostureMode, Any] = load_posture_model()
+        model = model_path
     if focus_time:
         timer = Timer()
         timer.start()
@@ -55,16 +54,9 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
 
         if dist_measure:
             distance_detector.estimate(frame)
-            # if distance_detector.distance() < distance_threshold:
-                # face_detector.refresh(_frame)
-                # frame = face_detector.mark_face(RED)
             frame = vs.do_distance_measurement(frame, distance_detector)
         if post_watch:
-            if face_detector.has_face or gaze.pupils_located:
-                mode = PostureMode.gaze
-            else:
-                mode = PostureMode.write
-            frame = vs.do_posture_watch(frame, models[mode], mode)
+            frame = vs.do_posture_watch(frame, model)
         if focus_time:
             frame = vs.do_focus_time_record(frame, timer, face_detector, gaze)
 
