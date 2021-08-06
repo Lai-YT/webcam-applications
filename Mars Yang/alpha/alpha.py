@@ -6,19 +6,18 @@ import lib.app_visual as vs
 from lib.face_distance_detector import DistanceDetector, FaceDetector
 from lib.gaze_tracking import GazeTracking
 from lib.timer import Timer
-from lib.train import *
+from lib.train import PostureMode, load_posture_model
 from path import to_abs_path
 
 
 """parameters set by the user"""
 ref_image_path: str = to_abs_path("img/ref_img.jpg")
-model_path: str = to_abs_path("trained_model/posture_detection_model.h5")
 params: List[float] = []
 with open(to_abs_path("parameters.txt")) as f:
     for line in f:
         params.append(float(line.rstrip("\n").split()[-1]))
 face_dist_in_ref: float = params[0]
-real_face_width:  float = params[1]
+real_face_width:     float = params[1]
 
 
 def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
@@ -35,7 +34,7 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
         distance_detector = DistanceDetector(
             cv2.imread(ref_image_path), face_dist_in_ref, real_face_width)
     if post_watch:
-        model = model_path
+        models: Dict[PostureMode, Any] = load_posture_model()
     if focus_time:
         timer = Timer()
         timer.start()
@@ -56,7 +55,11 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
             distance_detector.estimate(frame)
             frame = vs.do_distance_measurement(frame, distance_detector)
         if post_watch:
-            frame = vs.do_posture_watch(frame, model)
+            if face_detector.has_face or gaze.pupils_located:
+                mode = PostureMode.gaze
+            else:
+                mode = PostureMode.write
+            frame = vs.do_posture_watch(frame, models[mode], mode)
         if focus_time:
             frame = vs.do_focus_time_record(frame, timer, face_detector, gaze)
 

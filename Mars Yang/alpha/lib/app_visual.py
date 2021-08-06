@@ -61,7 +61,7 @@ def do_focus_time_record(frame: ColorImage, timer: Timer, face_detector: FaceDet
     return frame
 
 
-def do_posture_watch(frame: ColorImage, mymodel) -> ColorImage:
+def do_posture_watch(frame: ColorImage, mymodel, mode: PostureMode) -> ColorImage:
     """Returns the frame with posture label text.
 
     Arguments:
@@ -76,18 +76,17 @@ def do_posture_watch(frame: ColorImage, mymodel) -> ColorImage:
     im = im / 255  # Normalize the image
     im = im.reshape(1, *image_dimensions, 1)
 
+    # 2 cuz there are 2 PostureLabels
     predictions: NDArray[(1, 2), Float[32]] = mymodel.predict(im)
     class_pred: Int[64] = np.argmax(predictions)
     conf: Float[32] = predictions[0][class_pred]
 
     im_color = cv2.resize(im_color, (640, 480), interpolation=cv2.INTER_AREA)
 
-    if class_pred == 0:
-        im_color = cv2.putText(im_color, 'gaze-good', (10, 70), FONT_0, 1, GREEN, thickness=2)
-    elif class_pred == 1:
-        im_color = cv2.putText(im_color, 'write-good', (10, 70), FONT_0, 1, GREEN, thickness=2)
+    if class_pred == PostureLabel.slump.value:
+        im_color = cv2.putText(im_color, f'{mode.name}-slump', (10, 70), FONT_0, 1, RED, thickness=2)
     else:
-        im_color = cv2.putText(im_color, 'slump', (10, 70), FONT_0, 1, RED, thickness=2)
+        im_color = cv2.putText(im_color, f'{mode.name}-good', (10, 70), FONT_0, 1, GREEN, thickness=2)
 
     msg: str = f'confidence {round(int(conf*100))}%'
     im_color = cv2.putText(im_color, msg, (15, 110), FONT_0, 0.6, (200, 200, 255), thickness=2)
