@@ -1,5 +1,4 @@
 import cv2
-import face_recognition
 import numpy
 from dlib import get_frontal_face_detector
 from typing import Any, List, Optional, Tuple
@@ -14,7 +13,9 @@ class FaceDetector:
     It also holds the latest image that passed, so can annotate the face positions.
     """
 
-    _detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    _frontal_detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    # note that profileface only detects real live left-turned faces
+    _side_detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_profileface.xml")
 
     def __init__(self) -> None:
         self._frame: Optional[ColorImage] = None
@@ -77,53 +78,37 @@ class FaceDetector:
             None if no face in the frame
         """
         frame: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces: numpy.ndarray = cls._detector.detectMultiScale(frame, 1.3, 5)
 
-        return [(x, w, y, z) for x, w, y, z in faces]
+        # detection parameters:
+        scale_factor: float = 1.2
+        min_neighbors: int = 5
+        min_size: Tuple[int, int] = (150, 150)
+        # frontal face detection first
+        faces: numpy.ndarray = cls._frontal_detector.detectMultiScale(
+            frame, scaleFactor=scale_factor, minNeighbors=min_neighbors, minSize=min_size
+        )
+        # might be a side face when frontal detector has no result,
+        # turn to use the side face detector
+        if len(faces) == 0:
+            faces = cls._side_detector.detectMultiScale(
+                frame, scaleFactor=scale_factor, minNeighbors=min_neighbors, minSize=min_size
+            )
+        # and flip the frame horizontaly to try each side of the face
+        if len(faces) == 0:
+            faces = cls._side_detector.detectMultiScale(
+                cv2.flip(frame, flipCode=1), scaleFactor=scale_factor, minNeighbors=min_neighbors, minSize=min_size
+            )
+            if len(faces) != 0:
+                # Since the frame is fliped, x coordinates aren't correct.
+                # number of columns is the width
+                _, frame_width = frame.shape
+                for face in faces:
+                    # now is correct upper "right" corner
+                    face[0] = frame_width - face[0]
+                    # to upper "left" corner
+                    face[0] -= face[2]
 
-    @staticmethod
-    def face_data_rec(frame: ColorImage) -> List[Tuple[int, int, int, int]]:
-        """Returns the coordinate and size of the face.
-        Using face_recognition library.
-
-        Arguments:
-            frame (NDArray[(Any, Any, 3), UInt8]): The frame to detect face in
-
-        Returns:
-            faces (list[tuple(int, int, int, int)]): upper-left x and y, face width and height;
-            empty if no face in the frame
-        """
-        face_locations: List[Tuple[int, int, int, int]] = face_recognition.face_locations(frame)
-        faces: List[Tuple[int, int, int, int]] = []
-        for face_location in face_locations:
-            # face_locations: (top, right, bottom, left) for each face
-            # Suppose the up-left point is (x1, y1), the right-bottom point is (x2, y2)
-            y1, x2, y2, x1 = face_location
-            faces.append((x1, y1, x2 - x1, y2 - y1)) # (x, y, w, h)
-        return faces
-
-    @staticmethod
-    def face_data_dlib(frame: ColorImage) -> List[Tuple[int, int, int, int]]:
-        """Returns the coordinate and size of the face.
-        Using Dlib library.
-
-        Arguments:
-            frame (NDArray[(Any, Any, 3), UInt8]): The frame to detect face in
-
-        Returns:
-            faces (list[tuple(int, int, int, int)]): upper-left x and y, face width and height;
-            empty if no face in the frame
-        """
-        detector = get_frontal_face_detector()
-        face_locations: List[Tuple[int, int, int, int]] = detector(frame)
-        faces: List[Tuple[int, int, int, int]] = []
-        for face_location in face_locations:
-            # x, y, width, height
-            faces.append((face_location.left(),
-                          face_location.top(),
-                          face_location.right()-face_location.left(),
-                          face_location.bottom()-face_location.top()))
-        return faces
+        return [(x, y, w, h) for x, y, w, h in faces]
 
 
 class DistanceDetector:
