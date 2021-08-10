@@ -1,4 +1,5 @@
-from typing import List, Optional, Tuple
+from nptyping import NDArray, Int, UInt8
+from typing import Optional
 
 from .color import *
 from .face_detector import FaceDetector
@@ -23,9 +24,9 @@ class DistanceDetector:
                                       taking the reference image
             face_width (float): The actual face width of the user
         """
-        faces: List[Tuple[int, int, int, int]] = FaceDetector.face_data(ref_image)
+        faces: NDArray[(4, Any), Int] = FaceDetector.face_data(ref_image)
         # there might be many faces in the image, be we only accept single face
-        if not faces:
+        if len(faces) == 0:
             raise ValueError("can't find any face from the reference image")
         if len(faces) > 1:
             raise ValueError("multiple faces in the reference image, please specify one")
@@ -37,9 +38,9 @@ class DistanceDetector:
         """Estimates the face distance in the frame.
         It's safe to pass a frame that contains no faces.
         """
-        faces: List[Tuple[int, int, int, int]] = FaceDetector.face_data(frame)
+        faces: NDArray[(4, Any), Int] = FaceDetector.face_data(frame)
         # can't estimate if no face or too many faces
-        if not faces or len(faces) > 1:
+        if len(faces) != 1:
             self._distance = None
         else:
             self._distance = (self._face_width * self._focal) / faces[0][2]  # take the first and only face, 2 is the width
