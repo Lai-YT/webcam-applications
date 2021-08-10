@@ -3,7 +3,8 @@ import cv2
 from typing import Any, Dict, List
 
 import lib.app as app
-from lib.face_distance_detector import DistanceDetector, FaceDetector
+from lib.distance_detector import DistanceDetector
+from lib.face_detector import FaceDetector
 from lib.gaze_tracking import GazeTracking
 from lib.timer import Timer
 from lib.train import PostureMode, load_posture_model

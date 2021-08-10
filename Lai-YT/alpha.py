@@ -3,10 +3,12 @@ import cv2
 from typing import Any, Dict, List
 
 import lib.app_visual as vs
-from lib.face_distance_detector import DistanceDetector, FaceDetector
+from lib.distance_detector import DistanceDetector
+from lib.face_detector import FaceDetector
 from lib.gaze_tracking import GazeTracking
 from lib.timer import Timer
 from lib.train import PostureMode, load_posture_model
+from lib.video_writer import VideoWriter
 from path import to_abs_path
 
 
@@ -17,8 +19,9 @@ with open(to_abs_path("parameters.txt")) as f:
     for line in f:
         params.append(float(line.rstrip("\n").split()[-1]))
 face_dist_in_ref: float = params[0]
-real_face_width:     float = params[1]
+real_face_width:  float = params[1]
 
+video_writer = VideoWriter("video", fps=7.0)
 
 def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
     """Enable the applications that are marked True."""
@@ -63,6 +66,7 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
         if focus_time:
             frame = vs.do_focus_time_record(frame, timer, face_detector, gaze)
 
+        video_writer.write(frame)
         cv2.imshow("alpha", frame)
         # ESC
         if cv2.waitKey(1) == 27:
@@ -71,6 +75,7 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
         raise IOError('Cannot open webcam')
 
     webcam.release()
+    video_writer.release()
     if focus_time:
         timer.reset()
     cv2.destroyAllWindows()

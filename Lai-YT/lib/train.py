@@ -9,7 +9,7 @@ from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
 from typing import Any, Dict, List, Tuple, Union
 
-from .face_distance_detector import FaceDetector
+from .face_detector import FaceDetector
 from .image_type import ColorImage, GrayImage
 from .path import to_abs_path
 

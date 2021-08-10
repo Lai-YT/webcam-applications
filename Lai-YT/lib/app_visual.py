@@ -11,7 +11,8 @@ from typing import Any, Optional
 
 from .color import *
 from .cv_font import *
-from .face_distance_detector import DistanceDetector, FaceDetector
+from .distance_detector import DistanceDetector
+from .face_detector import FaceDetector
 from .gaze_tracking import GazeTracking
 from .image_type import ColorImage, GrayImage
 from .timer import Timer
