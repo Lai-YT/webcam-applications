@@ -1,36 +1,94 @@
+# tutorial to refer to:
+# https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python/
+
 import cv2
 import dlib
+import math
 import os
+import warnings
 from imutils import face_utils
 
-from lib.color import MAGENTA, RED
+from lib.color import GREEN, MAGENTA, RED
+from lib.video_writer import VideoWriter
 from path import to_abs_path
 
 
-predictor_path = to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat')
+# For dlib’s 68-point facial landmark detector
+NOSE_BRIDGE_IDXS = [27, 30]
+LEFT_EYESIDE_IDXS = [36, 39]
+RIGHT_EYESIDE_IDXS = [42, 45]
+MOUTHSIDE_IDXS = [48, 54]
 
-if __name__ == '__main__':
+
+def angle(p1, p2) -> float:
+    """Returns the included angle of the vector (x2 - x1, y2 - y1) in degree."""
+    x1 ,y1 = p1
+    x2 ,y2 = p2
+    with warnings.catch_warnings():
+        # RuntimeWarning: divide by zero encountered in long_scalars
+        # Ignore possible warning when 90.0
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        return math.atan((y2 - y1) / (x2 - x1)) * 180 / math.pi
+
+
+def main() -> None:
+    predictor_path = to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat')
+
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor(predictor_path)
 
-    target_file = to_abs_path('lib/train_sample/gaze/good')
-    for f in os.listdir(target_file):
-        print(f'Processing file: {f}')
-        img = cv2.imread(target_file + '\\' + f)
-        img = cv2.flip(img, flipCode=1)
-        canvas = img.copy()
+    video_writer = VideoWriter(to_abs_path('landmark'), fps=10.0)
+    camera = cv2.VideoCapture(0)
 
-        dets = detector(img)
-        print(f'Number of faces detected: {len(dets)}')
+    while camera.isOpened() and cv2.waitKey(1) != 27:
+        _, frame = camera.read()
+
+        frame = cv2.flip(frame, flipCode=1)
+        canvas = frame.copy()
+
+        dets = detector(frame)
         for d in dets:
             fx, fy, fw, fh = face_utils.rect_to_bb(d)
-            cv2.rectangle(canvas, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
+            cv2.rectangle(canvas, (fx, fy), (fx+fw, fy+fh), MAGENTA, 2)
 
-            shape = predictor(img, d)
+            shape = predictor(frame, d)
             shape = face_utils.shape_to_np(shape)
-            for lx, ly in shape:
-                cv2.circle(canvas, (lx, ly), 1, RED, -1)
+            color = (GREEN
+                if (abs(angle(shape[NOSE_BRIDGE_IDXS[0]], shape[NOSE_BRIDGE_IDXS[1]])) > 80
+                    and abs(angle(shape[RIGHT_EYESIDE_IDXS[0]], shape[RIGHT_EYESIDE_IDXS[1]])) < 10
+                    and abs(angle(shape[LEFT_EYESIDE_IDXS[0]], shape[LEFT_EYESIDE_IDXS[1]])) < 10
+                    and abs(angle(shape[MOUTHSIDE_IDXS[0]], shape[MOUTHSIDE_IDXS[1]])) < 10)
+                else RED
+            )
+            cv2.line(
+                canvas,
+                shape[LEFT_EYESIDE_IDXS[0]], shape[LEFT_EYESIDE_IDXS[1]],
+                color, 2, cv2.LINE_AA
+            )
+            cv2.line(
+                canvas,
+                shape[RIGHT_EYESIDE_IDXS[0]], shape[RIGHT_EYESIDE_IDXS[1]],
+                color, 2, cv2.LINE_AA
+            )
+            cv2.line(
+                canvas,
+                shape[NOSE_BRIDGE_IDXS[0]], shape[NOSE_BRIDGE_IDXS[1]],
+                color, 2, cv2.LINE_AA
+            )
+            cv2.line(
+                canvas,
+                shape[MOUTHSIDE_IDXS[0]], shape[MOUTHSIDE_IDXS[1]],
+                color, 2, cv2.LINE_AA
+            )
+        canvas = cv2.addWeighted(canvas, 0.4, frame, 0.6, 0)
 
-        cv2.imshow('landmarks', canvas)
-        if cv2.waitKey(300) == 27:
-            break
+        video_writer.write(canvas)
+        cv2.imshow('facemark', canvas)
+
+    video_writer.release()
+    camera.release()
+    cv2.destroyAllWindows()
+
+
+if __name__ == '__main__':
+    main()
