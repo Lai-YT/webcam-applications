@@ -34,7 +34,7 @@ model_paths: Dict[PostureMode, str] = {}
 model_paths[PostureMode.gaze]  = to_abs_path("trained_models/gaze_model.h5")
 model_paths[PostureMode.write] = to_abs_path("trained_models/write_model.h5")
 image_dimensions: Tuple[int, int] = (224, 224)
-epochs: int = 15
+epochs: int = 30
 esc: int = 27
 
 def capture_action(mode: PostureMode, label: PostureLabel) -> None:
@@ -62,10 +62,10 @@ def capture_action(mode: PostureMode, label: PostureLabel) -> None:
         filename: str = f'{output_folder}/{img_count:08}.jpg'
         cv2.imwrite(filename, frame)
         img_count += 1
-        key: int = cv2.waitKey(100)  # ms, approximately the capture period
+        key: int = cv2.waitKey(10)  # ms, approximately the capture period
         cv2.imshow('sample capturing...', frame)
 
-        if key == esc or img_count == 200: # Esc
+        if key == esc or img_count == 2500: # Esc
             break
     else:
         raise IOError('Cannot open webcam')
