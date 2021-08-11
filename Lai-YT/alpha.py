@@ -21,7 +21,7 @@ with open(to_abs_path("parameters.txt")) as f:
 face_dist_in_ref: float = params[0]
 real_face_width:  float = params[1]
 
-video_writer = VideoWriter("video", fps=7.0)
+video_writer = VideoWriter(to_abs_path("output/video"), fps=7.0)
 
 def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
     """Enable the applications that are marked True."""
