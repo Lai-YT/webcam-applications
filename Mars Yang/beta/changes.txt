@@ -1,4 +1,0 @@
-1. 用新的face_recognition method取代原本在FaceDetector中的函式。(@property has_face, face_data(), mark_face())
-2. face_detector.annotated_frame -> face_detector.mark_face
-   gaze.annotated_frame -> gaze.mark_pupils
-3. 刪除haarcascade_frontalface_default.xml，將FaceDetector的函式取代後就用不到了
