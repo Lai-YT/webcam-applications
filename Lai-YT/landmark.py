@@ -37,22 +37,26 @@ def main() -> None:
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor(predictor_path)
 
-    video_writer = VideoWriter(to_abs_path('landmark'), fps=10.0)
+    video_writer = VideoWriter(to_abs_path('output/landmark'), fps=8.0)
     camera = cv2.VideoCapture(0)
 
     while camera.isOpened() and cv2.waitKey(1) != 27:
         _, frame = camera.read()
 
+        # image captured by camera is mirrored
         frame = cv2.flip(frame, flipCode=1)
         canvas = frame.copy()
 
-        dets = detector(frame)
-        for d in dets:
-            fx, fy, fw, fh = face_utils.rect_to_bb(d)
+        faces = detector(frame)
+        for face in faces:
+        	# to the format (x, y, w, h) as we would normally do with OpenCV
+            fx, fy, fw, fh = face_utils.rect_to_bb(face)
             cv2.rectangle(canvas, (fx, fy), (fx+fw, fy+fh), MAGENTA, 2)
 
-            shape = predictor(frame, d)
+            shape = predictor(frame, face)
+            # converts to a 2-tuple of (x, y)-coordinates
             shape = face_utils.shape_to_np(shape)
+            # if the face skews over 10 degrees, color of lines is set to red
             color = (GREEN
                 if (abs(angle(shape[NOSE_BRIDGE_IDXS[0]], shape[NOSE_BRIDGE_IDXS[1]])) > 80
                     and abs(angle(shape[RIGHT_EYESIDE_IDXS[0]], shape[RIGHT_EYESIDE_IDXS[1]])) < 10
@@ -80,6 +84,7 @@ def main() -> None:
                 shape[MOUTHSIDE_IDXS[0]], shape[MOUTHSIDE_IDXS[1]],
                 color, 2, cv2.LINE_AA
             )
+        # make lines transparent
         canvas = cv2.addWeighted(canvas, 0.4, frame, 0.6, 0)
 
         video_writer.write(canvas)
