@@ -26,7 +26,7 @@ def main() -> None:
 
         angles = angle_detector.angles()
         if angles:
-            # only puts the angle of the frist face
+            # only puts the angle of the first face
             cv2.putText(canvas, str(round(angles[0], 1)), (10, 30), FONT_3, 0.9, LIGHT_BLUE, 1)
 
         video_writer.write(canvas)

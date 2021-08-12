@@ -81,7 +81,9 @@ class FaceAngleDetector:
     def angles(self) -> List[float]:
         """Returns the angle (degree) of the faces.
         Included angle is between the vertical line of the frame and the vertical
-        middle line of the face. Positive angle indicates a right skew.
+        middle line of the face.
+        Positive angle indicates a right skew.
+        Empty list implies there's no face in the frame.
         """
         if self._angles is None:
             raise AttributeError("no current frame, please refresh first")
@@ -103,27 +105,18 @@ class FaceAngleDetector:
             canvas = self._frame.copy()
         frame: ColorImage = canvas.copy()
 
+        facemarks_idxs: List[List[int]] = [
+            self.LEFT_EYESIDE_IDXS, self.RIGHT_EYESIDE_IDXS,
+            self.NOSE_BRIDGE_IDXS, self.MOUTHSIDE_IDXS
+        ]
         for shape in self._shapes:
-            cv2.line(
-                canvas,
-                shape[self.LEFT_EYESIDE_IDXS[0]], shape[self.LEFT_EYESIDE_IDXS[1]],
-                color, 2, cv2.LINE_AA
-            )
-            cv2.line(
-                canvas,
-                shape[self.RIGHT_EYESIDE_IDXS[0]], shape[self.RIGHT_EYESIDE_IDXS[1]],
-                color, 2, cv2.LINE_AA
-            )
-            cv2.line(
-                canvas,
-                shape[self.NOSE_BRIDGE_IDXS[0]], shape[self.NOSE_BRIDGE_IDXS[1]],
-                color, 2, cv2.LINE_AA
-            )
-            cv2.line(
-                canvas,
-                shape[self.MOUTHSIDE_IDXS[0]], shape[self.MOUTHSIDE_IDXS[1]],
-                color, 2, cv2.LINE_AA
-            )
+            # connect sides with line
+            for facemark in facemarks_idxs:
+                cv2.line(
+                    canvas,
+                    shape[facemark[0]], shape[facemark[1]],
+                    color, 2, cv2.LINE_AA
+                )
         # make lines transparent
         canvas = cv2.addWeighted(canvas, 0.4, frame, 0.6, 0)
         return canvas

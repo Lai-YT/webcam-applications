@@ -4,8 +4,8 @@ from typing import Any, Dict, List
 
 import lib.app_visual as vs
 from lib.distance_detector import DistanceDetector
+from lib.face_angle_detector import FaceAngleDetector
 from lib.face_detector import FaceDetector
-from lib.gaze_tracking import GazeTracking
 from lib.timer import Timer
 from lib.train import PostureMode, load_posture_model
 from lib.video_writer import VideoWriter
@@ -31,7 +31,7 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
     if dist_measure or post_watch or focus_time:
         face_detector = FaceDetector()
     if post_watch or focus_time:
-        gaze = GazeTracking()
+        angle_detector = FaceAngleDetector()
 
     if dist_measure:
         distance_detector = DistanceDetector(
@@ -45,29 +45,32 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
     while webcam.isOpened():
         _, frame = webcam.read()
         frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
+        # separate detections and markings
+        canvas = frame.copy()
 
         # commons
         if dist_measure or post_watch or focus_time:
             face_detector.refresh(frame)
-            frame = face_detector.mark_face()
+            canvas = face_detector.mark_face(canvas)
         if post_watch or focus_time:
-            gaze.refresh(frame)
-            frame = gaze.mark_pupils()
+            angle_detector.refresh(frame)
+            canvas = angle_detector.mark_facemarks(canvas)
 
         if dist_measure:
             distance_detector.estimate(frame)
-            frame = vs.do_distance_measurement(frame, distance_detector)
+            canvas = vs.do_distance_measurement(canvas, distance_detector)
         if post_watch:
-            if face_detector.has_face or gaze.pupils_located:
-                mode = PostureMode.gaze
+            face_angles = angle_detector.angles()
+            if face_angles:
+                # only check the first face
+                canvas = vs.do_posture_angle_check(canvas, face_angles[0], 10.0)
             else:
-                mode = PostureMode.write
-            frame = vs.do_posture_watch(frame, models[mode], mode)
+                canvas = vs.do_posture_model_predict(frame, models[PostureMode.write], canvas)
         if focus_time:
-            frame = vs.do_focus_time_record(frame, timer, face_detector, gaze)
+            canvas = vs.do_focus_time_record(canvas, timer, face_detector, angle_detector)
 
-        video_writer.write(frame)
-        cv2.imshow("alpha", frame)
+        video_writer.write(canvas)
+        cv2.imshow("alpha", canvas)
         # ESC
         if cv2.waitKey(1) == 27:
             break

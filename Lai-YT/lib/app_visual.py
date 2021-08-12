@@ -9,69 +9,84 @@ from playsound import playsound
 from nptyping import Float, Int, NDArray
 from typing import Any, Optional
 
-from .color import *
-from .cv_font import *
+from .color import BLUE, GREEN, MAGENTA, RED
+from .cv_font import FONT_0, FONT_3
 from .distance_detector import DistanceDetector
+from .face_angle_detector import FaceAngleDetector
 from .face_detector import FaceDetector
-from .gaze_tracking import GazeTracking
 from .image_type import ColorImage, GrayImage
 from .timer import Timer
 from .train import PostureMode, PostureLabel, image_dimensions
 
 
-def do_distance_measurement(frame: ColorImage, distance_detector: DistanceDetector) -> ColorImage:
-    """Estimates the distance in the frame by FaceDistanceDetector.
-    Returns the frame with distance text.
+def do_distance_measurement(canvas: ColorImage, distance_detector: DistanceDetector) -> ColorImage:
+    """Returns the canvas with distance text, which is held by the DistanceDetector.
 
     Arguments:
-        frame (NDArray[(Any, Any, 3), UInt8]): Imgae with face to be detected
+        canvas (NDArray[(Any, Any, 3), UInt8]): Imgae to put text on
         distance_detector (DistanceDetector): The detector used to estimate the distance
     """
-    frame = frame.copy()
+    canvas = canvas.copy()
     distance: Optional[float] = distance_detector.distance()
     text: str = ""
     if distance is not None:
         distance = distance_detector.distance()
         text = "dist. " + str(round(distance, 2))
     else:
-        text = "No face detected."
-    cv2.putText(frame, text, (10, 30), FONT_3, 0.9, MAGENTA, 1)
+        text = "Face width unclear."
+    cv2.putText(canvas, text, (10, 30), FONT_3, 0.9, MAGENTA, 2)
 
-    return frame
+    return canvas
 
 
-def do_focus_time_record(frame: ColorImage, timer: Timer, face_detector: FaceDetector, gaze: GazeTracking) -> ColorImage:
-    """If there's face or eyes in the frame, the timer wil keep timing, otherwise stops.
-    Returns the frame with time stamp.
+def do_focus_time_record(canvas: ColorImage, timer: Timer, face_detector: FaceDetector, angle_detector: FaceAngleDetector) -> ColorImage:
+    """If there are faces or eyes detected by the detectors, the timer wil keep timing, otherwise stops.
+    Returns the canvas with time stamp.
 
     Arguments:
-        frame (NDArray[(Any, Any, 3), UInt8]): The image to detect whether the user is gazing
+        canvas (NDArray[(Any, Any, 3), UInt8]): The image to put time stamp on
         timer (Timer): The timer object that records the time
-        face_detector (FaceDetector): Detect face in the frame
-        gaze (GazeTracking): Detect eyes in the frame
+        face_detector (FaceDetector): Knows whether there are faces or not
+        angle_detector (FaceAngleDetector): Knows whether there are faces or not
     """
-    frame = frame.copy()
-    if not face_detector.has_face and not gaze.pupils_located:
+    canvas = canvas.copy()
+    if not face_detector.has_face and not angle_detector.angles():
         timer.pause()
-        cv2.putText(frame, "time pause", (520, 40), FONT_3, 0.6, RED, 1)
+        cv2.putText(canvas, "time pause", (500, 40), FONT_3, 0.6, RED, 1)
     else:
         timer.start()
+
     time_duration: str = f"t. {(timer.time() // 60):02d}:{(timer.time() % 60):02d}"
-    cv2.putText(frame, time_duration, (520, 20), FONT_3, 0.8, BLUE, 1)
+    cv2.putText(canvas, time_duration, (500, 20), FONT_3, 0.8, BLUE, 1)
+    return canvas
 
-    return frame
+
+def do_posture_angle_check(canvas: ColorImage, angle: float, threshold: float) -> ColorImage:
+    """Returns the canvas with posture and angle text on it.
+    "Good" in green if angle doesn't exceed the threshold, otherwise "Slump" in red.
+
+    Arguments:
+        canvas (NDArray[(Any, Any, 3), UInt8]): The image to put text on
+        angle (float): The angle between the middle line of face and the vertical line of image
+        threshold (float): Larger than this is considered to be a slump posture
+    """
+    text, color = ("Good", GREEN) if abs(angle) < threshold else ("Slump", RED)
+
+    # try to match the style in do_posture_model_predict()
+    cv2.putText(canvas, text, (10, 70), FONT_3, 0.9, color, 2)
+    cv2.putText(canvas, f"Slope Angle: {round(angle, 1)} degrees", (15, 110), FONT_3, 0.7, (200, 200, 255), 2)
+    return canvas
 
 
-def do_posture_watch(frame: ColorImage, mymodel, mode: PostureMode) -> ColorImage:
-    """Returns the frame with posture label text.
+def do_posture_model_predict(frame: ColorImage, mymodel, canvas: ColorImage) -> ColorImage:
+    """Returns the canvas with posture label text.
 
     Arguments:
         frame (NDArray[(Any, Any, 3), UInt8]): The image contains posture to be watched
         mymodel (tensorflow.keras.Model): To predict the label of frame
-        mode (PostureMode): The mode will also be part of the text
+        canvas (NDArray[(Any, Any, 3), UInt8]): The prediction will be texted on the canvas
     """
-    im_color: ColorImage = frame.copy()
-    im: GrayImage = cv2.cvtColor(im_color, cv2.COLOR_BGR2GRAY)
+    im: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     im = cv2.resize(im, image_dimensions)
     im = im / 255  # Normalize the image
@@ -82,13 +97,13 @@ def do_posture_watch(frame: ColorImage, mymodel, mode: PostureMode) -> ColorImag
     class_pred: Int[64] = np.argmax(predictions)
     conf: Float[32] = predictions[0][class_pred]
 
-    im_color = cv2.resize(im_color, (640, 480), interpolation=cv2.INTER_AREA)
+    canvas = cv2.resize(canvas, (640, 480), interpolation=cv2.INTER_AREA)
 
     if class_pred == PostureLabel.slump.value:
-        im_color = cv2.putText(im_color, f'{mode.name}-slump', (10, 70), FONT_0, 1, RED, thickness=2)
+        cv2.putText(canvas, "Slump", (10, 70), FONT_0, 0.9, RED, thickness=2)
     else:
-        im_color = cv2.putText(im_color, f'{mode.name}-good', (10, 70), FONT_0, 1, GREEN, thickness=2)
+        cv2.putText(canvas, "Good", (10, 70), FONT_0, 0.9, GREEN, thickness=2)
 
-    msg: str = f'confidence {round(int(conf*100))}%'
-    im_color = cv2.putText(im_color, msg, (15, 110), FONT_0, 0.6, (200, 200, 255), thickness=2)
-    return im_color
+    msg: str = f'Predict Conf.: {round(int(conf*100))}%'
+    cv2.putText(canvas, msg, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
+    return canvas

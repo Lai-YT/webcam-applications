@@ -1,6 +1,5 @@
 import cv2
-import numpy as np
-from nptyping import NDArray, Int, UInt8
+from nptyping import Int, NDArray, UInt8
 from typing import Any, Optional, Tuple
 
 from .color import BGR, GREEN
@@ -38,16 +37,21 @@ class FaceDetector:
             raise AttributeError("no current frame, please refresh first")
         return len(self._faces) != 0
 
-    def mark_face(self, color: BGR = GREEN) -> ColorImage:
+    def mark_face(self, canvas: ColorImage = None, color: BGR = GREEN) -> ColorImage:
         """Returns the frame with the face indicated with angles.
 
         Arguments:
+            canvas (NDArray[(Any, Any, 3), UInt8]):
+                The frame that you want to mark on, it'll be copied.
+                The frame passed to refresh in default.
             color (int, int, int): Color of the lines, green (0, 255, 0) in default
         """
         if self._frame is None:
             raise AttributeError("no current frame, please refresh first")
 
-        frame: ColorImage = self._frame.copy()
+        if canvas is None:
+            canvas = self._frame.copy()
+        frame: ColorImage = canvas.copy()
 
         for x, y, w, h in self._faces:
             line_thickness: int = 2
@@ -55,17 +59,17 @@ class FaceDetector:
             LLV = int(h*0.12)
 
             # vertical corner lines
-            cv2.line(frame, (x, y+LLV), (x+LLV, y+LLV), color, line_thickness)
-            cv2.line(frame, (x+w-LLV, y+LLV), (x+w, y+LLV), color, line_thickness)
-            cv2.line(frame, (x, y+h), (x+LLV, y+h), color, line_thickness)
-            cv2.line(frame, (x+w-LLV, y+h), (x+w, y+h), color, line_thickness)
+            cv2.line(canvas, (x, y+LLV), (x+LLV, y+LLV), color, line_thickness)
+            cv2.line(canvas, (x+w-LLV, y+LLV), (x+w, y+LLV), color, line_thickness)
+            cv2.line(canvas, (x, y+h), (x+LLV, y+h), color, line_thickness)
+            cv2.line(canvas, (x+w-LLV, y+h), (x+w, y+h), color, line_thickness)
 
             # horizontal corner lines
-            cv2.line(frame, (x, y+LLV), (x, y+LLV+LLV), color, line_thickness)
-            cv2.line(frame, (x+w, y+LLV), (x+w, y+LLV+LLV), color, line_thickness)
-            cv2.line(frame, (x, y+h), (x, y+h-LLV), color, line_thickness)
-            cv2.line(frame, (x+w, y+h), (x+w, y+h-LLV), color, line_thickness)
-        return frame
+            cv2.line(canvas, (x, y+LLV), (x, y+LLV+LLV), color, line_thickness)
+            cv2.line(canvas, (x+w, y+LLV), (x+w, y+LLV+LLV), color, line_thickness)
+            cv2.line(canvas, (x, y+h), (x, y+h-LLV), color, line_thickness)
+            cv2.line(canvas, (x+w, y+h), (x+w, y+h-LLV), color, line_thickness)
+        return canvas
 
     @classmethod
     def face_data(cls, frame: ColorImage) -> NDArray[(Any, 4), Int]:
