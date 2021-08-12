@@ -24,7 +24,7 @@ class DistanceDetector:
                                       taking the reference image
             face_width (float): The actual face width of the user
         """
-        faces: NDArray[(4, Any), Int] = FaceDetector.face_data(ref_image)
+        faces: NDArray[(Any, 4), Int] = FaceDetector.face_data(ref_image)
         # there might be many faces in the image, be we only accept single face
         if len(faces) == 0:
             raise ValueError("can't find any face from the reference image")
@@ -38,7 +38,7 @@ class DistanceDetector:
         """Estimates the face distance in the frame.
         It's safe to pass a frame that contains no faces.
         """
-        faces: NDArray[(4, Any), Int] = FaceDetector.face_data(frame)
+        faces: NDArray[(Any, 4), Int] = FaceDetector.face_data(frame)
         # can't estimate if no face or too many faces
         if len(faces) != 1:
             self._distance = None

@@ -1,8 +1,9 @@
 import cv2
+import numpy as np
 from nptyping import NDArray, Int, UInt8
 from typing import Any, Optional, Tuple
 
-from .color import *
+from .color import BGR, GREEN
 from .image_type import ColorImage, GrayImage
 from .path import to_abs_path
 
@@ -16,11 +17,10 @@ class FaceDetector:
     _frontal_detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
     # note that profileface only detects real live left-turned faces
     _side_detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_profileface.xml")
-    _smile_detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_smile.xml")
 
     def __init__(self) -> None:
         self._frame: Optional[ColorImage] = None
-        self._faces: Optional[NDArray[(4, Any), Int]] = None
+        self._faces: Optional[NDArray[(Any, 4), Int]] = None
 
     def refresh(self, frame: ColorImage) -> None:
         """Refreshes the frame and do detection on it.
@@ -46,7 +46,9 @@ class FaceDetector:
         """
         if self._frame is None:
             raise AttributeError("no current frame, please refresh first")
+
         frame: ColorImage = self._frame.copy()
+
         for x, y, w, h in self._faces:
             line_thickness: int = 2
             # affects the length of corner line
@@ -66,7 +68,7 @@ class FaceDetector:
         return frame
 
     @classmethod
-    def face_data(cls, frame: ColorImage) -> NDArray[(4, Any), Int]:
+    def face_data(cls, frame: ColorImage) -> NDArray[(Any, 4), Int]:
         """Returns the coordinate and size of the faces.
         Using OpenCV library.
         Note that the meaning of face width changes when it's a side face.
@@ -75,7 +77,7 @@ class FaceDetector:
             frame (NDArray[(Any, Any, 3), UInt8]): The frame to detect face in
 
         Returns:
-            face (NDArray[(4, Any), Int]): upper-left x and y, face width and height;
+            face (NDArray[(Any, 4), Int]): upper-left x and y, face width and height;
             empty if no face in the frame
         """
         frame: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -85,7 +87,7 @@ class FaceDetector:
         min_neighbors: int = 5
         min_size: Tuple[int, int] = (150, 150)
         # frontal face detection first
-        faces: NDArray[(4, Any), Int] = cls._frontal_detector.detectMultiScale(
+        faces: NDArray[(Any, 4), Int] = cls._frontal_detector.detectMultiScale(
             frame, scaleFactor=scale_factor, minNeighbors=min_neighbors, minSize=min_size
         )
         # might be a side face when frontal detector has no result,
