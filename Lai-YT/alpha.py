@@ -1,25 +1,25 @@
 import argparse
 import cv2
+import dlib
 from typing import Any, Dict, List
 
 import lib.app_visual as vs
-from lib.distance_detector import DistanceDetector
-from lib.face_angle_detector import FaceAngleDetector
-from lib.face_detector import FaceDetector
+from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
+from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from lib.timer import Timer
 from lib.train import PostureMode, load_posture_model
 from lib.video_writer import VideoWriter
+from lib.image_type import ColorImage
 from path import to_abs_path
 
 
 """parameters set by the user"""
-ref_image_path: str = to_abs_path("img/ref_img.jpg")
 params: List[float] = []
 with open(to_abs_path("parameters.txt")) as f:
     for line in f:
         params.append(float(line.rstrip("\n").split()[-1]))
-face_dist_in_ref: float = params[0]
-real_face_width:  float = params[1]
+camera_dist: float = params[0]
+face_width:  float = params[1]
 
 video_writer = VideoWriter(to_abs_path("output/video"), fps=7.0)
 
@@ -29,15 +29,17 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
 
     # commons
     if dist_measure or post_watch or focus_time:
-        face_detector = FaceDetector()
-    if post_watch or focus_time:
-        angle_detector = FaceAngleDetector()
+        face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
+        shape_predictor = dlib.shape_predictor(to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat'))
 
     if dist_measure:
-        distance_detector = DistanceDetector(
-            cv2.imread(ref_image_path), face_dist_in_ref, real_face_width)
+        ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
+        face: dlib.rectangle = face_detector(ref_img)[0]
+        shape: dlib.full_object_detection = shape_predictor(ref_img, face)
+        distance_calculator = DistanceCalculator(shape, camera_dist, face_width)
     if post_watch:
         models: Dict[PostureMode, Any] = load_posture_model()
+        angle_calculator = AngleCalculator()
     if focus_time:
         timer = Timer()
         timer.start()
@@ -46,28 +48,33 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
         _, frame = webcam.read()
         frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
         # separate detections and markings
-        canvas = frame.copy()
+        canvas: ColorImage = frame.copy()
 
         # commons
         if dist_measure or post_watch or focus_time:
-            face_detector.refresh(frame)
-            canvas = face_detector.mark_face(canvas)
-        if post_watch or focus_time:
-            angle_detector.refresh(frame)
-            canvas = angle_detector.mark_facemarks(canvas)
+            faces: dlib.rectangles = face_detector(frame)
+            # doesn't handle multiple face
+            if len(faces) > 1:
+                raise
+            if len(faces):
+                shape = shape_predictor(frame, faces[0])
+                canvas = vs.mark_face(canvas, faces[0], shape)
+                canvas = draw_landmarks_used_by_distance_calculator(canvas, shape)
 
-        if dist_measure:
-            distance_detector.estimate(frame)
-            canvas = vs.do_distance_measurement(canvas, distance_detector)
+        if dist_measure and len(faces):
+            canvas = vs.put_distance_text(canvas, distance_calculator.calculate(shape))
         if post_watch:
-            face_angles = angle_detector.angles()
-            if face_angles:
-                # only check the first face
-                canvas = vs.do_posture_angle_check(canvas, face_angles[0], 10.0)
+            if len(faces):
+                canvas = vs.do_posture_angle_check(canvas, angle_calculator.calculate(shape), 10.0)
+                canvas = draw_landmarks_used_by_angle_calculator(canvas, shape)
             else:
                 canvas = vs.do_posture_model_predict(frame, models[PostureMode.write], canvas)
         if focus_time:
-            canvas = vs.do_focus_time_record(canvas, timer, face_detector, angle_detector)
+            if not len(faces):
+                timer.pause()
+            else:
+                timer.start()
+            canvas = vs.record_focus_time(canvas, timer.time(), timer.is_paused())
 
         video_writer.write(canvas)
         cv2.imshow("alpha", canvas)

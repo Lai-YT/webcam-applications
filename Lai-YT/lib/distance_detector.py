@@ -13,24 +13,25 @@ class DistanceDetector:
     """
 
     def __init__(self, ref_image: ColorImage,
-                 face_to_cam_dist: float,
+                 camera_dist: float,
                  face_width: float) -> None:
         """
         Arguments:
             ref_image (NDArray[(Any, Any, 3), UInt8]):
                 A reference image to calculate the relation between distance and
                 face width
-            face_to_cam_dist (float): The distance between face and camera when
-                                      taking the reference image
+            camera_dist (float):
+                The distance between face and camera when taking
+                the reference image
             face_width (float): The actual face width of the user
         """
         faces: NDArray[(Any, 4), Int] = FaceDetector.face_data(ref_image)
         # there might be many faces in the image, be we only accept single face
-        if len(faces) == 0:
+        if not len(faces):
             raise ValueError("can't find any face from the reference image")
         if len(faces) > 1:
             raise ValueError("multiple faces in the reference image, please specify one")
-        self._focal: float = self._focal_length(face_to_cam_dist, face_width, faces[0][2])  # 2 is the width in the image
+        self._focal: float = (faces[0][2] * camera_dist) / face_width # 2 is the width in the image
         self._face_width = face_width
         self._distance: Optional[float] = None
 
@@ -50,15 +51,3 @@ class DistanceDetector:
         None if no face in the frame.
         """
         return self._distance
-
-    @staticmethod
-    def _focal_length(face_to_cam_dist: float, face_width: float, face_width_in_frame: float) -> float:
-        """Returns the distance between lens to CMOS sensor.
-
-        Arguments:
-            face_to_cam_dist (float): The distance between face and camera
-            face_width (float): The actual face width of the user
-            face_width_in_frame (float): Face width in the frame
-                                         usually get from the face_data method
-        """
-        return (face_width_in_frame * face_to_cam_dist) / face_width

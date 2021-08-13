@@ -5,14 +5,15 @@ from math import sqrt
 
 from lib.color import GREEN, LIGHT_BLUE
 from lib.cv_font import FONT_0
+from lib.distance_calculator import DistanceCalculator
 from lib.distance_detector import DistanceDetector
 from lib.video_writer import VideoWriter
 from path import to_abs_path
 
 
 PREDICTOR_PATH = to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat')
-FACE_WIDTH = 45.0
-CAMERA_DIST = 11.5
+CAMERA_DIST = 45.0
+FACE_WIDTH = 11.5
 
 
 def get_face_width(shape) -> float:
@@ -40,10 +41,9 @@ if __name__ == '__main__':
     shape = predictor(ref_img, face[0])
 
     # 1
-    FACE_WIDTH_IN_REF = get_face_width(shape)
-    FOCAL = (FACE_WIDTH_IN_REF * CAMERA_DIST) / FACE_WIDTH
+    dist_calculator = DistanceCalculator(shape, CAMERA_DIST, FACE_WIDTH)
     # 2
-    dist_detector = DistanceDetector(ref_img, FACE_WIDTH, CAMERA_DIST)
+    dist_detector = DistanceDetector(ref_img, CAMERA_DIST, FACE_WIDTH)
 
     video_writer = VideoWriter(to_abs_path('output/distance'), fps=8.0)
     camera = cv2.VideoCapture(0)
@@ -59,11 +59,11 @@ if __name__ == '__main__':
             face = faces[0]
             shape = predictor(frame, face)
 
-            i, j = face_utils.FACIAL_LANDMARKS_IDXS['jaw']
+            i, j = face_utils.FACIAL_LANDMARKS_68_IDXS['jaw']
             for lx, ly in face_utils.shape_to_np(shape)[i:j]:
                 cv2.circle(canvas, (lx, ly), 2, GREEN, -1)
 
-            face_dist = (FACE_WIDTH_IN_REF * FOCAL) / get_face_width(shape)
+            face_dist = dist_calculator.calculate(shape)
             text = f'dlib: {face_dist:2.1f}'
         else:
             text = 'dlib: x'
@@ -77,7 +77,7 @@ if __name__ == '__main__':
         else:
             text = 'cv2: x'
         cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, LIGHT_BLUE, 2)
-        
+
         video_writer.write(canvas)
         cv2.imshow('landmarks', canvas)
 

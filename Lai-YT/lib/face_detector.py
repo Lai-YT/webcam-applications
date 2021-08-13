@@ -33,7 +33,7 @@ class FaceDetector:
     @property
     def has_face(self) -> bool:
         """Returns if there's a face(s) in the frame."""
-        if self._frame is None:
+        if self._frame is None or self._faces is None:
             raise AttributeError("no current frame, please refresh first")
         return len(self._faces) != 0
 
@@ -53,6 +53,8 @@ class FaceDetector:
             canvas = self._frame.copy()
         frame: ColorImage = canvas.copy()
 
+        if not self._faces:
+            return canvas
         for x, y, w, h in self._faces:
             line_thickness: int = 2
             # affects the length of corner line
@@ -84,7 +86,7 @@ class FaceDetector:
             face (NDArray[(Any, 4), Int]): upper-left x and y, face width and height;
             empty if no face in the frame
         """
-        frame: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # detection parameters:
         scale_factor: float = 1.2
