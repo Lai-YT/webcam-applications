@@ -6,11 +6,10 @@ from playsound import playsound
 from tensorflow.keras import models
 from typing import Any, Optional, Tuple
 
-from .color import *
-from .cv_font import *
-from .distance_detector import DistanceDetector
-from .face_detector import FaceDetector
-from .gaze_tracking import GazeTracking
+from .angle_calculator import AngleCalculator
+from .color import BLACK, WHITE
+from .cv_font import FONT_3
+from .distance_calculator import DistanceCalculator
 from .image_type import ColorImage, GrayImage
 from .path import to_abs_path
 from .timer import Timer
@@ -48,15 +47,14 @@ warning_window_name: str = "warning"
 mp3file: str = to_abs_path("sounds/what.mp3")
 
 
-def update_time(timer: Timer) -> None:
-    """Update time in the timer and show a window at the upper right corner of the screen.
+def update_time_window(time: float) -> None:
+    """Show a time window "min : sec" at the upper right corner of the screen.
 
     Arguments:
-        timer (Timer): Contains time to be updated
+        time (float): The current time (sec) to update
     """
 
     timer_window: ColorImage = timer_bg.copy()
-    time: int = timer.time()  # sec
     time_duration: str = f"{(time // 60):02d}:{(time % 60):02d}"
     cv2.putText(timer_window, time_duration, (2, 70), FONT_3, 2, WHITE, 2)
 
@@ -66,7 +64,7 @@ def update_time(timer: Timer) -> None:
 
 
 def break_time_if_too_long(timer: Timer, time_limit: int, break_time: int, camera: cv2.VideoCapture) -> None:
-    """If the time record in the Timer object exceeds time limit, a break time countdown window shows in the center of screen.
+    """If the time record in the Timer object exceeds time limit, a break time countdown window shows on the center of screen.
     Camera turned off and all detections stop during the break. Also the Timer resets after it.
 
     Arguments:
@@ -104,21 +102,24 @@ def break_time_if_too_long(timer: Timer, time_limit: int, break_time: int, camer
     camera.open(0)
 
 
-def warn_if_too_close(distance_detector: DistanceDetector, warn_dist: float) -> None:
-    """Warning message shows in the center of screen when the distance measured by DistanceDetector is less than warn dist.
+def warn_if_angle_exceeds_threshold(angle: float, threshold: float) -> None:
+    if angle > threshold:
+        playsound(mp3file)
+
+
+def warn_if_too_close(distance: float, warn_dist: float) -> None:
+    """Warning message shows in the center of screen when the distance is less than warn dist.
 
     Arguments:
-        distance_detector (DistanceDetector)
+        distance_detector (float)
         warn_dist (float)
     """
-    distance: Optional[float] = distance_detector.distance()
-    if distance is not None:
-        if distance < warn_dist:
-            cv2.namedWindow(warning_window_name)
-            cv2.moveWindow(warning_window_name, *screen_center)
-            cv2.imshow(warning_window_name, warning_message)
-        elif cv2.getWindowProperty(warning_window_name, cv2.WND_PROP_VISIBLE):
-            cv2.destroyWindow(warning_window_name)
+    if distance < warn_dist:
+        cv2.namedWindow(warning_window_name)
+        cv2.moveWindow(warning_window_name, *screen_center)
+        cv2.imshow(warning_window_name, warning_message)
+    elif cv2.getWindowProperty(warning_window_name, cv2.WND_PROP_VISIBLE):
+        cv2.destroyWindow(warning_window_name)
 
 
 def warn_if_slumped(frame: ColorImage, mymodel) -> None:

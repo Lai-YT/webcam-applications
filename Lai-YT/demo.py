@@ -1,11 +1,11 @@
 import argparse
 import cv2
+import dlib
 from typing import Any, Dict, List
 
 import lib.app as app
-from lib.distance_detector import DistanceDetector
-from lib.face_detector import FaceDetector
-from lib.gaze_tracking import GazeTracking
+from lib.angle_calculator import AngleCalculator
+from lib.distance_calculator import DistanceCalculator
 from lib.timer import Timer
 from lib.train import PostureMode, load_posture_model
 from path import to_abs_path
@@ -17,56 +17,58 @@ with open(to_abs_path("parameters.txt")) as f:
     for line in f:
         params.append(line.rstrip('\n').split()[-1])
 
-face_dist_in_ref = float(params[0])
-real_face_width = float(params[1])
-warn_dist = float(params[2])
+camera_dist = float(params[0])
+face_width = float(params[1])
+dist_limit = float(params[2])
 time_limit = int(params[3])
 break_time = int(params[4])
-ref_image_path: str = to_abs_path("img/ref_img.jpg")
 
 
 def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
     """Enable the applications that are marked True."""
-    # Initializations
-    webcam = cv2.VideoCapture(0)
-
     # commons
-    if post_watch or focus_time:
-        face_detector = FaceDetector()
-        gaze = GazeTracking()
+    if dist_measure or post_watch or focus_time:
+        face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
+        shape_predictor = dlib.shape_predictor(to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat'))
 
     if dist_measure:
-        distance_detector = DistanceDetector(
-            cv2.imread(ref_image_path), face_dist_in_ref, real_face_width)
+        ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
+        face: dlib.rectangle = face_detector(ref_img)[0]
+        shape: dlib.full_object_detection = shape_predictor(ref_img, face)
+        distance_calculator = DistanceCalculator(shape, camera_dist, face_width)
     if post_watch:
         models: Dict[PostureMode, Any] = load_posture_model()
+        angle_calculator = AngleCalculator()
     if focus_time:
         timer = Timer()
         timer.start()
-    # Do
+
+    webcam = cv2.VideoCapture(0)
     while webcam.isOpened():
         _, frame = webcam.read()
 
         # commons
-        if post_watch or focus_time:
-            face_detector.refresh(frame)
-            gaze.refresh(frame)
+        if dist_measure or post_watch or focus_time:
+            faces: dlib.rectangles = face_detector(frame)
+            # doesn't handle multiple face
+            if len(faces) > 1:
+                raise
+            if len(faces):
+                shape = shape_predictor(frame, faces[0])
 
-        if dist_measure:
-            distance_detector.estimate(frame)
-            app.warn_if_too_close(distance_detector, warn_dist)
+        if dist_measure and len(faces):
+            app.warn_if_too_close(distance_calculator.calculate(shape), dist_limit)
         if post_watch:
-            if face_detector.has_face or gaze.pupils_located:
-                mode = PostureMode.gaze
+            if len(faces):
+                app.warn_if_angle_exceeds_threshold(angle_calculator.calculate(shape), 10.0)
             else:
-                mode = PostureMode.write
-            app.warn_if_slumped(frame, models[mode])
+                app.warn_if_slumped(frame, models[PostureMode.write])
         if focus_time:
-            if not face_detector.has_face and not gaze.pupils_located:
+            if not len(faces):
                 timer.pause()
             else:
                 timer.start()
-            app.update_time(timer)
+            app.update_time_window(timer.time())
             app.break_time_if_too_long(timer, time_limit, break_time, webcam)
         # ESC
         if cv2.waitKey(1) == 27:
