@@ -13,21 +13,14 @@ only 1 camera, which is the webcam.
   - Then, run the train mode to train model with images.
 
 ```
-usage: train_posture.py [-h] [-gg | -gs | -wg | -ws | -t | -r]
+usage: train_posture.py [-h] [-cg | -cs | -t | -r]
 
 Capture images and train the model before using the functon of posture watching (in demo.py and alpha.py).
 
-
 optional arguments:
   -h, --help            show this help message and exit
-  -gg, --capture-gaze-good
-                        capture sample images of good, healthy posture when gazing the screen
-  -gs, --capture-gaze-slump
-                        capture sample images of poor, slumped posture when gazing the screen
-  -wg, --capture-write-good
-                        capture sample images of good, healthy posture when writing in front of the screen
-  -ws, --capture-write-slump
-                        capture sample images of poor, slumped posture when writing in front of the screen
+  -cg, --capture-good   capture sample images of good, healthy posture when writing in front of the screen
+  -cs, --capture-slump  capture sample images of poor, slumped posture when writing in front of the screen
   -t, --train           train model with captured images
   -r, --reset           remove sample images before starting a new series of capture
 ```
@@ -75,10 +68,6 @@ optional arguments:
 ### Distance Measurement
 
 Based on [Asadullah-Dal17/Distance_measurement_using_single_camera](https://github.com/Asadullah-Dal17/Distance_measurement_using_single_camera).
-
-### Gaze Tracking
-
-Using the library provided at [antoinelame/GazeTracking](https://github.com/antoinelame/GazeTracking).
 
 ### Posture Watch
 

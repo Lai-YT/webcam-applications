@@ -1,13 +1,14 @@
 import argparse
 import cv2
 import dlib
+from tensorflow.keras import models
 from typing import Any, Dict, List
 
 import lib.app_visual as vs
 from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
 from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from lib.timer import Timer
-from lib.train import PostureMode, load_posture_model
+from lib.train import MODEL_PATH
 from lib.video_writer import VideoWriter
 from lib.image_type import ColorImage
 from path import to_abs_path
@@ -38,7 +39,7 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
         shape: dlib.full_object_detection = shape_predictor(ref_img, face)
         distance_calculator = DistanceCalculator(shape, camera_dist, face_width)
     if post_watch:
-        models: Dict[PostureMode, Any] = load_posture_model()
+        model = models.load_model(MODEL_PATH)
         angle_calculator = AngleCalculator()
     if focus_time:
         timer = Timer()
@@ -68,7 +69,7 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
                 canvas = vs.do_posture_angle_check(canvas, angle_calculator.calculate(shape), 10.0)
                 canvas = draw_landmarks_used_by_angle_calculator(canvas, shape)
             else:
-                canvas = vs.do_posture_model_predict(frame, models[PostureMode.write], canvas)
+                canvas = vs.do_posture_model_predict(frame, model, canvas)
         if focus_time:
             if not len(faces):
                 timer.pause()

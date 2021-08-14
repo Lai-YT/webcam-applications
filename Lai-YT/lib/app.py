@@ -1,10 +1,10 @@
 import cv2
-import numpy as np
+import numpy
 import tkinter as tk
 from nptyping import Float, Int, NDArray
 from playsound import playsound
 from tensorflow.keras import models
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
 from .angle_calculator import AngleCalculator
 from .color import BLACK, WHITE
@@ -13,7 +13,7 @@ from .distance_calculator import DistanceCalculator
 from .image_type import ColorImage, GrayImage
 from .path import to_abs_path
 from .timer import Timer
-from .train import PostureLabel, image_dimensions
+from .train import PostureLabel, IMAGE_DIMENSIONS
 
 # window position config
 root = tk.Tk()
@@ -111,7 +111,7 @@ def warn_if_too_close(distance: float, warn_dist: float) -> None:
     """Warning message shows in the center of screen when the distance is less than warn dist.
 
     Arguments:
-        distance_detector (float)
+        distance (float)
         warn_dist (float)
     """
     if distance < warn_dist:
@@ -122,7 +122,7 @@ def warn_if_too_close(distance: float, warn_dist: float) -> None:
         cv2.destroyWindow(warning_window_name)
 
 
-def warn_if_slumped(frame: ColorImage, mymodel) -> None:
+def warn_if_slumped(frame: ColorImage, mymodel: models) -> None:
     """mp3 will be played when posture slumpled.
 
     Arguments:
@@ -130,12 +130,12 @@ def warn_if_slumped(frame: ColorImage, mymodel) -> None:
         mymodel (tensorflow.keras.Model): Predicts the label of frame
     """
     im: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    im = cv2.resize(im, image_dimensions)
+    im = cv2.resize(im, IMAGE_DIMENSIONS)
     im = im / 255  # Normalize the image
-    im = im.reshape(1, *image_dimensions, 1)
+    im = im.reshape(1, *IMAGE_DIMENSIONS, 1)
 
     predictions: NDArray[(2,), Float[32]] = mymodel.predict(im)
-    label_pred: Int[64] = np.argmax(predictions)
+    label_pred: Int[64] = numpy.argmax(predictions)
 
     if label_pred == PostureLabel.slump.value:
         playsound(mp3file)

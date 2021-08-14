@@ -1,13 +1,14 @@
 import argparse
 import cv2
 import dlib
+from tensorflow.keras import models
 from typing import Any, Dict, List
 
 import lib.app as app
 from lib.angle_calculator import AngleCalculator
 from lib.distance_calculator import DistanceCalculator
 from lib.timer import Timer
-from lib.train import PostureMode, load_posture_model
+from lib.train import MODEL_PATH
 from path import to_abs_path
 
 
@@ -37,7 +38,7 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
         shape: dlib.full_object_detection = shape_predictor(ref_img, face)
         distance_calculator = DistanceCalculator(shape, camera_dist, face_width)
     if post_watch:
-        models: Dict[PostureMode, Any] = load_posture_model()
+        model = models.load_model(MODEL_PATH)
         angle_calculator = AngleCalculator()
     if focus_time:
         timer = Timer()
@@ -62,7 +63,7 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
             if len(faces):
                 app.warn_if_angle_exceeds_threshold(angle_calculator.calculate(shape), 10.0)
             else:
-                app.warn_if_slumped(frame, models[PostureMode.write])
+                app.warn_if_slumped(frame, model)
         if focus_time:
             if not len(faces):
                 timer.pause()

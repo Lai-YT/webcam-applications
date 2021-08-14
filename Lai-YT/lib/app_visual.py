@@ -5,14 +5,14 @@ Specific design for alpha.py.
 
 import cv2
 import dlib
-import numpy as np
+import numpy
 from imutils import face_utils
 from nptyping import Float, Int, NDArray
 
 from .color import BLUE, GREEN, MAGENTA, RED
 from .cv_font import FONT_0
 from .image_type import ColorImage, GrayImage
-from .train import PostureLabel, image_dimensions
+from .train import PostureLabel, IMAGE_DIMENSIONS
 
 
 def put_distance_text(canvas: ColorImage, distance: float) -> ColorImage:
@@ -90,13 +90,13 @@ def do_posture_model_predict(frame: ColorImage, mymodel, canvas: ColorImage) -> 
     """
     im: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    im = cv2.resize(im, image_dimensions)
+    im = cv2.resize(im, IMAGE_DIMENSIONS)
     im = im / 255  # Normalize the image
-    im = im.reshape(1, *image_dimensions, 1)
+    im = im.reshape(1, *IMAGE_DIMENSIONS, 1)
 
     # 2 cuz there are 2 PostureLabels
     predictions: NDArray[(1, 2), Float[32]] = mymodel.predict(im)
-    class_pred: Int[64] = np.argmax(predictions)
+    class_pred: Int[64] = numpy.argmax(predictions)
     conf: Float[32] = predictions[0][class_pred]
 
     canvas = cv2.resize(canvas, (640, 480), interpolation=cv2.INTER_AREA)
