@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 import lib.app as app
 from lib.angle_calculator import AngleCalculator
 from lib.distance_calculator import DistanceCalculator
+from lib.image_type import ColorImage
 from lib.timer import Timer
 from lib.train import MODEL_PATH
 from path import to_abs_path
@@ -25,7 +26,7 @@ time_limit = int(params[3])
 break_time = int(params[4])
 
 
-def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
+def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
     """Enable the applications that are marked True."""
     # commons
     if dist_measure or post_watch or focus_time:
@@ -34,8 +35,11 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
 
     if dist_measure:
         ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
-        face: dlib.rectangle = face_detector(ref_img)[0]
-        shape: dlib.full_object_detection = shape_predictor(ref_img, face)
+        faces: dlib.rectangles = face_detector(ref_img)
+        if len(faces) != 1:
+            # must have exactly one face in the reference image
+            raise
+        shape: dlib.full_object_detection = shape_predictor(ref_img, faces[0])
         distance_calculator = DistanceCalculator(shape, camera_dist, face_width)
     if post_watch:
         model = models.load_model(MODEL_PATH)
@@ -50,22 +54,24 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
 
         # commons
         if dist_measure or post_watch or focus_time:
-            faces: dlib.rectangles = face_detector(frame)
-            # doesn't handle multiple face
+            faces = face_detector(frame)
+            # doesn't handle multiple faces
             if len(faces) > 1:
                 raise
             if len(faces):
+                has_face: bool = True
                 shape = shape_predictor(frame, faces[0])
-
-        if dist_measure and len(faces):
+            else:
+                has_face = False
+        if dist_measure and has_face:
             app.warn_if_too_close(distance_calculator.calculate(shape), dist_limit)
         if post_watch:
-            if len(faces):
+            if has_face:
                 app.warn_if_angle_exceeds_threshold(angle_calculator.calculate(shape), 10.0)
             else:
                 app.warn_if_slumped(frame, model)
         if focus_time:
-            if not len(faces):
+            if not has_face:
                 timer.pause()
             else:
                 timer.start()

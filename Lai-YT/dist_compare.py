@@ -16,20 +16,6 @@ CAMERA_DIST = 45.0
 FACE_WIDTH = 11.5
 
 
-def get_face_width(shape) -> float:
-    shape = face_utils.shape_to_np(shape)
-    # zygomatic bones
-    p1 = shape[1]
-    p2 = shape[15]
-    return euclidean_distance(p1, p2)
-
-
-def euclidean_distance(p1, p2) -> float:
-    x1, y1 = p1
-    x2, y2 = p2
-    return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
-
 if __name__ == '__main__':
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor(PREDICTOR_PATH)

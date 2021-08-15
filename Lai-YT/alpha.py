@@ -24,7 +24,7 @@ face_width:  float = params[1]
 
 video_writer = VideoWriter(to_abs_path("output/video"), fps=7.0)
 
-def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
+def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
     """Enable the applications that are marked True."""
     webcam = cv2.VideoCapture(0)
 
@@ -35,8 +35,11 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
 
     if dist_measure:
         ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
-        face: dlib.rectangle = face_detector(ref_img)[0]
-        shape: dlib.full_object_detection = shape_predictor(ref_img, face)
+        faces: dlib.rectangles = face_detector(ref_img)
+        if len(faces) != 1:
+            # must have exactly one face in the reference image
+            raise
+        shape: dlib.full_object_detection = shape_predictor(ref_img, faces[0])
         distance_calculator = DistanceCalculator(shape, camera_dist, face_width)
     if post_watch:
         model = models.load_model(MODEL_PATH)
@@ -53,25 +56,28 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
 
         # commons
         if dist_measure or post_watch or focus_time:
-            faces: dlib.rectangles = face_detector(frame)
-            # doesn't handle multiple face
+            faces = face_detector(frame)
+            # doesn't handle multiple faces
             if len(faces) > 1:
                 raise
             if len(faces):
+                has_face: bool = True
                 shape = shape_predictor(frame, faces[0])
                 canvas = vs.mark_face(canvas, faces[0], shape)
                 canvas = draw_landmarks_used_by_distance_calculator(canvas, shape)
+            else:
+                has_face = False
 
-        if dist_measure and len(faces):
+        if dist_measure and has_face:
             canvas = vs.put_distance_text(canvas, distance_calculator.calculate(shape))
         if post_watch:
-            if len(faces):
+            if has_face:
                 canvas = vs.do_posture_angle_check(canvas, angle_calculator.calculate(shape), 10.0)
                 canvas = draw_landmarks_used_by_angle_calculator(canvas, shape)
             else:
                 canvas = vs.do_posture_model_predict(frame, model, canvas)
         if focus_time:
-            if not len(faces):
+            if not has_face:
                 timer.pause()
             else:
                 timer.start()
