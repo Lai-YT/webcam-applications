@@ -1,5 +1,5 @@
 The distance(cm) between your face and the webcam when taking the picture: 45.0
-Your actual width(cm) of face: 12.5
+Your actual width(cm) of face: 11.5
 The shortest distance(cm) allowed: 40.0
 After how long(minute) of gazing should take a break: 1
 How long(minute) the break time is: 1

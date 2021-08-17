@@ -1,40 +1,59 @@
 import argparse
 import cv2
+import dlib
+from tensorflow.keras import models
 from typing import Any, Dict, List
 
 import lib.app_visual as vs
-from lib.face_distance_detector import DistanceDetector, FaceDetector
-from lib.gaze_tracking import GazeTracking
+from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
+from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from lib.timer import Timer
-from lib.train import PostureMode, load_posture_model
+from lib.train import MODEL_PATH
+from lib.video_writer import VideoWriter
+from lib.image_type import ColorImage
 from path import to_abs_path
 
 
 """parameters set by the user"""
-ref_image_path: str = to_abs_path("img/ref_img.jpg")
 params: List[float] = []
 with open(to_abs_path("parameters.txt")) as f:
     for line in f:
         params.append(float(line.rstrip("\n").split()[-1]))
-face_dist_in_ref: float = params[0]
-real_face_width:     float = params[1]
+camera_dist: float = params[0]
+face_width:  float = params[1]
 
+video_writer = VideoWriter(to_abs_path("output/video"), fps=7.0)
 
-def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
+def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
     """Enable the applications that are marked True."""
     webcam = cv2.VideoCapture(0)
 
     # commons
     if dist_measure or post_watch or focus_time:
-        face_detector = FaceDetector()
-    if post_watch or focus_time:
-        gaze = GazeTracking()
+        # call frontal face detector
+        face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
+        shape_predictor = dlib.shape_predictor(to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat'))
 
     if dist_measure:
-        distance_detector = DistanceDetector(
-            cv2.imread(ref_image_path), face_dist_in_ref, real_face_width)
+        ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
+        # faces: each face in faces represents in four coordinates,
+        #        which are the four corners of the face
+        faces: dlib.rectangles = face_detector(ref_img)
+        if len(faces) != 1:
+            # must have exactly one face in the reference image
+            raise
+        # store data of the 68 feature points of the face in a list
+        shape: dlib.full_object_detection = shape_predictor(ref_img, faces[0])
+        '''Use reference image and some data the user give to initiate focal length.'''
+        # shape is used to get the width of face on the frame
+        distance_calculator = DistanceCalculator(shape, camera_dist, face_width)
     if post_watch:
-        models: Dict[PostureMode, Any] = load_posture_model()
+        '''
+        model: write model used when no face is detected
+        angle_calculator: calculate the slope angle of posture
+        '''
+        model = models.load_model(MODEL_PATH)
+        angle_calculator = AngleCalculator()
     if focus_time:
         timer = Timer()
         timer.start()
@@ -42,35 +61,66 @@ def do_applications(*, dist_measure: bool, focus_time: bool, post_watch: bool) -
     while webcam.isOpened():
         _, frame = webcam.read()
         frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
+        '''We seperate the processes of detection and marking.
+        Example:
+            detect face -> mark face -> draw landmarks(dist_calc)
+                                     -> angle check -> draw landmarks(angle_calc)
+                                     
+        landmark(draw_landmarks_used_by_distance_calculator):
+            The 68 feature points on the face
+        landmark(draw_landmarks_used_by_angle_calculator):
+            The transparent lines representing contours
+        '''
+        canvas: ColorImage = frame.copy()
 
         # commons
         if dist_measure or post_watch or focus_time:
-            face_detector.refresh(frame)
-            frame = face_detector.mark_face()
-        if post_watch or focus_time:
-            gaze.refresh(frame)
-            frame = gaze.mark_pupils()
-
-        if dist_measure:
-            distance_detector.estimate(frame)
-            frame = vs.do_distance_measurement(frame, distance_detector)
-        if post_watch:
-            if face_detector.has_face or gaze.pupils_located:
-                mode = PostureMode.gaze
+            faces = face_detector(frame)
+            # doesn't handle multiple faces
+            if len(faces) > 1:
+                raise
+            if len(faces):
+                has_face: bool = True
+                shape = shape_predictor(frame, faces[0])
+                '''Mark the face and plot feature points of the face.'''
+                canvas = vs.mark_face(canvas, faces[0], shape)
+                '''Draw a line crossing the face.'''
+                canvas = draw_landmarks_used_by_distance_calculator(canvas, shape)
             else:
-                mode = PostureMode.write
-            frame = vs.do_posture_watch(frame, models[mode], mode)
-        if focus_time:
-            frame = vs.do_focus_time_record(frame, timer, face_detector, gaze)
+                has_face = False
 
-        cv2.imshow("alpha", frame)
-        # ESC
+        if dist_measure and has_face:
+            '''Display distance on the frame.'''
+            canvas = vs.put_distance_text(canvas, distance_calculator.calculate(shape))
+        if post_watch:
+            if has_face:
+                '''Display posture judgement and slope angle on the frame.'''
+                canvas = vs.do_posture_angle_check(canvas, angle_calculator.calculate(shape), 10.0)
+                '''Draw contours of eyes, nose, and mouth on the frame with transparent lines.'''
+                canvas = draw_landmarks_used_by_angle_calculator(canvas, shape)
+            else:
+                '''Judge the posture with write model when no face is detected.'''
+                canvas = vs.do_posture_model_predict(frame, model, canvas)
+        if focus_time:
+            if not has_face:
+                timer.pause()
+            else:
+                timer.start()
+            '''Display focus time on the frame.
+            If paused, display "time paused" text instead.
+            '''
+            canvas = vs.record_focus_time(canvas, timer.time(), timer.is_paused())
+
+        video_writer.write(canvas)
+        cv2.imshow("alpha", canvas)
+        '''Break the process when entering Esc'''
         if cv2.waitKey(1) == 27:
             break
     else:
         raise IOError('Cannot open webcam')
 
     webcam.release()
+    video_writer.release()
     if focus_time:
         timer.reset()
     cv2.destroyAllWindows()

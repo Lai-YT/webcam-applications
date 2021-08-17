@@ -16,8 +16,8 @@ class VideoWriter:
             fps (float): If higher than the writing rate,
                          the video will be fast-forwarded
         """
-        fourcc: int = cv2.VideoWriter_fourcc(*"XVID")
-        self._video_writer = cv2.VideoWriter(video_path, fourcc, fps, (640, 480))
+        fourcc: int = cv2.VideoWriter_fourcc(*"mp4v")
+        self._video_writer = cv2.VideoWriter(video_path + ".mp4", fourcc, fps, (640, 480))
 
     def write(self, image: ColorImage) -> None:
         """Writes the next video frame."""
