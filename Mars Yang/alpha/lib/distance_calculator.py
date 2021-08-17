@@ -25,11 +25,16 @@ class DistanceCalculator:
 
     @staticmethod
     def _get_face_width(shape: dlib.full_object_detection) -> float:
-        """Returns the Euclidean distance between 2 side points of the zygomatic bone."""
+        """Returns triple length of nose bridge."""
         shape_: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(shape)
-        x1, y1 = shape_[1]
-        x2, y2 = shape_[15]
-        return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        x1, y1 = shape_[28]
+        x2, y2 = shape_[31]
+        return 3 * sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        # """Returns the Euclidean distance between 2 side points of the zygomatic bone."""
+        # shape_: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(shape)
+        # x1, y1 = shape_[1]
+        # x2, y2 = shape_[15]
+        # return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 
 def draw_landmarks_used_by_distance_calculator(canvas: ColorImage, shape: dlib.full_object_detection, color: BGR = MAGENTA) -> ColorImage:
