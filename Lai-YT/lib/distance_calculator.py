@@ -21,6 +21,7 @@ class DistanceCalculator:
         """
         self._face_width: float = face_width
         self._focal: float = (self._get_face_width(landmarks) * camera_dist) / face_width
+        self._nose_height: float = face_width * (self._get_nose_height(landmarks) / self._get_face_width(landmarks))
 
     def calculate(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:
         """Returns the real life distance between face and camera.
@@ -39,6 +40,34 @@ class DistanceCalculator:
         """
         return DistanceCalculator.euclidean_distance(landmarks[1], landmarks[15])
 
+# --- methods for comparison and adjustment ---
+
+    def calculate_by_single_width(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:
+        """Returns the real life distance between face and camera.
+
+        Arguments:
+            landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
+        """
+        return (self._face_width * self._focal) / self._get_face_width(landmarks)
+
+    def calculate_by_single_height(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:
+        """Returns the real life distance between face and camera.
+
+        Arguments:
+            landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
+        """
+        return (self._nose_height * self._focal) / self._get_nose_height(landmarks)
+
+    def calculate_by_multiple_weighted(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:
+        """Returns the real life distance between face and camera.
+
+        Arguments:
+            landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
+        """
+        by_face_width:  float = (self._face_width * self._focal) / self._get_face_width(landmarks)
+        by_nose_height: float = (self._nose_height * self._focal) / self._get_nose_height(landmarks)
+        return (by_face_width + by_nose_height) / 2
+
     @staticmethod
     def _get_nose_height(landmarks: NDArray[(68, 2), Int[32]]) -> float:
         """
@@ -46,6 +75,8 @@ class DistanceCalculator:
             landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
         """
         return DistanceCalculator.euclidean_distance(landmarks[27], landmarks[30])
+
+# --- end ---
 
     @staticmethod
     def euclidean_distance(p1, p2) -> float:
@@ -66,7 +97,6 @@ def draw_landmarks_used_by_distance_calculator(canvas: ColorImage, landmarks: ND
     canvas_ = canvas.copy()
 
     cv2.line(canvas_, landmarks[1], landmarks[15], color, 2, cv2.LINE_AA)
-
     # make lines transparent
     canvas_ = cv2.addWeighted(canvas_, 0.4, canvas, 0.6, 0)
     return canvas_
