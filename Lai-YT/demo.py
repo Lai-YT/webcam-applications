@@ -1,6 +1,8 @@
 import argparse
 import cv2
 import dlib
+from imutils import face_utils
+from nptyping import Int, NDArray
 from tensorflow.keras import models
 from typing import Any, Dict, List
 
@@ -39,8 +41,8 @@ def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> N
         if len(faces) != 1:
             # must have exactly one face in the reference image
             raise ValueError("should have exactly 1 face in the reference image")
-        shape: dlib.full_object_detection = shape_predictor(ref_img, faces[0])
-        distance_calculator = DistanceCalculator(shape, camera_dist, face_width)
+        landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(shape_predictor(ref_img, faces[0]))
+        distance_calculator = DistanceCalculator(landmarks, camera_dist, face_width)
     if post_watch:
         model = models.load_model(MODEL_PATH)
         angle_calculator = AngleCalculator()
@@ -60,14 +62,14 @@ def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> N
                 continue
             if len(faces):
                 has_face: bool = True
-                shape = shape_predictor(frame, faces[0])
+                landmarks = face_utils.shape_to_np(shape_predictor(frame, faces[0]))
             else:
                 has_face = False
         if dist_measure and has_face:
-            app.warn_if_too_close(distance_calculator.calculate(shape), dist_limit)
+            app.warn_if_too_close(distance_calculator.calculate(landmarks), dist_limit)
         if post_watch:
             if has_face:
-                app.warn_if_angle_exceeds_threshold(angle_calculator.calculate(shape), 10.0)
+                app.warn_if_angle_exceeds_threshold(angle_calculator.calculate(landmarks), 10.0)
             else:
                 app.warn_if_slumped(frame, model)
         if focus_time:

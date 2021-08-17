@@ -4,9 +4,7 @@ Specific design for alpha.py.
 """
 
 import cv2
-import dlib
 import numpy
-from imutils import face_utils
 from nptyping import Float, Int, NDArray
 from tensorflow.keras import models
 from typing import List, Tuple
@@ -49,20 +47,17 @@ def record_focus_time(canvas: ColorImage, time: float, paused: bool) -> ColorIma
 
 
 @pass_by_copy(pos=[0])
-def mark_face(canvas: ColorImage, face: dlib.rectangle, shape: dlib.full_object_detection) -> ColorImage:
+def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> ColorImage:
     """Returns the canvas with face area framed up and landmarks dotted.
 
     Arguments:
         canvas (NDArray[(Any, Any, 3), UInt8]): The image to mark face on
-        face (dlib.rectangle): Face data detected by dlib.fhog_object_detector
-        shape (dlib.full_object_detection): Landmarks detected by dlib.shape_predictor
+        face (int, int, int, int): Upper-left x, y coordinates of face and it's width, height
+        landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
     """
-    # face area
-    fx, fy, fw, fh = face_utils.rect_to_bb(face)
+    fx, fy, fw, fh = face
     cv2.rectangle(canvas, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
-    # face landmarks
-    shape_: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(shape)
-    for lx, ly in shape_:
+    for lx, ly in landmarks:
         cv2.circle(canvas, (lx, ly), 1, GREEN, -1)
     return canvas
 
@@ -94,7 +89,6 @@ def do_posture_model_predict(frame: ColorImage, model: models, canvas: ColorImag
         model (tensorflow.keras.Model): To predict the label of frame
         canvas (NDArray[(Any, Any, 3), UInt8]): The prediction will be texted on the canvas
     """
-    canvas = canvas.copy()
     im: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     im = cv2.resize(im, IMAGE_DIMENSIONS)

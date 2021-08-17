@@ -108,7 +108,7 @@ def warn_if_angle_exceeds_threshold(angle: float, threshold: float) -> None:
 
 
 def warn_if_too_close(distance: float, warn_dist: float) -> None:
-    """Warning message shows in the center of screen when the distance is less than warn dist.
+    """Warning message shows in the center of screen when the distance is less than warn_dist.
 
     Arguments:
         distance (float)

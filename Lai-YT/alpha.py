@@ -1,6 +1,7 @@
 import argparse
 import cv2
 import dlib
+from imutils import face_utils
 from tensorflow.keras import models
 from typing import Any, Dict, List
 
@@ -39,8 +40,8 @@ def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> N
         if len(faces) != 1:
             # must have exactly one face in the reference image
             raise ValueError("should have exactly 1 face in the reference image")
-        shape: dlib.full_object_detection = shape_predictor(ref_img, faces[0])
-        distance_calculator = DistanceCalculator(shape, camera_dist, face_width)
+        landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(shape_predictor(ref_img, faces[0]))
+        distance_calculator = DistanceCalculator(landmarks, camera_dist, face_width)
     if post_watch:
         model = models.load_model(MODEL_PATH)
         angle_calculator = AngleCalculator()
@@ -62,18 +63,18 @@ def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> N
                 continue
             if len(faces):
                 has_face: bool = True
-                shape = shape_predictor(frame, faces[0])
-                canvas = vs.mark_face(canvas, faces[0], shape)
-                canvas = draw_landmarks_used_by_distance_calculator(canvas, shape)
+                landmarks = face_utils.shape_to_np(shape_predictor(frame, faces[0]))
+                canvas = vs.mark_face(canvas, face_utils.rect_to_bb(faces[0]), landmarks)
+                canvas = draw_landmarks_used_by_distance_calculator(canvas, landmarks)
             else:
                 has_face = False
 
         if dist_measure and has_face:
-            canvas = vs.put_distance_text(canvas, distance_calculator.calculate(shape))
+            canvas = vs.put_distance_text(canvas, distance_calculator.calculate(landmarks))
         if post_watch:
             if has_face:
-                canvas = vs.do_posture_angle_check(canvas, angle_calculator.calculate(shape), 10.0)
-                canvas = draw_landmarks_used_by_angle_calculator(canvas, shape)
+                canvas = vs.do_posture_angle_check(canvas, angle_calculator.calculate(landmarks), 10.0)
+                canvas = draw_landmarks_used_by_angle_calculator(canvas, landmarks)
             else:
                 canvas = vs.do_posture_model_predict(frame, model, canvas)
         if focus_time:

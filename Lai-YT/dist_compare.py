@@ -24,10 +24,10 @@ if __name__ == '__main__':
     # needed when evaluating distance
     ref_img = cv2.imread(to_abs_path('img/ref_img.jpg'))
     face = detector(ref_img)
-    shape = predictor(ref_img, face[0])
+    landmarks = face_utils.shape_to_np(predictor(ref_img, face[0]))
 
     # 1
-    dist_calculator = DistanceCalculator(shape, CAMERA_DIST, FACE_WIDTH)
+    dist_calculator = DistanceCalculator(landmarks, CAMERA_DIST, FACE_WIDTH)
     # 2
     dist_detector = DistanceDetector(ref_img, CAMERA_DIST, FACE_WIDTH)
 
@@ -43,13 +43,13 @@ if __name__ == '__main__':
         faces = detector(frame)
         if len(faces) != 0:
             face = faces[0]
-            shape = predictor(frame, face)
+            landmarks = face_utils.shape_to_np(predictor(frame, face))
 
             i, j = face_utils.FACIAL_LANDMARKS_68_IDXS['jaw']
-            for lx, ly in face_utils.shape_to_np(shape)[i:j]:
+            for lx, ly in landmarks[i:j]:
                 cv2.circle(canvas, (lx, ly), 2, GREEN, -1)
 
-            face_dist = dist_calculator.calculate(shape)
+            face_dist = dist_calculator.calculate(landmarks)
             text = f'dlib: {face_dist:2.1f}'
         else:
             text = 'dlib: x'
