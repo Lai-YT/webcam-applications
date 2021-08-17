@@ -38,7 +38,7 @@ def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> N
         faces: dlib.rectangles = face_detector(ref_img)
         if len(faces) != 1:
             # must have exactly one face in the reference image
-            raise
+            raise ValueError("should have exactly 1 face in the reference image")
         shape: dlib.full_object_detection = shape_predictor(ref_img, faces[0])
         distance_calculator = DistanceCalculator(shape, camera_dist, face_width)
     if post_watch:
@@ -59,7 +59,7 @@ def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> N
             faces = face_detector(frame)
             # doesn't handle multiple faces
             if len(faces) > 1:
-                raise
+                continue
             if len(faces):
                 has_face: bool = True
                 shape = shape_predictor(frame, faces[0])

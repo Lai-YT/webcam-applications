@@ -35,7 +35,7 @@ def pass_by_copy(pos: List[int] = [], kw: List[str] = []) -> Callable[[Func], Ca
             # the keyword arguments
             try:
                 for w in kw:
-                    # the keyword argument is passes by keyword
+                    # the keyword argument is passes by position
                     if w not in kwargs:
                         arg_pos: int = arguments.index(w)
                         args_list[arg_pos] = copy.deepcopy(args[arg_pos])
