@@ -1,3 +1,5 @@
+"""Deprecated, only for comparison test in dist_compare.py."""
+
 import cv2
 from nptyping import Int, NDArray, UInt8
 from typing import Any, Optional, Tuple

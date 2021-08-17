@@ -1,7 +1,8 @@
-from nptyping import NDArray, Int, UInt8
+"""Deprecated, only for comparison test in dist_compare.py."""
+
+from nptyping import NDArray, Int
 from typing import Optional
 
-from .color import *
 from .face_detector import FaceDetector
 from .image_type import ColorImage
 

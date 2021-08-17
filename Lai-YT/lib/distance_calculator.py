@@ -9,6 +9,11 @@ from .image_type import ColorImage
 
 
 class DistanceCalculator:
+    """
+    The class knows how wide the face is at a certain distance,
+    so can calculate the distance when the face width changes relatively.
+    """
+
     def __init__(self, shape: dlib.full_object_detection, camera_dist: float, face_width: float) -> None:
         """
         Arguments:
