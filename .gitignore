@@ -9,11 +9,15 @@ venv/
 *.jpg
 *.png
 
+# message
 !warning.jpg
 !timer_bg.jpg
 !break_bg.jpg
 !what.mp3
+
+# gui
 !start.jpg
+!wait.jpg
 
 train_sample/
 train/
