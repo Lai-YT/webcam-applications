@@ -4,8 +4,9 @@ import tkinter as tk
 import threading
 
 from tkinter import *
+from PIL import ImageTk, Image
 
-"""parameters of the size of screen"""
+"""window initialization"""
 # size of the window and the screen
 window = tk.Tk()
 window_width = 350
@@ -15,11 +16,14 @@ screen_height = window.winfo_screenheight()
 # notation of size (str): (width)x(height)+x+y
 size: str = f'{int(window_width)}x{int(window_height)}+{int((screen_width-window_width)/2)}+{int((screen_height-window_height)/2)}'
 window.geometry(size) # size and position
+# background = tk.Label(window, background = "pink", compound = 'bottom',
+#                       width = window_width, height = window_height).pack() # background
 window.title("Webcam Application") # title
 window.iconbitmap("webcam.ico") # icon
 
-start_img = PhotoImage(file="start.jpg").subsample(2, 2) # image of start button
-wait_img =  PhotoImage(file="wait.jpg").subsample(2, 2)
+# image of start button, half as small as original image
+start_img = PhotoImage(file="start.jpg").subsample(2, 2)
+
 
 def alpha(dist_measure: tk.BooleanVar, focus_time: tk.BooleanVar, post_watch: tk.BooleanVar) -> None:
     '''
@@ -52,15 +56,15 @@ def main() -> None:
             BooleanVar() is a type in tkinter, used in declaration of buttons.
     '''
     dist_measure: tk.BooleanVar = tk.BooleanVar()
-    focus_time:   tk.BooleanVar = tk.BooleanVar()
+    focus_time:   tk.BooleanVar = tk.BooleanVar() 
     post_watch:   tk.BooleanVar = tk.BooleanVar()
     # provide check buttons for users to check the features they want
     tk.Checkbutton(window, text = "Distance Measure", variable = dist_measure,
-                   onvalue = True, offvalue = False, height=5, width = 20).pack()
+                   onvalue = True, offvalue = False, height = 5, width = 20).pack()
     tk.Checkbutton(window, text = "Timer", variable = focus_time,
-                   onvalue = True, offvalue = False, height=5, width = 20).pack()
+                   onvalue = True, offvalue = False, height = 5, width = 20).pack()
     tk.Checkbutton(window, text = "Posture Detection", variable = post_watch,
-                   onvalue = True, offvalue = False, height=5, width = 20).pack()  
+                   onvalue = True, offvalue = False, height = 5, width = 20).pack()  
     # start button
     tk.Button(window, text="Start Capturing", image = start_img,
               command = (lambda: thread_it(alpha, dist_measure, focus_time, post_watch))).pack()
