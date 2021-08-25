@@ -1,10 +1,9 @@
 import alpha
-import os
+
 import tkinter as tk
 import threading
 
 from tkinter import *
-from PIL import ImageTk, Image
 
 """window initialization"""
 # size of the window and the screen
@@ -24,24 +23,8 @@ window.iconbitmap("webcam.ico") # icon
 # image of start button, half as small as original image
 start_img = PhotoImage(file="start.jpg").subsample(2, 2)
 
-
-def alpha(dist_measure: tk.BooleanVar, focus_time: tk.BooleanVar, post_watch: tk.BooleanVar) -> None:
-    '''
-    Same as the command required in alpha.py.
-    
-    Arguments:
-        dist_measure/focus_time/post_watch (tk.BooleanVar):
-            Three features provided to users.
-            Calling (tk.BooleanVar).get() can get the boolean value of the variable.
-    '''
-    command: str = "python alpha.py"
-    if(dist_measure.get() == True):
-        command += " -d"
-    if(focus_time.get() == True):
-        command += " -t"
-    if(post_watch.get() == True):
-        command += " -p"
-    os.system(command)
+def quit() -> None:
+    window.destroy()
 
 def thread_it(func, *args):
     t = threading.Thread(target = func, args = args)
@@ -54,6 +37,7 @@ def main() -> None:
         dist_measure/focus_time/post_watch (tk.BooleanVar):
             Three features provided to users.
             BooleanVar() is a type in tkinter, used in declaration of buttons.
+            Calling (tk.BooleanVar).get() can get the boolean value of the variable.
     '''
     dist_measure: tk.BooleanVar = tk.BooleanVar()
     focus_time:   tk.BooleanVar = tk.BooleanVar() 
@@ -64,10 +48,11 @@ def main() -> None:
     tk.Checkbutton(window, text = "Timer", variable = focus_time,
                    onvalue = True, offvalue = False, height = 5, width = 20).pack()
     tk.Checkbutton(window, text = "Posture Detection", variable = post_watch,
-                   onvalue = True, offvalue = False, height = 5, width = 20).pack()  
+                   onvalue = True, offvalue = False, height = 5, width = 20).pack() 
     # start button
     tk.Button(window, text="Start Capturing", image = start_img,
-              command = (lambda: thread_it(alpha, dist_measure, focus_time, post_watch))).pack()
+              command=(lambda: thread_it(alpha.do_applications, dist_measure.get(), focus_time.get(), post_watch.get()))).pack()
+    tk.Button(window, text="QUIT", command=(lambda: thread_it(quit))).pack()          
     # start the program
     window.mainloop()
 

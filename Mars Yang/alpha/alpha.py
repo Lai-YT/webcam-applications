@@ -1,6 +1,7 @@
 import argparse
 import cv2
 import dlib
+import sys
 from tensorflow.keras import models
 from typing import Any, Dict, List
 
@@ -25,9 +26,9 @@ face_width:  float = params[1]
 video_writer = VideoWriter(to_abs_path("output/video"), fps=7.0)
 
 def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
+        
     """Enable the applications that are marked True."""
     webcam = cv2.VideoCapture(0)
-
     # commons
     if dist_measure or post_watch or focus_time:
         # call frontal face detector
@@ -125,12 +126,12 @@ def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> N
         timer.reset()
     cv2.destroyAllWindows()
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='visualized ver. of webcam applications with distance measurement, eye focus timing and posture watching')
     parser.add_argument('-d', '--distance', help='enable distance measurement', action='store_true')
     parser.add_argument('-t', '--time', help='enable eye focus timing', action='store_true')
     parser.add_argument('-p', '--posture', help='enable posture watching', action='store_true')
+    parser.add_argument('-q', '--quit', help='quit the process', action='store_true')
     args = parser.parse_args()
 
     # if any of the arguments is True
