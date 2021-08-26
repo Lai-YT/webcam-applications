@@ -14,19 +14,17 @@ from lib.video_writer import VideoWriter
 from lib.image_type import ColorImage
 from path import to_abs_path
 
-
-"""parameters set by the user"""
-params: List[float] = []
-with open(to_abs_path("parameters.txt")) as f:
-    for line in f:
-        params.append(float(line.rstrip("\n").split()[-1]))
-camera_dist: float = params[0]
-face_width:  float = params[1]
-
-video_writer = VideoWriter(to_abs_path("output/video"), fps=7.0)
+# video_writer = VideoWriter(to_abs_path("output/video"), fps=7.0)
 
 def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
-        
+    """parameters set by the user"""
+    params: List[float] = []
+    with open(to_abs_path("parameters.txt")) as f:
+        for line in f:
+            params.append(float(line.rstrip("\n").split()[-1]))
+    camera_dist: float = params[0]
+    face_width:  float = params[1]
+
     """Enable the applications that are marked True."""
     webcam = cv2.VideoCapture(0)
     # commons
@@ -112,7 +110,7 @@ def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> N
             '''
             canvas = vs.record_focus_time(canvas, timer.time(), timer.is_paused())
 
-        video_writer.write(canvas)
+        # video_writer.write(canvas)
         cv2.imshow("alpha", canvas)
         '''Break the process when entering Esc'''
         if cv2.waitKey(1) == 27:
@@ -121,7 +119,7 @@ def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> N
         raise IOError('Cannot open webcam')
 
     webcam.release()
-    video_writer.release()
+    # video_writer.release()
     if focus_time:
         timer.reset()
     cv2.destroyAllWindows()

@@ -13,25 +13,23 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         # MainWindow
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(500, 250) # size
+        MainWindow.resize(500, 375) # size
         MainWindow.setWindowTitle("Webcam Application") # title
         MainWindow.setWindowIcon(QtGui.QIcon('webcam.ico')) # icon
         # centralwidget
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        '''
         # lineEdit
-        self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit.setGeometry(QtCore.QRect(150, 100, 191, 51))
-        self.lineEdit.setObjectName("lineEdit")
-        '''
+        # self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
+        # self.lineEdit.setGeometry(QtCore.QRect(150, 100, 191, 51))
+        # self.lineEdit.setObjectName("lineEdit")
         # label
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(0, 100, 130, 50))
         self.label.setObjectName("label")
         # pushButton
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(125, 160, 250, 50))
+        self.pushButton.setGeometry(QtCore.QRect(125, 225, 250, 50))
         self.pushButton.setObjectName("pushButton")
         MainWindow.setCentralWidget(self.centralwidget)
         # menubar
