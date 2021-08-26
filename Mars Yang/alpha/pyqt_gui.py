@@ -17,7 +17,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dist_checkbox = QCheckBox("Distance Measure", self)
         self.dist_checkbox.setGeometry(150, 10, 200, 45)
         self.dist_checkbox.setFont(QtGui.QFont('Arial', 12))
-        self.timer_checkbox = QCheckBox("TImer", self)
+        self.timer_checkbox = QCheckBox("Timer", self)
         self.timer_checkbox.setGeometry(150, 55, 200, 45)
         self.timer_checkbox.setFont(QtGui.QFont('Arial', 12))
         self.post_checkbox = QCheckBox("Posture Detection", self)
