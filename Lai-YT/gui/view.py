@@ -5,9 +5,13 @@ from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QWidget
 
-from component import ActionButton, OptionCheckBox, Label, LineEdit
+from component import ActionButton, MessageLabel, OptionCheckBox, Label, LineEdit
 
 
+# View is the pure GUI part, provides no functionalitiy.
+# It's responsibility is to create all components the GUI should have,
+# whichs means no other components will be added by other parts (Controller, Model).
+# Functionality of the components is set by the Controller.
 class ApplicationGui(QMainWindow):
     """The main window that shows options of the application."""
     def __init__(self):
@@ -23,15 +27,16 @@ class ApplicationGui(QMainWindow):
         self.setCentralWidget(self._central_widget)
         # Create check boxes for options, line edits for settings of parameter
         # and buttons to start and exit.
-        self._init_options()
-        self._init_settings()
-        self._init_buttons()
+        self._create_options()
+        self._create_settings()
+        self._create_buttons()
 
-    def _init_options(self):
+    def _create_options(self):
         self._general_layout.addWidget(Label("Options:"))
         # Each check box followed by a label, which shows message when error occurs.
         self.options = {}
         self.option_msgs = {}
+        # Option name | order
         options_layout = QGridLayout()
         options = {"Distance Measure": 0,
                    "Timer": 1,
@@ -40,24 +45,25 @@ class ApplicationGui(QMainWindow):
             self.options[opt] = OptionCheckBox(opt)
             options_layout.addWidget(self.options[opt], row, 0)
             # A message label is 2 columns long.
-            options_layout.addWidget(Label(), row, 1, 1, 2)
+            self.option_msgs[opt] = MessageLabel()
+            options_layout.addWidget(self.option_msgs[opt], row, 1, 1, 2)
 
         self._general_layout.addLayout(options_layout)
 
-    def _init_settings(self):
+    def _create_settings(self):
         self._general_layout.addWidget(Label("Settings:"))
         self.settings = {}
         settings_layout = QFormLayout()
-        # Parameter's name | description
+        # Parameter name | description
         settings = {"Face Width": "Face width:",
                     "Distance": "Distance from screen:",}
         for set, text in settings.items():
-            self.settings[set] = LineEdit("0~99.99 (cm)")
+            self.settings[set] = LineEdit()
             settings_layout.addRow(Label(text), self.settings[set])
 
         self._general_layout.addLayout(settings_layout)
 
-    def _init_buttons(self):
+    def _create_buttons(self):
         self.action_buttons = {}
         buttons_layout = QGridLayout()
         # Button text | position on the QGridLayout
