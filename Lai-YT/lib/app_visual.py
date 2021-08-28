@@ -3,17 +3,18 @@ Visualized version of applications. No warning, detection only.
 Specific design for alpha.py.
 """
 
+from typing import List, Tuple
+
 import cv2
 import numpy
 from nptyping import Float, Int, NDArray
 from tensorflow.keras import models
-from typing import List, Tuple
 
-from .color import BLUE, GREEN, MAGENTA, RED
-from .cv_font import FONT_0
-from .decorator import pass_by_copy
-from .image_type import ColorImage, GrayImage
-from .train import PostureLabel, IMAGE_DIMENSIONS
+from lib.color import BLUE, GREEN, MAGENTA, RED
+from lib.cv_font import FONT_0
+from lib.decorator import pass_by_copy
+from lib.image_type import ColorImage, GrayImage
+from lib.train import PostureLabel, IMAGE_DIMENSIONS
 
 
 @pass_by_copy(pos=[0])

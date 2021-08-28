@@ -1,7 +1,8 @@
 """Pre-defined type aliases of numpy image"""
 
-from nptyping import NDArray, UInt8
 from typing import Any
+
+from nptyping import NDArray, UInt8
 
 # A colored image has 3 dimensions. The third dimension is 3 (color channels).
 # Gray image has 2 dimensions.

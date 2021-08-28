@@ -1,11 +1,12 @@
-import cv2
 import math
 import warnings
-from nptyping import Int, NDArray
 from typing import List
 
-from .color import BGR, GREEN
-from .image_type import ColorImage
+import cv2
+from nptyping import Int, NDArray
+
+from lib.color import BGR, GREEN
+from lib.image_type import ColorImage
 
 
 class AngleCalculator:

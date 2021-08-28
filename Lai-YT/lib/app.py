@@ -1,19 +1,20 @@
+import tkinter as tk
+from typing import Any, Tuple
+
 import cv2
 import numpy
-import tkinter as tk
 from nptyping import Float, Int, NDArray
 from playsound import playsound
 from tensorflow.keras import models
-from typing import Any, Tuple
 
-from .angle_calculator import AngleCalculator
-from .color import BLACK, WHITE
-from .cv_font import FONT_3
-from .distance_calculator import DistanceCalculator
-from .image_type import ColorImage, GrayImage
-from .path import to_abs_path
-from .timer import Timer
-from .train import PostureLabel, IMAGE_DIMENSIONS
+from lib.angle_calculator import AngleCalculator
+from lib.color import BLACK, WHITE
+from lib.cv_font import FONT_3
+from lib.distance_calculator import DistanceCalculator
+from lib.image_type import ColorImage, GrayImage
+from lib.path import to_abs_path
+from lib.timer import Timer
+from lib.train import PostureLabel, IMAGE_DIMENSIONS
 
 # window position config
 root = tk.Tk()

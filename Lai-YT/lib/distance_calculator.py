@@ -1,9 +1,10 @@
-import cv2
 from math import sqrt
+
+import cv2
 from nptyping import Int, NDArray
 
-from .color import BGR, MAGENTA
-from .image_type import ColorImage
+from lib.color import BGR, MAGENTA
+from lib.image_type import ColorImage
 
 
 class DistanceCalculator:
@@ -41,7 +42,7 @@ class DistanceCalculator:
         x2, y2 = landmarks[15]
         # Euclidean distance
         return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-        
+
 
 # outer util method
 def draw_landmarks_used_by_distance_calculator(canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]], color: BGR = MAGENTA) -> ColorImage:

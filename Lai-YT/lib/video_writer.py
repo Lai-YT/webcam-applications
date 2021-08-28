@@ -1,6 +1,6 @@
 import cv2
 
-from .image_type import ColorImage
+from lib.image_type import ColorImage
 
 
 class VideoWriter:
