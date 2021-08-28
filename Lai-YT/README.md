@@ -47,21 +47,7 @@ optional arguments:
 ## alpha
 
 It's the visualized version that shows the detection result without warnings. \
-Press "esc" to end the program. \
-Use for detection adjustments.
-
-```
-usage: alpha.py [-h] [-d] [-t] [-p]
-
-visualized ver. of webcam applications with distance measurement, eye focus
-timing and posture watching
-
-optional arguments:
-  -h, --help      show this help message and exit
-  -d, --distance  enable distance measurement
-  -t, --time      enable eye focus timing
-  -p, --posture   enable posture watching
-```
+Using a friendly *Graphical User Interface* instead of Command Line Interface.
 
 ## Topics
 

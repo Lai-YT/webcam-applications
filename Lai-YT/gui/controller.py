@@ -2,7 +2,7 @@ from functools import partial
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
-from view import ApplicationGui
+from gui.view import ApplicationGui
 
 
 # Controller handles the states of GUI's components,
@@ -12,12 +12,12 @@ class GuiController:
         self._model = model
         self._gui = gui
 
-        self._set_valid_input()
+        self._set_valid_inputs()
         self._enable_buttons()
         self._connect_actions()
 
-    def _set_valid_input(self):
-        """Set valid input of the settings."""
+    def _set_valid_inputs(self):
+        """Set valid inputs of the settings."""
         # The user is still able to key in 00000~99999,
         # `intermediate` inputs will be found at the button event stage
         # and error message will shown.
@@ -31,45 +31,69 @@ class GuiController:
 
     def _enable_buttons(self):
         """Set states of the action buttons."""
-        # `Restart` is unabled at the beginning.
-        self._gui.action_buttons["Restart"].setEnabled(False)
-        # Once the application starts, `Restart` becomes enabled and `Start` becomes unabled.
-        self._gui.action_buttons["Start"].clicked.connect(
-            partial(self._gui.action_buttons["Start"].setEnabled, False)
+        # `Stop` is unabled at the beginning.
+        self._gui.action_buttons["Stop"].setEnabled(False)
+        # `Stop` is unables when being clicked and `Start` is enabled.
+        self._gui.action_buttons["Stop"].clicked.connect(
+            partial(self._gui.action_buttons["Stop"].setEnabled, False)
         )
-        self._gui.action_buttons["Start"].clicked.connect(
-            partial(self._gui.action_buttons["Restart"].setEnabled, True)
+        self._gui.action_buttons["Stop"].clicked.connect(
+            partial(self._gui.action_buttons["Start"].setEnabled, True)
         )
 
     def _connect_actions(self):
+        self._gui.action_buttons["Start"].clicked.connect(self._click_start)
+        # `Stop` closes the application window.
+        self._gui.action_buttons["Stop"].clicked.connect(self._model.close)
+        # `Exit` closes the application windows and GUI.
         self._gui.action_buttons["Exit"].clicked.connect(self._model.close)
         self._gui.action_buttons["Exit"].clicked.connect(self._gui.close)
-        # Validates the inputs before taking them into execution.
-        self._gui.action_buttons["Start"].clicked.connect(self._validate_inputs)
-        self._gui.action_buttons["Restart"].clicked.connect(self._validate_inputs)
 
-    def _validate_inputs(self):
-        """Check whether the parameters that Distance Detection needs is in the range."""
-        has_invalid_input = False
+    def _click_start(self):
+        # To be able to do some validations before a real start,
+        # put all connections in another method instead of directly
+        # connecting them.
+        if not self._check_inputs_validity():
+            return
+        self._set_up_model()
+        # If button `Start` is clicked successfully,
+        # unable `Start` and enable `Stop`.
+        self._gui.action_buttons["Start"].setEnabled(False)
+        self._gui.action_buttons["Stop"].setEnabled(True)
+        # Starts the application window.
+        self._model.start()
+
+    def _check_inputs_validity(self):
+        """Returns True if `Distance Measure` isn't checked or all parameters
+        that Distance Measure needs is in the range.
+        """
+        # inputs are ignored
+        if not self._gui.options["Distance Measure"].isChecked():
+            return True
+
+        check_passed = True
         # When invalid parameter occurs, that parameter line is cleared
         # and the error message shown after the option `Distance Measure`.
         for parameter_line in self._gui.settings.values():
             if not parameter_line.hasAcceptableInput():
-                has_invalid_input = True
+                check_passed = False
                 parameter_line.clear()
                 self._gui.option_msgs["Distance Measure"].setText("error: parameter out of range")
 
-        if not has_invalid_input:
+        if check_passed:
             # Clear the message label to make sure no previous error.
             self._gui.option_msgs["Distance Measure"].clear()
-            self._start_capturing()
 
-    def _start_capturing(self):
-        self._model.enable_distance_detection(
+        return check_passed
+
+    def _set_up_model(self):
+        self._model.enable_focus_time(self._gui.options["Focus Time"].isChecked())
+        self._model.enable_posture_detect(self._gui.options["Posture Detect"].isChecked())
+        # Notice that the validility of parameters are ignored when `Distance Measure`
+        # isn't checked, which means invalid parameters will be set.
+        # Though once is checked, they will be overwritten. 
+        self._model.enable_distance_measure(
             self._gui.options["Distance Measure"].isChecked(),
             face_width=float(self._gui.settings["Face Width"].text()),
             distance=float(self._gui.settings["Distance"].text())
         )
-        self._model.enable_timer(self._gui.options["Timer"].isChecked())
-        self._model.enable_posture_detection(self._gui.options["Posture Detection"].isChecked())
-        self._model.start()

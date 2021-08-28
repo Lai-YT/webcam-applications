@@ -1,9 +1,10 @@
 import argparse
+from typing import Any, Dict, List
+
 import cv2
 import dlib
 from imutils import face_utils
 from tensorflow.keras import models
-from typing import Any, Dict, List
 
 import lib.app_visual as vs
 from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
@@ -15,99 +16,117 @@ from lib.image_type import ColorImage
 from path import to_abs_path
 
 
-"""parameters set by the user"""
-params: List[float] = []
-with open(to_abs_path("parameters.txt")) as f:
-    for line in f:
-        params.append(float(line.rstrip("\n").split()[-1]))
-camera_dist: float = params[0]
-face_width:  float = params[1]
+# This is the Model part, it knows nothing about View.
+# One can pass options and parameters through View and Controller
+# or directly call it with client code.
+class WebcamApplication:
+    def __init__(self):
+        # settings
+        self._distance_measure: bool = False
+        self._face_width: float = 0  # Width of the user's face.
+        self._distance: float = 0    # Distance between face and camera.
+        self._focus_time: bool = False
+        self._posture_detect: bool = False
+        # flags
+        self._ready: bool = False    # Used to break the capturing loop inside start()
 
-video_writer = VideoWriter(to_abs_path("output/video"), fps=7.0)
+    def start(self) -> None:
+        # Set the flag to True so can start capturing.
+        # Loop breaks if someone calsl close() and sets the flag to False.
+        self._ready = True
+        # common initialization
+        if self._distance_measure or self._posture_detect or self._focus_time:
+            face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
+            shape_predictor = dlib.shape_predictor(to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat'))
 
-def do_applications(dist_measure: bool, focus_time: bool, post_watch: bool) -> None:
-    """Enable the applications that are marked True."""
-    webcam = cv2.VideoCapture(0)
+        if self._distance_measure:
+            ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
+            faces: dlib.rectangles = face_detector(ref_img)
+            if len(faces) != 1:
+                # must have exactly one face in the reference image
+                raise ValueError("should have exactly 1 face in the reference image")
+            landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(shape_predictor(ref_img, faces[0]))
+            distance_calculator = DistanceCalculator(landmarks, self._distance, self._face_width)
+        if self._posture_detect:
+            model = models.load_model(MODEL_PATH)
+            angle_calculator = AngleCalculator()
+        if self._focus_time:
+            timer = Timer()
+            timer.start()
 
-    # commons
-    if dist_measure or post_watch or focus_time:
-        face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
-        shape_predictor = dlib.shape_predictor(to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat'))
+        video_writer = VideoWriter(to_abs_path("output/video"), fps=7.0)
+        webcam = cv2.VideoCapture(0)
 
-    if dist_measure:
-        ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
-        faces: dlib.rectangles = face_detector(ref_img)
-        if len(faces) != 1:
-            # must have exactly one face in the reference image
-            raise ValueError("should have exactly 1 face in the reference image")
-        landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(shape_predictor(ref_img, faces[0]))
-        distance_calculator = DistanceCalculator(landmarks, camera_dist, face_width)
-    if post_watch:
-        model = models.load_model(MODEL_PATH)
-        angle_calculator = AngleCalculator()
-    if focus_time:
-        timer = Timer()
-        timer.start()
+        while self._ready:
+            _, frame = webcam.read()
+            frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
+            # separate detections and markings
+            canvas: ColorImage = frame.copy()
+            # commons
+            if self._distance_measure or self._posture_detect or self._focus_time:
+                faces = face_detector(frame)
+                # doesn't handle multiple faces
+                if len(faces) > 1:
+                    continue
+                if len(faces):
+                    has_face: bool = True
+                    landmarks = face_utils.shape_to_np(shape_predictor(frame, faces[0]))
+                    canvas = vs.mark_face(canvas, face_utils.rect_to_bb(faces[0]), landmarks)
+                    canvas = draw_landmarks_used_by_distance_calculator(canvas, landmarks)
+                else:
+                    has_face = False
 
-    while webcam.isOpened():
-        _, frame = webcam.read()
-        frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
-        # separate detections and markings
-        canvas: ColorImage = frame.copy()
+            if self._distance_measure and has_face:
+                canvas = vs.put_distance_text(canvas, distance_calculator.calculate(landmarks))
+            if self._posture_detect:
+                if has_face:
+                    canvas = vs.do_posture_angle_check(canvas, angle_calculator.calculate(landmarks), 10.0)
+                    canvas = draw_landmarks_used_by_angle_calculator(canvas, landmarks)
+                else:
+                    canvas = vs.do_posture_model_predict(frame, model, canvas)
+            if self._focus_time:
+                if not has_face:
+                    timer.pause()
+                else:
+                    timer.start()
+                canvas = vs.record_focus_time(canvas, timer.time(), timer.is_paused())
+            # video_writer.write(canvas)
+            cv2.imshow("Webcam application", canvas)
+            cv2.waitKey(1)
+        # Release resources.
+        webcam.release()
+        video_writer.release()
+        cv2.destroyAllWindows()
 
-        # commons
-        if dist_measure or post_watch or focus_time:
-            faces = face_detector(frame)
-            # doesn't handle multiple faces
-            if len(faces) > 1:
-                continue
-            if len(faces):
-                has_face: bool = True
-                landmarks = face_utils.shape_to_np(shape_predictor(frame, faces[0]))
-                canvas = vs.mark_face(canvas, face_utils.rect_to_bb(faces[0]), landmarks)
-                canvas = draw_landmarks_used_by_distance_calculator(canvas, landmarks)
-            else:
-                has_face = False
+    def close(self) -> None:
+        """Sets the ready flag to False, so if the application is in progress, it'll be stopped."""
+        self._ready = False
 
-        if dist_measure and has_face:
-            canvas = vs.put_distance_text(canvas, distance_calculator.calculate(landmarks))
-        if post_watch:
-            if has_face:
-                canvas = vs.do_posture_angle_check(canvas, angle_calculator.calculate(landmarks), 10.0)
-                canvas = draw_landmarks_used_by_angle_calculator(canvas, landmarks)
-            else:
-                canvas = vs.do_posture_model_predict(frame, model, canvas)
-        if focus_time:
-            if not has_face:
-                timer.pause()
-            else:
-                timer.start()
-            canvas = vs.record_focus_time(canvas, timer.time(), timer.is_paused())
+    def enable_distance_measure(self, enable, face_width, distance):
+        self._distance_measure = enable
+        self._face_width = face_width
+        self._distance = distance
 
-        video_writer.write(canvas)
-        cv2.imshow("alpha", canvas)
-        # ESC
-        if cv2.waitKey(1) == 27:
-            break
-    else:
-        raise IOError('Cannot open webcam')
+    def enable_focus_time(self, enable):
+        self._focus_time = enable
 
-    webcam.release()
-    video_writer.release()
-    if focus_time:
-        timer.reset()
-    cv2.destroyAllWindows()
+    def enable_posture_detect(self, enable):
+        self._posture_detect = enable
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='visualized ver. of webcam applications with distance measurement, eye focus timing and posture watching')
-    parser.add_argument('-d', '--distance', help='enable distance measurement', action='store_true')
-    parser.add_argument('-t', '--time', help='enable eye focus timing', action='store_true')
-    parser.add_argument('-p', '--posture', help='enable posture watching', action='store_true')
-    args = parser.parse_args()
+    import sys
 
-    # if any of the arguments is True
-    if any([value for key, value in vars(args).items()]):
-        do_applications(dist_measure=args.distance, focus_time=args.time, post_watch=args.posture)
-    else:
-        parser.print_help()
+    from PyQt5.QtWidgets import QApplication
+
+    from gui.controller import GuiController
+    from gui.view import ApplicationGui
+
+    app = QApplication(sys.argv)
+    # Create the plain GUI.
+    app_gui = ApplicationGui()
+    app_gui.show()
+    # Take control of the GUI and the Application.
+    controller = GuiController(model=WebcamApplication(), gui=app_gui)
+    # Execute the event loop.
+    sys.exit(app.exec())

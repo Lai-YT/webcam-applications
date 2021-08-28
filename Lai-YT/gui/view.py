@@ -1,11 +1,7 @@
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QFormLayout
-from PyQt5.QtWidgets import QGridLayout
-from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtWidgets import QVBoxLayout
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QFormLayout, QGridLayout, QMainWindow, QVBoxLayout, QWidget
 
-from component import ActionButton, MessageLabel, OptionCheckBox, Label, LineEdit
+from gui.component import ActionButton, MessageLabel, OptionCheckBox, Label, LineEdit
 
 
 # View is the pure GUI part, provides no functionalitiy.
@@ -39,8 +35,8 @@ class ApplicationGui(QMainWindow):
         # Option name | order
         options_layout = QGridLayout()
         options = {"Distance Measure": 0,
-                   "Timer": 1,
-                   "Posture Detection": 2,}
+                   "Focus Time": 1,
+                   "Posture Detect": 2,}
         for opt, row in options.items():
             self.options[opt] = OptionCheckBox(opt)
             options_layout.addWidget(self.options[opt], row, 0)
@@ -67,7 +63,7 @@ class ApplicationGui(QMainWindow):
         self.action_buttons = {}
         buttons_layout = QGridLayout()
         # Button text | position on the QGridLayout
-        buttons = {"Start": (0, 0), "Restart": (0, 1), "Exit": (0, 2),}
+        buttons = {"Start": (0, 0), "Stop": (0, 1), "Exit": (0, 2),}
         # Create the buttons and add them to the grid layout.
         for btn_text, pos in buttons.items():
             self.action_buttons[btn_text] = ActionButton(btn_text)

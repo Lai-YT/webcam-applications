@@ -1,8 +1,5 @@
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QCheckBox
-from PyQt5.QtWidgets import QLabel
-from PyQt5.QtWidgets import QLineEdit
-from PyQt5.QtWidgets import QPushButton
+from PyQt5.QtWidgets import QCheckBox, QLabel, QLineEdit, QPushButton
 
 
 class OptionCheckBox(QCheckBox):
