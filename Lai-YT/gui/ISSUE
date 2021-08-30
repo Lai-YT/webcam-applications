@@ -1,0 +1,7 @@
+[1] About error message of parameteres in controller.py
+
+  Error message shows when `Distance Measure` is checked with any of the parameters invalid.
+However, if the user corrects the parameter but unchecks `Distance Measure`,
+GuiController._check_inputs_validity() will not be called and so error message won't be cleared.
+Is this what we want?
+(30/08/2021, Lai-YT)
