@@ -91,7 +91,7 @@ def do_posture_model_predict(frame: ColorImage, model: models, canvas: ColorImag
     class_pred: Int[64] = numpy.argmax(predictions)
     conf: Float[32] = predictions[0][class_pred]
 
-    canvas = cv2.resize(canvas, (640, 480), interpolation=cv2.INTER_AREA)
+    cv2.resize(canvas, (640, 480), interpolation=cv2.INTER_AREA)
 
     if class_pred == PostureLabel.slump.value:
         cv2.putText(canvas, "Slump", (10, 70), FONT_0, 0.9, RED, thickness=2)

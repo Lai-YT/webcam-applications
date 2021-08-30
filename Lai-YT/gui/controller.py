@@ -63,7 +63,7 @@ class GuiController:
         self._gui.action_buttons["Stop"].setEnabled(True)
         # Starts the application window.
         self._set_model_parameters()
-        self._model.start()
+        self._model.start(refresh=100)
 
     def _check_inputs_validity(self):
         """Returns True if all parameters that Distance Measure needs is in the range."""

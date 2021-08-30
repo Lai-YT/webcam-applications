@@ -3,7 +3,9 @@ from typing import Any, Dict, List
 
 import cv2
 import dlib
+import numpy
 from imutils import face_utils
+from nptyping import Int, NDArray
 from tensorflow.keras import models
 
 import lib.app_visual as vs
@@ -29,31 +31,23 @@ class WebcamApplication:
         # flags
         self._ready: bool = False    # Used to break the capturing loop inside start()
 
-    def start(self) -> None:
+    def start(self, refresh: int = 1) -> None:
+        """Starts the application.
+
+        Arguments:
+            refresh (int): Refresh speed in millisecond. 1ms in default.
+        """
         # Set the flag to True so can start capturing.
         # Loop breaks if someone calsl close() and sets the flag to False.
         self._ready = True
-        # common initialization
-        if self._distance_measure or self._posture_detect or self._focus_time:
-            face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
-            shape_predictor = dlib.shape_predictor(to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat'))
 
+        self._setup_face_detectors()
         if self._distance_measure:
-            ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
-            faces: dlib.rectangles = face_detector(ref_img)
-            if len(faces) != 1:
-                # must have exactly one face in the reference image
-                raise ValueError("should have exactly 1 face in the reference image")
-            landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(shape_predictor(ref_img, faces[0]))
-            distance_calculator = DistanceCalculator(landmarks, self._distance, self._face_width)
-
+            self._setup_distance_measure()
         if self._posture_detect:
-            model = models.load_model(MODEL_PATH)
-            angle_calculator = AngleCalculator()
-
+            self._setup_posture_detect()
         if self._focus_time:
-            timer = Timer()
-            timer.start()
+            self._setup_focus_time()
 
         webcam = cv2.VideoCapture(0)
         while self._ready:
@@ -61,57 +55,88 @@ class WebcamApplication:
             frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
             # separate detections and markings
             canvas: ColorImage = frame.copy()
-            # commons
-            if self._distance_measure or self._posture_detect or self._focus_time:
-                faces = face_detector(frame)
-                # doesn't handle multiple faces
-                if len(faces) > 1:
-                    continue
-                if len(faces):
-                    has_face: bool = True
-                    landmarks = face_utils.shape_to_np(shape_predictor(frame, faces[0]))
-                    vs.mark_face(canvas, face_utils.rect_to_bb(faces[0]), landmarks)
-                    draw_landmarks_used_by_distance_calculator(canvas, landmarks)
-                else:
-                    has_face = False
 
-            if self._distance_measure and has_face:
-                vs.put_distance_text(canvas, distance_calculator.calculate(landmarks))
-
+            landmarks = self._get_landmarks(frame, canvas)
+            if self._distance_measure:
+                self._run_distance_measure(landmarks, canvas)
             if self._posture_detect:
-                if has_face:
-                    vs.do_posture_angle_check(canvas, angle_calculator.calculate(landmarks), 10.0)
-                    draw_landmarks_used_by_angle_calculator(canvas, landmarks)
-                else:
-                    vs.do_posture_model_predict(frame, model, canvas)
-
+                self._run_posture_detect(frame, landmarks, canvas)
             if self._focus_time:
-                if not has_face:
-                    timer.pause()
-                else:
-                    timer.start()
-                vs.record_focus_time(canvas, timer.time(), timer.is_paused())
+                self._run_focus_time(landmarks, canvas)
 
             cv2.imshow("Webcam application", canvas)
-            cv2.waitKey(1)
+            cv2.waitKey(refresh)
         # Release resources.
         webcam.release()
         cv2.destroyAllWindows()
 
     def close(self) -> None:
-        """Sets the ready flag to False, so if the application is in progress, it'll be stopped."""
+        """Sets the ready flag to False. So if the application is in progress, it'll be stopped."""
         self._ready = False
 
-    def enable_distance_measure(self, enable, face_width, distance):
+    def enable_distance_measure(self, enable: bool, face_width: float, distance: float) -> None:
         self._distance_measure = enable
         self._face_width = face_width
         self._distance = distance
 
-    def enable_focus_time(self, enable):
+    def enable_focus_time(self, enable: bool) -> None:
         self._focus_time = enable
 
-    def enable_posture_detect(self, enable):
+    def enable_posture_detect(self, enable: bool) -> None:
         self._posture_detect = enable
+
+    def _setup_face_detectors(self) -> None:
+        self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
+        self._shape_predictor = dlib.shape_predictor(to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat'))
+
+    def _setup_distance_measure(self) -> None:
+        ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
+        faces: dlib.rectangles = self._face_detector(ref_img)
+        if len(faces) != 1:
+            # must have exactly one face in the reference image
+            raise ValueError("should have exactly 1 face in the reference image")
+        landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
+        self._distance_calculator = DistanceCalculator(landmarks, self._distance, self._face_width)
+
+    def _setup_posture_detect(self) -> None:
+        self._model = models.load_model(MODEL_PATH)
+        self._angle_calculator = AngleCalculator()
+
+    def _setup_focus_time(self) -> None:
+        self._timer = Timer()
+        self._timer.start()
+
+    def _get_landmarks(self, frame: ColorImage, canvas: ColorImage) -> NDArray[(68, 2), Int[32]]:
+        """Returns the numpy array with all elements in 0 if there isn't exactly 1 face in the frame.
+        Note that one can use .any() to check if any of the elements is not 0.
+        """
+        faces: dlib.rectangles = self._face_detector(frame)
+        # doesn't handle multiple faces
+        if len(faces) == 1:
+            landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(frame, faces[0]))
+            vs.mark_face(canvas, face_utils.rect_to_bb(faces[0]), landmarks)
+            draw_landmarks_used_by_distance_calculator(canvas, landmarks)
+        else:
+            landmarks = numpy.zeros(shape=(68, 2), dtype=numpy.int32)
+        return landmarks
+
+    def _run_distance_measure(self, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
+        if landmarks.any():
+            vs.put_distance_text(canvas, self._distance_calculator.calculate(landmarks))
+
+    def _run_posture_detect(self, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
+        if landmarks.any():
+            vs.do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks), 10.0)
+            draw_landmarks_used_by_angle_calculator(canvas, landmarks)
+        else:
+            vs.do_posture_model_predict(frame, self._model, canvas)
+
+    def _run_focus_time(self, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
+        if not landmarks.any():
+            self._timer.pause()
+        else:
+            self._timer.start()
+        vs.record_focus_time(canvas, self._timer.time(), self._timer.is_paused())
 
 
 if __name__ == '__main__':
