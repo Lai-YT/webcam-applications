@@ -11,7 +11,6 @@ from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_c
 from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from lib.timer import Timer
 from lib.train import MODEL_PATH
-from lib.video_writer import VideoWriter
 from lib.image_type import ColorImage
 from path import to_abs_path
 
@@ -47,16 +46,16 @@ class WebcamApplication:
                 raise ValueError("should have exactly 1 face in the reference image")
             landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(shape_predictor(ref_img, faces[0]))
             distance_calculator = DistanceCalculator(landmarks, self._distance, self._face_width)
+
         if self._posture_detect:
             model = models.load_model(MODEL_PATH)
             angle_calculator = AngleCalculator()
+
         if self._focus_time:
             timer = Timer()
             timer.start()
 
-        video_writer = VideoWriter(to_abs_path("output/video"), fps=7.0)
         webcam = cv2.VideoCapture(0)
-
         while self._ready:
             _, frame = webcam.read()
             frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
@@ -71,31 +70,32 @@ class WebcamApplication:
                 if len(faces):
                     has_face: bool = True
                     landmarks = face_utils.shape_to_np(shape_predictor(frame, faces[0]))
-                    canvas = vs.mark_face(canvas, face_utils.rect_to_bb(faces[0]), landmarks)
-                    canvas = draw_landmarks_used_by_distance_calculator(canvas, landmarks)
+                    vs.mark_face(canvas, face_utils.rect_to_bb(faces[0]), landmarks)
+                    draw_landmarks_used_by_distance_calculator(canvas, landmarks)
                 else:
                     has_face = False
 
             if self._distance_measure and has_face:
-                canvas = vs.put_distance_text(canvas, distance_calculator.calculate(landmarks))
+                vs.put_distance_text(canvas, distance_calculator.calculate(landmarks))
+
             if self._posture_detect:
                 if has_face:
-                    canvas = vs.do_posture_angle_check(canvas, angle_calculator.calculate(landmarks), 10.0)
-                    canvas = draw_landmarks_used_by_angle_calculator(canvas, landmarks)
+                    vs.do_posture_angle_check(canvas, angle_calculator.calculate(landmarks), 10.0)
+                    draw_landmarks_used_by_angle_calculator(canvas, landmarks)
                 else:
-                    canvas = vs.do_posture_model_predict(frame, model, canvas)
+                    vs.do_posture_model_predict(frame, model, canvas)
+
             if self._focus_time:
                 if not has_face:
                     timer.pause()
                 else:
                     timer.start()
-                canvas = vs.record_focus_time(canvas, timer.time(), timer.is_paused())
-            # video_writer.write(canvas)
+                vs.record_focus_time(canvas, timer.time(), timer.is_paused())
+
             cv2.imshow("Webcam application", canvas)
             cv2.waitKey(1)
         # Release resources.
         webcam.release()
-        video_writer.release()
         cv2.destroyAllWindows()
 
     def close(self) -> None:

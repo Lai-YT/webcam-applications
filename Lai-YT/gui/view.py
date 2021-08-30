@@ -34,9 +34,11 @@ class ApplicationGui(QMainWindow):
         self.option_msgs = {}
         # Option name | order
         options_layout = QGridLayout()
-        options = {"Distance Measure": 0,
-                   "Focus Time": 1,
-                   "Posture Detect": 2,}
+        options = {
+            "Distance Measure": 0,
+            "Focus Time": 1,
+            "Posture Detect": 2,
+        }
         for opt, row in options.items():
             self.options[opt] = OptionCheckBox(opt)
             options_layout.addWidget(self.options[opt], row, 0)
@@ -51,8 +53,10 @@ class ApplicationGui(QMainWindow):
         self.settings = {}
         settings_layout = QFormLayout()
         # Parameter name | description
-        settings = {"Face Width": "Face width:",
-                    "Distance": "Distance from screen:",}
+        settings = {
+            "Face Width": "Face width:",
+            "Distance": "Distance from screen:",
+        }
         for set, text in settings.items():
             self.settings[set] = LineEdit()
             settings_layout.addRow(Label(text), self.settings[set])
@@ -63,7 +67,7 @@ class ApplicationGui(QMainWindow):
         self.action_buttons = {}
         buttons_layout = QGridLayout()
         # Button text | position on the QGridLayout
-        buttons = {"Start": (0, 0), "Stop": (0, 1), "Exit": (0, 2),}
+        buttons = {"Start": (0, 0), "Stop": (0, 1), "Exit": (0, 2)}
         # Create the buttons and add them to the grid layout.
         for btn_text, pos in buttons.items():
             self.action_buttons[btn_text] = ActionButton(btn_text)

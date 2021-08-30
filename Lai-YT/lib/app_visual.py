@@ -12,14 +12,12 @@ from tensorflow.keras import models
 
 from lib.color import BLUE, GREEN, MAGENTA, RED
 from lib.cv_font import FONT_0
-from lib.decorator import pass_by_copy
 from lib.image_type import ColorImage, GrayImage
 from lib.train import PostureLabel, IMAGE_DIMENSIONS
 
 
-@pass_by_copy(pos=[0])
-def put_distance_text(canvas: ColorImage, distance: float) -> ColorImage:
-    """Returns the canvas with distance text.
+def put_distance_text(canvas: ColorImage, distance: float) -> None:
+    """Puts distance text on the canvas.
 
     Arguments:
         canvas (NDArray[(Any, Any, 3), UInt8]): Imgae to put text on
@@ -27,12 +25,10 @@ def put_distance_text(canvas: ColorImage, distance: float) -> ColorImage:
     """
     text = "dist. " + str(round(distance, 2))
     cv2.putText(canvas, text, (10, 30), FONT_0, 0.9, MAGENTA, 2)
-    return canvas
 
 
-@pass_by_copy(pos=[0])
-def record_focus_time(canvas: ColorImage, time: float, paused: bool) -> ColorImage:
-    """Returns the canvas with time record, also extra text if paused.
+def record_focus_time(canvas: ColorImage, time: float, paused: bool) -> None:
+    """Puts time record on the canvas, also extra text if paused.
 
     Arguments:
         canvas (NDArray[(Any, Any, 3), UInt8]): The image to put time record on
@@ -44,12 +40,10 @@ def record_focus_time(canvas: ColorImage, time: float, paused: bool) -> ColorIma
 
     if paused:
         cv2.putText(canvas, "time pause", (500, 40), FONT_0, 0.6, RED, 1)
-    return canvas
 
 
-@pass_by_copy(pos=[0])
-def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> ColorImage:
-    """Returns the canvas with face area framed up and landmarks dotted.
+def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
+    """Modifies the canvas with face area framed up and landmarks dotted.
 
     Arguments:
         canvas (NDArray[(Any, Any, 3), UInt8]): The image to mark face on
@@ -60,12 +54,10 @@ def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: ND
     cv2.rectangle(canvas, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
     for lx, ly in landmarks:
         cv2.circle(canvas, (lx, ly), 1, GREEN, -1)
-    return canvas
 
 
-@pass_by_copy(pos=[0])
-def do_posture_angle_check(canvas: ColorImage, angle: float, threshold: float) -> ColorImage:
-    """Returns the canvas with posture and angle text on it.
+def do_posture_angle_check(canvas: ColorImage, angle: float, threshold: float) -> None:
+    """Puts posture and angle text on the canvas.
     "Good" in green if angle doesn't exceed the threshold, otherwise "Slump" in red.
 
     Arguments:
@@ -78,12 +70,10 @@ def do_posture_angle_check(canvas: ColorImage, angle: float, threshold: float) -
     # try to match the style in do_posture_model_predict()
     cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, 2)
     cv2.putText(canvas, f"Slope Angle: {round(angle, 1)} degrees", (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
-    return canvas
 
 
-@pass_by_copy(pos=[2])
-def do_posture_model_predict(frame: ColorImage, model: models, canvas: ColorImage) -> ColorImage:
-    """Returns the canvas with posture label text.
+def do_posture_model_predict(frame: ColorImage, model: models, canvas: ColorImage) -> None:
+    """Puts posture label text on the canvas.
 
     Arguments:
         frame (NDArray[(Any, Any, 3), UInt8]): The image contains posture to be watched
@@ -110,4 +100,3 @@ def do_posture_model_predict(frame: ColorImage, model: models, canvas: ColorImag
 
     msg: str = f'Predict Conf.: {round(int(conf*100))}%'
     cv2.putText(canvas, msg, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
-    return canvas

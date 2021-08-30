@@ -1,5 +1,3 @@
-from functools import partial
-
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
 from gui.view import ApplicationGui
@@ -35,10 +33,10 @@ class GuiController:
         self._gui.action_buttons["Stop"].setEnabled(False)
         # `Stop` is unables when being clicked and `Start` is enabled.
         self._gui.action_buttons["Stop"].clicked.connect(
-            partial(self._gui.action_buttons["Stop"].setEnabled, False)
+            lambda: self._gui.action_buttons["Stop"].setEnabled(False)
         )
         self._gui.action_buttons["Stop"].clicked.connect(
-            partial(self._gui.action_buttons["Start"].setEnabled, True)
+            lambda: self._gui.action_buttons["Start"].setEnabled(True)
         )
 
     def _connect_actions(self):
@@ -53,24 +51,22 @@ class GuiController:
         # To be able to do some validations before a real start,
         # put all connections in another method instead of directly
         # connecting them.
-        if not self._check_inputs_validity():
-            return
-        self._set_up_model()
+
+        # Check inputs if `Distance Measure` is selected.
+        if self._gui.options["Distance Measure"].isChecked():
+            if not self._check_inputs_validity():
+                return
+
         # If button `Start` is clicked successfully,
         # unable `Start` and enable `Stop`.
         self._gui.action_buttons["Start"].setEnabled(False)
         self._gui.action_buttons["Stop"].setEnabled(True)
         # Starts the application window.
+        self._set_model_parameters()
         self._model.start()
 
     def _check_inputs_validity(self):
-        """Returns True if `Distance Measure` isn't checked or all parameters
-        that Distance Measure needs is in the range.
-        """
-        # inputs are ignored
-        if not self._gui.options["Distance Measure"].isChecked():
-            return True
-
+        """Returns True if all parameters that Distance Measure needs is in the range."""
         check_passed = True
         # When invalid parameter occurs, that parameter line is cleared
         # and the error message shown after the option `Distance Measure`.
@@ -86,14 +82,14 @@ class GuiController:
 
         return check_passed
 
-    def _set_up_model(self):
+    def _set_model_parameters(self):
         self._model.enable_focus_time(self._gui.options["Focus Time"].isChecked())
         self._model.enable_posture_detect(self._gui.options["Posture Detect"].isChecked())
-        # Notice that the validility of parameters are ignored when `Distance Measure`
-        # isn't checked, which means invalid parameters will be set.
-        # Though once is checked, they will be overwritten. 
-        self._model.enable_distance_measure(
-            self._gui.options["Distance Measure"].isChecked(),
-            face_width=float(self._gui.settings["Face Width"].text()),
-            distance=float(self._gui.settings["Distance"].text())
-        )
+        if self._gui.options["Distance Measure"].isChecked():
+            self._model.enable_distance_measure(
+                True,
+                face_width=float(self._gui.settings["Face Width"].text()),
+                distance=float(self._gui.settings["Distance"].text())
+            )
+        else:
+            self._model.enable_distance_measure(False, 0, 0)
