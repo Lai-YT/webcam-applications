@@ -1,6 +1,5 @@
 import os
 from configparser import ConfigParser
-from PyQt5 import QtCore
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
@@ -18,6 +17,7 @@ class GuiController:
         self._gui = gui
 
         self._set_valid_inputs()
+        self._set_input_locks()
         self._load_configs()
         self._enable_buttons()
         self._connect_actions()
@@ -27,11 +27,11 @@ class GuiController:
         # The user is still able to key in 00000~99999,
         # `intermediate` inputs will be found later at the button event stage
         # and error message will show.
-        self._gui.settings["Face Width"].set_placeholder_text("5~24.99 (cm)")
+        self._gui.settings["Face Width"].setPlaceholderText("5~24.99 (cm)")
         self._gui.settings["Face Width"].setValidator(QDoubleValidator(5, 24.99, 2))  # bottom, top, decimals
         self._gui.settings["Face Width"].setMaxLength(5)
 
-        self._gui.settings["Distance"].set_placeholder_text("10~99.99 (cm)")
+        self._gui.settings["Distance"].setPlaceholderText("10~99.99 (cm)")
         self._gui.settings["Distance"].setValidator(QDoubleValidator(10, 99.99, 2))
         self._gui.settings["Distance"].setMaxLength(5)
 
@@ -135,3 +135,17 @@ class GuiController:
             )
         else:
             self._model.enable_distance_measure(False, 0, 0)
+
+    def _set_input_locks(self):
+        """If `Distance Measure` is not checked, lock the entries to avoid unnecessary parameters."""
+        self._gui.options["Distance Measure"].toggled.connect(lambda checked: self._lock_inputs(not checked))
+
+    def _lock_inputs(self, status: bool):
+        """Show gray and read-only parameters when locked, otherwise black, as normal."""
+        for parameter in self._gui.settings.values():
+            if status:
+                parameter.set_color("gray")
+                parameter.setReadOnly(True)
+            else:
+                parameter.set_color("black")
+                parameter.setReadOnly(False)
