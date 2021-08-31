@@ -1,5 +1,6 @@
 import os
 from configparser import ConfigParser
+from PyQt5 import QtCore
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
