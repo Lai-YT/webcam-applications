@@ -1,2 +1,0 @@
-The distance(cm) between your face and the webcam when taking the picture: 60.0
-Your actual width(cm) of face: 15.0
