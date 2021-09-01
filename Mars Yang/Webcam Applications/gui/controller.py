@@ -1,6 +1,5 @@
 import os
 from configparser import ConfigParser
-from PyQt5 import QtCore
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
@@ -17,37 +16,17 @@ class GuiController:
         self._model = model
         self._gui = gui
 
-        self._set_valid_inputs()
+        # self._set_input_locks()
         self._load_configs()
-        self._textbox_lock()
         self._enable_buttons()
         self._connect_actions()
 
-    def _set_valid_inputs(self):
-        """Set valid inputs of the settings."""
-        # The user is still able to key in 00000~99999,
-        # `intermediate` inputs will be found later at the button event stage
-        # and error message will show.
-        self._gui.settings["Face Width"].set_placeholder_text("5~24.99 (cm)")
-        self._gui.settings["Face Width"].setValidator(QDoubleValidator(5, 24.99, 2))  # bottom, top, decimals
-        self._gui.settings["Face Width"].setMaxLength(6)
-
-        self._gui.settings["Distance"].set_placeholder_text("10~99.99 (cm)")
-        self._gui.settings["Distance"].setValidator(QDoubleValidator(10, 99.99, 2))
-        self._gui.settings["Distance"].setMaxLength(6)
-    
     def _load_configs(self):
         config = ConfigParser()
         config.read(GuiController.CONFIG)
         # Read the previous state of check boxes and restore them.
         for opt_name, check_box in self._gui.options.items():
             check_box.setChecked(config.getboolean(opt_name, "checked"))
-        # If the user had set the parameters, restore them.
-        for parameter, line_edit in self._gui.settings.items():
-            if config.get("Distance Measure", parameter, fallback=None):
-                line_edit.setText(config.get("Distance Measure", parameter))
-        # Set the readonly state of textboxes according to the previous state of 'Distance Measure'.
-        self._readonly_setting(not self._gui.options["Distance Measure"].isChecked())
 
     def _store_configs(self):
         """Stores the state of the current GUI."""
@@ -56,11 +35,6 @@ class GuiController:
         # Stores whether the check box is checked or not.
         for section, check_box in self._gui.options.items():
             config.set(section, "checked", 'True' if check_box.isChecked() else 'False')
-        # `Distance Measure`: only stores valid parameters.
-        # Empty input is also allowed, so users can clear by themselves.
-        for parameter, line_edit in self._gui.settings.items():
-            if line_edit.hasAcceptableInput() or line_edit.text() == "":
-                config.set("Distance Measure", parameter, line_edit.text())
         # Save the states back to the config file.
         with open(GuiController.CONFIG, 'w') as f:
             config.write(f)
@@ -87,6 +61,8 @@ class GuiController:
         self._gui.action_buttons["Exit"].clicked.connect(self._gui.close)
         # Also stores the GUI states back to the configuration file.
         self._gui.action_buttons["Exit"].clicked.connect(self._store_configs)
+        #
+        self._gui.action_buttons["Settings"].clicked.connect(self._call_settings)
 
     def _click_start(self):
         """The Model starts if verifications are passed."""
@@ -107,53 +83,25 @@ class GuiController:
         # Starts the application window.
         self._set_model_parameters()
         self._model.start()
-
-    def _check_inputs_validity(self):
-        """Returns True if all parameters that Distance Measure needs is in the range."""
-        check_passed = True
-        # When invalid parameter occurs, that parameter line is cleared
-        # and the error message shown after the option `Distance Measure`.
-        for parameter_line in self._gui.settings.values():
-            if not parameter_line.hasAcceptableInput():
-                check_passed = False
-                parameter_line.clear()
-                self._gui.option_msgs["Distance Measure"].setText("error: parameter out of range")
-
-        if check_passed:
-            # Clear the message label to make sure no previous error.
-            self._gui.option_msgs["Distance Measure"].clear()
-
-        return check_passed
-
-    def _set_model_parameters(self):
-        """Pass the options and parameters to Model in accordance with the GUI state."""
-        self._model.enable_focus_time(self._gui.options["Focus Time"].isChecked())
-        self._model.enable_posture_detect(self._gui.options["Posture Detect"].isChecked())
-        # Parameters are replaced by 0 if `Distance Measure` aren't selected.
-        if self._gui.options["Distance Measure"].isChecked():
-            self._model.enable_distance_measure(
-                True,
-                face_width=float(self._gui.settings["Face Width"].text()),
-                distance=float(self._gui.settings["Distance"].text())
-            )
-        else:
-            self._model.enable_distance_measure(False, 0, 0)
-
-    def _textbox_lock(self):
-        '''If 'Distance Measure' is not checked, lock the entries to avoid unnecessary parameters.'''
-        self._gui.options["Distance Measure"].toggled.connect(lambda checked: checked and self._readonly_setting(False))
-        self._gui.options["Distance Measure"].toggled.connect(lambda checked: not checked and self._readonly_setting(True))
     
-    def _readonly_setting(self, status: bool):
-        if status:
-            # Convert text color to gray before locked.
-            self._gui.settings["Face Width"].setStyleSheet("color:gray")
-            self._gui.settings["Distance"].setStyleSheet("color:gray")
-        else:
-            # Convert text color to black before unlocked.
-            self._gui.settings["Face Width"].setStyleSheet("color:black")
-            self._gui.settings["Distance"].setStyleSheet("color:black")
-        # 'Distance Measure' checked -> textboxes unlocked
-        # 'Distance Measure' unchecked -> textboxes locked
-        self._gui.settings["Face Width"].setReadOnly(status)
-        self._gui.settings["Distance"].setReadOnly(status)
+    def _call_settings(self):
+        import sys
+
+        from PyQt5.QtWidgets import QApplication
+
+        from alpha import WebcamApplication
+        from gui.settings_controller import SettingsController
+        from gui.settings import SettingsGui
+
+        settings = QApplication(sys.argv)
+        # Create the settings GUI.
+        print("a")
+        settings_gui = SettingsGui()
+        print("b")
+        settings_gui.show()
+        # Take control of the GUI and the Application.
+        print("c")
+        settings_controller = SettingsController(model=WebcamApplication(), gui=settings_gui)
+        print("d")
+        # Execute the event loop.
+        sys.exit(settings.exec())

@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QCheckBox, QLabel, QLineEdit, QPushButton
 
 
 class OptionCheckBox(QCheckBox):
-    def __init__(self, text="", font_size=12):
+    def __init__(self, text, font_size=12):
         super().__init__(text)
         self.setFont(QFont("Arial", font_size))
 
@@ -24,14 +24,16 @@ class MessageLabel(QLabel):
 
 
 class LineEdit(QLineEdit):
+    """Placeholder text is easily set with constructor.
+    Also provides simple color setting method.
+    """
     def __init__(self, text="", font_size=12):
         super().__init__(text)
         self.setPlaceholderText(text)
         self.setFont(QFont("Arial", font_size))
 
-    def set_placeholder_text(self, text, font_size=12):
-        super().setPlaceholderText(text)
-        self.setFont(QFont("Arial", font_size))
+    def set_color(self, color):
+        self.setStyleSheet(f"color: {color};")
 
 
 class ActionButton(QPushButton):
