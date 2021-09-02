@@ -144,8 +144,8 @@ if __name__ == '__main__':
 
     from PyQt5.QtWidgets import QApplication
 
-    from gui.controller import GuiController
-    from gui.view import ApplicationGui
+    from gui.main_controller import GuiController
+    from gui.main_window import ApplicationGui
 
     app = QApplication(sys.argv)
     # Create the plain GUI.

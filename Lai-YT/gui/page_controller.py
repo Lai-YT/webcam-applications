@@ -22,7 +22,6 @@ class PageController:
         }
         # Load the configs of pages.
         self._load_configs()
-        self._set_input_locks()
 
     def _load_configs(self):
         """Loads the configs of each pages by delegates the real work to their own
@@ -87,20 +86,6 @@ class PageController:
             )
         else:
             model.enable_distance_measure(False, 0, 0)
-
-    def _set_input_locks(self):
-        """If `Distance Measure` is not checked, lock the entries to avoid unnecessary parameters."""
-        self._widget.pages["Options"].options["Distance Measure"].toggled.connect(lambda checked: self._lock_inputs(not checked))
-
-    def _lock_inputs(self, status: bool):
-        """Show gray and read-only parameters when locked, otherwise black, as normal."""
-        for parameter in self._widget.pages["Settings"].settings.values():
-            if status:
-                parameter.set_color("gray")
-                parameter.setReadOnly(True)
-            else:
-                parameter.set_color("black")
-                parameter.setReadOnly(False)
 
 
 class OptionController:
