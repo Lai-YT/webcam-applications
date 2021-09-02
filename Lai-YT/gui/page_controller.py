@@ -1,5 +1,6 @@
 import os
 from configparser import ConfigParser
+from functools import partial
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
@@ -122,6 +123,7 @@ class SettingController:
         self._widget = setting_widget
 
         self._set_valid_inputs()
+        self._connect_checks()
 
     def _set_valid_inputs(self):
         """Set valid inputs of the settings."""
@@ -135,6 +137,18 @@ class SettingController:
         self._widget.settings["Distance"].setPlaceholderText("10~99.99 (cm)")
         self._widget.settings["Distance"].setValidator(QDoubleValidator(10, 99.99, 2))
         self._widget.settings["Distance"].setMaxLength(5)
+    
+    def _connect_checks(self):
+        self._widget.message.setText("* invalid inputs are in red")
+        for name, line_edit in self._widget.settings.items():
+            line_edit.textChanged.connect(partial(self._check_inputs_validity, name))
+
+    def _check_inputs_validity(self, name):
+        line_edit = self._widget.settings[name]
+        if not line_edit.hasAcceptableInput():
+            line_edit.set_color("red")
+        else:
+            line_edit.set_color("black")
 
     def load_configs(self, config):
         """If the user had set the parameters, restore them.

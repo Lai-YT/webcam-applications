@@ -8,11 +8,11 @@ from gui.page_widget import PageWidget
 #     Current GUI layout:
 # 
 #     -------------------
-#     |       Page      |  <- Created by PageWidget
-#     |     Widget     |
-#     ------------------
-#    |  Action Buttons |  <- Created by main GUI
-#    -------------------
+#     |      Pages      |  <- Created by PageWidget (OptionWidget, SettingWidget)
+#     |                 |
+#     -------------------
+#     |  Action Buttons |  <- Created by main GUI
+#     -------------------
 
 
 # View is the pure GUI part, provides no functionalitiy.
@@ -26,7 +26,7 @@ class ApplicationGui(QMainWindow):
         # Set some main window's properties.
         self.setWindowTitle("Webcam application")
         self.setWindowIcon(QIcon("img/webcam.ico"))
-        self.setFixedSize(400, 300)
+        self.setFixedSize(400, 350)
         # Set the central widget and the general layout.
         self._general_layout = QVBoxLayout()
         self._central_widget = QWidget(parent=self)

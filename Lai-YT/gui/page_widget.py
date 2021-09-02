@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QFormLayout, QGridLayout, QTabWidget, QWidget
+from PyQt5.QtWidgets import QFormLayout, QGridLayout, QSpacerItem, QTabWidget, QWidget
 
 from gui.component import Label, LineEdit, OptionCheckBox, MessageLabel
 
@@ -43,11 +43,15 @@ class OptionWidget(QWidget):
             self.messages[opt] = MessageLabel()
             options_layout.addWidget(self.messages[opt], row, 1, 1, 2)
 
+        # Add a blank space filler at the bottom to make options close together.
+        space = QSpacerItem(5, 100)
+        options_layout.addItem(space, options_layout.rowCount(), 0)
+
         self.setLayout(options_layout)
 
 
 class SettingWidget(QWidget):
-    """The input area of  settings/parameters that the application needs are put here."""
+    """The input area of settings/parameters that the application needs are put here."""
     def __init__(self):
         super().__init__()
         self._create_settings()
@@ -65,4 +69,8 @@ class SettingWidget(QWidget):
             self.settings[set] = LineEdit()
             settings_layout.addRow(Label(text), self.settings[set])
 
+        self.message = MessageLabel()
+        # The message label occupies a whole row.
+        settings_layout.addRow(self.message)
+    
         self.setLayout(settings_layout)

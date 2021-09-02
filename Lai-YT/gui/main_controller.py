@@ -10,7 +10,7 @@ from gui.page_controller import PageController
 #            (check among pages)
 #         /                   \
 #    OptionController     SettingController
-#      (options only)       (settings only)
+#     (options only)       (settings only)
 
 
 class GuiController:
