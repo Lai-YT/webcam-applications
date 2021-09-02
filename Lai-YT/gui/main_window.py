@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
 from gui.page_widget import PageWidget
 
+import gui.img.icon
+
 
 #     Current GUI layout:
 #    -----------------------
@@ -25,7 +27,7 @@ class ApplicationGui(QMainWindow):
         super().__init__()
         # Set some main window's properties.
         self.setWindowTitle("Webcam application")
-        self.setWindowIcon(QIcon("img/webcam.ico"))
+        self.setWindowIcon(QIcon(":webcam.ico"))
         self.setFixedSize(400, 350)
         # Set the central widget and the general layout.
         self._general_layout = QVBoxLayout()
@@ -39,5 +41,3 @@ class ApplicationGui(QMainWindow):
         """Creates the page area. Components are created by PageWidget."""
         self.page_widget = PageWidget()
         self._general_layout.addWidget(self.page_widget)
-
-

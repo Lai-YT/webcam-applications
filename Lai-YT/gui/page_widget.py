@@ -96,3 +96,4 @@ class SettingWidget(QWidget):
     def _create_buttons(self):
         self.save_button = ActionButton("Save")
         self._general_layout.addWidget(self.save_button, alignment=Qt.AlignRight | Qt.AlignBottom)
+        

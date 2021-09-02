@@ -30,3 +30,4 @@ class GuiController:
             settings_check_callback=self._page_controllers["Settings"].check_inputs_validity,
             exit_callback=self._gui.close
         )
+        
