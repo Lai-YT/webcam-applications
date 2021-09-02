@@ -1,12 +1,13 @@
-from PyQt5.QtWidgets import QFormLayout, QGridLayout, QSpacerItem, QTabWidget, QWidget
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QFormLayout, QGridLayout, QSpacerItem, QTabWidget, QVBoxLayout, QWidget
 
-from gui.component import Label, LineEdit, OptionCheckBox, MessageLabel
+from gui.component import ActionButton, Label, LineEdit, OptionCheckBox, MessageLabel
 
 
 class PageWidget(QTabWidget):
     """PageWidget contains the widgets that are switchable."""
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         # Set font of the page switching buttons.
         self.tabBar().setStyleSheet('font: 12pt "Arial";')
         self._create_pages()
@@ -20,41 +21,58 @@ class PageWidget(QTabWidget):
 
 class OptionWidget(QWidget):
     """The options of the application are put here."""
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        # A wiget can only have 1 layout.
+        # A simple walk around is to create a main layout and add sub layout/widget into it. 
+        self._general_layout = QVBoxLayout()
+        self.setLayout(self._general_layout)
+
         self._create_options()
+        self._create_buttons()
 
     def _create_options(self):
         """Create the options of this widget."""
         # Each check box followed by a label, which shows message when error occurs.
         self.options = {}
-        self.messages = {}
         # Option name | order
-        options_layout = QGridLayout()
-        options = {
-            "Distance Measure": 0,
-            "Focus Time": 1,
-            "Posture Detect": 2,
-        }
-        for opt, row in options.items():
+        options_layout = QVBoxLayout()
+        options = ["Distance Measure", "Focus Time", "Posture Detect"]
+        for opt in options:
             self.options[opt] = OptionCheckBox(opt)
-            options_layout.addWidget(self.options[opt], row, 0)
-            # A message label is 2 columns long.
-            self.messages[opt] = MessageLabel()
-            options_layout.addWidget(self.messages[opt], row, 1, 1, 2)
+            options_layout.addWidget(self.options[opt], stretch=1)
+        # Add space to make options close together.
+        options_layout.addStretch(5)
 
-        # Add a blank space filler at the bottom to make options close together.
-        space = QSpacerItem(5, 100)
-        options_layout.addItem(space, options_layout.rowCount(), 0)
+        self.message = MessageLabel()
+        options_layout.addWidget(self.message)
 
-        self.setLayout(options_layout)
+        self._general_layout.addLayout(options_layout)
+
+    def _create_buttons(self):
+        """Creates the buttons of actions"""
+        self.buttons = {}
+        buttons_layout = QGridLayout()
+        # Button text | position on the QGridLayout
+        buttons = {"Start": (0, 0), "Stop": (0, 1), "Exit": (0, 2)}
+        # Create the buttons and add them to the grid layout.
+        for btn_text, pos in buttons.items():
+            self.buttons[btn_text] = ActionButton(btn_text)
+            buttons_layout.addWidget(self.buttons[btn_text], *pos)
+
+        self._general_layout.addLayout(buttons_layout)
 
 
 class SettingWidget(QWidget):
     """The input area of settings/parameters that the application needs are put here."""
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self._general_layout = QVBoxLayout()
+        self.setLayout(self._general_layout)
+
         self._create_settings()
+        self._create_buttons()
 
     def _create_settings(self):
         """Create the settings of this widget."""
@@ -73,4 +91,8 @@ class SettingWidget(QWidget):
         # The message label occupies a whole row.
         settings_layout.addRow(self.message)
     
-        self.setLayout(settings_layout)
+        self._general_layout.addLayout(settings_layout)
+
+    def _create_buttons(self):
+        self.save_button = ActionButton("Save")
+        self._general_layout.addWidget(self.save_button, alignment=Qt.AlignRight | Qt.AlignBottom)
