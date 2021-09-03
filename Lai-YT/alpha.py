@@ -74,13 +74,9 @@ class WebcamApplication:
         """Sets the ready flag to False. So if the application is in progress, it'll be stopped."""
         self._ready = False
 
-    def enable_distance_measure(self, enable: bool) -> None:
+    def enable_distance_measure(self, enable: bool, face_width: float, distance: float) -> None:
         self._distance_measure = enable
-
-    def set_face_width(self, face_width: float) -> None:
         self._face_width = face_width
-
-    def set_distance_to_camera(self, distance: float) -> None:
         self._distance = distance
 
     def enable_focus_time(self, enable: bool) -> None:
@@ -156,6 +152,6 @@ if __name__ == '__main__':
     app_gui = ApplicationGui()
     app_gui.show()
     # Take control of the GUI and the Application.
-    controller = GuiController(model=WebcamApplication(), gui=app_gui)
+    controller = GuiController(app=WebcamApplication(), gui=app_gui)
     # Execute the event loop.
     sys.exit(app.exec())

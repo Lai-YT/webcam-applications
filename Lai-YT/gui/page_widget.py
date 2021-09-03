@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QFormLayout, QGridLayout, QSpacerItem, QTabWidget, QVBoxLayout, QWidget
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtWidgets import QFormLayout, QGridLayout, QTabWidget, QVBoxLayout, QWidget
 
 from gui.component import ActionButton, Label, LineEdit, OptionCheckBox, MessageLabel
 
@@ -21,10 +21,20 @@ class PageWidget(QTabWidget):
 
 class OptionWidget(QWidget):
     """The options of the application are put here."""
+
+    """
+    To make the `Start` button a "lazy button", extra signal is created.
+    It is emitted for a real click.
+
+    (A lazy button gives controller the ability to double check before
+     a real click, so the action is made safely.)
+    """
+    s_start = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         # A wiget can only have 1 layout.
-        # A simple walk around is to create a main layout and add sub layout/widget into it. 
+        # A simple walk around is to create a main layout and add sub layout/widget into it.
         self._general_layout = QVBoxLayout()
         self.setLayout(self._general_layout)
 
@@ -65,6 +75,16 @@ class OptionWidget(QWidget):
 
 class SettingWidget(QWidget):
     """The input area of settings/parameters that the application needs are put here."""
+
+    """
+    To make the `Save` button a "lazy button", extra signal is created.
+    It is emitted for a real click.
+
+    (A lazy button gives controller the ability to double check before
+     a real click, so the action is made safely.)
+    """
+    s_save = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -87,13 +107,15 @@ class SettingWidget(QWidget):
             self.settings[set] = LineEdit()
             settings_layout.addRow(Label(text), self.settings[set])
 
-        self.message = MessageLabel()
         # The message label occupies a whole row.
+        self.message = MessageLabel()
         settings_layout.addRow(self.message)
-    
+
         self._general_layout.addLayout(settings_layout)
 
     def _create_buttons(self):
-        self.save_button = ActionButton("Save")
-        self._general_layout.addWidget(self.save_button, alignment=Qt.AlignRight | Qt.AlignBottom)
-        
+        """Creates buttons of the widget."""
+        self.buttons = {
+            "Save": ActionButton("Save"),
+        }
+        self._general_layout.addWidget(self.buttons["Save"], alignment=Qt.AlignRight | Qt.AlignBottom)

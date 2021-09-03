@@ -1,9 +1,10 @@
+from configparser import ConfigParser
+
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
-from gui.page_widget import PageWidget
-
 import gui.img.icon
+from gui.page_widget import PageWidget
 
 
 #     Current GUI layout:
@@ -17,12 +18,13 @@ import gui.img.icon
 #    | ------------------- |
 #    -----------------------
 
-# View is the pure GUI part, provides no functionalitiy.
-# It's responsibility is to create all components the GUI should have,
-# whichs means no other components will be added by other parts (Controller, Model).
-# Functionality of the components is set by the Controllers.
 class ApplicationGui(QMainWindow):
-    """The main window that shows options of the application."""
+    """This is the pure GUI part, provides no functionalitiy.
+    It's responsibility is to create all components the GUI should have,
+    whichs means no other components will be added by other parts (Controller, App).
+    Functionality of the components is set by the Controllers.
+    """
+
     def __init__(self):
         super().__init__()
         # Set some main window's properties.
