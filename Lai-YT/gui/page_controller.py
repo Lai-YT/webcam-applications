@@ -44,6 +44,8 @@ class OptionController(PageController):
         Waits for the main controller to tell since we don't know whether the
         start succeeds or not at the first click.
         """
+        # Clear possible error message from the last try.
+        self._widget.message.clear()
         self._widget.buttons["Start"].setEnabled(False)
         self._widget.buttons["Stop"].setEnabled(True)
 

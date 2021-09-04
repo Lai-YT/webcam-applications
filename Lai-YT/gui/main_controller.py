@@ -89,7 +89,7 @@ class GuiController:
         Notice that the parameters are gotten from the ConfigParser, not the
         current SettingWidget. So it's save that invalid parameters won't be
         passed to the app (assume that only valid parameters are stored in the
-        ConfigParser)
+        ConfigParser).
         """
         self._app.enable_focus_time(self._pages["Options"].options["Focus Time"].isChecked())
         self._app.enable_posture_detect(self._pages["Options"].options["Posture Detect"].isChecked())
