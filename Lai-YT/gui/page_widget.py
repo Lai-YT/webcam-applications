@@ -22,15 +22,6 @@ class PageWidget(QTabWidget):
 class OptionWidget(QWidget):
     """The options of the application are put here."""
 
-    """
-    To make the `Start` button a "lazy button", extra signal is created.
-    It is emitted for a real click.
-
-    (A lazy button gives controller the ability to double check before
-     a real click, so the action is made safely.)
-    """
-    s_start = pyqtSignal()
-
     def __init__(self, parent=None):
         super().__init__(parent)
         # A wiget can only have 1 layout.

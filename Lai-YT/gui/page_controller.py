@@ -37,7 +37,6 @@ class OptionController(PageController):
         self._widget = option_widget
 
         self._enable_buttons()
-        self._connect_signals()
 
     def successful_start(self):
         """Disable `Start` button and enable `Stop` button.
@@ -67,13 +66,15 @@ class OptionController(PageController):
         for section, check_box in self._widget.options.items():
             config.set(section, "checked", 'True' if check_box.isChecked() else 'False')
 
-    def show_message(self, msg):
+    def show_message(self, msg, color="red"):
         """Shows message at the message label of the OptionWidget.
 
         Arguments:
             msg (str): The message to show
+            color (str): Color of the message. Default in red
         """
         self._widget.message.setText(msg)
+        self._widget.message.set_color(color)
 
     def _enable_buttons(self):
         """Set the initial state of buttons.
@@ -88,13 +89,6 @@ class OptionController(PageController):
         self._widget.buttons["Stop"].clicked.connect(
             lambda: self._widget.buttons["Start"].setEnabled(True)
         )
-
-    def _connect_signals(self):
-        """Note that the `Stop` and `Exit` buttons aren't connected here because
-        they depend on other widgets.
-        """
-        # Connect the `Start` button to the double check signals
-        self._widget.buttons["Start"].clicked.connect(self._widget.s_start)
 
 
 class SettingController(PageController):
@@ -128,6 +122,16 @@ class SettingController(PageController):
             if line_edit.hasAcceptableInput() or line_edit.text() == "":
                 config.set("Distance Measure", parameter, line_edit.text())
 
+    def show_message(self, msg, color="red"):
+        """Shows message at the message label of the SettingWidget.
+
+        Arguments:
+            msg (str): The message to show
+            color (str): Color of the message. Default in red
+        """
+        self._widget.message.setText(msg)
+        self._widget.message.set_color(color)
+
     def _set_valid_inputs(self):
         """Set valid inputs of the settings."""
         # The user is still able to key in 00000~99999,
@@ -155,14 +159,12 @@ class SettingController(PageController):
         """
         valid = self._check_inputs_validity()
         if valid:
-            self._widget.message.setText("Saved!")
-            self._widget.message.set_color("green")
+            self.show_message("Saved!", "green")
             # Emits the signal to have the main controller call store_config
             # with the ConfigParser.
             self._widget.s_save.emit()
         else:
-            self._widget.message.setText("Failed: parameter out of range")
-            self._widget.message.set_color("red")
+            self.show_message("Failed: parameter out of range", "red")
 
     def _check_inputs_validity(self):
        """Returns True if all parameters are in the range; otherwise clear the

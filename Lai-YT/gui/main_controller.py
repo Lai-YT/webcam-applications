@@ -57,7 +57,7 @@ class GuiController:
 
         # --- OptionWidget ---
         # Do some extra process and checks before a real start.
-        self._pages["Options"].s_start.connect(self._start)
+        self._pages["Options"].buttons["Start"].clicked.connect(self._start)
         # `Stop` closes the application window.
         self._pages["Options"].buttons["Stop"].clicked.connect(self._app.close)
         # `Exit` closes both the application windows and GUI.
