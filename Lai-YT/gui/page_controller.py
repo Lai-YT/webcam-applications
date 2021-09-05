@@ -105,9 +105,9 @@ class SettingController(PageController):
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
-        for parameter, line_edit in self._widget.settings.items():
-            if config.get("Distance Measure", parameter, fallback=None):
-                line_edit.setText(config.get("Distance Measure", parameter))
+        for option, parameters in self._widget.settings.items():
+            for name, line in parameters.items():
+                line.setText(config.get(option, name))
 
     def store_configs(self, config):
         """Only stores valid parameters.
@@ -115,9 +115,10 @@ class SettingController(PageController):
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
-        for parameter, line_edit in self._widget.settings.items():
-            if line_edit.hasAcceptableInput():
-                config.set("Distance Measure", parameter, line_edit.text())
+        for option, parameters in self._widget.settings.items():
+            for name, line in parameters.items():
+                if line.hasAcceptableInput():
+                    config.set(option, name, line.text())
 
     def show_message(self, msg, color="red"):
         """Shows message at the message label of the SettingWidget.
@@ -134,20 +135,35 @@ class SettingController(PageController):
         # The user is still able to key in 00000~99999,
         # `intermediate` inputs will be found later at the button event stage
         # and error message will show.
-        self._widget.settings["Face Width"].setPlaceholderText("5~24.99 (cm)")
-        self._widget.settings["Face Width"].setValidator(QDoubleValidator(5, 24.99, 2))  # bottom, top, decimals
-        self._widget.settings["Face Width"].setMaxLength(5)
+        self._widget.settings["Distance Measure"]["Face Width"].setPlaceholderText("5 ~ 24.99 (cm)")
+        self._widget.settings["Distance Measure"]["Face Width"].setValidator(QDoubleValidator(5, 24.99, 2))  # bottom, top, decimals
+        self._widget.settings["Distance Measure"]["Face Width"].setMaxLength(5)
 
-        self._widget.settings["Distance"].setPlaceholderText("10~99.99 (cm)")
-        self._widget.settings["Distance"].setValidator(QDoubleValidator(10, 99.99, 2))
-        self._widget.settings["Distance"].setMaxLength(5)
+        self._widget.settings["Distance Measure"]["Distance"].setPlaceholderText("10 ~ 99.99 (cm)")
+        self._widget.settings["Distance Measure"]["Distance"].setValidator(QDoubleValidator(10, 99.99, 2))
+        self._widget.settings["Distance Measure"]["Distance"].setMaxLength(5)
+
+        self._widget.settings["Distance Measure"]["Bound"].setPlaceholderText("30 ~ 59.99 (cm)")
+        self._widget.settings["Distance Measure"]["Bound"].setValidator(QDoubleValidator(30, 59.99, 2))
+        self._widget.settings["Distance Measure"]["Bound"].setMaxLength(5)
+
+        self._widget.settings["Focus Time"]["Time Limit"].setPlaceholderText("1 ~ 999 (min)")
+        self._widget.settings["Focus Time"]["Time Limit"].setValidator(QIntValidator(1, 999))
+
+        self._widget.settings["Focus Time"]["Break Time"].setPlaceholderText("1 ~ 999 (min)")
+        self._widget.settings["Focus Time"]["Break Time"].setValidator(QIntValidator(1, 999))
+
+        self._widget.settings["Posture Detect"]["Angle"].setPlaceholderText("5 ~ 24.99 (deg)")
+        self._widget.settings["Posture Detect"]["Angle"].setValidator(QDoubleValidator(5, 25, 2))
+        self._widget.settings["Posture Detect"]["Angle"].setMaxLength(5)
 
     def _connect_signals(self):
         # `Save` button connects to the double check method.
         self._widget.buttons["Save"].clicked.connect(self._save)
         # The message is cleared when any of the parameters are changed.
-        for parameter_line in self._widget.settings.values():
-            parameter_line.textChanged.connect(self._widget.message.clear)
+        for parameters in self._widget.settings.values():
+            for parameter_line in parameters.values():
+                parameter_line.textChanged.connect(self._widget.message.clear)
 
     def _save(self):
         """This a button clicked double check method.
@@ -168,9 +184,10 @@ class SettingController(PageController):
        corresponding parameters and returns False.
        """
        check_passed = True
-       for parameter_line in self._widget.settings.values():
-           if not parameter_line.hasAcceptableInput():
-               check_passed = False
-               parameter_line.clear()
+       for parameters in self._widget.settings.values():
+           for parameter_line in parameters.values():
+               if not parameter_line.hasAcceptableInput():
+                   check_passed = False
+                   parameter_line.clear()
 
        return check_passed

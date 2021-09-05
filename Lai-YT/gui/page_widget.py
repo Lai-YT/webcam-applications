@@ -39,9 +39,9 @@ class OptionWidget(QWidget):
         options_layout = QVBoxLayout()
         # Option name | description
         options = {
-            "Distance Measure": "description",
-            "Focus Time": "description",
-            "Posture Detect": "description",
+            "Distance Measure": "shows message if the user gets too close to the screen",
+            "Focus Time": "reminds when it's time to take a break",
+            "Posture Detect": "shows message when the user has bad posture",
         }
         for opt, des in options.items():
             self.options[opt] = OptionCheckBox(opt)
@@ -94,14 +94,27 @@ class SettingWidget(QWidget):
         """Create the settings of this widget."""
         self.settings = {}
         settings_layout = QFormLayout()
-        # Parameter name | description
+        # {option: [(parameter, description)]}
         settings = {
-            "Face Width": "Face width:",
-            "Distance": "Distance from screen:",
+            "Distance Measure": [
+                ("Face Width","Face width:"),
+                ("Distance","Distance in reference:"),
+                ("Bound","Shortest distance allowed:"),
+            ],
+            "Focus Time": [
+                ("Time Limit", "Time limit:"),
+                ("Break Time", "Break time:"),
+            ],
+            "Posture Detect": [
+                ("Angle", "Allowed slope angle:"),
+            ],
         }
-        for set, text in settings.items():
-            self.settings[set] = LineEdit()
-            settings_layout.addRow(Label(text), self.settings[set])
+        for option, parameters in settings.items():
+            settings_layout.addRow(Label("<b>" + option + "</b>"))
+            self.settings[option] = {}
+            for param, descript in parameters:
+                self.settings[option][param] = LineEdit()
+                settings_layout.addRow(Label(descript), self.settings[option][param])
 
         # The message label occupies a whole row.
         self.message = MessageLabel()

@@ -91,22 +91,20 @@ class GuiController:
         passed to the app (assume that only valid parameters are stored in the
         ConfigParser).
         """
+        self._app.enable_distance_measure(
+            enable=self._pages["Options"].options["Distance Measure"].isChecked(),
+            face_width=self._config.getfloat("Distance Measure", "Face Width"),
+            distance=self._config.getfloat("Distance Measure", "Distance"),
+            warn_dist=self._config.getfloat("Distance Measure", "Bound"),)
+
         self._app.enable_focus_time(
             enable=self._pages["Options"].options["Focus Time"].isChecked(),
-            time_limit=1,
-            break_time=1,)
+            time_limit=self._config.getint("Focus Time", "Time Limit"),
+            break_time=self._config.getint("Focus Time", "Break Time"),)
+
         self._app.enable_posture_detect(
             enable=self._pages["Options"].options["Posture Detect"].isChecked(),
-            warn_angle=10.0,)
-        # Parameters are replaced by 0 if `Distance Measure` aren't selected.
-        if self._pages["Options"].options["Distance Measure"].isChecked():
-            self._app.enable_distance_measure(
-                enable=True,
-                face_width=self._config.getfloat("Distance Measure", "Face Width"),
-                distance=self._config.getfloat("Distance Measure", "Distance"),
-                warn_dist=40,)
-        else:
-            self._app.enable_distance_measure(False, 0, 0)
+            warn_angle=self._config.getfloat("Posture Detect", "Angle"),)
 
     def _store_page_configs(self):
         """Stores the configs of each pages by delegates the real work to their own

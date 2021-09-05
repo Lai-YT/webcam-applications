@@ -40,7 +40,7 @@ def record_focus_time(canvas: ColorImage, time: float, paused: bool) -> None:
     cv2.putText(canvas, time_duration, (500, 20), FONT_0, 0.8, BLUE, 1)
 
     if paused:
-        cv2.putText(canvas, "time pause", (500, 40), FONT_0, 0.6, RED, 1)
+        cv2.putText(canvas, "time paused", (500, 40), FONT_0, 0.6, RED, 1)
 
 
 def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
@@ -56,18 +56,21 @@ def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: ND
     for lx, ly in landmarks:
         cv2.circle(canvas, (lx, ly), 1, GREEN, -1)
 
+
 break_timer = Timer()
 def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, break_time: int) -> None:
     """If the time record in the Timer object exceeds time limit, a break time countdown shows on the center of the canvas.
-    The timer will be reset and paused during the break.
+    The timer will be paused during the break, reset after the break.
+
     Arguments:
         canvas (NDArray[(Any, Any, 3), UInt8]): The image to show break time information
         timer (Timer): Contains time record
         time_limit (int): Triggers a break if reached (minutes)
         break_time (int): How long the break should be (minutes)
     """
-    time_limit *= 60  # minute to second
-    break_time *= 60  # minute to second
+    # minute to second
+    time_limit *= 60
+    break_time *= 6
     # Break time is over, reset the timer for a new start.
     if break_timer.time() > break_time:
         timer.reset()
@@ -76,13 +79,10 @@ def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, br
     # not the time to take a break
     if timer.time() < time_limit:
         return
+    timer.pause()
     break_timer.start()
-
-    # in sec
     countdown: int = break_time - break_timer.time()
     time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
-    pos_x = canvas.shape[0] // 2
-    pos_y = canvas.shape[1] // 2
 
     cv2.putText(canvas, "break left: " + time_left, (450, 80), FONT_3, 0.6, GREEN, 1)
 

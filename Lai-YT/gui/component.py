@@ -14,15 +14,13 @@ class Label(QLabel):
         self.setFont(QFont("Arial", font_size))
 
 
-class MessageLabel(QLabel):
+class MessageLabel(Label):
     """MessageLabel is used to display warning or status.
     Also provides simple color setting method.
     """
     def __init__(self, text="", font_size=10, color="red"):
-        super().__init__(text)
-        self.setFont(QFont("Arial", font_size))
+        super().__init__(text, font_size)
         self.set_color(color)
-        self.setWordWrap(True)
 
     def set_color(self, color):
         self.setStyleSheet(f"color: {color};")
