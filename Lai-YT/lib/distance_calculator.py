@@ -35,7 +35,6 @@ class DistanceCalculator:
         self._cache = distance
         return distance
 
-    @property
     def distance(self) -> Optional[float]:
         if self._cache is not None:
             return self._cache

@@ -1,8 +1,8 @@
-import argparse
 from typing import Any, Dict, List
 
 import cv2
 import dlib
+import imutils
 import numpy
 from imutils import face_utils
 from nptyping import Int, NDArray
@@ -58,7 +58,8 @@ class WebcamApplication:
         webcam = cv2.VideoCapture(0)
         while self._ready:
             _, frame = webcam.read()
-            frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
+            # mirrors, so horizontally flip
+            frame = cv2.flip(frame, flipCode=1)
             # separate detections and markings
             canvas: ColorImage = frame.copy()
             # Analyze the frame to get face landmarks.
@@ -71,6 +72,8 @@ class WebcamApplication:
             if self._focus_time:
                 self._run_focus_time(landmarks, canvas)
 
+            # zoom in the canvas (keep the ratio)
+            canvas = imutils.resize(canvas, width=960)
             cv2.imshow("Webcam application", canvas)
             cv2.waitKey(refresh)
         # Release resources.
@@ -138,7 +141,7 @@ class WebcamApplication:
     def _run_distance_measure(self, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
         if landmarks.any():
             vs.put_distance_text(canvas, self._distance_calculator.calculate(landmarks))
-            vs.warn_if_too_close(canvas, self._distance_calculator.distance, self._warn_dist)
+            vs.warn_if_too_close(canvas, self._distance_calculator.distance(), self._warn_dist)
 
     def _run_posture_detect(self, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
         # If the landmarks of face are clear, use AngleCalculator to calculate the slope
