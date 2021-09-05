@@ -70,7 +70,7 @@ def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, br
     """
     # minute to second
     time_limit *= 60
-    break_time *= 6
+    break_time *= 60
     # Break time is over, reset the timer for a new start.
     if break_timer.time() > break_time:
         timer.reset()
