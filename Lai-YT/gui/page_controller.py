@@ -84,11 +84,9 @@ class OptionController(PageController):
         self._widget.buttons["Stop"].setEnabled(False)
         # After being clicked, `Stop` is disables and `Start` is enabled.
         self._widget.buttons["Stop"].clicked.connect(
-            lambda: self._widget.buttons["Stop"].setEnabled(False)
-        )
+            lambda: self._widget.buttons["Stop"].setEnabled(False))
         self._widget.buttons["Stop"].clicked.connect(
-            lambda: self._widget.buttons["Start"].setEnabled(True)
-        )
+            lambda: self._widget.buttons["Start"].setEnabled(True))
 
 
 class SettingController(PageController):
@@ -113,13 +111,12 @@ class SettingController(PageController):
 
     def store_configs(self, config):
         """Only stores valid parameters.
-        Empty input is also allowed, so users can clear by themselves.
 
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
         for parameter, line_edit in self._widget.settings.items():
-            if line_edit.hasAcceptableInput() or line_edit.text() == "":
+            if line_edit.hasAcceptableInput():
                 config.set("Distance Measure", parameter, line_edit.text())
 
     def show_message(self, msg, color="red"):

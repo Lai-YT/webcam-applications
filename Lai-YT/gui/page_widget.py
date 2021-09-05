@@ -36,17 +36,22 @@ class OptionWidget(QWidget):
         """Create the options of this widget."""
         # Each check box followed by a label, which shows message when error occurs.
         self.options = {}
-        # Option name | order
         options_layout = QVBoxLayout()
-        options = ["Distance Measure", "Focus Time", "Posture Detect"]
-        for opt in options:
+        # Option name | description
+        options = {
+            "Distance Measure": "description",
+            "Focus Time": "description",
+            "Posture Detect": "description",
+        }
+        for opt, des in options.items():
             self.options[opt] = OptionCheckBox(opt)
             options_layout.addWidget(self.options[opt], stretch=1)
+            options_layout.addWidget(Label("    " + des, font_size=10), stretch=1)
         # Add space to make options close together.
         options_layout.addStretch(5)
 
         self.message = MessageLabel()
-        options_layout.addWidget(self.message)
+        options_layout.addWidget(self.message, stretch=1)
 
         self._general_layout.addLayout(options_layout)
 
@@ -106,7 +111,5 @@ class SettingWidget(QWidget):
 
     def _create_buttons(self):
         """Creates buttons of the widget."""
-        self.buttons = {
-            "Save": ActionButton("Save"),
-        }
+        self.buttons = {"Save": ActionButton("Save")}
         self._general_layout.addWidget(self.buttons["Save"], alignment=Qt.AlignRight | Qt.AlignBottom)
