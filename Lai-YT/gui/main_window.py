@@ -1,5 +1,3 @@
-from configparser import ConfigParser
-
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 

@@ -40,7 +40,7 @@ class WebcamApplication:
         # Set the flag to True so can start capturing.
         # Loop breaks if someone calsl close() and sets the flag to False.
         self._ready = True
-
+        # Setup the objects we need for the corresponding application.
         self._setup_face_detectors()
         if self._distance_measure:
             self._setup_distance_measure()
@@ -55,8 +55,9 @@ class WebcamApplication:
             frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
             # separate detections and markings
             canvas: ColorImage = frame.copy()
-
+            # Analyze the frame to get face landmarks.
             landmarks = self._get_landmarks(frame, canvas)
+            # Do applications!
             if self._distance_measure:
                 self._run_distance_measure(landmarks, canvas)
             if self._posture_detect:
@@ -86,10 +87,12 @@ class WebcamApplication:
         self._posture_detect = enable
 
     def _setup_face_detectors(self) -> None:
+        """Creates face detector and shape predictor for further use."""
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
         self._shape_predictor = dlib.shape_predictor(to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat'))
 
     def _setup_distance_measure(self) -> None:
+        """Creates the DistanceCalculator with reference image."""
         ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
         faces: dlib.rectangles = self._face_detector(ref_img)
         if len(faces) != 1:
@@ -99,10 +102,12 @@ class WebcamApplication:
         self._distance_calculator = DistanceCalculator(landmarks, self._distance, self._face_width)
 
     def _setup_posture_detect(self) -> None:
+        """Loads model and Creates AngleCalculator."""
         self._model = models.load_model(MODEL_PATH)
         self._angle_calculator = AngleCalculator()
 
     def _setup_focus_time(self) -> None:
+        """Creates a Timer and start timing."""
         self._timer = Timer()
         self._timer.start()
 
@@ -125,6 +130,8 @@ class WebcamApplication:
             vs.put_distance_text(canvas, self._distance_calculator.calculate(landmarks))
 
     def _run_posture_detect(self, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
+        # If the landmarks of face are clear, use AngleCalculator to calculate the slope
+        # precisely; otherwise use the model to predict the posture.
         if landmarks.any():
             vs.do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks), 10.0)
             draw_landmarks_used_by_angle_calculator(canvas, landmarks)
@@ -132,6 +139,8 @@ class WebcamApplication:
             vs.do_posture_model_predict(frame, self._model, canvas)
 
     def _run_focus_time(self, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
+        # If the landmarks of face are clear, ths user is considered not focusing
+        # on the screen, so the timer is paused.
         if not landmarks.any():
             self._timer.pause()
         else:
