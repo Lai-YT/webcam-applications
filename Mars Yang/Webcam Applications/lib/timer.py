@@ -37,6 +37,9 @@ class Timer:
 
     def time(self) -> int:
         """Returns the time count in seconds."""
+        # Doesn't even started.
+        if self._start == 0:
+            return 0
         if self.is_paused():
             return self._pause_start - self._start - self._pause_duration
         return self._get_time() - self._start - self._pause_duration

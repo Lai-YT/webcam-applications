@@ -11,9 +11,11 @@ from nptyping import Float, Int, NDArray
 from tensorflow.keras import models
 
 from lib.color import BLUE, GREEN, MAGENTA, RED
-from lib.cv_font import FONT_0
+from lib.cv_font import FONT_0, FONT_3
 from lib.image_type import ColorImage, GrayImage
+from lib.timer import Timer
 from lib.train import PostureLabel, IMAGE_DIMENSIONS
+from gui.break_window import BreakGui
 
 
 def put_distance_text(canvas: ColorImage, distance: float) -> None:
@@ -39,7 +41,7 @@ def record_focus_time(canvas: ColorImage, time: float, paused: bool) -> None:
     cv2.putText(canvas, time_duration, (500, 20), FONT_0, 0.8, BLUE, 1)
 
     if paused:
-        cv2.putText(canvas, "time pause", (500, 40), FONT_0, 0.6, RED, 1)
+        cv2.putText(canvas, "time paused", (500, 40), FONT_0, 0.6, RED, 1)
 
 
 def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
@@ -54,6 +56,42 @@ def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: ND
     cv2.rectangle(canvas, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
     for lx, ly in landmarks:
         cv2.circle(canvas, (lx, ly), 1, GREEN, -1)
+
+
+break_timer = Timer()
+def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, break_time: int, break_gui: BreakGui) -> None:
+    """If the time record in the Timer object exceeds time limit, a break time countdown shows on the center of the canvas.
+    The timer will be paused during the break, reset after the break.
+
+    Arguments:
+        canvas (NDArray[(Any, Any, 3), UInt8]): The image to show break time information
+        timer (Timer): Contains time record
+        time_limit (int): Triggers a break if reached (minutes)
+        break_time (int): How long the break should be (minutes)
+    """
+    # minute to second
+    time_limit *= 5
+    break_time *= 5
+    # Break time is over, reset the timer for a new start.
+    if break_timer.time() > break_time:
+        timer.reset()
+        break_timer.reset()
+        break_gui.hide()
+        return
+    # not the time to take a break
+    if timer.time() < time_limit:
+        return
+
+    timer.pause()
+    break_timer.start()
+    countdown: int = break_time - break_timer.time()
+    time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
+
+    cv2.putText(canvas, "break left: " + time_left, (450, 80), FONT_3, 0.6, GREEN, 1)
+    # Display the break window and countdown message.
+    break_gui.show()
+    break_gui.countdown_message.setText(f'{time_left} left.')
+
 
 
 def do_posture_angle_check(canvas: ColorImage, angle: float, threshold: float) -> None:
@@ -100,3 +138,15 @@ def do_posture_model_predict(frame: ColorImage, model: models, canvas: ColorImag
 
     msg: str = f'Predict Conf.: {round(int(conf*100))}%'
     cv2.putText(canvas, msg, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
+
+
+def warn_if_too_close(canvas: ColorImage, distance: float, warn_dist: float) -> None:
+    """Warning message shows when the distance is less than warn_dist.
+
+    Arguments:
+        canvas (NDArray[(Any, Any, 3), UInt8])
+        distance (float)
+        warn_dist (float)
+    """
+    if distance < warn_dist:
+        cv2.putText(canvas, 'too close', (10, 150), FONT_0, 0.9, RED, 2)

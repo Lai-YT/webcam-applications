@@ -1,4 +1,5 @@
 from math import sqrt
+from typing import Optional
 
 import cv2
 from nptyping import Int, NDArray
@@ -22,6 +23,7 @@ class DistanceCalculator:
         """
         self._face_width: float = face_width
         self._focal: float = (self._get_face_width(landmarks) * camera_dist) / face_width
+        self._cache: Optional[float] = None
 
     def calculate(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:
         """Returns the real life distance between face and camera.
@@ -29,7 +31,14 @@ class DistanceCalculator:
         Arguments:
             landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
         """
-        return (self._face_width * self._focal) / self._get_face_width(landmarks)
+        distance = (self._face_width * self._focal) / self._get_face_width(landmarks)
+        self._cache = distance
+        return distance
+
+    @property
+    def distance(self) -> Optional[float]:
+        if self._cache is not None:
+            return self._cache
 
     @staticmethod
     def _get_face_width(landmarks: NDArray[(68, 2), Int[32]]) -> float:

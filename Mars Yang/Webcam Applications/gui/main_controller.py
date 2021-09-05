@@ -57,7 +57,7 @@ class GuiController:
 
         # --- OptionWidget ---
         # Do some extra process and checks before a real start.
-        self._pages["Options"].s_start.connect(self._start)
+        self._pages["Options"].buttons["Start"].clicked.connect(self._start)
         # `Stop` closes the application window.
         self._pages["Options"].buttons["Stop"].clicked.connect(self._app.close)
         # `Exit` closes both the application windows and GUI.
@@ -89,19 +89,22 @@ class GuiController:
         Notice that the parameters are gotten from the ConfigParser, not the
         current SettingWidget. So it's save that invalid parameters won't be
         passed to the app (assume that only valid parameters are stored in the
-        ConfigParser)
+        ConfigParser).
         """
-        self._app.enable_focus_time(self._pages["Options"].options["Focus Time"].isChecked())
-        self._app.enable_posture_detect(self._pages["Options"].options["Posture Detect"].isChecked())
-        # Parameters are replaced by 0 if `Distance Measure` aren't selected.
-        if self._pages["Options"].options["Distance Measure"].isChecked():
-            self._app.enable_distance_measure(
-                True,
-                face_width=self._config.getfloat("Distance Measure", "Face Width"),
-                distance=self._config.getfloat("Distance Measure", "Distance")
-            )
-        else:
-            self._app.enable_distance_measure(False, 0, 0)
+        self._app.enable_distance_measure(
+            enable=self._pages["Options"].options["Distance Measure"].isChecked(),
+            face_width=self._config.getfloat("Distance Measure", "Face Width"),
+            distance=self._config.getfloat("Distance Measure", "Distance"),
+            warn_dist=self._config.getfloat("Distance Measure", "Bound"),)
+
+        self._app.enable_focus_time(
+            enable=self._pages["Options"].options["Focus Time"].isChecked(),
+            time_limit=self._config.getint("Focus Time", "Time Limit"),
+            break_time=self._config.getint("Focus Time", "Break Time"),)
+
+        self._app.enable_posture_detect(
+            enable=self._pages["Options"].options["Posture Detect"].isChecked(),
+            warn_angle=self._config.getfloat("Posture Detect", "Angle"),)
 
     def _store_page_configs(self):
         """Stores the configs of each pages by delegates the real work to their own

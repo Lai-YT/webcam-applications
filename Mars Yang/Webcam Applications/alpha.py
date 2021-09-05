@@ -1,5 +1,5 @@
 import argparse
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import cv2
 import dlib
@@ -15,7 +15,7 @@ from lib.timer import Timer
 from lib.train import MODEL_PATH
 from lib.image_type import ColorImage
 from path import to_abs_path
-from win32api import GetSystemMetrics
+from gui.break_window import BreakGui
 
 
 # This is the Model part, it knows nothing about View.
@@ -27,15 +27,19 @@ class WebcamApplication:
         self._distance_measure: bool = False
         self._face_width: float = 0  # Width of the user's face.
         self._distance: float = 0    # Distance between face and camera.
+        self._warn_dist: float = 0
+
         self._focus_time: bool = False
+        self._time_limit: int = 0
+        self._break_time: int = 0
+
         self._posture_detect: bool = False
+        self._warn_angle: float = 0
         # flags
         self._ready: bool = False    # Used to break the capturing loop inside start()
-        # window info
-        self._window_size: Tuple = (960, 720) # Original size: (640, 480)
-        self._window_x = (GetSystemMetrics(0) - self._window_size[0]) / 2 # centrally aligned position
-        self._window_y = (GetSystemMetrics(1) - (self._window_size[1] + 40)) / 2
-        # print(self._window_x, self._window_y) # (480, 160)
+        # break gui initialize
+        self._break_gui = BreakGui()
+        self._break_gui.hide()
 
     def start(self, refresh: int = 1) -> None:
         """Starts the application.
@@ -46,7 +50,7 @@ class WebcamApplication:
         # Set the flag to True so can start capturing.
         # Loop breaks if someone calsl close() and sets the flag to False.
         self._ready = True
-
+        # Setup the objects we need for the corresponding application.
         self._setup_face_detectors()
         if self._distance_measure:
             self._setup_distance_measure()
@@ -58,14 +62,12 @@ class WebcamApplication:
         webcam = cv2.VideoCapture(0)
         while self._ready:
             _, frame = webcam.read()
-            # zoom in the frame
-            frame = cv2.resize(frame, self._window_size, interpolation=cv2.INTER_AREA)
-            # mirrors, so horizontally flip
-            frame = cv2.flip(frame, flipCode=1)
+            frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
             # separate detections and markings
             canvas: ColorImage = frame.copy()
-
+            # Analyze the frame to get face landmarks.
             landmarks = self._get_landmarks(frame, canvas)
+            # Do applications!
             if self._distance_measure:
                 self._run_distance_measure(landmarks, canvas)
             if self._posture_detect:
@@ -74,7 +76,6 @@ class WebcamApplication:
                 self._run_focus_time(landmarks, canvas)
 
             cv2.imshow("Webcam application", canvas)
-            cv2.moveWindow("Webcam application", 480, 160)
             cv2.waitKey(refresh)
         # Release resources.
         webcam.release()
@@ -84,22 +85,28 @@ class WebcamApplication:
         """Sets the ready flag to False. So if the application is in progress, it'll be stopped."""
         self._ready = False
 
-    def enable_distance_measure(self, enable: bool, face_width: float, distance: float) -> None:
+    def enable_distance_measure(self, enable: bool, face_width: float, distance: float, warn_dist: float) -> None:
         self._distance_measure = enable
         self._face_width = face_width
         self._distance = distance
+        self._warn_dist = warn_dist
 
-    def enable_focus_time(self, enable: bool) -> None:
+    def enable_focus_time(self, enable: bool, time_limit: int, break_time: int) -> None:
         self._focus_time = enable
+        self._time_limit = time_limit
+        self._break_time = break_time
 
-    def enable_posture_detect(self, enable: bool) -> None:
+    def enable_posture_detect(self, enable: bool, warn_angle: float) -> None:
         self._posture_detect = enable
+        self._warn_angle = warn_angle
 
     def _setup_face_detectors(self) -> None:
+        """Creates face detector and shape predictor for further use."""
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
         self._shape_predictor = dlib.shape_predictor(to_abs_path('lib/trained_models/shape_predictor_68_face_landmarks.dat'))
 
     def _setup_distance_measure(self) -> None:
+        """Creates the DistanceCalculator with reference image."""
         ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
         faces: dlib.rectangles = self._face_detector(ref_img)
         if len(faces) != 1:
@@ -109,10 +116,12 @@ class WebcamApplication:
         self._distance_calculator = DistanceCalculator(landmarks, self._distance, self._face_width)
 
     def _setup_posture_detect(self) -> None:
+        """Loads model and Creates AngleCalculator."""
         self._model = models.load_model(MODEL_PATH)
         self._angle_calculator = AngleCalculator()
 
     def _setup_focus_time(self) -> None:
+        """Creates a Timer and start timing."""
         self._timer = Timer()
         self._timer.start()
 
@@ -133,19 +142,26 @@ class WebcamApplication:
     def _run_distance_measure(self, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
         if landmarks.any():
             vs.put_distance_text(canvas, self._distance_calculator.calculate(landmarks))
+            vs.warn_if_too_close(canvas, self._distance_calculator.distance, self._warn_dist)
 
     def _run_posture_detect(self, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
+        # If the landmarks of face are clear, use AngleCalculator to calculate the slope
+        # precisely; otherwise use the model to predict the posture.
         if landmarks.any():
-            vs.do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks), 10.0)
+            vs.do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks), self._warn_angle)
             draw_landmarks_used_by_angle_calculator(canvas, landmarks)
         else:
             vs.do_posture_model_predict(frame, self._model, canvas)
 
     def _run_focus_time(self, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
+        # If the landmarks of face are clear, ths user is considered not focusing
+        # on the screen, so the timer is paused.
         if not landmarks.any():
             self._timer.pause()
         else:
             self._timer.start()
+        # Time is paused at break, so check first.
+        vs.break_time_if_too_long(canvas, self._timer, self._time_limit, self._break_time, self._break_gui)
         vs.record_focus_time(canvas, self._timer.time(), self._timer.is_paused())
 
 
@@ -161,6 +177,7 @@ if __name__ == '__main__':
     # Create the plain GUI.
     app_gui = ApplicationGui()
     app_gui.show()
+
     # Take control of the GUI and the Application.
     controller = GuiController(app=WebcamApplication(), gui=app_gui)
     # Execute the event loop.

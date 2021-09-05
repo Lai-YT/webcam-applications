@@ -1,5 +1,3 @@
-from configparser import ConfigParser
-
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
@@ -30,7 +28,7 @@ class ApplicationGui(QMainWindow):
         # Set some main window's properties.
         self.setWindowTitle("Webcam application")
         self.setWindowIcon(QIcon(":webcam.ico"))
-        self.setFixedSize(400, 350)
+        self.setFixedSize(500, 450)
         # Set the central widget and the general layout.
         self._general_layout = QVBoxLayout()
         self._central_widget = QWidget(parent=self)

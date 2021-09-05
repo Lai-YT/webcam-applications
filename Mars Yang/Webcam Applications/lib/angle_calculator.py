@@ -1,6 +1,6 @@
 import math
 import warnings
-from typing import List
+from typing import List, Optional
 
 import cv2
 from nptyping import Int, NDArray
@@ -17,15 +17,18 @@ class AngleCalculator:
     RIGHT_EYESIDE_IDXS: List[int] = [42, 45]
     MOUTHSIDE_IDXS:     List[int] = [48, 54]
 
+    def __init__(self) -> None:
+        self._cache: Optional[float] = None
+
     def calculate(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:
         # average the eyes and mouth, they're all horizontal parts
         horizontal: float = (
-            (self.angle(landmarks[self.RIGHT_EYESIDE_IDXS[0]], landmarks[self.RIGHT_EYESIDE_IDXS[1]])
-             + self.angle(landmarks[self.LEFT_EYESIDE_IDXS[0]], landmarks[self.LEFT_EYESIDE_IDXS[1]])
+            (AngleCalculator.angle_between(landmarks[self.RIGHT_EYESIDE_IDXS[0]], landmarks[self.RIGHT_EYESIDE_IDXS[1]])
+             + AngleCalculator.angle_between(landmarks[self.LEFT_EYESIDE_IDXS[0]], landmarks[self.LEFT_EYESIDE_IDXS[1]])
             ) / 2
-            + self.angle(landmarks[self.MOUTHSIDE_IDXS[0]], landmarks[self.MOUTHSIDE_IDXS[1]])
+            + AngleCalculator.angle_between(landmarks[self.MOUTHSIDE_IDXS[0]], landmarks[self.MOUTHSIDE_IDXS[1]])
         ) / 2
-        vertical: float = self.angle(landmarks[self.NOSE_BRIDGE_IDXS[0]], landmarks[self.NOSE_BRIDGE_IDXS[1]])
+        vertical: float = AngleCalculator.angle_between(landmarks[self.NOSE_BRIDGE_IDXS[0]], landmarks[self.NOSE_BRIDGE_IDXS[1]])
         # Under normal situations (not so close to the middle line):
         # If skews right, horizontal is positive, vertical is negative, e.g., 15 and -75;
         # if skews left, horizontal is negative, vertical is positive, e.g., -15 and 75.
@@ -41,10 +44,11 @@ class AngleCalculator:
             if vertical < 0 else
             (horizontal + (vertical - 90.0)) / 2
         )
+        self._cache = angle
         return angle
 
     @staticmethod
-    def angle(p1, p2) -> float:
+    def angle_between(p1, p2) -> float:
         """Returns the included angle of the vector p2 - p1 in degree.
         Between (-90.0, 90.0].
 
@@ -59,6 +63,10 @@ class AngleCalculator:
             # Ignore possible warning when 90.0
             warnings.simplefilter("ignore", category=RuntimeWarning)
             return math.atan((y2 - y1) / (x2 - x1)) * 180 / math.pi
+
+    def angle(self) -> Optional[float]:
+        if self._cache is not None:
+            return self._cache
 
 
 def draw_landmarks_used_by_angle_calculator(canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]], color: BGR = GREEN) -> ColorImage:

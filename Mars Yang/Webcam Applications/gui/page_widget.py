@@ -22,15 +22,6 @@ class PageWidget(QTabWidget):
 class OptionWidget(QWidget):
     """The options of the application are put here."""
 
-    """
-    To make the `Start` button a "lazy button", extra signal is created.
-    It is emitted for a real click.
-
-    (A lazy button gives controller the ability to double check before
-     a real click, so the action is made safely.)
-    """
-    s_start = pyqtSignal()
-
     def __init__(self, parent=None):
         super().__init__(parent)
         # A wiget can only have 1 layout.
@@ -45,17 +36,22 @@ class OptionWidget(QWidget):
         """Create the options of this widget."""
         # Each check box followed by a label, which shows message when error occurs.
         self.options = {}
-        # Option name | order
         options_layout = QVBoxLayout()
-        options = ["Distance Measure", "Focus Time", "Posture Detect"]
-        for opt in options:
+        # Option name | description
+        options = {
+            "Distance Measure": "shows message if the user gets too close to the screen",
+            "Focus Time": "reminds when it's time to take a break",
+            "Posture Detect": "shows message when the user has bad posture",
+        }
+        for opt, des in options.items():
             self.options[opt] = OptionCheckBox(opt)
             options_layout.addWidget(self.options[opt], stretch=1)
+            options_layout.addWidget(Label("    " + des, font_size=10), stretch=1)
         # Add space to make options close together.
         options_layout.addStretch(5)
 
         self.message = MessageLabel()
-        options_layout.addWidget(self.message)
+        options_layout.addWidget(self.message, stretch=1)
 
         self._general_layout.addLayout(options_layout)
 
@@ -98,14 +94,27 @@ class SettingWidget(QWidget):
         """Create the settings of this widget."""
         self.settings = {}
         settings_layout = QFormLayout()
-        # Parameter name | description
+        # {option: [(parameter, description)]}
         settings = {
-            "Face Width": "Face width:",
-            "Distance": "Distance from screen:",
+            "Distance Measure": [
+                ("Face Width","Face width:"),
+                ("Distance","Distance in reference:"),
+                ("Bound","Shortest distance allowed:"),
+            ],
+            "Focus Time": [
+                ("Time Limit", "Time limit:"),
+                ("Break Time", "Break time:"),
+            ],
+            "Posture Detect": [
+                ("Angle", "Allowed slope angle:"),
+            ],
         }
-        for set, text in settings.items():
-            self.settings[set] = LineEdit()
-            settings_layout.addRow(Label(text), self.settings[set])
+        for option, parameters in settings.items():
+            settings_layout.addRow(Label("<b>" + option + "</b>"))
+            self.settings[option] = {}
+            for param, descript in parameters:
+                self.settings[option][param] = LineEdit()
+                settings_layout.addRow(Label(descript), self.settings[option][param])
 
         # The message label occupies a whole row.
         self.message = MessageLabel()
@@ -115,7 +124,5 @@ class SettingWidget(QWidget):
 
     def _create_buttons(self):
         """Creates buttons of the widget."""
-        self.buttons = {
-            "Save": ActionButton("Save"),
-        }
+        self.buttons = {"Save": ActionButton("Save")}
         self._general_layout.addWidget(self.buttons["Save"], alignment=Qt.AlignRight | Qt.AlignBottom)
