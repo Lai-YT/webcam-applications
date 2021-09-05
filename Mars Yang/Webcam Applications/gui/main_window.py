@@ -1,6 +1,9 @@
+from configparser import ConfigParser
+
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
+import gui.img.icon
 from gui.page_widget import PageWidget
 
 
@@ -15,17 +18,18 @@ from gui.page_widget import PageWidget
 #    | ------------------- |
 #    -----------------------
 
-# View is the pure GUI part, provides no functionalitiy.
-# It's responsibility is to create all components the GUI should have,
-# whichs means no other components will be added by other parts (Controller, Model).
-# Functionality of the components is set by the Controllers.
 class ApplicationGui(QMainWindow):
-    """The main window that shows options of the application."""
+    """This is the pure GUI part, provides no functionalitiy.
+    It's responsibility is to create all components the GUI should have,
+    whichs means no other components will be added by other parts (Controller, App).
+    Functionality of the components is set by the Controllers.
+    """
+
     def __init__(self):
         super().__init__()
         # Set some main window's properties.
         self.setWindowTitle("Webcam application")
-        self.setWindowIcon(QIcon("img/webcam.ico"))
+        self.setWindowIcon(QIcon(":webcam.ico"))
         self.setFixedSize(400, 350)
         # Set the central widget and the general layout.
         self._general_layout = QVBoxLayout()
@@ -39,5 +43,3 @@ class ApplicationGui(QMainWindow):
         """Creates the page area. Components are created by PageWidget."""
         self.page_widget = PageWidget()
         self._general_layout.addWidget(self.page_widget)
-
-

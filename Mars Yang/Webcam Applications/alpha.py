@@ -1,5 +1,5 @@
 import argparse
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import cv2
 import dlib
@@ -15,6 +15,7 @@ from lib.timer import Timer
 from lib.train import MODEL_PATH
 from lib.image_type import ColorImage
 from path import to_abs_path
+from win32api import GetSystemMetrics
 
 
 # This is the Model part, it knows nothing about View.
@@ -30,6 +31,11 @@ class WebcamApplication:
         self._posture_detect: bool = False
         # flags
         self._ready: bool = False    # Used to break the capturing loop inside start()
+        # window info
+        self._window_size: Tuple = (960, 720) # Original size: (640, 480)
+        self._window_x = (GetSystemMetrics(0) - self._window_size[0]) / 2 # centrally aligned position
+        self._window_y = (GetSystemMetrics(1) - (self._window_size[1] + 40)) / 2
+        # print(self._window_x, self._window_y) # (480, 160)
 
     def start(self, refresh: int = 1) -> None:
         """Starts the application.
@@ -52,7 +58,10 @@ class WebcamApplication:
         webcam = cv2.VideoCapture(0)
         while self._ready:
             _, frame = webcam.read()
-            frame = cv2.flip(frame, flipCode=1)  # mirrors, so horizontally flip
+            # zoom in the frame
+            frame = cv2.resize(frame, self._window_size, interpolation=cv2.INTER_AREA)
+            # mirrors, so horizontally flip
+            frame = cv2.flip(frame, flipCode=1)
             # separate detections and markings
             canvas: ColorImage = frame.copy()
 
@@ -65,6 +74,7 @@ class WebcamApplication:
                 self._run_focus_time(landmarks, canvas)
 
             cv2.imshow("Webcam application", canvas)
+            cv2.moveWindow("Webcam application", 480, 160)
             cv2.waitKey(refresh)
         # Release resources.
         webcam.release()
@@ -74,13 +84,9 @@ class WebcamApplication:
         """Sets the ready flag to False. So if the application is in progress, it'll be stopped."""
         self._ready = False
 
-    def enable_distance_measure(self, enable: bool) -> None:
+    def enable_distance_measure(self, enable: bool, face_width: float, distance: float) -> None:
         self._distance_measure = enable
-
-    def set_face_width(self, face_width: float) -> None:
         self._face_width = face_width
-
-    def set_distance_to_camera(self, distance: float) -> None:
         self._distance = distance
 
     def enable_focus_time(self, enable: bool) -> None:
@@ -156,6 +162,6 @@ if __name__ == '__main__':
     app_gui = ApplicationGui()
     app_gui.show()
     # Take control of the GUI and the Application.
-    controller = GuiController(model=WebcamApplication(), gui=app_gui)
+    controller = GuiController(app=WebcamApplication(), gui=app_gui)
     # Execute the event loop.
     sys.exit(app.exec())

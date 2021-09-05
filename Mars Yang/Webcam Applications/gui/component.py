@@ -15,12 +15,17 @@ class Label(QLabel):
 
 
 class MessageLabel(QLabel):
-    """MessageLabel is used to display warnings or errors."""
+    """MessageLabel is used to display warning or status.
+    Also provides simple color setting method.
+    """
     def __init__(self, text="", font_size=10, color="red"):
         super().__init__(text)
         self.setFont(QFont("Arial", font_size))
-        self.setStyleSheet(f"color: {color};")
+        self.set_color(color)
         self.setWordWrap(True)
+
+    def set_color(self, color):
+        self.setStyleSheet(f"color: {color};")
 
 
 class LineEdit(QLineEdit):
