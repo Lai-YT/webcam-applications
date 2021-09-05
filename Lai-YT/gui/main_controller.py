@@ -91,15 +91,20 @@ class GuiController:
         passed to the app (assume that only valid parameters are stored in the
         ConfigParser).
         """
-        self._app.enable_focus_time(self._pages["Options"].options["Focus Time"].isChecked())
-        self._app.enable_posture_detect(self._pages["Options"].options["Posture Detect"].isChecked())
+        self._app.enable_focus_time(
+            enable=self._pages["Options"].options["Focus Time"].isChecked(),
+            time_limit=1,
+            break_time=1,)
+        self._app.enable_posture_detect(
+            enable=self._pages["Options"].options["Posture Detect"].isChecked(),
+            warn_angle=10.0,)
         # Parameters are replaced by 0 if `Distance Measure` aren't selected.
         if self._pages["Options"].options["Distance Measure"].isChecked():
             self._app.enable_distance_measure(
-                True,
+                enable=True,
                 face_width=self._config.getfloat("Distance Measure", "Face Width"),
-                distance=self._config.getfloat("Distance Measure", "Distance")
-            )
+                distance=self._config.getfloat("Distance Measure", "Distance"),
+                warn_dist=40,)
         else:
             self._app.enable_distance_measure(False, 0, 0)
 

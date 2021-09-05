@@ -11,8 +11,9 @@ from nptyping import Float, Int, NDArray
 from tensorflow.keras import models
 
 from lib.color import BLUE, GREEN, MAGENTA, RED
-from lib.cv_font import FONT_0
+from lib.cv_font import FONT_0, FONT_3
 from lib.image_type import ColorImage, GrayImage
+from lib.timer import Timer
 from lib.train import PostureLabel, IMAGE_DIMENSIONS
 
 
@@ -54,6 +55,36 @@ def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: ND
     cv2.rectangle(canvas, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
     for lx, ly in landmarks:
         cv2.circle(canvas, (lx, ly), 1, GREEN, -1)
+
+break_timer = Timer()
+def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, break_time: int) -> None:
+    """If the time record in the Timer object exceeds time limit, a break time countdown shows on the center of the canvas.
+    The timer will be reset and paused during the break.
+    Arguments:
+        canvas (NDArray[(Any, Any, 3), UInt8]): The image to show break time information
+        timer (Timer): Contains time record
+        time_limit (int): Triggers a break if reached (minutes)
+        break_time (int): How long the break should be (minutes)
+    """
+    time_limit *= 60  # minute to second
+    break_time *= 60  # minute to second
+    # Break time is over, reset the timer for a new start.
+    if break_timer.time() > break_time:
+        timer.reset()
+        break_timer.reset()
+        return
+    # not the time to take a break
+    if timer.time() < time_limit:
+        return
+    break_timer.start()
+
+    # in sec
+    countdown: int = break_time - break_timer.time()
+    time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
+    pos_x = canvas.shape[0] // 2
+    pos_y = canvas.shape[1] // 2
+
+    cv2.putText(canvas, "break left: " + time_left, (450, 80), FONT_3, 0.6, GREEN, 1)
 
 
 def do_posture_angle_check(canvas: ColorImage, angle: float, threshold: float) -> None:
@@ -100,3 +131,15 @@ def do_posture_model_predict(frame: ColorImage, model: models, canvas: ColorImag
 
     msg: str = f'Predict Conf.: {round(int(conf*100))}%'
     cv2.putText(canvas, msg, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
+
+
+def warn_if_too_close(canvas: ColorImage, distance: float, warn_dist: float) -> None:
+    """Warning message shows when the distance is less than warn_dist.
+
+    Arguments:
+        canvas (NDArray[(Any, Any, 3), UInt8])
+        distance (float)
+        warn_dist (float)
+    """
+    if distance < warn_dist:
+        cv2.putText(canvas, 'too close', (10, 150), FONT_0, 0.9, RED, 2)

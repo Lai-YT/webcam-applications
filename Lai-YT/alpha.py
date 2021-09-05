@@ -26,8 +26,14 @@ class WebcamApplication:
         self._distance_measure: bool = False
         self._face_width: float = 0  # Width of the user's face.
         self._distance: float = 0    # Distance between face and camera.
+        self._warn_dist: float = 0
+
         self._focus_time: bool = False
+        self._time_limit: int = 0
+        self._break_time: int = 0
+
         self._posture_detect: bool = False
+        self._warn_angle: float = 0
         # flags
         self._ready: bool = False    # Used to break the capturing loop inside start()
 
@@ -75,16 +81,20 @@ class WebcamApplication:
         """Sets the ready flag to False. So if the application is in progress, it'll be stopped."""
         self._ready = False
 
-    def enable_distance_measure(self, enable: bool, face_width: float, distance: float) -> None:
+    def enable_distance_measure(self, enable: bool, face_width: float, distance: float, warn_dist: float) -> None:
         self._distance_measure = enable
         self._face_width = face_width
         self._distance = distance
+        self._warn_dist = warn_dist
 
-    def enable_focus_time(self, enable: bool) -> None:
+    def enable_focus_time(self, enable: bool, time_limit: int, break_time: int) -> None:
         self._focus_time = enable
+        self._time_limit = time_limit
+        self._break_time = break_time
 
-    def enable_posture_detect(self, enable: bool) -> None:
+    def enable_posture_detect(self, enable: bool, warn_angle: float) -> None:
         self._posture_detect = enable
+        self._warn_angle = warn_angle
 
     def _setup_face_detectors(self) -> None:
         """Creates face detector and shape predictor for further use."""
@@ -128,12 +138,13 @@ class WebcamApplication:
     def _run_distance_measure(self, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
         if landmarks.any():
             vs.put_distance_text(canvas, self._distance_calculator.calculate(landmarks))
+            vs.warn_if_too_close(canvas, self._distance_calculator.distance, self._warn_dist)
 
     def _run_posture_detect(self, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]], canvas: ColorImage) -> None:
         # If the landmarks of face are clear, use AngleCalculator to calculate the slope
         # precisely; otherwise use the model to predict the posture.
         if landmarks.any():
-            vs.do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks), 10.0)
+            vs.do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks), self._warn_angle)
             draw_landmarks_used_by_angle_calculator(canvas, landmarks)
         else:
             vs.do_posture_model_predict(frame, self._model, canvas)
@@ -146,6 +157,7 @@ class WebcamApplication:
         else:
             self._timer.start()
         vs.record_focus_time(canvas, self._timer.time(), self._timer.is_paused())
+        vs.break_time_if_too_long(canvas, self._timer, self._time_limit, self._break_time)
 
 
 if __name__ == '__main__':
