@@ -4,6 +4,7 @@ import cv2
 import dlib
 import imutils
 import numpy
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 from tensorflow.keras import models
@@ -20,8 +21,14 @@ from path import to_abs_path
 # This is the Model part, it knows nothing about View.
 # One can pass options and parameters through View and Controller
 # or directly call it with client code.
-class WebcamApplication:
+class WebcamApplication(QObject):
+
+    """Signals used to communicate with controller."""
+    s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
+    s_stopped = pyqtSignal()  # emits just before leaving start()
+
     def __init__(self):
+        super().__init__()
         # settings
         self._distance_measure: bool = False
         self._face_width: float = 0  # Width of the user's face.
@@ -34,9 +41,14 @@ class WebcamApplication:
 
         self._posture_detect: bool = False
         self._warn_angle: float = 0
-        # flags
-        self._ready: bool = False    # Used to break the capturing loop inside start()
+        # Used to break the capturing loop inside start().
+        # If the application is in progress, sets the ready flag to False will stop it.
+        # Note that it seems to be unable to call a setter method from another
+        # thread to change the flag during the loop. Simply work around by a public flag.
+        self.ready: bool = False
 
+    @pyqtSlot()
+    @pyqtSlot(int)
     def start(self, refresh: int = 1) -> None:
         """Starts the application.
 
@@ -45,7 +57,7 @@ class WebcamApplication:
         """
         # Set the flag to True so can start capturing.
         # Loop breaks if someone calsl close() and sets the flag to False.
-        self._ready = True
+        self.ready = True
         # Setup the objects we need for the corresponding application.
         self._setup_face_detectors()
         if self._distance_measure:
@@ -56,7 +68,10 @@ class WebcamApplication:
             self._setup_focus_time()
 
         webcam = cv2.VideoCapture(0)
-        while self._ready:
+
+        self.s_started.emit()
+
+        while self.ready:
             _, frame = webcam.read()
             # mirrors, so horizontally flip
             frame = cv2.flip(frame, flipCode=1)
@@ -79,10 +94,7 @@ class WebcamApplication:
         # Release resources.
         webcam.release()
         cv2.destroyAllWindows()
-
-    def close(self) -> None:
-        """Sets the ready flag to False. So if the application is in progress, it'll be stopped."""
-        self._ready = False
+        self.s_stopped.emit()
 
     def enable_distance_measure(self, enable: bool, face_width: float, distance: float, warn_dist: float) -> None:
         self._distance_measure = enable
@@ -162,21 +174,3 @@ class WebcamApplication:
         # Time is paused at break, so check first.
         vs.break_time_if_too_long(canvas, self._timer, self._time_limit, self._break_time)
         vs.record_focus_time(canvas, self._timer.time(), self._timer.is_paused())
-
-
-if __name__ == '__main__':
-    import sys
-
-    from PyQt5.QtWidgets import QApplication
-
-    from gui.main_controller import GuiController
-    from gui.main_window import ApplicationGui
-
-    app = QApplication(sys.argv)
-    # Create the plain GUI.
-    app_gui = ApplicationGui()
-    app_gui.show()
-    # Take control of the GUI and the Application.
-    controller = GuiController(app=WebcamApplication(), gui=app_gui)
-    # Execute the event loop.
-    sys.exit(app.exec())

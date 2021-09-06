@@ -1,11 +1,12 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from configparser import ConfigParser
 from functools import partial
 
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
 
-class PageController(ABC):
+class PageController(QObject):
     """The is a common interface of all PageControllers.
     A PageController should be able to have a load method and a store method,
     which do the action on their own page.
@@ -33,10 +34,19 @@ class OptionController(PageController):
     """The OptionController handles the states of the OptionWidget,
     but it cares nothing about those which depends on others.
     """
+
+    """Hide the concrete widget. Communicate with main controller through signals."""
+    s_start = pyqtSignal()
+    s_stop = pyqtSignal()
+    s_exit = pyqtSignal()
+
     def __init__(self, option_widget):
+        super().__init__()
+
         self._widget = option_widget
 
         self._enable_buttons()
+        self._connect_signals()
 
     def successful_start(self):
         """Disable `Start` button and enable `Stop` button.
@@ -88,12 +98,24 @@ class OptionController(PageController):
         self._widget.buttons["Stop"].clicked.connect(
             lambda: self._widget.buttons["Start"].setEnabled(True))
 
+    def _connect_signals(self):
+        """Connect the buttons to signals."""
+        self._widget.buttons["Start"].clicked.connect(self.s_start)
+        self._widget.buttons["Stop"].clicked.connect(self.s_stop)
+        self._widget.buttons["Exit"].clicked.connect(self.s_exit)
+
 
 class SettingController(PageController):
     """The SettingController handles the states of the SettingWidget,
     but it cares nothing about those which depends on others.
     """
+
+    """Hide the concrete widget. Communicate with main controller through signals."""
+    s_save = pyqtSignal()
+
     def __init__(self, setting_widget):
+        super().__init__()
+
         self._widget = setting_widget
 
         self._set_valid_inputs()
@@ -165,6 +187,7 @@ class SettingController(PageController):
             for parameter_line in parameters.values():
                 parameter_line.textChanged.connect(self._widget.message.clear)
 
+    @pyqtSlot()
     def _save(self):
         """This a button clicked double check method.
         If all the settings are valid, save them into config file and show a message;
@@ -175,7 +198,7 @@ class SettingController(PageController):
             self.show_message("Saved!", "green")
             # Emits the signal to have the main controller call store_config
             # with the ConfigParser.
-            self._widget.s_save.emit()
+            self.s_save.emit()
         else:
             self.show_message("Failed: parameter out of range", "red")
 

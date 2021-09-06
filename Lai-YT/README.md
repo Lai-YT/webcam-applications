@@ -44,9 +44,9 @@ optional arguments:
   -p, --posture   sound plays when the user has bad posture
 ```
 
-## alpha
+## main
 
-It's the visualized version that shows the detection result without warnings. \
+It's the visualized version that shows the detection result and warnings. \
 Using a friendly *Graphical User Interface* instead of Command Line Interface.
 
 ## Topics

@@ -1,5 +1,5 @@
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QCheckBox, QLabel, QLineEdit, QPushButton
+from PyQt5.QtWidgets import QCheckBox, QLabel, QLineEdit, QProgressBar, QPushButton, QStatusBar
 
 
 class OptionCheckBox(QCheckBox):
@@ -43,3 +43,24 @@ class ActionButton(QPushButton):
     def __init__(self, text, font_size=12):
         super().__init__(text)
         self.setFont(QFont("Arial", font_size))
+
+
+class StatusBar(QStatusBar):
+    def __init__(self, font_size=12):
+        super().__init__()
+        self.setFont(QFont("Arial", font_size))
+        self.setStyleSheet(f"color: gray;")
+        self.setSizeGripEnabled(False)
+
+    def remove_widget(self, widget):
+        """Deletes the widget from status bar.
+        The original removeWidget() method hides but not deletes the widegt.
+        """
+        super().removeWidget(widget)
+        widget.deleteLater()
+
+
+class LoadingBar(QProgressBar):
+    def __init__(self):
+        super().__init__()
+        self.setRange(0, 0)

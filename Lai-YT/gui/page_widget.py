@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFormLayout, QGridLayout, QTabWidget, QVBoxLayout, QWidget
 
 from gui.component import ActionButton, Label, LineEdit, OptionCheckBox, MessageLabel
@@ -71,15 +71,6 @@ class OptionWidget(QWidget):
 
 class SettingWidget(QWidget):
     """The input area of settings/parameters that the application needs are put here."""
-
-    """
-    To make the `Save` button a "lazy button", extra signal is created.
-    It is emitted for a real click.
-
-    (A lazy button gives controller the ability to double check before
-     a real click, so the action is made safely.)
-    """
-    s_save = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
