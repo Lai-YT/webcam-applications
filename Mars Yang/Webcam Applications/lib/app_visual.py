@@ -15,7 +15,7 @@ from lib.cv_font import FONT_0, FONT_3
 from lib.image_type import ColorImage, GrayImage
 from lib.timer import Timer
 from lib.train import PostureLabel, IMAGE_DIMENSIONS
-from gui.break_window import BreakGui
+from gui.timer_window import TimerGui
 
 
 def put_distance_text(canvas: ColorImage, distance: float) -> None:
@@ -38,7 +38,7 @@ def record_focus_time(canvas: ColorImage, time: float, paused: bool) -> None:
         paused (bool)
     """
     time_duration: str = f"t. {(time // 60):02d}:{(time % 60):02d}"
-    cv2.putText(canvas, time_duration, (500, 20), FONT_0, 0.8, BLUE, 1)
+    cv2.putText(canvas, time_duration, (520, 20), FONT_0, 0.8, BLUE, 1)
 
     if paused:
         cv2.putText(canvas, "time paused", (500, 40), FONT_0, 0.6, RED, 1)
@@ -59,7 +59,7 @@ def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: ND
 
 
 break_timer = Timer()
-def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, break_time: int, break_gui: BreakGui) -> None:
+def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, break_time: int, timer_gui: TimerGui) -> None:
     """If the time record in the Timer object exceeds time limit, a break time countdown shows on the center of the canvas.
     The timer will be paused during the break, reset after the break.
 
@@ -76,10 +76,10 @@ def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, br
     if break_timer.time() > break_time:
         timer.reset()
         break_timer.reset()
-        break_gui.hide()
         return
     # not the time to take a break
     if timer.time() < time_limit:
+        timer_gui.break_message_clear()
         return
 
     timer.pause()
@@ -87,10 +87,10 @@ def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, br
     countdown: int = break_time - break_timer.time()
     time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
 
-    cv2.putText(canvas, "break left: " + time_left, (450, 80), FONT_3, 0.6, GREEN, 1)
-    # Display the break window and countdown message.
-    break_gui.show()
-    break_gui.countdown_message.setText(f'{time_left} left.')
+    cv2.putText(canvas, "break left: " + time_left, (450, 65), FONT_3, 0.6, GREEN, 1)
+    # Display the break window and the countdown message.
+    timer_gui.display_break()
+    timer_gui.countdown_message.setText(f'{time_left} left.')
 
 
 

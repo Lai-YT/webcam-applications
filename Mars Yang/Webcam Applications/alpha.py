@@ -15,7 +15,7 @@ from lib.timer import Timer
 from lib.train import MODEL_PATH
 from lib.image_type import ColorImage
 from path import to_abs_path
-from gui.break_window import BreakGui
+from gui.timer_window import TimerGui
 
 
 # This is the Model part, it knows nothing about View.
@@ -37,9 +37,6 @@ class WebcamApplication:
         self._warn_angle: float = 0
         # flags
         self._ready: bool = False    # Used to break the capturing loop inside start()
-        # break gui initialize
-        self._break_gui = BreakGui()
-        self._break_gui.hide()
 
     def start(self, refresh: int = 1) -> None:
         """Starts the application.
@@ -78,6 +75,7 @@ class WebcamApplication:
             cv2.imshow("Webcam application", canvas)
             cv2.waitKey(refresh)
         # Release resources.
+        self._break_gui.close()
         webcam.release()
         cv2.destroyAllWindows()
 
@@ -123,7 +121,9 @@ class WebcamApplication:
     def _setup_focus_time(self) -> None:
         """Creates a Timer and start timing."""
         self._timer = Timer()
-        self._timer.start()
+        # break gui initialize
+        self._timer_gui = TimerGui(self._timer)
+        self._timer_gui.start()
 
     def _get_landmarks(self, frame: ColorImage, canvas: ColorImage) -> NDArray[(68, 2), Int[32]]:
         """Returns the numpy array with all elements in 0 if there isn't exactly 1 face in the frame.
@@ -157,12 +157,12 @@ class WebcamApplication:
         # If the landmarks of face are clear, ths user is considered not focusing
         # on the screen, so the timer is paused.
         if not landmarks.any():
-            self._timer.pause()
+            self._timer_gui.pause()
         else:
-            self._timer.start()
+            self._timer_gui.start()
         # Time is paused at break, so check first.
-        vs.break_time_if_too_long(canvas, self._timer, self._time_limit, self._break_time, self._break_gui)
-        vs.record_focus_time(canvas, self._timer.time(), self._timer.is_paused())
+        vs.break_time_if_too_long(canvas, self._timer, self._time_limit, self._break_time, self._timer_gui)
+        # vs.record_focus_time(canvas, self._timer.time(), self._timer.is_paused())
 
 
 if __name__ == '__main__':
