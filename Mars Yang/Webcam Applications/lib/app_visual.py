@@ -79,7 +79,7 @@ def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, br
         return
     # not the time to take a break
     if timer.time() < time_limit:
-        timer_gui.break_message_clear()
+        #timer_gui.break_message_clear()
         return
 
     timer.pause()
@@ -89,8 +89,8 @@ def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, br
 
     cv2.putText(canvas, "break left: " + time_left, (450, 65), FONT_3, 0.6, GREEN, 1)
     # Display the break window and the countdown message.
-    timer_gui.display_break()
-    timer_gui.countdown_message.setText(f'{time_left} left.')
+    #timer_gui.display_break()
+    #timer_gui.countdown_message.setText(f'{time_left} left.')
 
 
 

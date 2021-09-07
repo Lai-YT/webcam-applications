@@ -75,7 +75,7 @@ class WebcamApplication:
             cv2.imshow("Webcam application", canvas)
             cv2.waitKey(refresh)
         # Release resources.
-        self._break_gui.close()
+        self._timer_gui.close()
         webcam.release()
         cv2.destroyAllWindows()
 
@@ -121,9 +121,10 @@ class WebcamApplication:
     def _setup_focus_time(self) -> None:
         """Creates a Timer and start timing."""
         self._timer = Timer()
-        # break gui initialize
-        self._timer_gui = TimerGui(self._timer)
-        self._timer_gui.start()
+        self._timer.start()
+        # timer gui initialize
+        self._timer_gui = TimerGui()
+        self._timer_gui.show()
 
     def _get_landmarks(self, frame: ColorImage, canvas: ColorImage) -> NDArray[(68, 2), Int[32]]:
         """Returns the numpy array with all elements in 0 if there isn't exactly 1 face in the frame.
@@ -157,12 +158,13 @@ class WebcamApplication:
         # If the landmarks of face are clear, ths user is considered not focusing
         # on the screen, so the timer is paused.
         if not landmarks.any():
-            self._timer_gui.pause()
+            self._timer.pause()
         else:
-            self._timer_gui.start()
+            self._timer.start()
         # Time is paused at break, so check first.
         vs.break_time_if_too_long(canvas, self._timer, self._time_limit, self._break_time, self._timer_gui)
-        # vs.record_focus_time(canvas, self._timer.time(), self._timer.is_paused())
+        vs.record_focus_time(canvas, self._timer.time(), self._timer.is_paused())
+        self._timer_gui.display_time(self._timer.time())
 
 
 if __name__ == '__main__':

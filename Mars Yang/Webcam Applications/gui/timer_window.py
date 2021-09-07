@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QVBoxLayout, QFormLayout, QDialog
+from PyQt5.QtWidgets import QVBoxLayout, QFormLayout, QDialog, QLCDNumber
 
 from gui.component import Label
 from lib.timer import Timer
@@ -9,7 +9,7 @@ from lib.timer import Timer
 
 class TimerGui(QDialog):
 
-    def __init__(self, timer: Timer):
+    def __init__(self):
         super().__init__()
         # Set some main window's properties.
         self.setWindowTitle("Break Time!!")
@@ -18,26 +18,21 @@ class TimerGui(QDialog):
         # Set the general layout.
         self._general_layout = QVBoxLayout()
         self.setLayout(self._general_layout)
-        # Set timer
-        self._timer = timer
 
-        self._display_time()
+        self._set_time_label()
 
-    def start(self):
-        self._timer.start()
-    
-    def pause(self):
-        self._timer.pause()
-
-    def _display_time(self):
+    def _set_time_label(self):
         time_layout = QFormLayout()
-        time = self._timer.time()
-        timer_text = f"t. {(time // 60):02d}:{(time % 60):02d}"
-        self.time_label = Label(text=timer_text, font_size=40)
-        self.time_label.setAlignment(Qt.AlignCenter)
+        self.time_label = QLCDNumber()
+        self.time_label.display("00:00")
+        self.time_label.setDigitCount(5)
+        self.time_label.setMinimumHeight(200)
 
         time_layout.addRow(self.time_label)
         self._general_layout.addLayout(time_layout)
+
+    def display_time(self, time: float):
+        self.time_label.display(f"{(time // 60):02d}:{(time % 60):02d}")
 
     def display_break(self):
         break_layout = QFormLayout()
