@@ -59,7 +59,7 @@ def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: ND
 
 
 break_timer = Timer()
-def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, break_time: int, timer_gui: TimerGui) -> None:
+def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, break_time: int) -> None:
     """If the time record in the Timer object exceeds time limit, a break time countdown shows on the center of the canvas.
     The timer will be paused during the break, reset after the break.
 
@@ -70,8 +70,8 @@ def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, br
         break_time (int): How long the break should be (minutes)
     """
     # minute to second
-    time_limit *= 5
-    break_time *= 5
+    time_limit *= 60
+    break_time *= 60
     # Break time is over, reset the timer for a new start.
     if break_timer.time() > break_time:
         timer.reset()
@@ -88,9 +88,6 @@ def break_time_if_too_long(canvas: ColorImage, timer: Timer, time_limit: int, br
     time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
 
     cv2.putText(canvas, "break left: " + time_left, (450, 65), FONT_3, 0.6, GREEN, 1)
-    # Display the break window and the countdown message.
-    #timer_gui.display_break()
-    #timer_gui.countdown_message.setText(f'{time_left} left.')
 
 
 

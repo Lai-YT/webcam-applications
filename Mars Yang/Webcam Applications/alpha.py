@@ -162,8 +162,9 @@ class WebcamApplication:
         else:
             self._timer.start()
         # Time is paused at break, so check first.
-        vs.break_time_if_too_long(canvas, self._timer, self._time_limit, self._break_time, self._timer_gui)
+        vs.break_time_if_too_long(canvas, self._timer, self._time_limit, self._break_time)
         vs.record_focus_time(canvas, self._timer.time(), self._timer.is_paused())
+        self._timer_gui.break_time_if_too_long(self._timer, self._time_limit, self._break_time)
         self._timer_gui.display_time(self._timer.time())
 
 
