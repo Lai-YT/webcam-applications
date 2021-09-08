@@ -1,6 +1,8 @@
 __pycache__
 .mypy_cache
 
+.vs
+
 venv/
 
 *.avi

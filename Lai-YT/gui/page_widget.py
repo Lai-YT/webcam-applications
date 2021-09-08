@@ -1,11 +1,14 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QFormLayout, QGridLayout, QTabWidget, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import (QButtonGroup, QFormLayout, QGridLayout, QHBoxLayout,
+                             QTabWidget, QVBoxLayout, QWidget)
 
-from gui.component import ActionButton, Label, LineEdit, OptionCheckBox, MessageLabel
+from gui.component import (ActionButton, Label, LineEdit, OptionCheckBox,
+                           OptionRadioButton, MessageLabel)
 
 
 class PageWidget(QTabWidget):
     """PageWidget contains the widgets that are switchable."""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         # Set font of the page switching buttons.
@@ -14,7 +17,11 @@ class PageWidget(QTabWidget):
 
     def _create_pages(self):
         """Create the pages of this widget."""
-        self.pages = {"Options": OptionWidget(), "Settings": SettingWidget()}
+        self.pages = {
+            "Options": OptionWidget(),
+            "Settings": SettingWidget(),
+            "Model(unready)": ModelWidget(),
+        }
         for text, page in self.pages.items():
             self.addTab(page, text)
 
@@ -117,3 +124,47 @@ class SettingWidget(QWidget):
         """Creates buttons of the widget."""
         self.buttons = {"Save": ActionButton("Save")}
         self._general_layout.addWidget(self.buttons["Save"], alignment=Qt.AlignRight | Qt.AlignBottom)
+
+
+class ModelWidget(QWidget):
+    """This is the widget that provides interface of model training options."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self._general_layout = QVBoxLayout()
+        self.setLayout(self._general_layout)
+
+        self._create_options()
+        self._create_buttons()
+
+    def _create_options(self):
+        self.options = {}
+        options_layout = QVBoxLayout()
+        # Option name | description
+        options = {
+            "Good": "capture sample images of good, healthy posture when writing in front of the screen",
+            "Slump": "capture sample images of poor, slumped posture when writing in front of the screen"
+        }
+        # To make them exclusive.
+        options_group = QButtonGroup()
+        for name, des in options.items():
+            self.options[name] = OptionRadioButton(name)
+            options_group.addButton(self.options[name])
+            options_layout.addWidget(self.options[name])
+            # Wrap word due to long description.
+            options_layout.addWidget(Label(des, font_size=10, wrap=True))
+
+        self._general_layout.addLayout(options_layout)
+
+    def _create_buttons(self):
+        """Creates buttons of the widget."""
+        self.buttons = {
+            "Reset": ActionButton("Reset"),
+            "Train": ActionButton("Train"),
+        }
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch(1)
+        for btn in self.buttons.values():
+            buttons_layout.addWidget(btn, alignment=Qt.AlignBottom, stretch=1)
+
+        self._general_layout.addLayout(buttons_layout)

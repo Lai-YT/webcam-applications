@@ -1,5 +1,6 @@
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QCheckBox, QLabel, QLineEdit, QProgressBar, QPushButton, QStatusBar
+from PyQt5.QtWidgets import (QCheckBox, QLabel, QLineEdit, QProgressBar,
+                             QPushButton, QRadioButton, QStatusBar)
 
 
 class OptionCheckBox(QCheckBox):
@@ -9,9 +10,10 @@ class OptionCheckBox(QCheckBox):
 
 
 class Label(QLabel):
-    def __init__(self, text="", font_size=12):
+    def __init__(self, text="", font_size=12, wrap=False):
         super().__init__(text)
         self.setFont(QFont("Arial", font_size))
+        self.setWordWrap(wrap)
 
 
 class MessageLabel(Label):
@@ -64,3 +66,9 @@ class LoadingBar(QProgressBar):
     def __init__(self):
         super().__init__()
         self.setRange(0, 0)
+
+
+class OptionRadioButton(QRadioButton):
+    def __init__(self, text, font_size=12):
+        super().__init__(text)
+        self.setFont(QFont("Arial", font_size))

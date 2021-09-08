@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from configparser import ConfigParser
 from functools import partial
 
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
