@@ -56,7 +56,7 @@ class WebcamApplication(QObject):
             refresh (int): Refresh speed in millisecond. 1ms in default.
         """
         # Set the flag to True so can start capturing.
-        # Loop breaks if someone calsl close() and sets the flag to False.
+        # Loop breaks if someone call close() and sets the flag to False.
         self.ready = True
         # Setup the objects we need for the corresponding application.
         self._setup_face_detectors()
