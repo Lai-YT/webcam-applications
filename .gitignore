@@ -17,6 +17,10 @@ venv/
 !break_bg.jpg
 !what.mp3
 
+# demo
+!white.jpg
+!black.jpg
+
 # gui
 !start.jpg
 !wait.jpg
