@@ -168,11 +168,11 @@ class SettingController(PageController):
         self._widget.settings["Distance Measure"]["Bound"].setValidator(QDoubleValidator(30, 59.99, 2))
         self._widget.settings["Distance Measure"]["Bound"].setMaxLength(5)
 
-        self._widget.settings["Focus Time"]["Time Limit"].setPlaceholderText("1 ~ 999 (min)")
-        self._widget.settings["Focus Time"]["Time Limit"].setValidator(QIntValidator(1, 999))
+        self._widget.settings["Focus Time"]["Time Limit"].setPlaceholderText("1 ~ 59 (min)")
+        self._widget.settings["Focus Time"]["Time Limit"].setValidator(QIntValidator(1, 59))
 
-        self._widget.settings["Focus Time"]["Break Time"].setPlaceholderText("1 ~ 999 (min)")
-        self._widget.settings["Focus Time"]["Break Time"].setValidator(QIntValidator(1, 999))
+        self._widget.settings["Focus Time"]["Break Time"].setPlaceholderText("1 ~ 59 (min)")
+        self._widget.settings["Focus Time"]["Break Time"].setValidator(QIntValidator(1, 59))
 
         self._widget.settings["Posture Detect"]["Angle"].setPlaceholderText("5 ~ 24.99 (deg)")
         self._widget.settings["Posture Detect"]["Angle"].setValidator(QDoubleValidator(5, 25, 2))

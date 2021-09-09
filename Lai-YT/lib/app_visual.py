@@ -7,6 +7,7 @@ from typing import List, Tuple
 
 import cv2
 import numpy
+from PyQt5.QtCore import QObject, pyqtSignal
 from nptyping import Float, Int, NDArray
 
 from lib.color import BLUE, GREEN, MAGENTA, RED
@@ -14,6 +15,7 @@ from lib.cv_font import FONT_0, FONT_3
 from lib.image_type import ColorImage, GrayImage
 from lib.timer import Timer
 from lib.train import PostureLabel, IMAGE_DIMENSIONS
+from gui.warning_shower import TimeShower
 
 
 def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
@@ -65,17 +67,23 @@ class DistanceSentinel:
         cv2.putText(canvas, text, (10, 30), FONT_0, 0.9, MAGENTA, 2)
 
 
-class TimeSentinel:
+class TimeSentinel(QObject):
+    s_time_changed = pyqtSignal(int)
+    s_break_started = pyqtSignal()
+    s_break_finished = pyqtSignal()
+
     def __init__(self, time_limit: int, break_time: int):
         """
         Arguments:
             time_limit (int): Triggers a break if reached (minutes)
             break_time (int): How long the break should be (minutes)
         """
+        super().__init__()
         # minute to second
         self._time_limit = time_limit * 60
         self._break_time = break_time * 60
         self._break_timer = Timer()
+        self._time_shower = TimeShower()
 
     def break_time_if_too_long(self, canvas: ColorImage, timer: Timer) -> None:
         """If the time record in the Timer object exceeds time limit, a break time countdown shows on the center of the canvas.
@@ -89,17 +97,23 @@ class TimeSentinel:
         if self._break_timer.time() > self._break_time:
             timer.reset()
             self._break_timer.reset()
+
+            self._time_shower.switch_time_mode("work")
         # not the time to take a break
         elif timer.time() < self._time_limit:
             # Time record is only shown when not during the break.
             self.record_focus_time(canvas, timer.time(), timer.is_paused())
         else:
+            if break_timer.time() == 0:
+                self._time_shower.switch_time_mode("break")
+
             timer.pause()
             self._break_timer.start()
             countdown: int = self._break_time - self._break_timer.time()
             time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
-
             cv2.putText(canvas, "break left: " + time_left, (450, 80), FONT_3, 0.6, GREEN, 1)
+
+        self._time_shower.update_time(timer.time())
 
     def record_focus_time(self, canvas: ColorImage, time: float, paused: bool) -> None:
         """Puts time record on the canvas, also extra text if paused.

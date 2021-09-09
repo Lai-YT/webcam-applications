@@ -11,12 +11,12 @@ def control_brightness():
     # 1. Print the current brightness of computer.
     print(f'The current brightness of the computer is {sbc.get_brightness(method=method)}.')
     # 2. Set the brightness of computer to 7%.
-    sbc.set_brightness(8, method=method)
+    sbc.set_brightness(7, method=method)
     # 3. Print the current brightness of computer again.
     #    should be 7%.
-    #print(f'The current brightness of the computer is {sbc.get_brightness(method=method)}.')
+    print(f'The current brightness of the computer is {sbc.get_brightness(method=method)}.')
     # 4. Set the brightness of computer to 10 and fade to 0.
-    #sbc.fade_brightness(0, start=10, interval=0.1)
+    sbc.fade_brightness(0, start=10, interval=0.1)
 
 
 def get_brightness_of_frame():
@@ -72,6 +72,7 @@ if __name__ == '__main__':
     print('This opens the webcam and starts a loop, do you want to continue? Y/N: ', end='')
     if input().lower() == 'y':
         print('Try adjusting the light of your room to see the change in brightness.')
-        print('You may press \'esc\' to end the loop.')
+        print('Press any keep to capture next frame.')
+        print('Press \'esc\' to end the loop.')
         get_brightness_of_frame()
     print('End.')
