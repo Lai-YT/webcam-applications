@@ -7,7 +7,6 @@ from typing import List, Tuple
 
 import cv2
 import numpy
-from PyQt5.QtCore import QObject, pyqtSignal
 from nptyping import Float, Int, NDArray
 
 from lib.color import BLUE, GREEN, MAGENTA, RED
@@ -67,18 +66,13 @@ class DistanceSentinel:
         cv2.putText(canvas, text, (10, 30), FONT_0, 0.9, MAGENTA, 2)
 
 
-class TimeSentinel(QObject):
-    s_time_changed = pyqtSignal(int)
-    s_break_started = pyqtSignal()
-    s_break_finished = pyqtSignal()
-
+class TimeSentinel():
     def __init__(self, time_limit: int, break_time: int):
         """
         Arguments:
             time_limit (int): Triggers a break if reached (minutes)
             break_time (int): How long the break should be (minutes)
         """
-        super().__init__()
         # minute to second
         self._time_limit = time_limit * 60
         self._break_time = break_time * 60
