@@ -51,23 +51,22 @@ def get_information(image):
     # hue, saturation, value
     # Value is as known as brightness.
     h, s, v = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
-    return f'{v.mean()}, {v.std()}, {v.var()}'
-    # return f'mean = {v.mean():.2f}({v.mean() / 255:.2%}), std = {v.std():.2f}, var = {v.var():.2f}'
+    return f'mean = {v.mean():.2f}({v.mean() / 255:.2%}), std = {v.std():.2f}, var = {v.var():.2f}'
 
 
 if __name__ == '__main__':
     import time
 
-    # print('This demo contains 3 parts.')
-    # print('The first part shows how to control the brightness of screen(Windows).')
-    # time.sleep(2)
-    # control_brightness()
-    # print()
+    print('This demo contains 3 parts.')
+    print('The first part shows how to control the brightness of screen(Windows).')
+    time.sleep(2)
+    control_brightness()
+    print()
 
-    # print('The second part shows how to get the brightness of an image.')
-    # time.sleep(2)
-    # get_brightness_of_image()
-    # print()
+    print('The second part shows how to get the brightness of an image.')
+    time.sleep(2)
+    get_brightness_of_image()
+    print()
 
     print('The last part shows the live version of the second part.')
     print('This opens the webcam and starts a loop, do you want to continue? Y/N: ', end='')

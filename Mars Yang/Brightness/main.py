@@ -1,0 +1,109 @@
+import sys
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+
+import cv2
+import screen_brightness_control as sbc
+
+method = 'wmi'
+
+class SliderDemo(QDialog):
+    def __init__(self, parent=None):
+        super(SliderDemo, self).__init__(parent)
+
+        self.setWindowTitle("= =")
+        self.resize(600, 600)
+
+        self.layout = QVBoxLayout()
+        self.set_slider()
+        self.set_button()
+        self.set_brightness()
+
+    def set_slider(self):
+        '''Set a horizontal slider and a label on the window.'''
+        self.label = QLabel("Brightness: 10")
+        self.label.setFont(QFont('Arial', 35))
+        self.label.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.label)
+
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setMinimum(0)
+        self.slider.setMaximum(50)
+        self.slider.setSingleStep(3)
+        self.slider.setValue(10)
+        self.slider.setTickPosition(QSlider.TicksBelow)
+        self.slider.setTickInterval(5)
+
+        self.layout.addWidget(self.slider)
+
+        self.slider.valueChanged.connect(self.value_change)
+
+        self.setLayout(self.layout)
+
+    def set_button(self):
+        '''Set a capture button on the window.'''
+        self.start = QPushButton()
+        self.start.setText("Start Capturing")
+        self.start.setFont(QFont('Arial', 12))
+        self.start.clicked.connect(self.capture_image)
+
+        self.layout.addWidget(self.start)
+        self.setLayout(self.layout)
+
+    def set_brightness(self, brightness=20):
+        '''Adjust the brightness of the screen by sliding the slider.'''
+        sbc.set_brightness(brightness, method=method)
+
+    def value_change(self):
+        '''Change the literal value of brightness.'''
+        self.label.setText(f'Brightness: {self.slider.value()}')
+        size = self.slider.value()
+        self.set_brightness(brightness=size)
+
+    def capture_image(self):
+        '''Capture images and adjust the brightness instantly.'''
+        cam = cv2.VideoCapture(0)
+        while True:
+            _, frame = cam.read()
+            # Get the brightness percentage and show on the terminal.
+            brightness_percentage = self.get_brightness_percentage(frame)
+            print(f'Brightness percentage: {brightness_percentage}%')
+            # Adjust the brightness linearly.
+            self.brightness = 1.5 * brightness_percentage - 30
+            if self.brightness < 0: 
+                self.brightness = 0
+            self.adjust_brightness(self.brightness)
+
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            h, s, v = cv2.split(hsv)
+            cv2.imshow('Video Capture', v)
+            
+            if cv2.waitKey(25) & 0xFF == 27:
+                self.label.setText("Brightness: 20")
+                sbc.set_brightness(20, method=method)
+                cam.release()
+                sys.exit(0)
+
+
+    def get_brightness_percentage(self, image):
+        """Returns the percentage of brightness mean."""
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        # hue, saturation, value
+        # Value is as known as brightness.
+        h, s, v = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
+        # print(f'mean = {v.mean():.2f}({v.mean() / 255:.2%}), std = {v.std():.2f}, var = {v.var():.2f}')
+
+        return int(100 * v.mean() / 255)
+
+    def adjust_brightness(self, brightness: int):
+        '''Adjust the brightness of the screen.'''
+        self.label.setText(f'Brightness: {brightness}')
+        sbc.set_brightness(brightness, method=method)
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    demo = SliderDemo()
+    demo.show()
+    sys.exit(app.exec_())
