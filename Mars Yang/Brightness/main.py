@@ -13,7 +13,7 @@ class SliderDemo(QDialog):
         super(SliderDemo, self).__init__(parent)
 
         self.setWindowTitle("= =")
-        self.resize(600, 600)
+        self.resize(500, 300)
 
         self.layout = QVBoxLayout()
         self.set_slider()
@@ -66,19 +66,25 @@ class SliderDemo(QDialog):
         cam = cv2.VideoCapture(0)
         while True:
             _, frame = cam.read()
+            frame = cv2.flip(frame, flipCode=1) # horizontally flip
             # Get the brightness percentage and show on the terminal.
             brightness_percentage = self.get_brightness_percentage(frame)
-            print(f'Brightness percentage: {brightness_percentage}%')
-            # Adjust the brightness linearly.
-            self.brightness = 1.5 * brightness_percentage - 30
-            if self.brightness < 0: 
-                self.brightness = 0
+
+            # Adjust the brightness
+            # brightness percentage >= 50%
+            self.brightness = int(0.8 * brightness_percentage)
+            # 30% < brightness percentage < 50%
+            if brightness_percentage < 50:
+                self.brightness = int(2 * (brightness_percentage - 30))
+            # brightness percentage < 30%
+            self.brightness = 0 if self.brightness < 0 else self.brightness
             self.adjust_brightness(self.brightness)
 
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             h, s, v = cv2.split(hsv)
-            cv2.imshow('Video Capture', v)
+            cv2.imshow('Video Capture', frame)
             
+            # If enter esc, change brightness back to 20.
             if cv2.waitKey(25) & 0xFF == 27:
                 self.label.setText("Brightness: 20")
                 sbc.set_brightness(20, method=method)
