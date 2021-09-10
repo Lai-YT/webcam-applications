@@ -1,4 +1,5 @@
 from PyQt5.QtCore import QObject, pyqtSlot
+from PyQt5.QtWidgets import QApplication
 
 from gui.timer_widget import TimerWidget
 
@@ -13,6 +14,8 @@ class TimeShower(QObject):
 
         self._widget = TimerWidget()
         self._widget.switch_time_state("work")
+
+        self._move_timer_to_upper_right_corner()
         # Note that due to unknown reason, the whole app freezes if calling .show().
         self._widget.setVisible(True)
 
@@ -28,11 +31,16 @@ class TimeShower(QObject):
         Arguments:
         time (int): The time in seconds to be displayed
         """
-        t = f"{(time // 60):02d}:{(time % 60):02d}"
+        time_str = f"{(time // 60):02d}:{(time % 60):02d}"
 
-        if self._widget.current_state() == "work":
-            self._widget.work_time.display(t)
-        elif self._widget.current_state() == "break":
-            self._widget.messages["Countdown"].setText(t)
-        else:
+        try:
+            self._widget.clocks[self._widget.current_state()].display(time_str)
+        except KeyError:
             raise ValueError(f"{self._widget.current_state()} is not a valid state")
+
+    def _move_timer_to_upper_right_corner(self):
+        # A static method which returns the already existing instance; None if no.
+        app = QApplication.instance()
+        screen = app.primaryScreen()
+        geometry = screen.availableGeometry()
+        self._widget.move(geometry.width() - self._widget.width(), 50)
