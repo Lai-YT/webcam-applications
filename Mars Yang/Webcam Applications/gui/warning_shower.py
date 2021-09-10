@@ -43,3 +43,6 @@ class TimeShower(QObject):
         screen = app.primaryScreen()
         geometry = screen.availableGeometry()
         self._widget.move(geometry.width() - self._widget.width(), 50)
+    
+    def close(self):
+        self._widget.close()

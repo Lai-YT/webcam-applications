@@ -2,6 +2,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
 import gui.img.icon
+from gui.component import StatusBar
 from gui.page_widget import PageWidget
 
 
@@ -14,7 +15,9 @@ from gui.page_widget import PageWidget
 #    | |                 | |
 #    | |                 | |
 #    | ------------------- |
+#    | status bar          |
 #    -----------------------
+
 
 class ApplicationGui(QMainWindow):
     """This is the pure GUI part, provides no functionalitiy.
@@ -34,8 +37,14 @@ class ApplicationGui(QMainWindow):
         self._central_widget = QWidget(parent=self)
         self._central_widget.setLayout(self._general_layout)
         self.setCentralWidget(self._central_widget)
+
+        self._create_status_bar()
         # Top is the page area.
         self._create_pages()
+
+    def _create_status_bar(self):
+        self.status_bar = StatusBar()
+        self.setStatusBar(self.status_bar)
 
     def _create_pages(self):
         """Creates the page area. Components are created by PageWidget."""

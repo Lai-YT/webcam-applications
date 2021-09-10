@@ -16,7 +16,6 @@ from lib.timer import Timer
 from lib.train import PostureLabel, IMAGE_DIMENSIONS
 from gui.warning_shower import TimeShower
 
-
 def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
     """Modifies the canvas with face area framed up and landmarks dotted.
 
