@@ -66,7 +66,11 @@ class DistanceSentinel:
         cv2.putText(canvas, text, (10, 30), FONT_0, 0.9, MAGENTA, 2)
 
 
-class TimeSentinel():
+class TimeSentinel:
+    """
+    TimeSentinel checks if the time held by a Timer exceeds time limit and
+    interacts with a TimeShower to show the corresponding TimerWidget.
+    """
     def __init__(self, time_limit: int, break_time: int):
         """
         Arguments:
@@ -91,23 +95,26 @@ class TimeSentinel():
         if self._break_timer.time() > self._break_time:
             timer.reset()
             self._break_timer.reset()
-
-            self._time_shower.switch_time_mode("work")
+            self._time_shower.switch_time_state("work")
         # not the time to take a break
         elif timer.time() < self._time_limit:
+            # The time of the normal timer is to be shown.
+            self._time_shower.update_time(timer.time())
+
             # Time record is only shown when not during the break.
             self.record_focus_time(canvas, timer.time(), timer.is_paused())
         else:
-            if break_timer.time() == 0:
-                self._time_shower.switch_time_mode("break")
+            if self._break_timer.time() == 0:
+                self._time_shower.switch_time_state("break")
 
             timer.pause()
             self._break_timer.start()
             countdown: int = self._break_time - self._break_timer.time()
+            # The time (countdown) of the break timer is to be shown.
+            self._time_shower.update_time(countdown)
+
             time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
             cv2.putText(canvas, "break left: " + time_left, (450, 80), FONT_3, 0.6, GREEN, 1)
-
-        self._time_shower.update_time(timer.time())
 
     def record_focus_time(self, canvas: ColorImage, time: float, paused: bool) -> None:
         """Puts time record on the canvas, also extra text if paused.
