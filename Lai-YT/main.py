@@ -2,8 +2,8 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
+from gui.main_controller import GuiController
 from gui.main_window import ApplicationGui
-from main_controller import GuiController
 
 
 app = QApplication(sys.argv)
