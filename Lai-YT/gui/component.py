@@ -1,5 +1,5 @@
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QCheckBox, QLabel, QLineEdit, QProgressBar,
+from PyQt5.QtWidgets import (QCheckBox, QLCDNumber, QLabel, QLineEdit, QProgressBar,
                              QPushButton, QRadioButton, QStatusBar)
 
 
@@ -72,3 +72,10 @@ class OptionRadioButton(QRadioButton):
     def __init__(self, text, font_size=12):
         super().__init__(text)
         self.setFont(QFont("Arial", font_size))
+
+
+class LCDClock(QLCDNumber):
+    def __init__(self, color="black"):
+        super().__init__()
+        self.display("00:00")
+        self.setStyleSheet(f"color: {color};")

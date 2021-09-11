@@ -20,7 +20,6 @@ class PageWidget(QTabWidget):
         self.pages = {
             "Options": OptionWidget(),
             "Settings": SettingWidget(),
-            "Model(unready)": ModelWidget(),
         }
         for text, page in self.pages.items():
             self.addTab(page, text)

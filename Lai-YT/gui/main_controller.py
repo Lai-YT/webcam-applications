@@ -10,9 +10,9 @@ from gui.page_controller import OptionController, SettingController
 
 #         Current controller hierarchy:
 #
-#                GuiController
+#                GuiController - ApplicationGui, WebcamApplication
 #                      |
-#                PageController (OptionController, SettingController)
+#                PageController (OptionController, SettingController, ...)
 
 
 class GuiController(QObject):
@@ -53,9 +53,13 @@ class GuiController(QObject):
 
     def _connect_signals_between_controller_and_gui(self):
         """Connect the siganls among widgets."""
-        self._gui.destroyed.connect(self._store_page_configs)
+        # Have the configs save before GUI being destroyed.
+        self._gui.set_clean_up_before_destroy(self._store_page_configs)
+        # Starts the app after some preceding processes.
         self._page_controllers["Options"].s_start.connect(self._start)
+
         self._page_controllers["Options"].s_exit.connect(self._gui.close)
+        # Passes the configparser to `Settings` to have it handle its own storing process.
         self._page_controllers["Settings"].s_save.connect(
             partial(self._page_controllers["Settings"].store_configs, self._config))
 

@@ -1,9 +1,9 @@
 from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QLCDNumber, QStackedLayout, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QStackedLayout, QVBoxLayout, QWidget
 
 import gui.img.icon
-from gui.component import Label
+from gui.component import LCDClock, Label
 
 
 class TimerWidget(QWidget):
@@ -69,33 +69,19 @@ class TimerWidget(QWidget):
         super().mouseMoveEvent(event)
 
     def _create_work_state(self):
-        """The work state widget is a single LCD Number widget."""
-        # lcd number should be controlled under work state.
-        self.clocks["work"] = QLCDNumber()
-        self.clocks["work"].display("00:00")
+        """The work state widget is a single Clock widget."""
+        # lcd clock should be controlled under work state.
+        self.clocks["work"] = LCDClock()
         self._general_layout.addWidget(self.clocks["work"])
         # state is the same as clock because the whole widget contains only the
-        # lcd number.
+        # clock.
         self._states["work"] = self.clocks["work"]
 
     def _create_break_state(self):
-        """The break state widget contains 2 text Label with 1 LCD Number between."""
-        break_layout = QVBoxLayout()
-        # Wraps the break_layout with a widget since QStackedLayout can only
-        # accept and switch between widgets.
-        self._states["break"] = QWidget()
-        self._states["break"].setLayout(break_layout)
-
-        messages = {
-            "Break": "It's time to take a break!",
-            "Encourage": "Coding makes tired.",
-        }
-        for name, msg in messages.items():
-            label = Label(msg, font_size=14)
-            label.setAlignment(Qt.AlignCenter)
-            break_layout.addWidget(label)
-        # break state only controls the lcd number.
-        self.clocks["break"] = QLCDNumber()
-        break_layout.insertWidget(1, self.clocks["break"])
-
-        self._general_layout.addWidget(self._states["break"])
+        """The break state widget is a single Clock widget."""
+        # lcd clock should be controlled under break state.
+        self.clocks["break"] = LCDClock(color="red")
+        self._general_layout.addWidget(self.clocks["break"])
+        # state is the same as clock because the whole widget contains only the
+        # clock.
+        self._states["break"] = self.clocks["break"]
