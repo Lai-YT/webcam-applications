@@ -4,6 +4,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
 import cv2
+import numpy as np
 import screen_brightness_control as sbc
 
 method = 'wmi'
@@ -20,7 +21,7 @@ class SliderDemo(QWidget):
         self.layout = QVBoxLayout()
         self.set_slider()
         self.set_button()
-        self.set_brightness()
+        self.set_brightness(20)
         # Initialize exit flag.
         self.exit_flag = False
 
@@ -61,13 +62,13 @@ class SliderDemo(QWidget):
         self.layout.addWidget(self.exit)
         self.setLayout(self.layout)
 
-    def set_brightness(self, brightness=20):
+    def set_brightness(self, brightness: int):
         '''Adjust the brightness of the screen by sliding the slider.'''
+        self.label.setText(f'Brightness: {brightness}')
         sbc.set_brightness(brightness, method=method)
 
     def value_change(self):
         '''Change the literal value of brightness.'''
-        self.label.setText(f'Brightness: {self.slider.value()}')
         self.set_brightness(brightness=self.slider.value())
 
     pyqtSlot()
@@ -77,18 +78,10 @@ class SliderDemo(QWidget):
         while True:
             _, frame = cam.read()
             frame = cv2.flip(frame, flipCode=1) # horizontally flip
-            # Get the brightness percentage and show on the terminal.
-            brightness_percentage = self.get_brightness_percentage(frame)
-
-            # Adjust the brightness
-            # brightness percentage >= 50%
-            self.brightness = int(0.8 * brightness_percentage)
-            # 30% < brightness percentage < 50%
-            if brightness_percentage < 50:
-                self.brightness = int(2 * (brightness_percentage - 30))
-            # brightness percentage < 30%
-            self.brightness = 0 if self.brightness < 0 else self.brightness
-            self.adjust_brightness(self.brightness)
+            
+            # Detect the brightness of the frame and adjust the brightness of the screen.
+            brightness = self.detect_brightness(frame)
+            self.adjust_brightness(brightness)
 
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             h, s, v = cv2.split(hsv)
@@ -97,15 +90,14 @@ class SliderDemo(QWidget):
 
             # If exit flag is True, close the webcam and emit the exit signal.
             if self.exit_flag == True:
-                self.label.setText("Brightness: 20")
-                sbc.set_brightness(20, method=method)
+                self.set_brightness(20)
                 cam.release()
                 self.s_exit.emit()
                 sys.exit(0)
 
-    def get_brightness_percentage(self, image):
+    def get_brightness_percentage(self, frame: np.ndarray):
         """Returns the percentage of brightness mean."""
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # hue, saturation, value
         # Value is as known as brightness.
         h, s, v = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
@@ -113,10 +105,25 @@ class SliderDemo(QWidget):
 
         return int(100 * v.mean() / 255)
 
+    def detect_brightness(self, frame: np.ndarray):
+        '''Get the brightness percentage of the frame
+           and return the modified brightness value.
+        '''
+        brightness_percentage = self.get_brightness_percentage(frame)
+
+        # brightness percentage >= 50%
+        brightness = int(0.8 * brightness_percentage)
+        # 30% < brightness percentage < 50%
+        if brightness_percentage < 50:
+            brightness = int(2 * (brightness_percentage - 30))
+        # brightness percentage < 30%
+        brightness = 0 if brightness < 0 else brightness
+        
+        return brightness
+
     def adjust_brightness(self, brightness: int):
         '''Adjust the brightness of the screen.'''
-        self.label.setText(f'Brightness: {brightness}')
-        sbc.set_brightness(brightness, method=method)
+        self.set_brightness(brightness)
 
     def click_start(self):
         '''Do things after start button is clicked.'''
