@@ -69,7 +69,7 @@ class SliderDemo(QWidget):
 
     def value_change(self):
         '''Change the literal value of brightness.'''
-        self.set_brightness(brightness=self.slider.value())
+        self.set_brightness(self.slider.value())
 
     pyqtSlot()
     def capture_image(self):
@@ -105,7 +105,7 @@ class SliderDemo(QWidget):
 
         return int(100 * v.mean() / 255)
 
-    def detect_brightness(self, frame: np.ndarray):
+    def detect_brightness(self, frame: np.ndarray) -> int:
         '''Get the brightness percentage of the frame
            and return the modified brightness value.
         '''
