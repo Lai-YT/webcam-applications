@@ -8,17 +8,21 @@ import screen_brightness_control as sbc
 
 method = 'wmi'
 
-class SliderDemo(QDialog):
+class SliderDemo(QWidget):
+    s_exit = pyqtSignal()
+
     def __init__(self, parent=None):
         super(SliderDemo, self).__init__(parent)
 
-        self.setWindowTitle("= =")
-        self.resize(500, 300)
-
+        self.setWindowTitle("Utimate Brightness Detector")
+        self.resize(450, 300)
+        self.setWindowIcon(QIcon("sun.ico"))
         self.layout = QVBoxLayout()
         self.set_slider()
         self.set_button()
         self.set_brightness()
+        # Initialize exit flag.
+        self.exit_flag = False
 
     def set_slider(self):
         '''Set a horizontal slider and a label on the window.'''
@@ -29,14 +33,13 @@ class SliderDemo(QDialog):
 
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
-        self.slider.setMaximum(50)
+        self.slider.setMaximum(60)
         self.slider.setSingleStep(3)
         self.slider.setValue(10)
         self.slider.setTickPosition(QSlider.TicksBelow)
         self.slider.setTickInterval(5)
 
         self.layout.addWidget(self.slider)
-
         self.slider.valueChanged.connect(self.value_change)
 
         self.setLayout(self.layout)
@@ -46,9 +49,16 @@ class SliderDemo(QDialog):
         self.start = QPushButton()
         self.start.setText("Start Capturing")
         self.start.setFont(QFont('Arial', 12))
-        self.start.clicked.connect(self.capture_image)
+        self.start.clicked.connect(self.click_start)
+
+        self.exit = QPushButton()
+        self.exit.setText("Exit")
+        self.exit.setFont(QFont('Arial', 12))
+        self.exit.setEnabled(False)
+        self.exit.clicked.connect(self.click_exit)
 
         self.layout.addWidget(self.start)
+        self.layout.addWidget(self.exit)
         self.setLayout(self.layout)
 
     def set_brightness(self, brightness=20):
@@ -58,9 +68,9 @@ class SliderDemo(QDialog):
     def value_change(self):
         '''Change the literal value of brightness.'''
         self.label.setText(f'Brightness: {self.slider.value()}')
-        size = self.slider.value()
-        self.set_brightness(brightness=size)
+        self.set_brightness(brightness=self.slider.value())
 
+    pyqtSlot()
     def capture_image(self):
         '''Capture images and adjust the brightness instantly.'''
         cam = cv2.VideoCapture(0)
@@ -83,13 +93,14 @@ class SliderDemo(QDialog):
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             h, s, v = cv2.split(hsv)
             cv2.imshow('Video Capture', frame)
-            
-            # If enter esc, change brightness back to 20.
-            if cv2.waitKey(25) & 0xFF == 27:
+            cv2.waitKey(50)
+
+            # If exit flag is True, close the webcam and emit the exit signal.
+            if self.exit_flag == True:
                 self.label.setText("Brightness: 20")
                 sbc.set_brightness(20, method=method)
                 cam.release()
-                sys.exit(0)
+                self.s_exit.emit()
 
 
     def get_brightness_percentage(self, image):
@@ -107,6 +118,22 @@ class SliderDemo(QDialog):
         self.label.setText(f'Brightness: {brightness}')
         sbc.set_brightness(brightness, method=method)
 
+    def click_start(self):
+        '''Do things after start button is clicked.'''
+        self.slider.hide()
+        self.exit.setEnabled(True)
+        self.start.setEnabled(False)
+        self.capture_image()
+
+    def click_exit(self):
+        '''Set exit flag to True.'''
+        self.exit_flag = True
+
+    def connect_signal(self):
+        '''Connect the exit signal and close the gui.'''
+        self.s_exit.connect(self.close)
+
+    
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
