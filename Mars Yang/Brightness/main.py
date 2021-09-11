@@ -95,7 +95,7 @@ class SliderDemo(QWidget):
                 self.s_exit.emit()
                 sys.exit(0)
 
-    def get_brightness_percentage(self, frame: np.ndarray):
+    def get_brightness_percentage(self, frame: np.ndarray) -> int:
         """Returns the percentage of brightness mean."""
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # hue, saturation, value
