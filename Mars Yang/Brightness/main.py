@@ -101,7 +101,7 @@ class SliderDemo(QWidget):
                 sbc.set_brightness(20, method=method)
                 cam.release()
                 self.s_exit.emit()
-
+                sys.exit(0)
 
     def get_brightness_percentage(self, image):
         """Returns the percentage of brightness mean."""
@@ -132,7 +132,6 @@ class SliderDemo(QWidget):
     def connect_signal(self):
         '''Connect the exit signal and close the gui.'''
         self.s_exit.connect(self.close)
-
     
 
 if __name__ == '__main__':
