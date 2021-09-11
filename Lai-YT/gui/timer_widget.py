@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QLCDNumber, QStackedLayout, QVBoxLayout, QWidget
 
 import gui.img.icon
 from gui.component import Label
-import sys
+
 
 class TimerWidget(QWidget):
     """TimerWidget contains different time states maintain by a QStackedLayout."""

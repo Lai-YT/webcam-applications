@@ -129,6 +129,13 @@ class TimeSentinel:
         if paused:
             cv2.putText(canvas, "time paused", (500, 40), FONT_0, 0.6, RED, 1)
 
+    def close(self):
+        """Closes the time showing widget."""
+        self._time_shower.close()
+        # If not reset timer, a break-time-close might keep the countdown to next start.
+        # (no effect if every start is a fresh new sentinel)
+        self._break_timer.reset()
+
 
 class PostureChecker:
     def __init__(self, model, angle_calculator, warn_angle: float):

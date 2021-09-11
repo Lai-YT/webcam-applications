@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication
 
 from gui.timer_widget import TimerWidget
 
+
 class TimeShower(QObject):
     """
     The layer between Widget and App.Knows the current state of time and updates
@@ -43,3 +44,7 @@ class TimeShower(QObject):
         screen = app.primaryScreen()
         geometry = screen.availableGeometry()
         self._widget.move(geometry.width() - self._widget.width(), 50)
+
+    def close(self):
+        """Closes the TimerWidget."""
+        self._widget.close()
