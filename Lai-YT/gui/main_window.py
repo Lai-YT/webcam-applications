@@ -21,9 +21,9 @@ from gui.page_widget import PageWidget
 
 class ApplicationGui(QMainWindow):
     """This is the pure GUI part, provides no functionalitiy.
-    It's responsibility is to create all components the GUI should have,
-    whichs means no other components will be added by other parts (Controller, App).
-    Functionality of the components is set by the Controllers.
+    Its responsibility is to create all components the GUI should have,
+    which means no other components will be added by other parts (Controller, App).
+    Functionality of the components are set by the Controllers.
     """
 
     def __init__(self):
@@ -41,7 +41,7 @@ class ApplicationGui(QMainWindow):
         self._create_status_bar()
         # Top is the page area.
         self._create_pages()
-        
+
     # Override
     def closeEvent(self, event):
         """A clean up function is called before closed if set."""

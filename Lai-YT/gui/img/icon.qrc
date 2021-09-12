@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
     <file alias="webcam.ico">webcam.ico</file>
+    <file alias="help-icon.svg">help-icon.svg</file>
 </qresource>
 </RCC>
