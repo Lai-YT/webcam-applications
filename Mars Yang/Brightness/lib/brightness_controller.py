@@ -8,35 +8,37 @@ from PyQt5.QtGui import *
 
 from lib.brightness_window import BrightnessGui
 
-method = 'wmi'
+method = "wmi"
 class BrightnessController(QObject):
     s_exit = pyqtSignal()
 
     def __init__(self, gui: BrightnessGui):
         super().__init__()
-        # Extract the PageWidget to self._pages,
-        # other common parts should be accessed through self._gui.
+    
         self._gui = gui
         self.set_brightness(20)
-        self.set_button_signal()
+        self.connect_signals()
 
-    def set_button_signal(self):
+    def connect_signals(self):
+        """Connect the siganls among widgets."""
         self._gui.start.clicked.connect(self.click_start)
         self._gui.exit.clicked.connect(self.click_exit)
         self._gui.slider.valueChanged.connect(self.value_change)
+        """Connect the exit signal."""
+        self.s_exit.connect(self._gui.close)
 
     def set_brightness(self, brightness: int):
-        '''Adjust the brightness of the screen by sliding the slider.'''
+        """Adjust the brightness of the screen by sliding the slider."""
         self._gui.label.setText(f'Brightness: {brightness}')
         sbc.set_brightness(brightness, method=method)
         
     def value_change(self):
-        '''Change the literal value of brightness.'''
+        """Change the literal value of brightness."""
         self.set_brightness(self._gui.slider.value())
 
-    pyqtSlot()
+    @pyqtSlot()
     def capture_image(self):
-        '''Capture images and adjust the brightness instantly.'''
+        """Capture images and adjust the brightness instantly."""
         cam = cv2.VideoCapture(0)
 
         # If exit flag is True, jump out the loop.
@@ -54,10 +56,10 @@ class BrightnessController(QObject):
             cv2.waitKey(50)
 
         # Close the webcam and emit the exit signal.
-            self.set_brightness(20)
-            cam.release()
-            self.s_exit.emit()
-            cv2.destroyAllWindows()
+        self.set_brightness(20)
+        cam.release()
+        self.s_exit.emit()
+        cv2.destroyAllWindows()
 
     def get_brightness_percentage(self, frame: np.ndarray) -> int:
         """Returns the percentage of brightness mean."""
@@ -69,9 +71,9 @@ class BrightnessController(QObject):
         return int(100 * v.mean() / 255)
 
     def detect_brightness(self, frame: np.ndarray) -> int:
-        '''Get the brightness percentage of the frame
+        """Get the brightness percentage of the frame
             and return the modified brightness value.
-        '''
+        """
         brightness_percentage = self.get_brightness_percentage(frame)
 
         # brightness percentage >= 50%
@@ -85,16 +87,12 @@ class BrightnessController(QObject):
         return brightness
 
     def click_start(self):
-        '''Do things after start button is clicked.'''
+        """Do things after start button is clicked."""
         self._gui.slider.hide()
         self._gui.exit.setEnabled(True)
         self._gui.start.setEnabled(False)
         self.capture_image()
 
     def click_exit(self):
-        '''Set exit flag to True.'''
+        """Set exit flag to True."""
         self._gui.exit_flag = True
-
-    def connect_signal(self):
-        '''Connect the exit signal and close the gui.'''
-        self.s_exit.connect(self._gui.close)
