@@ -1,9 +1,10 @@
 from PyQt5.QtCore import QEvent, QPoint, Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QStackedWidget, QVBoxLayout, QToolButton, QWhatsThis, QWidget
+from PyQt5.QtWidgets import (QStackedWidget, QVBoxLayout, QToolButton, QWhatsThis,
+                             QWidget)
 
 import gui.img.icon
-from gui.component import LCDClock, Label
+from gui.component import LCDClock
 
 
 class TimerWidget(QWidget):
