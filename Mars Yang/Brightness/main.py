@@ -1,11 +1,11 @@
 import sys
+import cv2
+import numpy as np
+
+import screen_brightness_control as sbc
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-
-import cv2
-import numpy as np
-import screen_brightness_control as sbc
 
 method = 'wmi'
 
@@ -22,6 +22,7 @@ class SliderDemo(QWidget):
         self.set_slider()
         self.set_button()
         self.set_brightness(20)
+        self.connect_signal()
         # Initialize exit flag.
         self.exit_flag = False
 
@@ -62,38 +63,40 @@ class SliderDemo(QWidget):
         self.layout.addWidget(self.exit)
         self.setLayout(self.layout)
 
+    def value_change(self):
+        '''Change the literal value of brightness.'''
+        self.set_brightness(self.slider.value())
+
     def set_brightness(self, brightness: int):
         '''Adjust the brightness of the screen by sliding the slider.'''
         self.label.setText(f'Brightness: {brightness}')
         sbc.set_brightness(brightness, method=method)
 
-    def value_change(self):
-        '''Change the literal value of brightness.'''
-        self.set_brightness(self.slider.value())
-
     pyqtSlot()
     def capture_image(self):
         '''Capture images and adjust the brightness instantly.'''
         cam = cv2.VideoCapture(0)
-        while True:
+
+        # If exit flag is True, jump out the loop.
+        while not self.exit_flag:
             _, frame = cam.read()
             frame = cv2.flip(frame, flipCode=1) # horizontally flip
             
             # Detect the brightness of the frame and adjust the brightness of the screen.
             brightness = self.detect_brightness(frame)
-            self.adjust_brightness(brightness)
+            self.set_brightness(brightness)
+
 
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             h, s, v = cv2.split(hsv)
             cv2.imshow('Video Capture', frame)
             cv2.waitKey(50)
 
-            # If exit flag is True, close the webcam and emit the exit signal.
-            if self.exit_flag == True:
-                self.set_brightness(20)
-                cam.release()
-                self.s_exit.emit()
-                sys.exit(0)
+        # Close the webcam and emit the exit signal.
+        self.set_brightness(20)
+        cam.release()
+        self.s_exit.emit()
+        cv2.destroyAllWindows()
 
     def get_brightness_percentage(self, frame: np.ndarray) -> int:
         """Returns the percentage of brightness mean."""
@@ -120,10 +123,6 @@ class SliderDemo(QWidget):
         brightness = 0 if brightness < 0 else brightness
         
         return brightness
-
-    def adjust_brightness(self, brightness: int):
-        '''Adjust the brightness of the screen.'''
-        self.set_brightness(brightness)
 
     def click_start(self):
         '''Do things after start button is clicked.'''
