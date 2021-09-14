@@ -44,8 +44,8 @@ class BrightnessGui(QMainWindow):
             "Exit": "Exit"
         }
 
-        for name, label in buttons.items():
-            self.buttons[name] = Button(label)
+        for name, text in buttons.items():
+            self.buttons[name] = Button(text)
             self._general_layout.addWidget(self.buttons[name])
 
         self.buttons["Exit"].setEnabled(False)
