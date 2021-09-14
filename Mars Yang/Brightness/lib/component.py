@@ -15,14 +15,11 @@ class CheckBox(QCheckBox):
     def __init__(self, text, font_size=14):
         super().__init__(text)
         self.setFont(QFont("Arial", font_size))
-        # Align center
-        self.setStyleSheet("margin-left:115%; margin-right:100%;")
 
 class HorizontalSlider(QSlider):
     def __init__(self, min_val=0, max_val=60, cur_val=20):
         super().__init__(Qt.Horizontal)
-        self.setMinimum(min_val)
-        self.setMaximum(max_val)
+        self.setRange(min_val, max_val)
         self.setValue(cur_val)
         # Set the scale below the slider.
         self.setTickPosition(QSlider.TicksBelow)

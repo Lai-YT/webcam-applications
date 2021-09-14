@@ -1,3 +1,4 @@
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QWidget)
 
@@ -31,7 +32,12 @@ class BrightnessGui(QMainWindow):
     def set_checkbox(self):
         self.lock = CheckBox("Lock Brightness")
         self.lock.hide()
-        self._general_layout.addWidget(self.lock)
+
+        checkbox_layout = QVBoxLayout()
+        checkbox_layout.addWidget(self.lock)
+        # Horizontally align center.
+        checkbox_layout.setAlignment(Qt.AlignHCenter)
+        self._general_layout.addLayout(checkbox_layout)
 
     def set_slider(self):
         self.slider = HorizontalSlider()
