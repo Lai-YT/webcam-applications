@@ -35,6 +35,8 @@ class BrightnessGui(QMainWindow):
         """Set a checkbox on the window."""
         self.lock = QCheckBox("Lock Brightness")
         self.lock.setFont(QFont("Arial", 14))
+        # Align center
+        self.lock.setStyleSheet("margin-left:115%; margin-right:100%;")
         self.lock.hide()
         self._general_layout.addWidget(self.lock)
 
