@@ -45,15 +45,15 @@ class BrightnessController(QObject):
         while not self._gui.exit_flag:
             _, frame = cam.read()
             frame = cv2.flip(frame, flipCode=1) # horizontally flip
-                
-            # Detect the brightness of the frame and adjust the brightness of the screen.
-            brightness = self.detect_brightness(frame)
-            self.set_brightness(brightness)
+            
+            # If checkbox is checked, lock the brightness value to make it unable to be adjusted.
+            if not self._gui.lock.isChecked():
+                # Detect the brightness of the frame and adjust the brightness of the screen.
+                brightness = self.detect_brightness(frame)
+                self.set_brightness(brightness)
 
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            h, s, v = cv2.split(hsv)
             cv2.imshow('Video Capture', frame)
-            cv2.waitKey(50)
+            cv2.waitKey(25)
 
         # Close the webcam and emit the exit signal.
         self.set_brightness(20)
@@ -89,6 +89,7 @@ class BrightnessController(QObject):
     def click_start(self):
         """Do things after start button is clicked."""
         self._gui.slider.hide()
+        self._gui.lock.show()
         self._gui.exit.setEnabled(True)
         self._gui.start.setEnabled(False)
         self.capture_image()

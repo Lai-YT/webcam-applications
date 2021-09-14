@@ -17,18 +17,29 @@ class BrightnessGui(QMainWindow):
         self._central_widget.setLayout(self._general_layout)
         self.setCentralWidget(self._central_widget)
         # Initialize widgets
+        self.set_label()
+        self.set_checkbox()
         self.set_slider()
         self.set_button()
         # Initialize exit flag.
         self.exit_flag = False
 
-    def set_slider(self):
-        """Set a horizontal slider and a label on the window."""
+    def set_label(self):
+        """Set a label on the window."""
         self.label = QLabel()
         self.label.setFont(QFont("Arial", 35))
         self.label.setAlignment(Qt.AlignCenter)
         self._general_layout.addWidget(self.label)
 
+    def set_checkbox(self):
+        """Set a checkbox on the window."""
+        self.lock = QCheckBox("Lock Brightness")
+        self.lock.setFont(QFont("Arial", 14))
+        self.lock.hide()
+        self._general_layout.addWidget(self.lock)
+
+    def set_slider(self):
+        """Set a horizontal slider on the window."""
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(60)
@@ -36,7 +47,6 @@ class BrightnessGui(QMainWindow):
         self.slider.setValue(20)
         self.slider.setTickPosition(QSlider.TicksBelow)
         self.slider.setTickInterval(5)
-
         self._general_layout.addWidget(self.slider)
 
     def set_button(self):
