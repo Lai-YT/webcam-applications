@@ -25,8 +25,8 @@ class BrightnessCalculator():
         if brightness_percentage > 50:
             brightness = int(0.8 * brightness_percentage)
         elif brightness_percentage > 30:
-            brightness = int(0.8 * brightness_percentage)
+            brightness = int(2 * (brightness_percentage - 30))
         else:
             brightness = 0
-            
+
         return brightness
