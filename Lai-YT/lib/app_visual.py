@@ -53,7 +53,7 @@ class DistanceSentinel:
         # warning logic...
         self.put_distance_text(canvas, distance)
         if distance < self._warn_dist:
-            cv2.putText(canvas, 'too close', (10, 150), FONT_0, 0.9, RED, 2)
+            cv2.putText(canvas, "too close", (10, 150), FONT_0, 0.9, RED, 2)
 
     def put_distance_text(self, canvas: ColorImage, distance: float) -> None:
         """Puts distance text on the canvas.

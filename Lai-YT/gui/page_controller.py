@@ -4,6 +4,8 @@ from functools import partial
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
+from lib.train import PostureLabel, WritingModelTrainer
+
 
 class PageController(QObject):
     """The is a common interface of all PageControllers.
@@ -195,7 +197,7 @@ class SettingController(PageController):
         valid = self._check_inputs_validity()
         if valid:
             self.show_message("Saved!", "green")
-            # Emits the signal to have the main controller call store_config
+            # Emits the signal to have the main controller call store_configs
             # with the ConfigParser.
             self.s_save.emit()
         else:
@@ -213,3 +215,59 @@ class SettingController(PageController):
                    parameter_line.clear()
 
        return check_passed
+
+
+class ModelController(PageController):
+    def __init__(self, model_widget):
+        super().__init__()
+        self._widget = model_widget
+        self._model_trainer = WritingModelTrainer()
+
+        self._enable_buttons()
+        self._connect_signals()
+        self._connect_buttons()
+
+    def load_configs(self, config):
+        pass
+
+    def store_configs(self, config):
+        pass
+
+    def _enable_buttons(self):
+        # Finish is disabled at the beginning.
+        self._widget.buttons["Finish"].setEnabled(False)
+
+        self._widget.buttons["Capture"].clicked.connect(
+            lambda: self._widget.buttons["Finish"].setEnabled(True))
+        self._widget.buttons["Capture"].clicked.connect(
+            lambda: self._widget.buttons["Capture"].setEnabled(False))
+        self._widget.buttons["Capture"].clicked.connect(
+            lambda: self._widget.buttons["Train"].setEnabled(False))
+
+        self._widget.buttons["Finish"].clicked.connect(
+            lambda: self._widget.buttons["Capture"].setEnabled(True))
+        self._widget.buttons["Finish"].clicked.connect(
+            lambda: self._widget.buttons["Finish"].setEnabled(False))
+        self._widget.buttons["Finish"].clicked.connect(
+            lambda: self._widget.buttons["Train"].setEnabled(True))
+
+        self._widget.buttons["Train"].clicked.connect(
+            lambda: self._widget.buttons["Capture"].setEnabled(False))
+        self._widget.buttons["Train"].clicked.connect(
+            lambda: self._widget.buttons["Finish"].setEnabled(False))
+
+    def _connect_buttons(self):
+        self._widget.buttons["Train"].clicked.connect(self._model_trainer.train_model)
+        self._widget.buttons["Capture"].clicked.connect(self._capture_sampe_images)
+        self._widget.buttons["Finish"].clicked.connect(self._model_trainer.stop_capturing)
+
+    def _connect_signals(self):
+        self._model_trainer.s_train_finished.connect(
+            lambda: self._widget.buttons["Capture"].setEnabled(True))
+
+    def _capture_sampe_images(self):
+        selected_option = self._widget.option_ids[self._widget.options_group.checkedId()]
+        if selected_option == "Good":
+            self._model_trainer.capture_sample_images(PostureLabel.good)
+        elif selected_option == "Slump":
+            self._model_trainer.capture_sample_images(PostureLabel.slump)

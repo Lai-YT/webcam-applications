@@ -56,15 +56,16 @@ class SliderDemo(QWidget):
         self.setWindowTitle("Utimate Brightness Detector")
         self.resize(450, 300)
         self.setWindowIcon(QIcon(":sun.ico"))
+
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
-
         self._set_slider()
         self._set_button()
-        self.adjust_screen_brightness(20)
         self._connect_signal()
         # Initialize exit flag.
         self.exit_flag = False
+
+        self.adjust_screen_brightness(20)
 
     def adjust_screen_brightness(self, brightness: int):
         """Adjust the brightness of the screen and update the text."""
@@ -81,12 +82,11 @@ class SliderDemo(QWidget):
             _, frame = cam.read()
             frame = cv2.flip(frame, flipCode=1) # horizontally flip
 
-            brightness = BrightnessCalculator.calculate_proper_screen_brightness(frame)
+            brightness: int = BrightnessCalculator.calculate_proper_screen_brightness(frame)
             self.adjust_screen_brightness(brightness)
 
             cv2.imshow("Video Capture", frame)
             cv2.waitKey(50)
-
         # clean up
         cam.release()
         cv2.destroyAllWindows()
