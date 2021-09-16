@@ -3,7 +3,7 @@
 Thanks to the contributors of libraries, we try to make all applications require \
 only 1 camera, which is the webcam.
 
-* This README file only reports the adjustions I made. The general README is in the folder "Lai-YT". *
+* This README file only reports the adjustions I made. The general README is in the folder "Lai-YT".
 
 ## Adjustions (110/9/16) by Mars Yang
 
