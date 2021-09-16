@@ -6,6 +6,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from lib.brightness_calculator import BrightnessCalculator
 from lib.brightness_window import BrightnessGui
 
+
 method = "wmi"
 class BrightnessController(QObject):
     s_exit = pyqtSignal()

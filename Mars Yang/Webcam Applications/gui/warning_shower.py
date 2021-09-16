@@ -3,9 +3,10 @@ from PyQt5.QtWidgets import QApplication
 
 from gui.timer_widget import TimerWidget
 
+
 class TimeShower(QObject):
     """
-    The layer between Widget and App.Knows the current state of time and updates
+    The layer between Widget and App. Knows the current state of time and updates
     time to the corresponding widget.
     """
     def __init__(self):
@@ -28,7 +29,7 @@ class TimeShower(QObject):
         Note that the widget to show depends on the current state of the TimerWidget.
 
         Arguments:
-        time (int): The time in seconds to be displayed
+            time (int): The time in seconds to be displayed
         """
         time_str = f"{(time // 60):02d}:{(time % 60):02d}"
 
@@ -37,12 +38,13 @@ class TimeShower(QObject):
         except KeyError:
             raise ValueError(f"{self._widget.current_state()} is not a valid state")
 
+    def close_timer_widget(self):
+        """Closes the TimerWidget."""
+        self._widget.close()
+
     def _move_timer_to_upper_right_corner(self):
         # A static method which returns the already existing instance; None if no.
         app = QApplication.instance()
         screen = app.primaryScreen()
         geometry = screen.availableGeometry()
         self._widget.move(geometry.width() - self._widget.width(), 50)
-    
-    def close(self):
-        self._widget.close()

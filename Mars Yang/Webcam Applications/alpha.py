@@ -111,7 +111,6 @@ class WebcamApplication(QObject):
             cv2.waitKey(refresh)
         # Release resources.
         webcam.release()
-        self._time_sentinel.close()
         cv2.destroyAllWindows()
         self.s_stopped.emit()
 
@@ -151,3 +150,4 @@ class WebcamApplication(QObject):
 
     def _create_time_sentinel(self, time_limit: int, break_time: int) -> None:
         self._time_sentinel = vs.TimeSentinel(time_limit, break_time)
+        self.s_stopped.connect(self._time_sentinel.close_timer_widget)

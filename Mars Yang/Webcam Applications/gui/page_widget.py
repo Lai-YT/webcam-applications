@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (QButtonGroup, QFormLayout, QGridLayout, QHBoxLayout,
                              QTabWidget, QVBoxLayout, QWidget)
 
@@ -20,7 +20,6 @@ class PageWidget(QTabWidget):
         self.pages = {
             "Options": OptionWidget(),
             "Settings": SettingWidget(),
-            "Model(unready)": ModelWidget(),
         }
         for text, page in self.pages.items():
             self.addTab(page, text)
@@ -127,6 +126,8 @@ class SettingWidget(QWidget):
 
 
 class ModelWidget(QWidget):
+    on_clicked = pyqtSignal()
+
     """This is the widget that provides interface of model training options."""
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -138,19 +139,32 @@ class ModelWidget(QWidget):
         self._create_buttons()
 
     def _create_options(self):
-        self.options = {}
         options_layout = QVBoxLayout()
         # Option name | description
         options = {
             "Good": "capture sample images of good, healthy posture when writing in front of the screen",
             "Slump": "capture sample images of poor, slumped posture when writing in front of the screen"
         }
+        # option name : button
+        self.options = {}
+        # Since these options are using ButtonGroup,
+        # the checkButton method returns the instance of button,
+        # but we have no idea what its name is.
+        # So set id to each button, and query the nae by id.
+        # button id : button name
+        self.option_ids = {}
+        id = 0
         # To make them exclusive.
-        options_group = QButtonGroup()
+        self.options_group = QButtonGroup()
         for name, des in options.items():
             self.options[name] = OptionRadioButton(name)
-            options_group.addButton(self.options[name])
+            self.options[name].toggled.connect(self.on_clicked.emit) # toggled signal
+            self.options_group.addButton(self.options[name])
             options_layout.addWidget(self.options[name])
+            # For name query.
+            self.options_group.setId(self.options[name], id)
+            self.option_ids[id] = name
+            id += 1
             # Wrap word due to long description.
             options_layout.addWidget(Label(des, font_size=10, wrap=True))
 
@@ -158,13 +172,13 @@ class ModelWidget(QWidget):
 
     def _create_buttons(self):
         """Creates buttons of the widget."""
-        self.buttons = {
-            "Reset": ActionButton("Reset"),
-            "Train": ActionButton("Train"),
-        }
+        self.buttons = {}
+        buttons = ["Train", "Finish", "Capture"]
         buttons_layout = QHBoxLayout()
+        # Keep a space in the left.
         buttons_layout.addStretch(1)
-        for btn in self.buttons.values():
-            buttons_layout.addWidget(btn, alignment=Qt.AlignBottom, stretch=1)
+        for name in buttons:
+            self.buttons[name] = ActionButton(name)
+            buttons_layout.addWidget(self.buttons[name], alignment=Qt.AlignBottom, stretch=1)
 
         self._general_layout.addLayout(buttons_layout)

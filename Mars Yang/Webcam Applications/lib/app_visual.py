@@ -16,6 +16,7 @@ from lib.timer import Timer
 from lib.train import PostureLabel, IMAGE_DIMENSIONS
 from gui.warning_shower import TimeShower
 
+
 def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
     """Modifies the canvas with face area framed up and landmarks dotted.
 
@@ -52,7 +53,7 @@ class DistanceSentinel:
         # warning logic...
         self.put_distance_text(canvas, distance)
         if distance < self._warn_dist:
-            cv2.putText(canvas, 'too close', (10, 150), FONT_0, 0.9, RED, 2)
+            cv2.putText(canvas, "too close", (10, 150), FONT_0, 0.9, RED, 2)
 
     def put_distance_text(self, canvas: ColorImage, distance: float) -> None:
         """Puts distance text on the canvas.
@@ -128,9 +129,12 @@ class TimeSentinel:
 
         if paused:
             cv2.putText(canvas, "time paused", (500, 40), FONT_0, 0.6, RED, 1)
-    
-    def close(self):
-        self._time_shower.close()
+
+    def close_timer_widget(self):
+        self._time_shower.close_timer_widget()
+        # If not reset timer, a break-time-close might keep the countdown to next start.
+        # (no effect if every start is a fresh new sentinel)
+        self._break_timer.reset()
 
 
 class PostureChecker:

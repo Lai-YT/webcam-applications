@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QLabel, QCheckBox, QSlider, QPushButton)
+from PyQt5.QtWidgets import QLabel, QCheckBox, QSlider, QPushButton
+
 
 """Initialize basic structures of all widget used in this gui."""
 class Label(QLabel):
