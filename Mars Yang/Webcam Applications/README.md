@@ -7,7 +7,7 @@ only 1 camera, which is the webcam.
 
 1. At the beginning, no ratio button is toggled, so the "Capture" button is disabled. The "Capture" button will be set enabled when one of the ratio buttons is toggled.
 2. Put **Image Count** on the frame after saved in the folder but before imshow().
-3. If one of the folders in train_sample is empty, put a ***training failed*** text on the terminal. Otherwise, put a ***training finished*** text.
+3. If one of the folders in train_sample is empty, output a ***"training failed"*** text on the terminal. Otherwise, output ***"training finished"***.
 
 ## Settings
 
