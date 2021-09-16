@@ -12,7 +12,7 @@ from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
 
 from lib.color import RED
-from lib.cv_font import *
+from lib.cv_font import FONT_3
 from lib.image_type import ColorImage, GrayImage
 from lib.path import to_abs_path
 
@@ -55,11 +55,14 @@ class WritingModelTrainer(QObject):
             _, frame = videocapture.read()
 
             filename: str = f"{output_folder}/{img_count:04d}.jpg"
-            cv2.imwrite(filename, frame)
             img_count += 1
-            key: int = cv2.waitKey(capture_period)
+            # Make sure the frame is stored before putting text on, so samplea aren't poluted.
+            # Also the img_count increases before putting text.
+            # Start from 1 is the normal perspective (from 0 is computer science perspective)
+            cv2.imwrite(filename, frame)
             cv2.putText(frame, f"Image Count: {img_count}", (5, 25), FONT_3, 0.8, RED, 2)
             cv2.imshow("sample capturing...", frame)
+            cv2.waitKey(capture_period)
 
         videocapture.release()
         cv2.destroyAllWindows()
@@ -71,7 +74,7 @@ class WritingModelTrainer(QObject):
         self._capture_flag = False
 
     def train_model(self, epochs: int = 10) -> None:
-        """The images captured by capture_action() will be used to train a writing model."""
+        """The images captured by capture_sample_images() will be used to train a writing model."""
         train_images: List[GrayImage] = []
         train_labels: List[int] = []
 
@@ -80,22 +83,26 @@ class WritingModelTrainer(QObject):
         # So is clear when the result of the prediction is 1, we now it's slump.
         class_folders: List[PostureLabel] = [PostureLabel.good, PostureLabel.slump]
         class_label_indexer: int = 0
-        for c in class_folders:
-            image_path = os.listdir(f"{SAMPLE_DIR}/{c.name}")
+        for label in class_folders:
+            image_paths = os.listdir(f"{SAMPLE_DIR}/{label.name}")
 
-            if len(image_path) == 0:
-                print(f"No images in folder '{c.name}'.")
+            if not image_paths:
+                print(f"No images in folder '{label.name}'.")
             else:
-                print(f"Training with label {c.name}...")
-                for f in image_path:
-                    image: GrayImage = cv2.imread(f"{SAMPLE_DIR}/{c.name}/{f}", cv2.IMREAD_GRAYSCALE)
+                print(f"Training with label {label.name}...")
+                for path in image_paths:
+                    image: GrayImage = cv2.imread(f"{SAMPLE_DIR}/{label.name}/{path}", cv2.IMREAD_GRAYSCALE)
                     image = cv2.resize(image, IMAGE_DIMENSIONS)
                     train_images.append(image)
                     train_labels.append(class_label_indexer)
             class_label_indexer += 1
 
         # Both folders are empty / folder "good" is empty / folder "slump" is empty.
-        if len(train_images) == 0 or train_labels[0] == 1 or train_labels[len(train_labels)-1] == 0:
+        # The first one in train_labels is 1 mean there's no label good (0);
+        # the last one is 0 means there's no label slump (1).
+        if (not train_images
+                or train_labels[0] == PostureLabel.slump.value
+                or train_labels[-1] == PostureLabel.good.value):
             print("Training failed.")
             return
 
@@ -119,6 +126,7 @@ class WritingModelTrainer(QObject):
         model.compile(optimizer="adam", loss="sparse_categorical_crossentropy",  metrics=["accuracy"])
         model.fit(images, labels, epochs=epochs, class_weight=weights)
         model.save(MODEL_PATH)
+
         print("Training finished.")
         self.s_train_finished.emit()
 

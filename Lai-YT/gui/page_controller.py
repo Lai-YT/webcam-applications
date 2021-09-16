@@ -238,10 +238,10 @@ class ModelController(PageController):
         # Capture and Finish is disabled at the beginning.
         self._widget.buttons["Capture"].setEnabled(False)
         self._widget.buttons["Finish"].setEnabled(False)
+        # Capture is enabled after any of the option buttons is toggled.
+        for opt_btn in self._widget.options.values():
+            opt_btn.toggled.connect(lambda: self._widget.buttons["Capture"].setEnabled(True))
 
-        # If one of the buttons is toggled, set Capture enabled.
-        self._widget.on_clicked.connect(
-            lambda: self._widget.buttons["Capture"].setEnabled(True))
         self._widget.buttons["Capture"].clicked.connect(
             lambda: self._widget.buttons["Finish"].setEnabled(True))
         self._widget.buttons["Capture"].clicked.connect(
@@ -257,9 +257,9 @@ class ModelController(PageController):
             lambda: self._widget.buttons["Train"].setEnabled(True))
 
         self._widget.buttons["Train"].clicked.connect(
-            lambda: self._widget.buttons["Capture"].setEnabled(False))
-        self._widget.buttons["Train"].clicked.connect(
             lambda: self._widget.buttons["Finish"].setEnabled(False))
+        self._widget.buttons["Train"].clicked.connect(
+            lambda: self._widget.buttons["Train"].setEnabled(False))
 
     def _connect_buttons(self):
         self._widget.buttons["Train"].clicked.connect(self._model_trainer.train_model)
@@ -267,8 +267,9 @@ class ModelController(PageController):
         self._widget.buttons["Finish"].clicked.connect(self._model_trainer.stop_capturing)
 
     def _connect_signals(self):
+        # The `Train` button is enabled after the previous training is finished.
         self._model_trainer.s_train_finished.connect(
-            lambda: self._widget.buttons["Capture"].setEnabled(True))
+            lambda: self._widget.buttons["Train"].setEnabled(True))
 
     def _capture_sampe_images(self):
         selected_option = self._widget.option_ids[self._widget.options_group.checkedId()]
