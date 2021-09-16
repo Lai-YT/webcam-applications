@@ -233,10 +233,15 @@ class ModelController(PageController):
     def store_configs(self, config):
         pass
 
+    @pyqtSlot()
     def _enable_buttons(self):
-        # Finish is disabled at the beginning.
+        # Capture and Finish is disabled at the beginning.
+        self._widget.buttons["Capture"].setEnabled(False)
         self._widget.buttons["Finish"].setEnabled(False)
 
+        # If one of the buttons is toggled, set Capture enabled.
+        self._widget.on_clicked.connect(
+            lambda: self._widget.buttons["Capture"].setEnabled(True))
         self._widget.buttons["Capture"].clicked.connect(
             lambda: self._widget.buttons["Finish"].setEnabled(True))
         self._widget.buttons["Capture"].clicked.connect(

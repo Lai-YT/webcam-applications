@@ -11,6 +11,8 @@ from nptyping import Float, Int, NDArray, UInt8
 from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
 
+from lib.color import RED
+from lib.cv_font import *
 from lib.image_type import ColorImage, GrayImage
 from lib.path import to_abs_path
 
@@ -56,6 +58,7 @@ class WritingModelTrainer(QObject):
             cv2.imwrite(filename, frame)
             img_count += 1
             key: int = cv2.waitKey(capture_period)
+            cv2.putText(frame, f"Image Count: {img_count}", (5, 25), FONT_3, 0.8, RED, 2)
             cv2.imshow("sample capturing...", frame)
 
         videocapture.release()
@@ -78,13 +81,23 @@ class WritingModelTrainer(QObject):
         class_folders: List[PostureLabel] = [PostureLabel.good, PostureLabel.slump]
         class_label_indexer: int = 0
         for c in class_folders:
-            print(f"Training with label {c.name}...")
-            for f in os.listdir(f"{SAMPLE_DIR}/{c.name}"):
-                image: GrayImage = cv2.imread(f"{SAMPLE_DIR}/{c.name}/{f}", cv2.IMREAD_GRAYSCALE)
-                image = cv2.resize(image, IMAGE_DIMENSIONS)
-                train_images.append(image)
-                train_labels.append(class_label_indexer)
+            image_path = os.listdir(f"{SAMPLE_DIR}/{c.name}")
+
+            if len(image_path) == 0:
+                print(f"No images in folder '{c.name}'.")
+            else:
+                print(f"Training with label {c.name}...")
+                for f in image_path:
+                    image: GrayImage = cv2.imread(f"{SAMPLE_DIR}/{c.name}/{f}", cv2.IMREAD_GRAYSCALE)
+                    image = cv2.resize(image, IMAGE_DIMENSIONS)
+                    train_images.append(image)
+                    train_labels.append(class_label_indexer)
             class_label_indexer += 1
+
+        # Both folders are empty / folder "good" is empty / folder "slump" is empty.
+        if len(train_images) == 0 or train_labels[0] == 1 or train_labels[len(train_labels)-1] == 0:
+            print("Training failed.")
+            return
 
         # numpy array with GrayImages
         images: NDArray[(Any, Any, Any), UInt8] = numpy.array(train_images)
@@ -106,6 +119,7 @@ class WritingModelTrainer(QObject):
         model.compile(optimizer="adam", loss="sparse_categorical_crossentropy",  metrics=["accuracy"])
         model.fit(images, labels, epochs=epochs, class_weight=weights)
         model.save(MODEL_PATH)
+        print("Training finished.")
         self.s_train_finished.emit()
 
     def remove_sample_images(self) -> None:

@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (QButtonGroup, QFormLayout, QGridLayout, QHBoxLayout,
                              QTabWidget, QVBoxLayout, QWidget)
 
@@ -126,6 +126,8 @@ class SettingWidget(QWidget):
 
 
 class ModelWidget(QWidget):
+    on_clicked = pyqtSignal()
+
     """This is the widget that provides interface of model training options."""
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -156,6 +158,7 @@ class ModelWidget(QWidget):
         self.options_group = QButtonGroup()
         for name, des in options.items():
             self.options[name] = OptionRadioButton(name)
+            self.options[name].toggled.connect(self.on_clicked.emit) # toggled signal
             self.options_group.addButton(self.options[name])
             options_layout.addWidget(self.options[name])
             # For name query.
