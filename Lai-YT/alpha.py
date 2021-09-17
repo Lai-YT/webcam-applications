@@ -36,8 +36,6 @@ class WebcamApplication(QObject):
 
         # Used to break the capturing loop inside start().
         # If the application is in progress, sets the ready flag to False will stop it.
-        # Note that it seems to be unable to call a setter method from another
-        # thread to change the flag during the loop. Simply work around by a public flag.
         self._ready: bool = False
 
         self._create_face_detectors()
