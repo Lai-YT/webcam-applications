@@ -18,3 +18,4 @@ class TaskWorker(QObject):
 
     def run(self):
         self._worker_callback()
+        self.s_finished.emit()

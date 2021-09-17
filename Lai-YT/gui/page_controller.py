@@ -236,7 +236,7 @@ class ModelController(PageController):
 
     @pyqtSlot()
     def _train_model(self):
-        self._worker = TaskWorker(self._model_trainer.train_model, epochs=1)
+        self._worker = TaskWorker(self._model_trainer.train_model)
         self._thread = QThread()
         self._worker.moveToThread(self._thread)
 
