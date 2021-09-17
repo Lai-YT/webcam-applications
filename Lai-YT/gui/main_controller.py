@@ -4,8 +4,8 @@ from functools import partial
 
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
-from alpha import WebcamApplication
 from gui.page_controller import OptionController, SettingController
+from gui.task_worker import TaskWorker
 
 
 #         Current controller hierarchy:
@@ -22,16 +22,18 @@ class GuiController(QObject):
     # Path of the config file.
     CONFIG = os.path.join(os.path.abspath(os.path.dirname(__file__)), "gui_state.ini")
 
-    def __init__(self, gui):
+    def __init__(self, gui, application):
         super().__init__()
         # Extract the PageWidget to self._pages,
         # other common parts should be accessed through self._gui.
         self._pages = gui.page_widget.pages
         self._gui = gui
+        self._app = application
 
         self._create_page_controllers()
         self._load_page_configs()
         self._connect_signals_between_controller_and_gui()
+        self._connect_signals_between_controller_and_app()
 
     def _create_page_controllers(self):
         """Creates the controllers of the individual pages."""
@@ -63,6 +65,13 @@ class GuiController(QObject):
         self._page_controllers["Settings"].s_save.connect(
             partial(self._page_controllers["Settings"].store_configs, self._config))
 
+    def _connect_signals_between_controller_and_app(self):
+        # The s_start signal from app tells that the setups are done.
+        self._app.s_started.connect(self._end_loading)
+        # Change the ready flag of app to False, so the execution loop stops.
+        self._page_controllers["Options"].s_stop.connect(self._app.stop)
+        self._page_controllers["Options"].s_exit.connect(self._app.stop)
+
     @pyqtSlot()
     def _start(self):
         """Sets and starts the app.
@@ -73,8 +82,7 @@ class GuiController(QObject):
         """
         # Shows a loading message to late user know we doing something.
         self._start_loading()
-        # WebcamApplication is created every start to make able to moveToThread again and again.
-        self._app = WebcamApplication()
+
         try:
             self._set_app_parameters()
         except ValueError:
@@ -85,14 +93,17 @@ class GuiController(QObject):
         self._page_controllers["Options"].successful_start()
 
         # Using QThread to prevent GUI from freezing.
-        # Thread and App. are deleted after App. stops.
+        # The TaskWorker let us only move the start method into thread,
+        # so the App. itself is reusable.
+        self._worker = TaskWorker(self._app.start)
         self._thread = QThread()
-        self._app.moveToThread(self._thread)
-        self._thread.started.connect(self._app.start)
+        self._worker.moveToThread(self._thread)
+        # Worker starts running after the thread is started.
+        self._thread.started.connect(self._worker.run)
+        # The job of thread and worker is finished after the App. calls stop.
         self._app.s_stopped.connect(self._thread.quit)
-        self._app.s_stopped.connect(self._app.deleteLater)
+        self._app.s_stopped.connect(self._worker.deleteLater)
         self._thread.finished.connect(self._thread.deleteLater)
-        self._connect_signals_between_controller_and_app()
 
         self._thread.start()
 
@@ -106,18 +117,6 @@ class GuiController(QObject):
     def _end_loading(self):
         """Clears the loading message."""
         self._gui.status_bar.clearMessage()
-
-    def _connect_signals_between_controller_and_app(self):
-        # The s_start signal from app tells that the setups are done.
-        self._app.s_started.connect(self._end_loading)
-        # Change the ready flag of app to False, so the execution loop stops.
-        self._page_controllers["Options"].s_stop.connect(self._close_app)
-        self._page_controllers["Options"].s_exit.connect(self._close_app)
-
-    @pyqtSlot()
-    def _close_app(self):
-        """Stops the execution loop of app by changing its flag."""
-        self._app.ready = False
 
     def _set_app_parameters(self):
         """Passes the options state and settings to the app.

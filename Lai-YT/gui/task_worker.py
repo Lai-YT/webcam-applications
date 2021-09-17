@@ -10,6 +10,7 @@ class TaskWorker(QObject):
     pass in those parameters.
     """
 
+    # Emit after the task is finished. 
     s_finished = pyqtSignal()
 
     def __init__(self, worker_callback, *args, **kwargs):
