@@ -1,9 +1,10 @@
 from abc import abstractmethod
 from functools import partial
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
+from gui.task_worker import TaskWorker
 from lib.train import PostureLabel, WritingModelTrainer
 
 
@@ -234,6 +235,23 @@ class ModelController(PageController):
         pass
 
     @pyqtSlot()
+    def _train_model(self):
+        self._worker = TaskWorker(self._model_trainer.train_model, epochs=1)
+        self._thread = QThread()
+        self._worker.moveToThread(self._thread)
+
+        # The worker start running the task when the thread starts.
+        self._thread.started.connect(self._worker.run)
+        # The thread deletes when it's finished.
+        self._thread.finished.connect(self._thread.deleteLater)
+        # The thread is finished when the worker task is finished.
+        self._worker.s_finished.connect(self._thread.quit)
+        # The worker deletes when it's finished.
+        self._worker.s_finished.connect(self._worker.deleteLater)
+
+        # All connections are ready. let's start!
+        self._thread.start()
+
     def _enable_buttons(self):
         # Capture and Finish is disabled at the beginning.
         self._widget.buttons["Capture"].setEnabled(False)
@@ -262,7 +280,10 @@ class ModelController(PageController):
             lambda: self._widget.buttons["Train"].setEnabled(False))
 
     def _connect_buttons(self):
-        self._widget.buttons["Train"].clicked.connect(self._model_trainer.train_model)
+        # Notice that the clicked signal also passes an argument: False (False because uncheckable).
+        # If the slot function takes any parameter, make sure you handle the effect.
+        # e.g, use pyqtSlot decorator or connect with lambda.
+        self._widget.buttons["Train"].clicked.connect(self._train_model)
         self._widget.buttons["Capture"].clicked.connect(self._capture_sampe_images)
         self._widget.buttons["Finish"].clicked.connect(self._model_trainer.stop_capturing)
 

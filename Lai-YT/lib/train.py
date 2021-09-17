@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple
 
 import cv2
 import numpy
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Float, Int, NDArray, UInt8
 from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
@@ -73,6 +73,8 @@ class WritingModelTrainer(QObject):
         """
         self._capture_flag = False
 
+    @pyqtSlot()
+    @pyqtSlot(int)
     def train_model(self, epochs: int = 10) -> None:
         """The images captured by capture_sample_images() will be used to train a writing model."""
         train_images: List[GrayImage] = []
