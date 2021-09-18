@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import (QButtonGroup, QFormLayout, QGridLayout, QHBoxLayout,
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QButtonGroup, QFormLayout, QGridLayout, QHBoxLayout, QProgressBar,
                              QTabWidget, QVBoxLayout, QWidget)
 
 from gui.component import (ActionButton, Label, LineEdit, OptionCheckBox,
@@ -126,8 +126,6 @@ class SettingWidget(QWidget):
 
 
 class ModelWidget(QWidget):
-    on_clicked = pyqtSignal()
-
     """This is the widget that provides interface of model training options."""
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -136,6 +134,7 @@ class ModelWidget(QWidget):
         self.setLayout(self._general_layout)
 
         self._create_options()
+        self._create_countdown()
         self._create_buttons()
 
     def _create_options(self):
@@ -158,7 +157,6 @@ class ModelWidget(QWidget):
         self.options_group = QButtonGroup()
         for name, des in options.items():
             self.options[name] = OptionRadioButton(name)
-            self.options[name].toggled.connect(self.on_clicked.emit) # toggled signal
             self.options_group.addButton(self.options[name])
             options_layout.addWidget(self.options[name])
             # For name query.
@@ -169,6 +167,19 @@ class ModelWidget(QWidget):
             options_layout.addWidget(Label(des, font_size=10, wrap=True))
 
         self._general_layout.addLayout(options_layout)
+
+    def _create_countdown(self):
+        countdown_layout = QFormLayout()
+        self.progress_bar = QProgressBar()
+        self.progress_bar.hide()
+        self.countdown_message = Label(font_size=20)
+        self.countdown_message.setAlignment(Qt.AlignCenter)
+        self.countdown_message.hide()
+
+        countdown_layout.addRow(self.progress_bar)
+        countdown_layout.addRow(self.countdown_message)
+        self._general_layout.addLayout(countdown_layout)
+
 
     def _create_buttons(self):
         """Creates buttons of the widget."""
