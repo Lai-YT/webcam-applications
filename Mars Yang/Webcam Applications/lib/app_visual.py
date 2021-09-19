@@ -13,7 +13,7 @@ from lib.color import BLUE, GREEN, MAGENTA, RED
 from lib.cv_font import FONT_0, FONT_3
 from lib.image_type import ColorImage, GrayImage
 from lib.timer import Timer
-from lib.train import PostureLabel, IMAGE_DIMENSIONS
+from lib.train import ModelTrainer, PostureLabel
 from gui.warning_shower import TimeShower
 
 
@@ -186,9 +186,9 @@ class PostureChecker:
         """
         im: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        im = cv2.resize(im, IMAGE_DIMENSIONS)
+        im = cv2.resize(im, ModelTrainer.IMAGE_DIMENSIONS)
         im = im / 255  # Normalize the image
-        im = im.reshape(1, *IMAGE_DIMENSIONS, 1)
+        im = im.reshape(1, *ModelTrainer.IMAGE_DIMENSIONS, 1)
 
         # 2 cuz there are 2 PostureLabels
         predictions: NDArray[(1, 2), Float[32]] = self._model.predict(im)
