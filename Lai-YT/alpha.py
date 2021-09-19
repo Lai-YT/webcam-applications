@@ -7,13 +7,12 @@ import numpy
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
-from tensorflow.keras import models
 
 import lib.app_visual as vs
 from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
 from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from lib.timer import Timer
-from lib.train import MODEL_PATH
+from lib.train import ModelTrainer
 from lib.image_type import ColorImage
 from path import to_abs_path
 
@@ -149,7 +148,7 @@ class WebcamApplication(QObject):
 
     def _create_posture_checker(self, warn_angle: float) -> None:
         self._posture_checker = vs.PostureChecker(
-            models.load_model(MODEL_PATH), AngleCalculator(), warn_angle)
+            ModelTrainer.load_model(), AngleCalculator(), warn_angle)
 
     def _create_time_sentinel(self, time_limit: int, break_time: int) -> None:
         self._time_sentinel = vs.TimeSentinel(time_limit, break_time)

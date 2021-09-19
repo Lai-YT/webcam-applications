@@ -1,4 +1,5 @@
 import os
+import copy
 import shutil
 from enum import Enum, unique
 from pathlib import Path
@@ -25,17 +26,18 @@ class PostureLabel(Enum):
     slump: int = 1
 
 
-SAMPLE_DIR: str = to_abs_path("train_sample")
-MODEL_PATH: str = to_abs_path("trained_models/write_model.h5")
-IMAGE_DIMENSIONS: Tuple[int, int] = (224, 224)
-
-
 class ModelTrainer(QObject):
+    SAMPLE_DIR: str = to_abs_path("train_sample")
+    MODEL_PATH: str = to_abs_path("trained_models/write_model.h5")
+    IMAGE_DIMENSIONS: Tuple[int, int] = (224, 224)
+
+    # Emit when the train_model() is finished.
     s_train_finished = pyqtSignal()
 
-    def __init__(self, img_count: int):
+    def __init__(self):
         super().__init__()
-        self._img_count = img_count
+
+        self._count_images()
 
     def capture_sample_images(self, label: PostureLabel, capture_period: int = 50) -> None:
         """Capture images for train_model().
@@ -44,27 +46,32 @@ class ModelTrainer(QObject):
             label (PostureLabel): Label of the posture, good or slump
             capture_period (bool): Captures 1 image per capture_period (ms). 300 in default
         """
-        output_folder: str = f"{SAMPLE_DIR}/{label.name}"
+        output_folder: str = f"{ModelTrainer.SAMPLE_DIR}/{label.name}"
         print(f"Capturing samples into folder {output_folder}...")
+        # mkdir anyway to make sure the label folders exist.
         Path(output_folder).mkdir(parents=True, exist_ok=True)
 
         self._capture_flag = True
 
-        img_count: int = 0
+        image_count: int = 0
         videocapture = cv2.VideoCapture(0)
-        while img_count < self._img_count / 2:
+        while self._capture_flag:
             _, frame = videocapture.read()
 
-            filename: str = f"{output_folder}/{img_count:04d}.jpg"
-            img_count += 1
+            filename: str = f"{output_folder}/{image_count:04d}.jpg"
+            image_count += 1
             # Make sure the frame is stored before putting text on, so samplea aren't poluted.
-            # Also the img_count increases before putting text.
+            # Also the image_count increases before putting text.
             # Start from 1 is the normal perspective (from 0 is computer science perspective)
             cv2.imwrite(filename, frame)
-            cv2.putText(frame, f"Image Count: {img_count}", (5, 25), FONT_3, 0.8, RED, 2)
+            cv2.putText(frame, f"Image Count: {image_count}", (5, 25), FONT_3, 0.8, RED, 2)
             cv2.imshow("sample capturing...", frame)
             cv2.waitKey(capture_period)
-
+        # e.g., If there were N images, and M images are captured this time,
+        # where N > M.
+        # Then after this capture, there are still N images, but the leading M
+        # images are new.
+        self._image_count[label] = max(self._image_count[label], image_count)
         videocapture.release()
         cv2.destroyAllWindows()
 
@@ -87,38 +94,35 @@ class ModelTrainer(QObject):
         class_folders: List[PostureLabel] = [PostureLabel.good, PostureLabel.slump]
         class_label_indexer: int = 0
         for label in class_folders:
-            image_paths = os.listdir(f"{SAMPLE_DIR}/{label.name}")
-
-            if not image_paths:
+            if self._image_count[label] == 0:
                 print(f"No images in folder '{label.name}'.")
             else:
                 print(f"Training with label {label.name}...")
+
+                image_paths = os.listdir(f"{ModelTrainer.SAMPLE_DIR}/{label.name}")
                 for path in image_paths:
-                    image: GrayImage = cv2.imread(f"{SAMPLE_DIR}/{label.name}/{path}", cv2.IMREAD_GRAYSCALE)
-                    image = cv2.resize(image, IMAGE_DIMENSIONS)
+                    image: GrayImage = cv2.imread(f"{ModelTrainer.SAMPLE_DIR}/{label.name}/{path}", cv2.IMREAD_GRAYSCALE)
+                    image = cv2.resize(image, ModelTrainer.IMAGE_DIMENSIONS)
                     train_images.append(image)
                     train_labels.append(class_label_indexer)
             class_label_indexer += 1
 
-        # Both folders are empty / folder "good" is empty / folder "slump" is empty.
-        # The first one in train_labels is 1 mean there's no label good (0);
-        # the last one is 0 means there's no label slump (1).
-        if (not train_images
-                or train_labels[0] == PostureLabel.slump.value
-                or train_labels[-1] == PostureLabel.good.value):
+        # If not all values aren't 0 => If any of the value is 0.
+        if not all(self._image_count.values()):
             print("Training failed.")
+            self.s_train_finished.emit()
             return
 
         # numpy array with GrayImages
         images: NDArray[(Any, Any, Any), UInt8] = numpy.array(train_images)
         labels: NDArray[(Any,), Int[32]] = numpy.array(train_labels)
         images = images / 255  # Normalize image
-        images = images.reshape(len(images), *IMAGE_DIMENSIONS, 1)
+        images = images.reshape(len(images), *ModelTrainer.IMAGE_DIMENSIONS, 1)
 
         class_weights: NDArray[(Any,), Float[64]] = class_weight.compute_sample_weight("balanced", labels)
         weights: Dict[int, float] = {i : weight for i, weight in enumerate(class_weights)}
         model = models.Sequential()
-        model.add(layers.Conv2D(32, (3, 3), activation="relu", input_shape=(*IMAGE_DIMENSIONS, 1)))
+        model.add(layers.Conv2D(32, (3, 3), activation="relu", input_shape=(*ModelTrainer.IMAGE_DIMENSIONS, 1)))
         model.add(layers.MaxPooling2D((2, 2)))
         model.add(layers.Conv2D(64, (3, 3), activation="relu"))
         model.add(layers.MaxPooling2D((2, 2)))
@@ -128,13 +132,33 @@ class ModelTrainer(QObject):
         model.add(layers.Dense(len(class_folders), activation="softmax"))
         model.compile(optimizer="adam", loss="sparse_categorical_crossentropy",  metrics=["accuracy"])
         model.fit(images, labels, epochs=epochs, class_weight=weights)
-        model.save(MODEL_PATH)
+        model.save(ModelTrainer.MODEL_PATH)
 
         print("Training finished.")
         self.s_train_finished.emit()
 
     def remove_sample_images(self) -> None:
-        """Removes the train folder under directory lib.
+        """Removes the sample images of ModelTrainer.
         Ignore errors when folder not exist.
         """
-        shutil.rmtree(SAMPLE_DIR, ignore_errors=True)
+        # Remove the entire label folder and set count to 0.
+        for label in PostureLabel:
+            shutil.rmtree(f"{ModelTrainer.SAMPLE_DIR}/{label.name}", ignore_errors=True)
+            self._image_count[label] = 0
+
+    def get_image_count(self):
+        return copy.deepcopy(self._image_count)
+
+    @classmethod
+    def load_model(cls):
+        return models.load_model(cls.MODEL_PATH)
+
+    def _count_images(self):
+        self._image_count: Dict[PostureLabel, int] = {}
+        for label in PostureLabel:
+            # The label file might not exist if haven't trained yet.
+            try:
+                count = len(os.listdir(f"{ModelTrainer.SAMPLE_DIR}/{label.name}"))
+            except FileNotFoundError:
+                count = 0
+            self._image_count[label] = count

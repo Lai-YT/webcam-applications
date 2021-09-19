@@ -223,9 +223,8 @@ class SettingController(PageController):
 class ModelController(PageController):
     def __init__(self, model_widget):
         super().__init__()
-        self._img_count = 50 # number of images trained
         self._widget = model_widget
-        self._model_trainer = ModelTrainer(self._img_count)
+        self._model_trainer = ModelTrainer()
 
         self._enable_buttons()
         self._connect_signals()
@@ -305,8 +304,9 @@ class ModelController(PageController):
             self._model_trainer.capture_sample_images(PostureLabel.slump)
 
     def _countdown(self):
+        image_count = sum(self._model_trainer.get_image_count().values())
         # The following formula is the time that training takes.
-        estimated_training_time: int = 10 * (1 + 3 * self._img_count // 100)
+        estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
 
         if not hasattr(self, "_progress_dialog"):
             # Since the TrainingDialog is modal (lock parent widget), setting parent
