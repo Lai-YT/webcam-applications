@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QButtonGroup, QFormLayout, QGridLayout, QHBoxLayout,
-                             QProgressBar, QTabWidget, QVBoxLayout, QWidget)
+                             QProgressDialog, QTabWidget, QVBoxLayout, QWidget)
 
 from gui.component import (ActionButton, Label, LineEdit, OptionCheckBox,
                            OptionRadioButton, MessageLabel)
@@ -134,7 +135,6 @@ class ModelWidget(QWidget):
         self.setLayout(self._general_layout)
 
         self._create_options()
-        self._create_countdown()
         self._create_buttons()
 
     def _create_options(self):
@@ -168,19 +168,6 @@ class ModelWidget(QWidget):
 
         self._general_layout.addLayout(options_layout)
 
-    def _create_countdown(self):
-        countdown_layout = QFormLayout()
-        self.progress_bar = QProgressBar()
-        self.progress_bar.hide()
-        self.countdown_message = Label(font_size=20)
-        self.countdown_message.setAlignment(Qt.AlignCenter)
-        self.countdown_message.hide()
-
-        countdown_layout.addRow(self.progress_bar)
-        countdown_layout.addRow(self.countdown_message)
-        self._general_layout.addLayout(countdown_layout)
-
-
     def _create_buttons(self):
         """Creates buttons of the widget."""
         self.buttons = {}
@@ -193,3 +180,23 @@ class ModelWidget(QWidget):
             buttons_layout.addWidget(self.buttons[name], alignment=Qt.AlignBottom, stretch=1)
 
         self._general_layout.addLayout(buttons_layout)
+
+
+class TrainingDialog(QProgressDialog):
+    def __init__(self, maximum, parent=None):
+        super().__init__(parent)
+        # Block input to other windows.
+        self.setModal(True)
+        # Don't need a cancel button.
+        # (May add it to let the user quit training.)
+        self.setCancelButton(None)
+        self.setMaximum(maximum)
+        self.setFixedSize(300, 100)
+        self.setFont(QFont("Arial", 16))
+
+        self._set_label()
+
+    def _set_label(self):
+        label = Label(font_size=14)
+        label.setAlignment(Qt.AlignCenter)
+        self.setLabel(label)

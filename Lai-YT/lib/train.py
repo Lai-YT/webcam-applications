@@ -69,7 +69,7 @@ class ModelTrainer(QObject):
         cv2.destroyAllWindows()
 
     def stop_capturing(self):
-        """This will stops the capturing of capture_writing_action().
+        """This will stops the capturing of capture_sample_images().
         No effect if already stopped.
         """
         self._capture_flag = False

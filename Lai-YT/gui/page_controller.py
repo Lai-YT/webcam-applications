@@ -5,6 +5,7 @@ from functools import partial
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
+from gui.page_widget import TrainingDialog
 from gui.task_worker import TaskWorker
 from lib.train import PostureLabel, ModelTrainer
 
@@ -238,8 +239,6 @@ class ModelController(PageController):
 
     @pyqtSlot()
     def _train_model(self):
-        self._countdown()
-
         self._worker = TaskWorker(self._model_trainer.train_model)
         self._thread = QThread()
         self._worker.moveToThread(self._thread)
@@ -255,6 +254,8 @@ class ModelController(PageController):
 
         # All connections are ready. let's start!
         self._thread.start()
+
+        self._countdown()
 
     def _enable_buttons(self):
         # Capture and Finish is disabled at the beginning.
@@ -305,15 +306,17 @@ class ModelController(PageController):
 
     def _countdown(self):
         # The following formula is the time that training takes.
-        training_time = 10 * (1 + 3 * self._img_count / 100)
+        estimated_training_time: int = 10 * (1 + 3 * self._img_count // 100)
 
-        self._widget.progress_bar.setRange(0, training_time)
-        self._widget.progress_bar.show()
-        self._widget.countdown_message.show()
+        if not hasattr(self, "_progress_dialog"):
+            # Since the TrainingDialog is modal (lock parent widget), setting parent
+            # is necessary.
+            self._progress_dialog = TrainingDialog(estimated_training_time, parent=self._widget)
+        else:
+            self._progress_dialog.setMaximum(estimated_training_time)
 
-        count = 0
-        while count < self._img_count:
-            count += 1
+        for count in range(estimated_training_time + 1):
+            self._progress_dialog.setLabelText(
+                f"{estimated_training_time - count} seconds left...")
+            self._progress_dialog.setValue(count)
             time.sleep(1)
-            self._widget.progress_bar.setValue(count)
-            self._widget.countdown_message.setText(f"{int(training_time - count)} seconds left")
