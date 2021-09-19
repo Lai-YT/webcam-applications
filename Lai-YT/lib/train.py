@@ -30,13 +30,14 @@ MODEL_PATH: str = to_abs_path("trained_models/write_model.h5")
 IMAGE_DIMENSIONS: Tuple[int, int] = (224, 224)
 
 
-class WritingModelTrainer(QObject):
+class ModelTrainer(QObject):
     s_train_finished = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, img_count: int):
         super().__init__()
+        self._img_count = img_count
 
-    def capture_sample_images(self, label: PostureLabel, capture_period: int = 300) -> None:
+    def capture_sample_images(self, label: PostureLabel, capture_period: int = 50) -> None:
         """Capture images for train_model().
 
         Arguments:
@@ -51,7 +52,7 @@ class WritingModelTrainer(QObject):
 
         img_count: int = 0
         videocapture = cv2.VideoCapture(0)
-        while self._capture_flag:
+        while img_count < self._img_count / 2:
             _, frame = videocapture.read()
 
             filename: str = f"{output_folder}/{img_count:04d}.jpg"

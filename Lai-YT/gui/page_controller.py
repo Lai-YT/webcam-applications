@@ -1,3 +1,4 @@
+import time
 from abc import abstractmethod
 from functools import partial
 
@@ -5,7 +6,7 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
 from gui.task_worker import TaskWorker
-from lib.train import PostureLabel, WritingModelTrainer
+from lib.train import PostureLabel, ModelTrainer
 
 
 class PageController(QObject):
@@ -221,8 +222,9 @@ class SettingController(PageController):
 class ModelController(PageController):
     def __init__(self, model_widget):
         super().__init__()
+        self._img_count = 50 # number of images trained
         self._widget = model_widget
-        self._model_trainer = WritingModelTrainer()
+        self._model_trainer = ModelTrainer(self._img_count)
 
         self._enable_buttons()
         self._connect_signals()
@@ -236,11 +238,13 @@ class ModelController(PageController):
 
     @pyqtSlot()
     def _train_model(self):
+        self._countdown()
+
         self._worker = TaskWorker(self._model_trainer.train_model)
         self._thread = QThread()
         self._worker.moveToThread(self._thread)
 
-        # The worker start running the task when the thread starts.
+        # The worker starts running the task when the thread starts.
         self._thread.started.connect(self._worker.run)
         # The thread deletes when it's finished.
         self._thread.finished.connect(self._thread.deleteLater)
@@ -259,14 +263,14 @@ class ModelController(PageController):
         # Capture is enabled after any of the option buttons is toggled.
         for opt_btn in self._widget.options.values():
             opt_btn.toggled.connect(lambda: self._widget.buttons["Capture"].setEnabled(True))
-
+        # `Finish` is the only button can click during capture.
         self._widget.buttons["Capture"].clicked.connect(
             lambda: self._widget.buttons["Finish"].setEnabled(True))
         self._widget.buttons["Capture"].clicked.connect(
             lambda: self._widget.buttons["Capture"].setEnabled(False))
         self._widget.buttons["Capture"].clicked.connect(
             lambda: self._widget.buttons["Train"].setEnabled(False))
-
+        # If is not capturing, `Capture` and `Train` can be clicked.
         self._widget.buttons["Finish"].clicked.connect(
             lambda: self._widget.buttons["Capture"].setEnabled(True))
         self._widget.buttons["Finish"].clicked.connect(
@@ -298,3 +302,18 @@ class ModelController(PageController):
             self._model_trainer.capture_sample_images(PostureLabel.good)
         elif selected_option == "Slump":
             self._model_trainer.capture_sample_images(PostureLabel.slump)
+
+    def _countdown(self):
+        # The following formula is the time that training takes.
+        training_time = 10 * (1 + 3 * self._img_count / 100)
+
+        self._widget.progress_bar.setRange(0, training_time)
+        self._widget.progress_bar.show()
+        self._widget.countdown_message.show()
+
+        count = 0
+        while count < self._img_count:
+            count += 1
+            time.sleep(1)
+            self._widget.progress_bar.setValue(count)
+            self._widget.countdown_message.setText(f"{int(training_time - count)} seconds left")
