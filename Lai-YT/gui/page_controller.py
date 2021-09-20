@@ -1,6 +1,7 @@
 import time
 from abc import abstractmethod
 from functools import partial
+from math import ceil
 
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
@@ -250,6 +251,8 @@ class ModelController(PageController):
         self._worker.s_finished.connect(self._thread.quit)
         # The worker deletes when it's finished.
         self._worker.s_finished.connect(self._worker.deleteLater)
+        # Quit countdown when training is finished.
+        self._model_trainer.s_train_finished.connect(self._quit_countdown)
 
         # All connections are ready. let's start!
         self._thread.start()
@@ -304,19 +307,33 @@ class ModelController(PageController):
             self._model_trainer.capture_sample_images(PostureLabel.slump)
 
     def _countdown(self):
+        """Countdown when training to let user know how much time left."""
+        self._countdown_flag = False
+
         image_count = sum(self._model_trainer.get_image_count().values())
         # The following formula is the time that training takes.
-        estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
+        self.estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
 
         if not hasattr(self, "_progress_dialog"):
             # Since the TrainingDialog is modal (lock parent widget), setting parent
             # is necessary.
-            self._progress_dialog = TrainingDialog(estimated_training_time, parent=self._widget)
+            self._progress_dialog = TrainingDialog(self.estimated_training_time, parent=self._widget)
         else:
-            self._progress_dialog.setMaximum(estimated_training_time)
+            self._progress_dialog.setMaximum(self.estimated_training_time)
 
-        for count in range(estimated_training_time + 1):
+        for count in range(self.estimated_training_time):
+            # If flag is True, leave the function so the progress bar will stop.
+            if self._countdown_flag:
+                return
+            # countdown process
             self._progress_dialog.setLabelText(
-                f"{estimated_training_time - count} seconds left...")
+                f"{ceil((self.estimated_training_time - count) / 60)} minute(s) left...")
             self._progress_dialog.setValue(count)
             time.sleep(1)
+        # If training is not finished, lock the bar value and display the waiting message.
+        self._progress_dialog.setLabelText("Soon be finished...")
+
+    def _quit_countdown(self):
+        """Set bar value to max to close the countdown dialog."""
+        self._countdown_flag = True
+        self._progress_dialog.setValue(self.estimated_training_time)
