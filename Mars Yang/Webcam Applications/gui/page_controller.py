@@ -317,12 +317,12 @@ class ModelController(PageController):
         if not hasattr(self, "_progress_dialog"):
             # Since the TrainingDialog is modal (lock parent widget), setting parent
             # is necessary.
-            # Set bar max to estimated_training_time + 1 to avoid reaching max in for loop.
-            self._progress_dialog = TrainingDialog(self.estimated_training_time + 1, parent=self._widget)
+            self._progress_dialog = TrainingDialog(self.estimated_training_time, parent=self._widget)
         else:
-            self._progress_dialog.setMaximum(self.estimated_training_time + 1)
+            self._progress_dialog.setMaximum(self.estimated_training_time)
 
-        for count in range(self.estimated_training_time + 1):
+        # Run the for loop one time less than max to avoid reaching max.
+        for count in range(self.estimated_training_time):
             # If flag is True, leave the function so the progress bar will stop.
             if self._countdown_flag:
                 return
