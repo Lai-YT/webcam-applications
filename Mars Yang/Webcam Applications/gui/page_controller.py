@@ -308,9 +308,11 @@ class ModelController(PageController):
 
     def _countdown(self):
         """Countdown when training to let user know how much time left."""
+        self._countdown_flag = False
+
         image_count = sum(self._model_trainer.get_image_count().values())
         # The following formula is the time that training takes.
-        self.estimated_training_time: int = 10 * (1 + 3 * image_count // 100) - 5
+        self.estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
 
         if not hasattr(self, "_progress_dialog"):
             # Since the TrainingDialog is modal (lock parent widget), setting parent
@@ -321,6 +323,9 @@ class ModelController(PageController):
             self._progress_dialog.setMaximum(self.estimated_training_time + 1)
 
         for count in range(self.estimated_training_time + 1):
+            # If flag is True, leave the function so the progress bar will stop.
+            if self._countdown_flag:
+                return
             # countdown process
             self._progress_dialog.setLabelText(
                 f"{ceil((self.estimated_training_time - count) / 60)} minute(s) left...")
@@ -331,4 +336,5 @@ class ModelController(PageController):
 
     def _quit_countdown(self):
         """Set bar value to max to close the countdown dialog."""
+        self._countdown_flag = True
         self._progress_dialog.setValue(self.estimated_training_time + 1)
