@@ -35,7 +35,7 @@ class WebcamApplication(QObject):
 
         # Used to break the capturing loop inside start().
         # If the application is in progress, sets the ready flag to False will stop it.
-        self._ready: bool = False
+        self._f_ready: bool = False
 
         self._create_face_detectors()
 
@@ -67,7 +67,7 @@ class WebcamApplication(QObject):
         """
         # Set the flag to True so can start capturing.
         # Loop breaks if someone calls stop() and sets the flag to False.
-        self._ready = True
+        self._f_ready = True
 
         # focus time needs a timer to help.
         if self._focus_time:
@@ -78,7 +78,7 @@ class WebcamApplication(QObject):
 
         self.s_started.emit()
 
-        while self._ready:
+        while self._f_ready:
             _, frame = webcam.read()
             # mirrors, so horizontally flip
             frame = cv2.flip(frame, flipCode=1)
@@ -114,7 +114,7 @@ class WebcamApplication(QObject):
     @pyqtSlot()
     def stop(self):
         """Stops the execution loop by changing the flag."""
-        self._ready = False
+        self._f_ready = False
 
     def _get_landmarks(self, canvas: ColorImage, frame: ColorImage) -> NDArray[(68, 2), Int[32]]:
         """Returns the numpy array with all elements in 0 if there isn't exactly 1 face in the frame.

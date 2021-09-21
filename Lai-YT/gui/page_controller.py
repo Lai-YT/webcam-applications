@@ -3,7 +3,8 @@ from abc import abstractmethod
 from functools import partial
 from math import ceil
 
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import (QCoreApplication, QEventLoop, QObject, QThread,
+                          pyqtSignal, pyqtSlot)
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
 from gui.page_widget import TrainingDialog
@@ -268,7 +269,7 @@ class ModelController(PageController):
         """Countdown when training to let user know how much time left.
         Shows a TrainingDialog with time and progress information.
         """
-        self.train_finished_flag = False
+        self._f_train_finished = False
 
         image_count = sum(self._model_trainer.get_image_count().values())
         # The following formula is the time that training takes.
@@ -286,29 +287,34 @@ class ModelController(PageController):
         # 2. Countdown is faster than training
         # Note that they can fisnish in the same time and it's handle under Condition 1.
         for count in range(estimated_training_time):
-            if self.train_finished_flag:
+            if self._f_train_finished:
                 break
             # normal countdown process
             self._progress_dialog.setLabelText(
                 f"{ceil((estimated_training_time - count) / 60)} minute(s) left...")
             self._progress_dialog.setValue(count)
             time.sleep(1)
+
+        self._progress_dialog.setLabelText("Soon be finished...")
         # Condition 1: Training is faster than countdown
         # If training finishes before the countdown ends,
         # fast forward the remaining bar values.
-        if self.train_finished_flag:
-            self._progress_dialog.setLabelText("Soon be finished...")
+        if self._f_train_finished:
             for count in range(self._progress_dialog.value(), estimated_training_time):
                 self._progress_dialog.setValue(count)
                 time.sleep(0.2)
         # Condition 2: Countdown is faster than training
         # If the countdown is about to end but the training hasn't finished yet,
-        # wait for the training.
-        if not self.train_finished_flag:
-            # Hold the bar value and display the waiting message.
-            self._progress_dialog.setLabelText("Soon be finished...")
-            while not self.train_finished_flag:
-                pass
+        # wait for the training to finish.
+        while not self._f_train_finished:
+            # The _end_countdown is queued during the loop even though it's emitted
+            # by the s_train_finished signal, calling processEvents makes this
+            # thread process the pending events.
+            # Notice that calling this function manually is considered to be a
+            # poor design, redesign if possible.
+            QCoreApplication.processEvents(QEventLoop.WaitForMoreEvents)
+            # Not to check to frequently to reduce overhead.
+            time.sleep(0.5)
         # No matter which condition occurs, they're all finished and it's time
         # to end the countdown.
         self._progress_dialog.setValue(estimated_training_time)
@@ -317,7 +323,7 @@ class ModelController(PageController):
         """Lets the countdown process know the training is finished, so can end
         the countdown.
         """
-        self.train_finished_flag = True
+        self._f_train_finished = True
 
     def _enable_buttons(self):
         # Capture and Finish is disabled at the beginning.
