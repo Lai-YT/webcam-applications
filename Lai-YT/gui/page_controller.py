@@ -251,13 +251,73 @@ class ModelController(PageController):
         self._worker.s_finished.connect(self._thread.quit)
         # The worker deletes when it's finished.
         self._worker.s_finished.connect(self._worker.deleteLater)
-        # Quit countdown when training is finished.
-        self._model_trainer.s_train_finished.connect(self._quit_countdown)
 
         # All connections are ready. let's start!
         self._thread.start()
 
         self._countdown()
+
+    def _capture_sampe_images(self):
+        selected_option = self._widget.option_ids[self._widget.options_group.checkedId()]
+        if selected_option == "Good":
+            self._model_trainer.capture_sample_images(PostureLabel.good)
+        elif selected_option == "Slump":
+            self._model_trainer.capture_sample_images(PostureLabel.slump)
+
+    def _countdown(self):
+        """Countdown when training to let user know how much time left.
+        Shows a TrainingDialog with time and progress information.
+        """
+        self.train_finished_flag = False
+
+        image_count = sum(self._model_trainer.get_image_count().values())
+        # The following formula is the time that training takes.
+        estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
+
+        if not hasattr(self, "_progress_dialog"):
+            # Since the TrainingDialog is modal (lock parent widget), setting parent
+            # is necessary.
+            self._progress_dialog = TrainingDialog(estimated_training_time, parent=self._widget)
+        else:
+            # The training time might change, so reset the range.
+            self._progress_dialog.setMaximum(estimated_training_time)
+        # There are to condition about training and countdown:
+        # 1. Training is faster than countdown
+        # 2. Countdown is faster than training
+        # Note that they can fisnish in the same time and it's handle under Condition 1.
+        for count in range(estimated_training_time):
+            if self.train_finished_flag:
+                break
+            # normal countdown process
+            self._progress_dialog.setLabelText(
+                f"{ceil((estimated_training_time - count) / 60)} minute(s) left...")
+            self._progress_dialog.setValue(count)
+            time.sleep(1)
+        # Condition 1: Training is faster than countdown
+        # If training finishes before the countdown ends,
+        # fast forward the remaining bar values.
+        if self.train_finished_flag:
+            self._progress_dialog.setLabelText("Soon be finished...")
+            for count in range(self._progress_dialog.value(), estimated_training_time):
+                self._progress_dialog.setValue(count)
+                time.sleep(0.2)
+        # Condition 2: Countdown is faster than training
+        # If the countdown is about to end but the training hasn't finished yet,
+        # wait for the training.
+        if not self.train_finished_flag:
+            # Hold the bar value and display the waiting message.
+            self._progress_dialog.setLabelText("Soon be finished...")
+            while not self.train_finished_flag:
+                pass
+        # No matter which condition occurs, they're all finished and it's time
+        # to end the countdown.
+        self._progress_dialog.setValue(estimated_training_time)
+
+    def _end_countdown(self):
+        """Lets the countdown process know the training is finished, so can end
+        the countdown.
+        """
+        self.train_finished_flag = True
 
     def _enable_buttons(self):
         # Capture and Finish is disabled at the beginning.
@@ -298,42 +358,5 @@ class ModelController(PageController):
         # The `Train` button is enabled after the previous training is finished.
         self._model_trainer.s_train_finished.connect(
             lambda: self._widget.buttons["Train"].setEnabled(True))
-
-    def _capture_sampe_images(self):
-        selected_option = self._widget.option_ids[self._widget.options_group.checkedId()]
-        if selected_option == "Good":
-            self._model_trainer.capture_sample_images(PostureLabel.good)
-        elif selected_option == "Slump":
-            self._model_trainer.capture_sample_images(PostureLabel.slump)
-
-    def _countdown(self):
-        """Countdown when training to let user know how much time left."""
-        self._countdown_flag = False
-
-        image_count = sum(self._model_trainer.get_image_count().values())
-        # The following formula is the time that training takes.
-        self.estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
-
-        if not hasattr(self, "_progress_dialog"):
-            # Since the TrainingDialog is modal (lock parent widget), setting parent
-            # is necessary.
-            self._progress_dialog = TrainingDialog(self.estimated_training_time, parent=self._widget)
-        else:
-            self._progress_dialog.setMaximum(self.estimated_training_time)
-
-        for count in range(self.estimated_training_time):
-            # If flag is True, leave the function so the progress bar will stop.
-            if self._countdown_flag:
-                return
-            # countdown process
-            self._progress_dialog.setLabelText(
-                f"{ceil((self.estimated_training_time - count) / 60)} minute(s) left...")
-            self._progress_dialog.setValue(count)
-            time.sleep(1)
-        # If training is not finished, lock the bar value and display the waiting message.
-        self._progress_dialog.setLabelText("Soon be finished...")
-
-    def _quit_countdown(self):
-        """Set bar value to max to close the countdown dialog."""
-        self._countdown_flag = True
-        self._progress_dialog.setValue(self.estimated_training_time)
+        # End countdown when training is finished.
+        self._model_trainer.s_train_finished.connect(self._end_countdown)
