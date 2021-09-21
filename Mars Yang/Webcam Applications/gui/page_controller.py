@@ -337,4 +337,4 @@ class ModelController(PageController):
     def _quit_countdown(self):
         """Set bar value to max to close the countdown dialog."""
         self._countdown_flag = True
-        self._progress_dialog.setValue(self.estimated_training_time + 1)
+        self._progress_dialog.setValue(self.estimated_training_time)
