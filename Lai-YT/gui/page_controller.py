@@ -3,8 +3,7 @@ from abc import abstractmethod
 from functools import partial
 from math import ceil
 
-from PyQt5.QtCore import (QCoreApplication, QEventLoop, QObject, QThread,
-                          pyqtSignal, pyqtSlot)
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
 from gui.page_widget import TrainingDialog
@@ -29,7 +28,6 @@ class PageController(QObject):
     def store_configs(self, config):
         """Notice that this method isn't aware of the file,
         which means it stores to the ConfigParser but not writes back to the config file.
-
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
@@ -66,7 +64,6 @@ class OptionController(PageController):
 
     def load_configs(self, config):
         """Reads the previous state of check boxes and restore them.
-
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
@@ -75,7 +72,6 @@ class OptionController(PageController):
 
     def store_configs(self, config):
         """Stores whether the check box is checked or not.
-
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
@@ -84,7 +80,6 @@ class OptionController(PageController):
 
     def show_message(self, msg, color="red"):
         """Shows message at the message label of the OptionWidget.
-
         Arguments:
             msg (str): The message to show
             color (str): Color of the message. Default in red
@@ -129,7 +124,6 @@ class SettingController(PageController):
 
     def load_configs(self, config):
         """If the user had set the parameters, restore them.
-
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
@@ -139,7 +133,6 @@ class SettingController(PageController):
 
     def store_configs(self, config):
         """Only stores valid parameters.
-
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
@@ -150,7 +143,6 @@ class SettingController(PageController):
 
     def show_message(self, msg, color="red"):
         """Shows message at the message label of the SettingWidget.
-
         Arguments:
             msg (str): The message to show
             color (str): Color of the message. Default in red
@@ -258,73 +250,6 @@ class ModelController(PageController):
 
         self._countdown()
 
-    def _capture_sampe_images(self):
-        selected_option = self._widget.option_ids[self._widget.options_group.checkedId()]
-        if selected_option == "Good":
-            self._model_trainer.capture_sample_images(PostureLabel.good)
-        elif selected_option == "Slump":
-            self._model_trainer.capture_sample_images(PostureLabel.slump)
-
-    def _countdown(self):
-        """Countdown when training to let user know how much time left.
-        Shows a TrainingDialog with time and progress information.
-        """
-        self._f_train_finished = False
-
-        image_count = sum(self._model_trainer.get_image_count().values())
-        # The following formula is the time that training takes.
-        estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
-
-        if not hasattr(self, "_progress_dialog"):
-            # Since the TrainingDialog is modal (lock parent widget), setting parent
-            # is necessary.
-            self._progress_dialog = TrainingDialog(estimated_training_time, parent=self._widget)
-        else:
-            # The training time might change, so reset the range.
-            self._progress_dialog.setMaximum(estimated_training_time)
-        # There are to condition about training and countdown:
-        # 1. Training is faster than countdown
-        # 2. Countdown is faster than training
-        # Note that they can fisnish in the same time and it's handle under Condition 1.
-        for count in range(estimated_training_time):
-            if self._f_train_finished:
-                break
-            # normal countdown process
-            self._progress_dialog.setLabelText(
-                f"{ceil((estimated_training_time - count) / 60)} minute(s) left...")
-            self._progress_dialog.setValue(count)
-            time.sleep(1)
-
-        self._progress_dialog.setLabelText("Soon be finished...")
-        # Condition 1: Training is faster than countdown
-        # If training finishes before the countdown ends,
-        # fast forward the remaining bar values.
-        if self._f_train_finished:
-            for count in range(self._progress_dialog.value(), estimated_training_time):
-                self._progress_dialog.setValue(count)
-                time.sleep(0.2)
-        # Condition 2: Countdown is faster than training
-        # If the countdown is about to end but the training hasn't finished yet,
-        # wait for the training to finish.
-        while not self._f_train_finished:
-            # The _end_countdown is queued during the loop even though it's emitted
-            # by the s_train_finished signal, calling processEvents makes this
-            # thread process the pending events.
-            # Notice that calling this function manually is considered to be a
-            # poor design, redesign if possible.
-            QCoreApplication.processEvents(QEventLoop.WaitForMoreEvents)
-            # Not to check to frequently to reduce overhead.
-            time.sleep(0.5)
-        # No matter which condition occurs, they're all finished and it's time
-        # to end the countdown.
-        self._progress_dialog.setValue(estimated_training_time)
-
-    def _end_countdown(self):
-        """Lets the countdown process know the training is finished, so can end
-        the countdown.
-        """
-        self._f_train_finished = True
-
     def _enable_buttons(self):
         # Capture and Finish is disabled at the beginning.
         self._widget.buttons["Capture"].setEnabled(False)
@@ -364,5 +289,44 @@ class ModelController(PageController):
         # The `Train` button is enabled after the previous training is finished.
         self._model_trainer.s_train_finished.connect(
             lambda: self._widget.buttons["Train"].setEnabled(True))
-        # End countdown when training is finished.
-        self._model_trainer.s_train_finished.connect(self._end_countdown)
+        # Quit countdown when training is finished.
+        self._model_trainer.s_train_finished.connect(self._quit_countdown)
+
+    def _capture_sampe_images(self):
+        selected_option = self._widget.option_ids[self._widget.options_group.checkedId()]
+        if selected_option == "Good":
+            self._model_trainer.capture_sample_images(PostureLabel.good)
+        elif selected_option == "Slump":
+            self._model_trainer.capture_sample_images(PostureLabel.slump)
+
+    def _countdown(self):
+        """Countdown when training to let user know how much time left."""
+        self._f_train_finished = False
+
+        image_count = sum(self._model_trainer.get_image_count().values())
+        # The following formula is the time that training takes.
+        estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
+
+        if not hasattr(self, "_progress_dialog"):
+            # Since the TrainingDialog is modal (lock parent widget), setting parent
+            # is necessary.
+            self._progress_dialog = TrainingDialog(estimated_training_time, parent=self._widget)
+        else:
+            self._progress_dialog.setMaximum(estimated_training_time)
+
+        for count in range(estimated_training_time):
+            # If flag is True, leave the function so the progress bar will stop.
+            if self._f_train_finished:
+                return
+            # countdown process
+            self._progress_dialog.setLabelText(
+                f"{ceil((estimated_training_time - count) / 60)} minute(s) left...")
+            self._progress_dialog.setValue(count)
+            time.sleep(1)
+        # If training is not finished, lock the bar value and display the waiting message.
+        self._progress_dialog.setLabelText("Soon be finished...")
+
+    def _quit_countdown(self):
+        """Set bar value to max to close the countdown dialog."""
+        self._f_train_finished = True
+        self._progress_dialog.setValue(self._progress_dialog.maximum())
