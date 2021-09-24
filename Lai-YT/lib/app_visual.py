@@ -8,13 +8,15 @@ from typing import List, Tuple
 import cv2
 import numpy
 from nptyping import Float, Int, NDArray
+from playsound import playsound
 
 from lib.color import BLUE, GREEN, MAGENTA, RED
 from lib.cv_font import FONT_0, FONT_3
 from lib.image_type import ColorImage, GrayImage
+from lib.path import to_abs_path
 from lib.timer import Timer
 from lib.train import ModelTrainer, PostureLabel
-from gui.warning_shower import TimeShower
+from gui.popup_shower import TimeShower
 
 
 def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
@@ -41,6 +43,11 @@ class DistanceSentinel:
         self._distance_calculator = distance_calculator
         self._warn_dist = warn_dist
 
+        self._wavfile = to_abs_path("sounds/too_close.wav")
+        self._warning_repeat_timer = Timer()
+        # To avoid double play due to a near time check (less than 1 sec).
+        self._f_played = False
+
     def warn_if_too_close(self, canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         """Warning message shows when the distance is less than warn_dist.
 
@@ -54,6 +61,22 @@ class DistanceSentinel:
         self.put_distance_text(canvas, distance)
         if distance < self._warn_dist:
             cv2.putText(canvas, "too close", (10, 150), FONT_0, 0.9, RED, 2)
+            # If this is a new start of a too-close interval,
+            # play sound and start another interval.
+            if not self._f_played:
+                self._f_played = True
+                self._warning_repeat_timer.start()
+                playsound(self._wavfile, block=False)
+            # Every 9 seconds of a "consecutive" too-close, sound is repeated.
+            # Note that the sound file is about 4 sec, take 5 sec as the interval.
+            elif self._warning_repeat_timer.time() > 9:
+                # Reset the timer and flag, so can be caught as a new start of interval.
+                self._f_played = False
+                self._warning_repeat_timer.reset()
+        else:
+            # If enough distance, keep the time at 0.
+            self._f_played = False
+            self._warning_repeat_timer.reset()
 
     def put_distance_text(self, canvas: ColorImage, distance: float) -> None:
         """Puts distance text on the canvas.
@@ -80,6 +103,7 @@ class TimeSentinel:
         # minute to second
         self._time_limit = time_limit * 60
         self._break_time = break_time * 60
+        self._f_break_started = False
         self._break_timer = Timer()
         self._time_shower = TimeShower()
 
@@ -96,6 +120,9 @@ class TimeSentinel:
             timer.reset()
             self._break_timer.reset()
             self._time_shower.switch_time_state("work")
+            # Set the flag and play the sound when leaving break.
+            self._f_break_started = False
+            playsound(to_abs_path("sounds/break_over.wav"), block=False)
         # not the time to take a break
         elif timer.time() < self._time_limit:
             # The time of the normal timer is to be shown.
@@ -104,8 +131,12 @@ class TimeSentinel:
             # Time record is only shown when not during the break.
             self.record_focus_time(canvas, timer.time(), timer.is_paused())
         else:
-            if self._break_timer.time() == 0:
+            if not self._f_break_started:
                 self._time_shower.switch_time_state("break")
+                self._f_break_started = True
+                # Note that using flag instead of checking time to avoid double playing
+                # since the interval between time checkings is often less than 1 sec.
+                playsound(to_abs_path("sounds/break_start.wav"), block=False)
 
             timer.pause()
             self._break_timer.start()
@@ -149,8 +180,14 @@ class PostureChecker:
         self._angle_calculator = angle_calculator
         self._warn_angle = warn_angle
 
+        self._wavfile = to_abs_path("sounds/posture_slump.wav")
+        self._warning_repeat_timer = Timer()
+        # To avoid double play due to a near time check (less than 1 sec).
+        self._f_played = False
+
     def check_posture(self, canvas: ColorImage, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
-        """If the landmarks of face are clear, use AngleCalculator to calculate the slope
+        """Sound plays if is a "slump" posture.
+        If the landmarks of face are clear, use AngleCalculator to calculate the slope
         precisely; otherwise use the model to predict the posture.
 
         Arguments:
@@ -159,26 +196,50 @@ class PostureChecker:
             landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
         """
         if landmarks.any():
-            self.do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
+            good: bool = self.do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
         else:
-            self.do_posture_model_predict(canvas, frame)
+            good = self.do_posture_model_predict(canvas, frame)
 
-    def do_posture_angle_check(self, canvas: ColorImage, angle: float) -> None:
-        """Puts posture and angle text on the canvas.
-        "Good" in green if angle doesn't exceed the warn_angle, otherwise "Slump" in red.
+        if not good:
+            print(self._warning_repeat_timer.time(), self._f_played)
+            # If this is a new start of a slumped posture interval,
+            # play sound and start another interval.
+            if not self._f_played:
+                self._f_played = True
+                self._warning_repeat_timer.start()
+                playsound(self._wavfile, block=False)
+            # Every 9 seconds of a "consecutive" slump, sound is repeated.
+            # Note that the sound file is about 4 sec, take 5 sec as the interval.
+            elif self._warning_repeat_timer.time() > 9:
+                # Reset the timer and flag, so can be caught as a new start of interval.
+                self._f_played = False
+                self._warning_repeat_timer.reset()
+        else:
+            # If is a "Good" posture, keep the time at 0.
+            self._f_played = False
+            self._warning_repeat_timer.reset()
+
+        text, color = ("Good", GREEN) if good else ("Slump", RED)
+        cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, thickness=2)
+
+    def do_posture_angle_check(self, canvas: ColorImage, angle: float) -> bool:
+        """Returns True if is a "Good" posture.
+        Also puts posture and angle text on the canvas. "Good" in green if angle
+        doesn't exceed the warn_angle, otherwise "Slump" in red.
 
         Arguments:
             canvas (NDArray[(Any, Any, 3), UInt8]): The image to put text on
             angle (float): The angle between the middle line of face and the vertical line of image
         """
-        text, color = ("Good", GREEN) if abs(angle) < self._warn_angle else ("Slump", RED)
+        good: bool = abs(angle) < self._warn_angle
 
-        # try to match the style in do_posture_model_predict()
-        cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, 2)
         cv2.putText(canvas, f"Slope Angle: {round(angle, 1)} degrees", (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
 
-    def do_posture_model_predict(self, canvas: ColorImage, frame: ColorImage) -> None:
-        """Puts posture label text on the canvas.
+        return good
+
+    def do_posture_model_predict(self, canvas: ColorImage, frame: ColorImage) -> bool:
+        """Returns True if is a "Good" posture.
+        Also puts posture label text on the canvas.
 
         Arguments:
             canvas (NDArray[(Any, Any, 3), UInt8]): The prediction will be texted on the canvas
@@ -194,13 +255,11 @@ class PostureChecker:
         predictions: NDArray[(1, 2), Float[32]] = self._model.predict(im)
         class_pred: Int[64] = numpy.argmax(predictions)
         conf: Float[32] = predictions[0][class_pred]
+        good: bool = (class_pred == PostureLabel.good.value)
 
         cv2.resize(canvas, (640, 480), interpolation=cv2.INTER_AREA)
 
-        if class_pred == PostureLabel.slump.value:
-            cv2.putText(canvas, "Slump", (10, 70), FONT_0, 0.9, RED, thickness=2)
-        else:
-            cv2.putText(canvas, "Good", (10, 70), FONT_0, 0.9, GREEN, thickness=2)
-
         msg: str = f'Predict Conf.: {conf:.0%}'
         cv2.putText(canvas, msg, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
+
+        return good

@@ -28,6 +28,7 @@ class PageController(QObject):
     def store_configs(self, config):
         """Notice that this method isn't aware of the file,
         which means it stores to the ConfigParser but not writes back to the config file.
+
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
@@ -39,7 +40,7 @@ class OptionController(PageController):
     but it cares nothing about those which depends on others.
     """
 
-    """Hide the concrete widget. Communicate with main controller through signals."""
+    # Hide the concrete widget. Communicate with main controller through signals.
     s_start = pyqtSignal()
     s_stop = pyqtSignal()
     s_exit = pyqtSignal()
@@ -64,6 +65,7 @@ class OptionController(PageController):
 
     def load_configs(self, config):
         """Reads the previous state of check boxes and restore them.
+
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
@@ -72,14 +74,16 @@ class OptionController(PageController):
 
     def store_configs(self, config):
         """Stores whether the check box is checked or not.
+
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
         for section, check_box in self._widget.options.items():
-            config.set(section, "checked", 'True' if check_box.isChecked() else 'False')
+            config.set(section, "checked", "True" if check_box.isChecked() else "False")
 
     def show_message(self, msg, color="red"):
         """Shows message at the message label of the OptionWidget.
+
         Arguments:
             msg (str): The message to show
             color (str): Color of the message. Default in red
@@ -111,7 +115,7 @@ class SettingController(PageController):
     but it cares nothing about those which depends on others.
     """
 
-    """Hide the concrete widget. Communicate with main controller through signals."""
+    # Hide the concrete widget. Communicate with main controller through signals.
     s_save = pyqtSignal()
 
     def __init__(self, setting_widget):
@@ -124,6 +128,7 @@ class SettingController(PageController):
 
     def load_configs(self, config):
         """If the user had set the parameters, restore them.
+
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
@@ -133,6 +138,7 @@ class SettingController(PageController):
 
     def store_configs(self, config):
         """Only stores valid parameters.
+
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
@@ -143,6 +149,7 @@ class SettingController(PageController):
 
     def show_message(self, msg, color="red"):
         """Shows message at the message label of the SettingWidget.
+
         Arguments:
             msg (str): The message to show
             color (str): Color of the message. Default in red
