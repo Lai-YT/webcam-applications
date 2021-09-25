@@ -24,9 +24,8 @@ class BrightnessController(QObject):
         """Connect the siganls among widgets."""
         self._gui.buttons["Start"].clicked.connect(self.click_start)
         self._gui.buttons["Exit"].clicked.connect(self.click_exit)
-        # The actual value difference of two ticks is 5.
         self._gui.slider.valueChanged.connect(
-            lambda: self.set_brightness(self._gui.slider.value() * 5))
+            lambda: self.set_brightness(self._gui.slider.value()))
         """Connect the exit signal."""
         self.s_exit.connect(self._gui.close)
 
@@ -47,7 +46,7 @@ class BrightnessController(QObject):
             
             # If "Lock" is checked, skip the adjustion part.
             if not self._gui.lock.isChecked():
-                brightness = self._calc.get_modified_brightness(self._gui.slider.value() * 5, frame)
+                brightness = self._calc.get_modified_brightness(self._gui.slider.value(), frame)
                 self.set_brightness(brightness)
 
             cv2.imshow('Video Capture', frame)
