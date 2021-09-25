@@ -1,0 +1,7 @@
+## Adjustions (110/9/25) by Mars Yang
+Users can choose to adjust the brightness manually or automatically while camera is open.
+
+## Adjustions (110/9/16) by Mars Yang
+1. At the beginning, no ratio button is toggled, so the "Capture" button is disabled. The "Capture" button will be set enabled when one of the ratio buttons is toggled.
+2. Put **Image Count** on the frame after saved in the folder but before imshow().
+3. If one of the folders in train_sample is empty, output a ***"training failed"*** text on the terminal. Otherwise, output ***"training finished"***.
