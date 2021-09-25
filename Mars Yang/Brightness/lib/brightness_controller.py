@@ -16,15 +16,17 @@ class BrightnessController(QObject):
     
         self._gui = gui
         self._calc = BrightnessCalculator()
-        self.set_brightness(20)
+
+        self.set_brightness(30)
         self.connect_signals()
 
     def connect_signals(self):
         """Connect the siganls among widgets."""
         self._gui.buttons["Start"].clicked.connect(self.click_start)
         self._gui.buttons["Exit"].clicked.connect(self.click_exit)
+        # The actual value difference of two ticks is 5.
         self._gui.slider.valueChanged.connect(
-            lambda: self.set_brightness(self._gui.slider.value()))
+            lambda: self.set_brightness(self._gui.slider.value() * 5))
         """Connect the exit signal."""
         self.s_exit.connect(self._gui.close)
 
@@ -45,22 +47,22 @@ class BrightnessController(QObject):
             
             # If "Lock" is checked, skip the adjustion part.
             if not self._gui.lock.isChecked():
-                brightness = self._calc.get_modified_brightness(frame)
+                brightness = self._calc.get_modified_brightness(self._gui.slider.value() * 5, frame)
                 self.set_brightness(brightness)
 
             cv2.imshow('Video Capture', frame)
             cv2.waitKey(25)
 
         # Close the webcam and emit the exit signal.
-        self.set_brightness(20)
+        self.set_brightness(30)
         cam.release()
         self.s_exit.emit()
         cv2.destroyAllWindows()
 
     def click_start(self):
         """Do things after start button is clicked."""
-        self._gui.slider.hide()
-        self._gui.lock.show()
+        # self._gui.slider.hide()
+        # self._gui.lock.show()
         self._gui.buttons["Exit"].setEnabled(True)
         self._gui.buttons["Start"].setEnabled(False)
         self.capture_image()

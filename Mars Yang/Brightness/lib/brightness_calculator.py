@@ -7,26 +7,26 @@ class BrightnessCalculator():
     def __init__(self):
         super().__init__()
 
-    def get_brightness_percentage(self, frame: np.ndarray) -> int:
+    def get_frame_brightness(self, frame: np.ndarray) -> int:
         """Returns the percentage of brightness mean."""
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # hue, saturation, value
         # Value is as known as brightness.
         h, s, v = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
-            
+        
         return int(100 * v.mean() / 255)
 
-    def get_modified_brightness(self, frame: np.ndarray) -> int:
+    def get_modified_brightness(self, slider_brightness: int, frame: np.ndarray) -> int:
         """Get the brightness percentage of the frame
             and return the modified brightness value.
         """
-        brightness_percentage = self.get_brightness_percentage(frame)
+        # Frame brightness = 60, offset = 15; frame brightness = 0, offset = -15.
+        frame_brightness = self.get_frame_brightness(frame)
+        offest = int((frame_brightness - 30) / 2)
 
-        if brightness_percentage > 50:
-            brightness = int(0.8 * brightness_percentage)
-        elif brightness_percentage > 30:
-            brightness = int(2 * (brightness_percentage - 30))
-        else:
-            brightness = 0
+        modified_brightness = slider_brightness + offest
 
-        return brightness
+        if modified_brightness < 0:
+            modified_brightness = 0
+
+        return modified_brightness

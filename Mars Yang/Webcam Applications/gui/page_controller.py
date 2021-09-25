@@ -40,7 +40,7 @@ class OptionController(PageController):
     but it cares nothing about those which depends on others.
     """
 
-    """Hide the concrete widget. Communicate with main controller through signals."""
+    # Hide the concrete widget. Communicate with main controller through signals.
     s_start = pyqtSignal()
     s_stop = pyqtSignal()
     s_exit = pyqtSignal()
@@ -79,7 +79,7 @@ class OptionController(PageController):
             config (ConfigParser): The parser which reads the config file
         """
         for section, check_box in self._widget.options.items():
-            config.set(section, "checked", 'True' if check_box.isChecked() else 'False')
+            config.set(section, "checked", "True" if check_box.isChecked() else "False")
 
     def show_message(self, msg, color="red"):
         """Shows message at the message label of the OptionWidget.
@@ -115,7 +115,7 @@ class SettingController(PageController):
     but it cares nothing about those which depends on others.
     """
 
-    """Hide the concrete widget. Communicate with main controller through signals."""
+    # Hide the concrete widget. Communicate with main controller through signals.
     s_save = pyqtSignal()
 
     def __init__(self, setting_widget):
@@ -251,8 +251,6 @@ class ModelController(PageController):
         self._worker.s_finished.connect(self._thread.quit)
         # The worker deletes when it's finished.
         self._worker.s_finished.connect(self._worker.deleteLater)
-        # Quit countdown when training is finished.
-        self._model_trainer.s_train_finished.connect(self._quit_countdown)
 
         # All connections are ready. let's start!
         self._thread.start()
@@ -298,6 +296,8 @@ class ModelController(PageController):
         # The `Train` button is enabled after the previous training is finished.
         self._model_trainer.s_train_finished.connect(
             lambda: self._widget.buttons["Train"].setEnabled(True))
+        # Quit countdown when training is finished.
+        self._model_trainer.s_train_finished.connect(self._quit_countdown)
 
     def _capture_sampe_images(self):
         selected_option = self._widget.option_ids[self._widget.options_group.checkedId()]
@@ -308,27 +308,26 @@ class ModelController(PageController):
 
     def _countdown(self):
         """Countdown when training to let user know how much time left."""
-        self._countdown_flag = False
+        self._f_train_finished = False
 
         image_count = sum(self._model_trainer.get_image_count().values())
         # The following formula is the time that training takes.
-        self.estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
+        estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
 
         if not hasattr(self, "_progress_dialog"):
             # Since the TrainingDialog is modal (lock parent widget), setting parent
             # is necessary.
-            self._progress_dialog = TrainingDialog(self.estimated_training_time, parent=self._widget)
+            self._progress_dialog = TrainingDialog(estimated_training_time, parent=self._widget)
         else:
-            self._progress_dialog.setMaximum(self.estimated_training_time)
+            self._progress_dialog.setMaximum(estimated_training_time)
 
-        # Run the for loop one time less than max to avoid reaching max.
-        for count in range(self.estimated_training_time):
+        for count in range(estimated_training_time):
             # If flag is True, leave the function so the progress bar will stop.
-            if self._countdown_flag:
+            if self._f_train_finished:
                 return
             # countdown process
             self._progress_dialog.setLabelText(
-                f"{ceil((self.estimated_training_time - count) / 60)} minute(s) left...")
+                f"{ceil((estimated_training_time - count) / 60)} minute(s) left...")
             self._progress_dialog.setValue(count)
             time.sleep(1)
         # If training is not finished, lock the bar value and display the waiting message.
@@ -336,5 +335,5 @@ class ModelController(PageController):
 
     def _quit_countdown(self):
         """Set bar value to max to close the countdown dialog."""
-        self._countdown_flag = True
-        self._progress_dialog.setValue(self.estimated_training_time)
+        self._f_train_finished = True
+        self._progress_dialog.setValue(self._progress_dialog.maximum())
