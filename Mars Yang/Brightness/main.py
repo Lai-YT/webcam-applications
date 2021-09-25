@@ -2,8 +2,8 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from lib.brightness_window import BrightnessGui
 from lib.brightness_controller import BrightnessController
+from lib.brightness_window import BrightnessGui
 
 
 app = QApplication(sys.argv)
