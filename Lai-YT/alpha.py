@@ -133,7 +133,7 @@ class WebcamApplication(QObject):
     def _create_face_detectors(self) -> None:
         """Creates face detector and shape predictor for further use."""
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
-        self._shape_predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+        self._shape_predictor = dlib.shape_predictor(to_abs_path("lib/trained_models/shape_predictor_68_face_landmarks.dat"))
 
     def _create_distance_sentinel(self, face_width: float, distance: float, warn_dist: float) -> None:
         # Creates the DistanceCalculator with reference image.
