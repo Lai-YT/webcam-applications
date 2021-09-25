@@ -73,8 +73,9 @@ class DistanceSentinel:
                 # Reset the timer and flag, so can be caught as a new start of interval.
                 self._f_played = False
                 self._warning_repeat_timer.reset()
-        else:
-            # If enough distance, keep the time at 0.
+        # Reset the timer once after an short interval.
+        # This can avoid sounds from overlapping when moving between proper and non-proper distance.
+        elif self._warning_repeat_timer.time() > 8:
             self._f_played = False
             self._warning_repeat_timer.reset()
 
@@ -201,7 +202,6 @@ class PostureChecker:
             good = self.do_posture_model_predict(canvas, frame)
 
         if not good:
-            print(self._warning_repeat_timer.time(), self._f_played)
             # If this is a new start of a slumped posture interval,
             # play sound and start another interval.
             if not self._f_played:
@@ -214,8 +214,9 @@ class PostureChecker:
                 # Reset the timer and flag, so can be caught as a new start of interval.
                 self._f_played = False
                 self._warning_repeat_timer.reset()
-        else:
-            # If is a "Good" posture, keep the time at 0.
+        # Reset the timer once after an interval.
+        # This can avoid sounds from overlapping when sitching between "Good" and "Slump"
+        elif self._warning_repeat_timer.time() > 8:
             self._f_played = False
             self._warning_repeat_timer.reset()
 
