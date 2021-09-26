@@ -1,21 +1,21 @@
+"""Initialize basic structures of all widget used in this gui."""
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QLabel, QCheckBox, QSlider, QPushButton
+from PyQt5.QtWidgets import QCheckBox, QLabel, QPushButton, QSlider
 
 
-"""Initialize basic structures of all widget used in this gui."""
-class Label(QLabel):
-    def __init__(self, text="", font_size=35, wrap=False):
+class Button(QPushButton):
+    def __init__(self, text, font_size=12):
         super().__init__(text)
         self.setFont(QFont("Arial", font_size))
-        # Align center
-        self.setAlignment(Qt.AlignCenter)
-        self.setWordWrap(wrap)
 
+        
 class CheckBox(QCheckBox):
     def __init__(self, text, font_size=14):
         super().__init__(text)
         self.setFont(QFont("Arial", font_size))
+
 
 class HorizontalSlider(QSlider):
     def __init__(self, min_val=0, max_val=100, cur_val=30):
@@ -26,7 +26,11 @@ class HorizontalSlider(QSlider):
         self.setTickPosition(QSlider.TicksBelow)
         self.setTickInterval(10)
 
-class Button(QPushButton):
-    def __init__(self, text, font_size=12):
+
+class Label(QLabel):
+    def __init__(self, text="", font_size=35, wrap=False):
         super().__init__(text)
         self.setFont(QFont("Arial", font_size))
+        # Align center
+        self.setAlignment(Qt.AlignCenter)
+        self.setWordWrap(wrap)

@@ -8,7 +8,7 @@ from lib.component import Button, CheckBox, HorizontalSlider, Label
 class BrightnessGui(QMainWindow):
 
     def __init__(self, parent=None):
-        super().__init__()
+        super().__init__(parent)
 
         self.setWindowTitle("Auto Brightness Controller")
         self.resize(450, 300)

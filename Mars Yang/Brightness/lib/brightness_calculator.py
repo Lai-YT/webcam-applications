@@ -5,33 +5,37 @@ import numpy as np
 class BrightnessCalculator:
     """Handle processes which require value modulation."""
 
-    def get_frame_brightness(frame: np.ndarray) -> int:
-        """Returns the percentage of brightness mean."""
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    @staticmethod
+    def get_brightness_percentage(frame: np.ndarray) -> int:
+        """Returns the mean of brightness of the frame.
 
+        Arguments:
+            frame (NDArray[(Any, Any, 3), UInt8])
+        """
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # Value is as known as brightness.
         hue, saturation, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
         return int(100 * value.mean() / 255)
-    
+
     @staticmethod
-    def get_modified_brightness(threshold: int, base_value: int, frame: np.ndarray) -> int:
-        """Get the brightness percentage of the frame
-            and return the modified brightness value.
-    
+    def calculate_proper_screen_brightness(threshold: int, base_value: int, frame: np.ndarray) -> int:
+        """Returns the suggested screen brightness value, which is between 0 and 100.
+
         Arguments:
-            threshold: The brightness of the initial frame, affecting the offset value.
-            base_value: The base value of brightness (The value before checking the checkbox). 
+            threshold (int): The brightness of the initial frame, affecting the offset value.
+            base_value (int): The base value of brightness (The value before checking the checkbox).
+            frame (NDArray[(Any, Any, 3), UInt8)
         """
 
-        frame_brightness = BrightnessCalculator.get_frame_brightness(frame)
-        offest = int((frame_brightness - threshold) / 2)
-        modified_brightness = base_value + offest
+        frame_brightness: int = BrightnessCalculator.get_brightness_percentage(frame)
+        offest: int = (frame_brightness - threshold) // 2
+        suggested_brightness: int = base_value + offest
 
-        # The range of the brightness value is (0, 100), 
+        # The range of the brightness value is (0, 100),
         # value which is out of range has the same effect as boundary value.
-        if modified_brightness > 100:
-            modified_brightness = 100
-        elif modified_brightness < 0:
-            modified_brightness = 0
+        if suggested_brightness > 100:
+            suggested_brightness = 100
+        elif suggested_brightness < 0:
+            suggested_brightness = 0
 
-        return modified_brightness
+        return suggested_brightness
