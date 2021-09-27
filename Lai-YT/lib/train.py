@@ -31,8 +31,9 @@ class ModelTrainer(QObject):
     MODEL_PATH: str = to_abs_path("trained_models/write_model.h5")
     IMAGE_DIMENSIONS: Tuple[int, int] = (224, 224)
 
-    # Emit when the train_model() is finished.
-    s_train_finished = pyqtSignal()
+    s_train_finished = pyqtSignal()  # Emit when the train_model() is finished (or failed).
+    s_train_failed = pyqtSignal(str)  # Emit if the train_model() fails, str is the message.
+    s_capture_finished = pyqtSignal([PostureLabel, int])  # int is the number of sample images.
 
     def __init__(self):
         super().__init__()
@@ -74,6 +75,7 @@ class ModelTrainer(QObject):
         self._image_count[label] = max(self._image_count[label], image_count)
         videocapture.release()
         cv2.destroyAllWindows()
+        self.s_capture_finished.emit(label, self._image_count[label])
 
     def stop_capturing(self):
         """This will stops the capturing of capture_sample_images().
@@ -87,6 +89,7 @@ class ModelTrainer(QObject):
         """The images captured by capture_sample_images() will be used to train a writing model."""
         train_images: List[GrayImage] = []
         train_labels: List[int] = []
+        fail_message: str = ""  # Will be sent if the training fails.
 
         # The order(index) of the class is the order of the ints that PostureLabels represent.
         # i.e., good.value = 0, slump.value = 1
@@ -95,7 +98,8 @@ class ModelTrainer(QObject):
         class_label_indexer: int = 0
         for label in class_folders:
             if self._image_count[label] == 0:
-                print(f"No images in folder '{label.name}'.")
+                print(f"No images of label '{label.name}'.")
+                fail_message += f"No images of label '{label.name}'.\n"
             else:
                 print(f"Training with label {label.name}...")
 
@@ -110,6 +114,7 @@ class ModelTrainer(QObject):
         # If not all values aren't 0 => If any of the value is 0.
         if not all(self._image_count.values()):
             print("Training failed.")
+            self.s_train_failed.emit(fail_message)
             self.s_train_finished.emit()
             return
 
@@ -137,14 +142,13 @@ class ModelTrainer(QObject):
         print("Training finished.")
         self.s_train_finished.emit()
 
-    def remove_sample_images(self) -> None:
+    def remove_sample_images(self, label: PostureLabel) -> None:
         """Removes the sample images of ModelTrainer.
         Ignore errors when folder not exist.
         """
         # Remove the entire label folder and set count to 0.
-        for label in PostureLabel:
-            shutil.rmtree(f"{ModelTrainer.SAMPLE_DIR}/{label.name}", ignore_errors=True)
-            self._image_count[label] = 0
+        shutil.rmtree(f"{ModelTrainer.SAMPLE_DIR}/{label.name}", ignore_errors=True)
+        self._image_count[label] = 0
 
     def get_image_count(self):
         return copy.deepcopy(self._image_count)

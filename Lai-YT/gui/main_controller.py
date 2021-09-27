@@ -4,7 +4,7 @@ from functools import partial
 
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
-from gui.page_controller import OptionController, SettingController
+from gui.page_controller import OptionController, SettingController, ModelController
 from gui.task_worker import TaskWorker
 
 
@@ -40,6 +40,7 @@ class GuiController(QObject):
         self._page_controllers = {
             "Options": OptionController(self._pages["Options"]),
             "Settings": SettingController(self._pages["Settings"]),
+            "Model": ModelController(self._pages["Model"]),
         }
 
     def _load_page_configs(self):
