@@ -6,6 +6,7 @@ from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
 from gui.page_controller import OptionController, SettingController, ModelController
 from gui.task_worker import TaskWorker
+from lib.train import ModelPath
 
 
 #         Current controller hierarchy:
@@ -130,16 +131,22 @@ class GuiController(QObject):
             enable=self._pages["Options"].options["Distance Measure"].isChecked(),
             face_width=self._config.getfloat("Distance Measure", "Face Width"),
             distance=self._config.getfloat("Distance Measure", "Distance"),
-            warn_dist=self._config.getfloat("Distance Measure", "Bound"),)
+            warn_dist=self._config.getfloat("Distance Measure", "Bound"))
 
         self._app.enable_focus_time(
             enable=self._pages["Options"].options["Focus Time"].isChecked(),
             time_limit=self._config.getint("Focus Time", "Time Limit"),
-            break_time=self._config.getint("Focus Time", "Break Time"),)
+            break_time=self._config.getint("Focus Time", "Break Time"))
 
+        selected_model_name = self._page_controllers["Options"].get_selected_model_name()
+        if selected_model_name == "Default":
+            model_path = ModelPath.default
+        elif selected_model_name == "Custom":
+            model_path = ModelPath.custom
         self._app.enable_posture_detect(
             enable=self._pages["Options"].options["Posture Detect"].isChecked(),
-            warn_angle=self._config.getfloat("Posture Detect", "Angle"),)
+            model_path=model_path,
+            warn_angle=self._config.getfloat("Posture Detect", "Angle"))
 
     @pyqtSlot()
     def _store_page_configs(self):

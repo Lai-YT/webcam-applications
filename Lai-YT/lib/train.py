@@ -26,9 +26,13 @@ class PostureLabel(Enum):
     slump: int = 1
 
 
+class ModelPath(Enum):
+    default = to_abs_path("trained_models/default_model.h5")
+    custom = to_abs_path("trained_models/custom_model.h5")
+
+
 class ModelTrainer(QObject):
     SAMPLE_DIR: str = to_abs_path("train_sample")
-    MODEL_PATH: str = to_abs_path("trained_models/write_model.h5")
     IMAGE_DIMENSIONS: Tuple[int, int] = (224, 224)
 
     s_train_finished = pyqtSignal()  # Emit when the train_model() is finished (or failed).
@@ -137,7 +141,7 @@ class ModelTrainer(QObject):
         model.add(layers.Dense(len(class_folders), activation="softmax"))
         model.compile(optimizer="adam", loss="sparse_categorical_crossentropy",  metrics=["accuracy"])
         model.fit(images, labels, epochs=epochs, class_weight=weights)
-        model.save(ModelTrainer.MODEL_PATH)
+        model.save(ModelPath.custom.value)
 
         print("Training finished.")
         self.s_train_finished.emit()
@@ -153,9 +157,9 @@ class ModelTrainer(QObject):
     def get_image_count(self):
         return copy.deepcopy(self._image_count)
 
-    @classmethod
-    def load_model(cls):
-        return models.load_model(cls.MODEL_PATH)
+    @staticmethod
+    def load_model(model_path: ModelPath):
+        return models.load_model(model_path.value)
 
     def _count_images(self):
         self._image_count: Dict[PostureLabel, int] = {}

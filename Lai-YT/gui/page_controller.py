@@ -64,7 +64,7 @@ class OptionController(PageController):
         self._widget.buttons["Stop"].setEnabled(True)
 
     def load_configs(self, config):
-        """Reads the previous state of check boxes and restore them.
+        """Reads and restore the previous state of check boxes and model option.
 
         Arguments:
             config (ConfigParser): The parser which reads the config file
@@ -72,14 +72,23 @@ class OptionController(PageController):
         for opt_name, check_box in self._widget.options.items():
             check_box.setChecked(config.getboolean(opt_name, "checked"))
 
+        self._widget.model_options[config.get("Posture Detect", "Model")].setChecked(True)
+
     def store_configs(self, config):
-        """Stores whether the check box is checked or not.
+        """Stores whether the check box is checked or not and which model is used.
 
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
         for section, check_box in self._widget.options.items():
             config.set(section, "checked", "True" if check_box.isChecked() else "False")
+
+        config.set("Posture Detect", "model", self.get_selected_model_name())
+
+    def get_selected_model_name(self):
+        for model_name, rad_btn in self._widget.model_options.items():
+            if rad_btn.isChecked():
+                return model_name
 
     def show_message(self, msg, color="red"):
         """Shows message at the message label of the OptionWidget.
@@ -309,7 +318,13 @@ class ModelController(PageController):
     @pyqtSlot()
     def _capture_sampe_images(self):
         """Removes the old sample images and captures new images."""
-        selected_option = self._widget.option_ids[self._widget.options_group.checkedId()]
+        # Since these buttons are exclusive, at most one can be selected.
+        selected_option = None
+        for name, btn in self._widget.options.items():
+            if btn.isChecked():
+                selected_option = name
+                break
+
         if selected_option == "Good":
             self._model_trainer.remove_sample_images(PostureLabel.good)
             self._model_trainer.capture_sample_images(PostureLabel.good)
