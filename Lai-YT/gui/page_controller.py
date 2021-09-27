@@ -234,7 +234,7 @@ class ModelController(PageController):
     # Override
     def load_configs(self, config):
         pass
-        
+
     # Override
     def store_configs(self, config):
         pass
@@ -275,7 +275,7 @@ class ModelController(PageController):
             lambda: self._widget.buttons["Capture"].setEnabled(False))
         self._widget.buttons["Capture"].clicked.connect(
             lambda: self._widget.buttons["Train"].setEnabled(False))
-        # If is not capturing, `Capture`, `Remove` and `Train` can be clicked.
+        # If is not capturing, `Capture` and `Train` can be clicked.
         self._widget.buttons["Finish"].clicked.connect(
             lambda: self._widget.buttons["Finish"].setEnabled(False))
         self._widget.buttons["Finish"].clicked.connect(
