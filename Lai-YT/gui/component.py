@@ -112,7 +112,9 @@ class StatusBar(QStatusBar):
         widget.deleteLater()
 
 
-class TrainFailMessageBox(QMessageBox):
+class FailMessageBox(QMessageBox):
+    """The is a message box that shows an error (failed progress)."""
+    
     def __init__(self, fail_message, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Fail")

@@ -9,7 +9,7 @@ from gui.task_worker import TaskWorker
 from lib.train import ModelPath
 
 
-#         Current controller hierarchy:
+#               Controller hierarchy:
 #
 #                GuiController - ApplicationGui, WebcamApplication
 #                      |
@@ -159,5 +159,5 @@ class GuiController(QObject):
             if name not in {"Settings"}:
                 controller.store_configs(self._config)
         # Save the states of all pages back to the config file all at once.
-        with open(GuiController.CONFIG, 'w') as f:
+        with open(GuiController.CONFIG, "w") as f:
             self._config.write(f)

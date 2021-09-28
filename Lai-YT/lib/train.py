@@ -102,8 +102,8 @@ class ModelTrainer(QObject):
         class_label_indexer: int = 0
         for label in class_folders:
             if self._image_count[label] == 0:
-                print(f"No images of label '{label.name}'.")
-                fail_message += f"No images of label '{label.name}'.\n"
+                print(f"No image of label '{label.name}'.")
+                fail_message += f"No image of label '{label.name}'.\n"
             else:
                 print(f"Training with label {label.name}...")
 

@@ -1,12 +1,11 @@
 import time
 from abc import abstractmethod
-from functools import partial
 from math import ceil
 
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
-from gui.component import CaptureMessageBox, ProgressDialog, TrainFailMessageBox
+from gui.component import CaptureMessageBox, ProgressDialog, FailMessageBox
 from gui.task_worker import TaskWorker
 from lib.train import PostureLabel, ModelTrainer
 
@@ -16,6 +15,7 @@ class PageController(QObject):
     A PageController should be able to have a load method and a store method,
     which do the action on their own page.
     """
+    
     @abstractmethod
     def load_configs(self, config):
         """
@@ -242,10 +242,12 @@ class ModelController(PageController):
 
     # Override
     def load_configs(self, config):
+        # No state to restore, intentionally empty.
         pass
 
     # Override
     def store_configs(self, config):
+        # No state to store, intentionally empty.
         pass
 
     @pyqtSlot()
@@ -277,25 +279,30 @@ class ModelController(PageController):
         for opt_btn in self._widget.options.values():
             opt_btn.toggled.connect(lambda: self._widget.buttons["Capture"].setEnabled(True))
 
-        # `Finish` is the only button can click during capture.
-        self._widget.buttons["Capture"].clicked.connect(
-            lambda: self._widget.buttons["Finish"].setEnabled(True))
-        self._widget.buttons["Capture"].clicked.connect(
-            lambda: self._widget.buttons["Capture"].setEnabled(False))
-        self._widget.buttons["Capture"].clicked.connect(
-            lambda: self._widget.buttons["Train"].setEnabled(False))
-        # If is not capturing, `Capture` and `Train` can be clicked.
-        self._widget.buttons["Finish"].clicked.connect(
-            lambda: self._widget.buttons["Finish"].setEnabled(False))
-        self._widget.buttons["Finish"].clicked.connect(
-            lambda: self._widget.buttons["Capture"].setEnabled(True))
-        self._widget.buttons["Finish"].clicked.connect(
-            lambda: self._widget.buttons["Train"].setEnabled(True))
-
-        self._widget.buttons["Train"].clicked.connect(
-            lambda: self._widget.buttons["Finish"].setEnabled(False))
-        self._widget.buttons["Train"].clicked.connect(
-            lambda: self._widget.buttons["Train"].setEnabled(False))
+        enabled_after_clicked_table = {
+            # `Finish` is the only button can be clicked during capture.
+            "Capture": {
+                "Finish": True,
+                "Capture": False,
+                "Train": False,
+            },
+            # After capture, `Capture` and `Train` can be clicked.
+            "Finish": {
+                "Finish": False,
+                "Capture": True,
+                "Train": True,
+            },
+            # `Capture` is not handled since it's more complicated to check
+            # whether it should be enabled or not after the train.
+            "Train": {
+                "Finish": False,
+                "Train": False,
+            },
+        }
+        for btn_on_clicked, btns_to_set in enabled_after_clicked_table.items():
+            for btn, enabled in btns_to_set.items():
+                self._widget.buttons[btn_on_clicked].clicked.connect(
+                    lambda checked, btn=btn, enabled=enabled: self._widget.buttons[btn].setEnabled(enabled))
 
     def _connect_buttons(self):
         # Notice that the clicked signal also passes an argument: False (False because uncheckable).
@@ -325,20 +332,33 @@ class ModelController(PageController):
                 selected_option = name
                 break
 
+        capture_period = 300  # 1 per 300 ms
         if selected_option == "Good":
             self._model_trainer.remove_sample_images(PostureLabel.good)
-            self._model_trainer.capture_sample_images(PostureLabel.good)
+            self._model_trainer.capture_sample_images(PostureLabel.good, capture_period=capture_period)
         elif selected_option == "Slump":
             self._model_trainer.remove_sample_images(PostureLabel.slump)
-            self._model_trainer.capture_sample_images(PostureLabel.slump)
+            self._model_trainer.capture_sample_images(PostureLabel.slump, capture_period=capture_period)
 
     @pyqtSlot(str)
     def _show_train_message(self, message):
-        msg_box = TrainFailMessageBox(message, parent=self._widget)
+        """Shows a message box about why the train fails.
+
+        Arguments:
+            message (str): The text to show on the message box, should be a message
+                           about the failure
+        """
+        msg_box = FailMessageBox(message, parent=self._widget)
         msg_box.exec()
 
     @pyqtSlot(PostureLabel, int)
     def _show_capture_message(self, label, num_of_img):
+        """Shows a message box about the result of capture.
+
+        Arguments:
+            label (PostureLabel): The label of the images captured
+            num_of_img (int): The number of samples images captured
+        """
         msg_box = CaptureMessageBox(label, num_of_img, parent=self._widget)
         msg_box.exec()
 
@@ -354,6 +374,7 @@ class ModelController(PageController):
             # Since the ProgressDialog is modal (lock parent widget), setting parent
             # is necessary.
             self._progress_dialog = ProgressDialog(estimated_training_time, parent=self._widget)
+            self._progress_dialog.setWindowTitle("Training...")
         else:
             self._progress_dialog.setMaximum(estimated_training_time)
 
@@ -365,7 +386,7 @@ class ModelController(PageController):
             self._progress_dialog.setLabelText(
                 f"{ceil((estimated_training_time - count) / 60)} minute(s) left...")
             self._progress_dialog.setValue(count)
-            time.sleep(1)
+            time.sleep(1)  # Time counts in second.
         # If training is not finished, lock the bar value and display the waiting message.
         self._progress_dialog.setLabelText("Soon be finished...")
 

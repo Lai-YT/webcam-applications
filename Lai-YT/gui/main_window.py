@@ -6,12 +6,12 @@ from gui.component import StatusBar
 from gui.page_widget import PageWidget
 
 
-#     Current GUI layout:
+#     GUI layout:
 #    -----------------------
 #    | ------------------- | <- Central Widegt is a pure QWidget.
 #    | |                 | <- General Layout margin of the Main GUI.
 #    | |                 | |
-#    | |      Pages  <- Created by PageWidget (OptionWidget, SettingWidget).
+#    | |      Pages  <- Created by PageWidget (OptionWidget, SettingWidget, ...).
 #    | |                 | |
 #    | |                 | |
 #    | ------------------- |
