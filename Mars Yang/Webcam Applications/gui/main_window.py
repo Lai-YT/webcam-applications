@@ -6,12 +6,12 @@ from gui.component import StatusBar
 from gui.page_widget import PageWidget
 
 
-#     Current GUI layout:
+#     GUI layout:
 #    -----------------------
 #    | ------------------- | <- Central Widegt is a pure QWidget.
 #    | |                 | <- General Layout margin of the Main GUI.
 #    | |                 | |
-#    | |      Pages  <- Created by PageWidget (OptionWidget, SettingWidget).
+#    | |      Pages  <- Created by PageWidget (OptionWidget, SettingWidget, ...).
 #    | |                 | |
 #    | |                 | |
 #    | ------------------- |
@@ -34,7 +34,7 @@ class ApplicationGui(QMainWindow):
         self.setFixedSize(500, 450)
         # Set the central widget and the general layout.
         self._general_layout = QVBoxLayout()
-        self._central_widget = QWidget(parent=self)
+        self._central_widget = QWidget()
         self._central_widget.setLayout(self._general_layout)
         self.setCentralWidget(self._central_widget)
 
@@ -47,7 +47,7 @@ class ApplicationGui(QMainWindow):
         """A clean up function is called before closed if set."""
         # If there exists clean up callback, call it before passing the event
         # to the original implementation.
-        if callable(getattr(self, '_clean_up_callback', False)):
+        if callable(getattr(self, "_clean_up_callback", False)):
             self._clean_up_callback()
         # Call the original implementation, which accepts and destroys the GUI
         # in default.

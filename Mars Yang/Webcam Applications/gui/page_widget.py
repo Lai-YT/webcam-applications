@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QButtonGroup, QFormLayout, QGridLayout, QHBoxLayout,
-                             QProgressDialog, QTabWidget, QVBoxLayout, QWidget)
+from PyQt5.QtWidgets import (QFormLayout, QGridLayout, QGroupBox, QHBoxLayout,
+                             QTabWidget, QVBoxLayout, QWidget)
 
 from gui.component import (ActionButton, Label, LineEdit, OptionCheckBox,
                            OptionRadioButton, MessageLabel)
@@ -21,6 +21,7 @@ class PageWidget(QTabWidget):
         self.pages = {
             "Options": OptionWidget(),
             "Settings": SettingWidget(),
+            "Model": ModelWidget(),
         }
         for text, page in self.pages.items():
             self.addTab(page, text)
@@ -54,13 +55,27 @@ class OptionWidget(QWidget):
             self.options[opt] = OptionCheckBox(opt)
             options_layout.addWidget(self.options[opt], stretch=1)
             options_layout.addWidget(Label("    " + des, font_size=10), stretch=1)
-        # Add space to make options close together.
-        options_layout.addStretch(5)
-
-        self.message = MessageLabel()
-        options_layout.addWidget(self.message, stretch=1)
-
         self._general_layout.addLayout(options_layout)
+
+        self._create_model_options()
+        
+        self.message = MessageLabel()
+        self._general_layout.addWidget(self.message)
+
+    def _create_model_options(self):
+        # Add exclusive option buttons.
+        group_box = QGroupBox(title="Please choose the model to use.")
+        group_box.setFont(QFont("Arial", 10))
+        options_layout = QVBoxLayout()
+        group_box.setLayout(options_layout)
+        self._general_layout.addWidget(group_box)
+
+        # name : OptionRadioButton
+        self.model_options = {}
+        model_options = ["Default", "Custom"]
+        for name in model_options:
+            self.model_options[name] = OptionRadioButton(name, font_size=10)
+            options_layout.addWidget(self.model_options[name])
 
     def _create_buttons(self):
         """Creates the buttons of actions"""
@@ -138,7 +153,15 @@ class ModelWidget(QWidget):
         self._create_buttons()
 
     def _create_options(self):
+        # Add a QGroupBox to the general layout.
+        # The OptionRadioButton contained are exclusive.
+        group_box = QGroupBox(title="Here you can customize your own posture model.")
+        group_box.setFont(QFont("Arial", 12))
         options_layout = QVBoxLayout()
+        group_box.setLayout(options_layout)
+        self._general_layout.addWidget(group_box)
+
+        # Add buttons into the QGroupBox.
         # Option name | description
         options = {
             "Good": "capture sample images of good, healthy posture when writing in front of the screen",
@@ -146,27 +169,11 @@ class ModelWidget(QWidget):
         }
         # option name : button
         self.options = {}
-        # Since these options are using ButtonGroup,
-        # the checkButton method returns the instance of button,
-        # but we have no idea what its name is.
-        # So set id to each button, and query the nae by id.
-        # button id : button name
-        self.option_ids = {}
-        id = 0
-        # To make them exclusive.
-        self.options_group = QButtonGroup()
         for name, des in options.items():
             self.options[name] = OptionRadioButton(name)
-            self.options_group.addButton(self.options[name])
             options_layout.addWidget(self.options[name])
-            # For name query.
-            self.options_group.setId(self.options[name], id)
-            self.option_ids[id] = name
-            id += 1
             # Wrap word due to long description.
             options_layout.addWidget(Label(des, font_size=10, wrap=True))
-
-        self._general_layout.addLayout(options_layout)
 
     def _create_buttons(self):
         """Creates buttons of the widget."""
@@ -180,23 +187,3 @@ class ModelWidget(QWidget):
             buttons_layout.addWidget(self.buttons[name], alignment=Qt.AlignBottom, stretch=1)
 
         self._general_layout.addLayout(buttons_layout)
-
-
-class TrainingDialog(QProgressDialog):
-    def __init__(self, maximum, parent=None):
-        super().__init__(parent)
-        # Block input to other windows.
-        self.setModal(True)
-        # Don't need a cancel button.
-        # (May add it to let the user quit training.)
-        self.setCancelButton(None)
-        self.setMaximum(maximum)
-        self.setFixedSize(300, 100)
-        self.setFont(QFont("Arial", 16))
-
-        self._set_label()
-
-    def _set_label(self):
-        label = Label(font_size=14)
-        label.setAlignment(Qt.AlignCenter)
-        self.setLabel(label)

@@ -12,6 +12,7 @@ from nptyping import Float, Int, NDArray, UInt8
 from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
 
+from gui.component import FailMessageBox
 from lib.color import RED
 from lib.cv_font import FONT_3
 from lib.image_type import ColorImage, GrayImage
@@ -26,13 +27,18 @@ class PostureLabel(Enum):
     slump: int = 1
 
 
+class ModelPath(Enum):
+    default = "lib/trained_models/default_model.h5"
+    custom = "lib/trained_models/custom_model.h5"
+
+
 class ModelTrainer(QObject):
-    SAMPLE_DIR: str = to_abs_path("train_sample")
-    MODEL_PATH: str = to_abs_path("trained_models/write_model.h5")
+    SAMPLE_DIR: str = "lib/train_sample"
     IMAGE_DIMENSIONS: Tuple[int, int] = (224, 224)
 
-    # Emit when the train_model() is finished.
-    s_train_finished = pyqtSignal()
+    s_train_finished = pyqtSignal()  # Emit when the train_model() is finished (or failed).
+    s_train_failed = pyqtSignal(str)  # Emit if the train_model() fails, str is the message.
+    s_capture_finished = pyqtSignal([PostureLabel, int])  # int is the number of sample images.
 
     def __init__(self):
         super().__init__()
@@ -74,6 +80,7 @@ class ModelTrainer(QObject):
         self._image_count[label] = max(self._image_count[label], image_count)
         videocapture.release()
         cv2.destroyAllWindows()
+        self.s_capture_finished.emit(label, self._image_count[label])
 
     def stop_capturing(self):
         """This will stops the capturing of capture_sample_images().
@@ -87,6 +94,7 @@ class ModelTrainer(QObject):
         """The images captured by capture_sample_images() will be used to train a writing model."""
         train_images: List[GrayImage] = []
         train_labels: List[int] = []
+        fail_message: str = ""  # Will be sent if the training fails.
 
         # The order(index) of the class is the order of the ints that PostureLabels represent.
         # i.e., good.value = 0, slump.value = 1
@@ -95,7 +103,8 @@ class ModelTrainer(QObject):
         class_label_indexer: int = 0
         for label in class_folders:
             if self._image_count[label] == 0:
-                print(f"No images in folder '{label.name}'.")
+                print(f"No image of label '{label.name}'.")
+                fail_message += f"No image of label '{label.name}'.\n"
             else:
                 print(f"Training with label {label.name}...")
 
@@ -110,6 +119,7 @@ class ModelTrainer(QObject):
         # If not all values aren't 0 => If any of the value is 0.
         if not all(self._image_count.values()):
             print("Training failed.")
+            self.s_train_failed.emit(fail_message)
             self.s_train_finished.emit()
             return
 
@@ -132,26 +142,28 @@ class ModelTrainer(QObject):
         model.add(layers.Dense(len(class_folders), activation="softmax"))
         model.compile(optimizer="adam", loss="sparse_categorical_crossentropy",  metrics=["accuracy"])
         model.fit(images, labels, epochs=epochs, class_weight=weights)
-        model.save(ModelTrainer.MODEL_PATH)
+        model.save(ModelPath.custom.value)
 
         print("Training finished.")
         self.s_train_finished.emit()
 
-    def remove_sample_images(self) -> None:
+    def remove_sample_images(self, label: PostureLabel) -> None:
         """Removes the sample images of ModelTrainer.
         Ignore errors when folder not exist.
         """
         # Remove the entire label folder and set count to 0.
-        for label in PostureLabel:
-            shutil.rmtree(f"{ModelTrainer.SAMPLE_DIR}/{label.name}", ignore_errors=True)
-            self._image_count[label] = 0
+        shutil.rmtree(f"{ModelTrainer.SAMPLE_DIR}/{label.name}", ignore_errors=True)
+        self._image_count[label] = 0
 
     def get_image_count(self):
         return copy.deepcopy(self._image_count)
 
-    @classmethod
-    def load_model(cls):
-        return models.load_model(cls.MODEL_PATH)
+    @staticmethod
+    def load_model(model_path: ModelPath):
+        # if to_abs_path(model_path):
+            # box = FailMessageBox("87")
+            # box.exec()
+        return models.load_model(model_path.value)
 
     def _count_images(self):
         self._image_count: Dict[PostureLabel, int] = {}

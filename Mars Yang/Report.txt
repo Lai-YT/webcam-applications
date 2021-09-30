@@ -1,3 +1,6 @@
+## Adjustions (110/9/30) by Mars Yang
+Provide two modes for users to choose, the "color-system" mode is not started yet.
+
 ## Adjustions (110/9/25) by Mars Yang
 Users can choose to adjust the brightness manually or automatically while camera is open.
 

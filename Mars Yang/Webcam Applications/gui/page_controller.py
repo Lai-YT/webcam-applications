@@ -1,12 +1,11 @@
 import time
 from abc import abstractmethod
-from functools import partial
 from math import ceil
 
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
-from gui.page_widget import TrainingDialog
+from gui.component import CaptureMessageBox, ProgressDialog, FailMessageBox
 from gui.task_worker import TaskWorker
 from lib.train import PostureLabel, ModelTrainer
 
@@ -16,6 +15,7 @@ class PageController(QObject):
     A PageController should be able to have a load method and a store method,
     which do the action on their own page.
     """
+    
     @abstractmethod
     def load_configs(self, config):
         """
@@ -64,7 +64,7 @@ class OptionController(PageController):
         self._widget.buttons["Stop"].setEnabled(True)
 
     def load_configs(self, config):
-        """Reads the previous state of check boxes and restore them.
+        """Reads and restore the previous state of check boxes and model option.
 
         Arguments:
             config (ConfigParser): The parser which reads the config file
@@ -72,14 +72,23 @@ class OptionController(PageController):
         for opt_name, check_box in self._widget.options.items():
             check_box.setChecked(config.getboolean(opt_name, "checked"))
 
+        self._widget.model_options[config.get("Posture Detect", "Model")].setChecked(True)
+
     def store_configs(self, config):
-        """Stores whether the check box is checked or not.
+        """Stores whether the check box is checked or not and which model is used.
 
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
         for section, check_box in self._widget.options.items():
             config.set(section, "checked", "True" if check_box.isChecked() else "False")
+
+        config.set("Posture Detect", "model", self.get_selected_model_name())
+
+    def get_selected_model_name(self):
+        for model_name, rad_btn in self._widget.model_options.items():
+            if rad_btn.isChecked():
+                return model_name
 
     def show_message(self, msg, color="red"):
         """Shows message at the message label of the OptionWidget.
@@ -231,10 +240,14 @@ class ModelController(PageController):
         self._connect_signals()
         self._connect_buttons()
 
+    # Override
     def load_configs(self, config):
+        # No state to restore, intentionally empty.
         pass
 
+    # Override
     def store_configs(self, config):
+        # No state to store, intentionally empty.
         pass
 
     @pyqtSlot()
@@ -258,39 +271,46 @@ class ModelController(PageController):
         self._countdown()
 
     def _enable_buttons(self):
-        # Capture and Finish is disabled at the beginning.
+        # Disabled at the beginning.
         self._widget.buttons["Capture"].setEnabled(False)
         self._widget.buttons["Finish"].setEnabled(False)
+
         # Capture is enabled after any of the option buttons is toggled.
         for opt_btn in self._widget.options.values():
             opt_btn.toggled.connect(lambda: self._widget.buttons["Capture"].setEnabled(True))
-        # `Finish` is the only button can click during capture.
-        self._widget.buttons["Capture"].clicked.connect(
-            lambda: self._widget.buttons["Finish"].setEnabled(True))
-        self._widget.buttons["Capture"].clicked.connect(
-            lambda: self._widget.buttons["Capture"].setEnabled(False))
-        self._widget.buttons["Capture"].clicked.connect(
-            lambda: self._widget.buttons["Train"].setEnabled(False))
-        # If is not capturing, `Capture` and `Train` can be clicked.
-        self._widget.buttons["Finish"].clicked.connect(
-            lambda: self._widget.buttons["Capture"].setEnabled(True))
-        self._widget.buttons["Finish"].clicked.connect(
-            lambda: self._widget.buttons["Finish"].setEnabled(False))
-        self._widget.buttons["Finish"].clicked.connect(
-            lambda: self._widget.buttons["Train"].setEnabled(True))
 
-        self._widget.buttons["Train"].clicked.connect(
-            lambda: self._widget.buttons["Finish"].setEnabled(False))
-        self._widget.buttons["Train"].clicked.connect(
-            lambda: self._widget.buttons["Train"].setEnabled(False))
+        enabled_after_clicked_table = {
+            # `Finish` is the only button can be clicked during capture.
+            "Capture": {
+                "Finish": True,
+                "Capture": False,
+                "Train": False,
+            },
+            # After capture, `Capture` and `Train` can be clicked.
+            "Finish": {
+                "Finish": False,
+                "Capture": True,
+                "Train": True,
+            },
+            # `Capture` is not handled since it's more complicated to check
+            # whether it should be enabled or not after the train.
+            "Train": {
+                "Finish": False,
+                "Train": False,
+            },
+        }
+        for btn_on_clicked, btns_to_set in enabled_after_clicked_table.items():
+            for btn, enabled in btns_to_set.items():
+                self._widget.buttons[btn_on_clicked].clicked.connect(
+                    lambda checked, btn=btn, enabled=enabled: self._widget.buttons[btn].setEnabled(enabled))
 
     def _connect_buttons(self):
         # Notice that the clicked signal also passes an argument: False (False because uncheckable).
         # If the slot function takes any parameter, make sure you handle the effect.
         # e.g, use pyqtSlot decorator or connect with lambda.
-        self._widget.buttons["Train"].clicked.connect(self._train_model)
         self._widget.buttons["Capture"].clicked.connect(self._capture_sampe_images)
         self._widget.buttons["Finish"].clicked.connect(self._model_trainer.stop_capturing)
+        self._widget.buttons["Train"].clicked.connect(self._train_model)
 
     def _connect_signals(self):
         # The `Train` button is enabled after the previous training is finished.
@@ -298,13 +318,49 @@ class ModelController(PageController):
             lambda: self._widget.buttons["Train"].setEnabled(True))
         # Quit countdown when training is finished.
         self._model_trainer.s_train_finished.connect(self._quit_countdown)
+        self._model_trainer.s_train_failed.connect(self._show_train_message)
 
+        self._model_trainer.s_capture_finished.connect(self._show_capture_message)
+
+    @pyqtSlot()
     def _capture_sampe_images(self):
-        selected_option = self._widget.option_ids[self._widget.options_group.checkedId()]
+        """Removes the old sample images and captures new images."""
+        # Since these buttons are exclusive, at most one can be selected.
+        selected_option = None
+        for name, btn in self._widget.options.items():
+            if btn.isChecked():
+                selected_option = name
+                break
+
+        capture_period = 300  # 1 per 300 ms
         if selected_option == "Good":
-            self._model_trainer.capture_sample_images(PostureLabel.good)
+            self._model_trainer.remove_sample_images(PostureLabel.good)
+            self._model_trainer.capture_sample_images(PostureLabel.good, capture_period=capture_period)
         elif selected_option == "Slump":
-            self._model_trainer.capture_sample_images(PostureLabel.slump)
+            self._model_trainer.remove_sample_images(PostureLabel.slump)
+            self._model_trainer.capture_sample_images(PostureLabel.slump, capture_period=capture_period)
+
+    @pyqtSlot(str)
+    def _show_train_message(self, message):
+        """Shows a message box about why the train fails.
+
+        Arguments:
+            message (str): The text to show on the message box, should be a message
+                           about the failure
+        """
+        msg_box = FailMessageBox(message, parent=self._widget)
+        msg_box.exec()
+
+    @pyqtSlot(PostureLabel, int)
+    def _show_capture_message(self, label, num_of_img):
+        """Shows a message box about the result of capture.
+
+        Arguments:
+            label (PostureLabel): The label of the images captured
+            num_of_img (int): The number of samples images captured
+        """
+        msg_box = CaptureMessageBox(label, num_of_img, parent=self._widget)
+        msg_box.exec()
 
     def _countdown(self):
         """Countdown when training to let user know how much time left."""
@@ -315,9 +371,10 @@ class ModelController(PageController):
         estimated_training_time: int = 10 * (1 + 3 * image_count // 100)
 
         if not hasattr(self, "_progress_dialog"):
-            # Since the TrainingDialog is modal (lock parent widget), setting parent
+            # Since the ProgressDialog is modal (lock parent widget), setting parent
             # is necessary.
-            self._progress_dialog = TrainingDialog(estimated_training_time, parent=self._widget)
+            self._progress_dialog = ProgressDialog(estimated_training_time, parent=self._widget)
+            self._progress_dialog.setWindowTitle("Training...")
         else:
             self._progress_dialog.setMaximum(estimated_training_time)
 
@@ -329,10 +386,11 @@ class ModelController(PageController):
             self._progress_dialog.setLabelText(
                 f"{ceil((estimated_training_time - count) / 60)} minute(s) left...")
             self._progress_dialog.setValue(count)
-            time.sleep(1)
+            time.sleep(1)  # Time counts in second.
         # If training is not finished, lock the bar value and display the waiting message.
         self._progress_dialog.setLabelText("Soon be finished...")
 
+    @pyqtSlot()
     def _quit_countdown(self):
         """Set bar value to max to close the countdown dialog."""
         self._f_train_finished = True

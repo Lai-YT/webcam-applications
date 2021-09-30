@@ -12,7 +12,7 @@ import lib.app_visual as vs
 from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
 from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from lib.timer import Timer
-from lib.train import ModelTrainer
+from lib.train import ModelPath, ModelTrainer
 from lib.image_type import ColorImage
 from path import to_abs_path
 
@@ -51,11 +51,11 @@ class WebcamApplication(QObject):
         if enable:
             self._create_time_sentinel(time_limit, break_time)
 
-    def enable_posture_detect(self, enable: bool, warn_angle: float) -> None:
+    def enable_posture_detect(self, enable: bool, model_path: ModelPath, warn_angle: float) -> None:
         """Note that if enable is False, other parameters are ignored."""
         self._posture_detect = enable
         if enable:
-            self._create_posture_checker(warn_angle)
+            self._create_posture_checker(model_path, warn_angle)
 
     @pyqtSlot()
     @pyqtSlot(int)
@@ -133,11 +133,11 @@ class WebcamApplication(QObject):
     def _create_face_detectors(self) -> None:
         """Creates face detector and shape predictor for further use."""
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
-        self._shape_predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+        self._shape_predictor = dlib.shape_predictor("lib/trained_models/shape_predictor_68_face_landmarks.dat")
 
     def _create_distance_sentinel(self, face_width: float, distance: float, warn_dist: float) -> None:
         # Creates the DistanceCalculator with reference image.
-        ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
+        ref_img: ColorImage = cv2.imread("img/ref_img.jpg")
         faces: dlib.rectangles = self._face_detector(ref_img)
         if len(faces) != 1:
             # must have exactly one face in the reference image
@@ -146,9 +146,9 @@ class WebcamApplication(QObject):
         self._distance_sentinel = vs.DistanceSentinel(
             DistanceCalculator(landmarks, distance, face_width), warn_dist)
 
-    def _create_posture_checker(self, warn_angle: float) -> None:
+    def _create_posture_checker(self, model_path: ModelPath, warn_angle: float) -> None:
         self._posture_checker = vs.PostureChecker(
-            ModelTrainer.load_model(), AngleCalculator(), warn_angle)
+            ModelTrainer.load_model(model_path), AngleCalculator(), warn_angle)
 
     def _create_time_sentinel(self, time_limit: int, break_time: int) -> None:
         self._time_sentinel = vs.TimeSentinel(time_limit, break_time)

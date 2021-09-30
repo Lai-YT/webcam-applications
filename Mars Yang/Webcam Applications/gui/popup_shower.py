@@ -5,9 +5,8 @@ from gui.popup_widget import TimerWidget
 
 
 class TimeShower(QObject):
-    """
-    The layer between Widget and App. Knows the current state of time and updates
-    time to the corresponding widget.
+    """The layer between Widget and App.
+    Knows the current state of time and updates time to the corresponding widget.
     """
     def __init__(self):
         super().__init__()
