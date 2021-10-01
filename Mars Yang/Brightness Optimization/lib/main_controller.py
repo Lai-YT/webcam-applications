@@ -10,9 +10,7 @@ class GuiController(QObject):
         super().__init__()
 
         self._gui = gui
-        self._widget = self._gui.widget
         self._connect_signals()
-
 
     def _connect_signals(self):
         # Connect the siganls among widgets.
@@ -29,7 +27,11 @@ class GuiController(QObject):
         """Confirm the mode and start the process."""
         selected_mode = self._check_which_mode_to_apply()
 
+        # Close the previous controller if exist.
+        if hasattr(self, "_brightness_controller"):
+            self._brightness_controller.click_exit()
+        # Start a new one.
         if selected_mode:
-            self.brightness_controller = BrightnessController(selected_mode)
+            self._brightness_controller = BrightnessController(selected_mode)
         else:
-            print("Please choose one of the modes (webcam/color-system).")    
+            print("Please choose one of the modes (webcam/color-system).")

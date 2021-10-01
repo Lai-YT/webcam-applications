@@ -7,7 +7,7 @@ from lib.component import Button, CheckBox, HorizontalSlider, Label
 
 class BrightnessWidget(QWidget):
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle("Auto Brightness Controller")
@@ -15,12 +15,13 @@ class BrightnessWidget(QWidget):
         self.setWindowIcon(QIcon("sun.ico"))
 
         self._general_layout = QVBoxLayout()
+        self.setLayout(self._general_layout)
         # Initialize widgets
         self._set_label()
         self._set_slider()
         self._set_checkbox()
         self._set_buttons()
-    
+
     # Override
     def closeEvent(self, event):
         """A clean up function is called before closed if set."""
@@ -64,39 +65,3 @@ class BrightnessWidget(QWidget):
         for name, text in buttons.items():
             self.buttons[name] = Button(text)
             self._general_layout.addWidget(self.buttons[name])
-
-class WarningWidget(QDialog):
-    def __init__(self):
-        super().__init__() 
-
-        self.setWindowTitle("Warning")
-        self.setWindowIcon(QIcon("warning.ico"))
-        self.setFixedSize(545, 160)
-
-        self._general_layout = QVBoxLayout()
-        self._central_widget = QWidget(parent=self)
-        self._central_widget.setLayout(self._general_layout)
-
-        self._set_warning_text()
-        self._set_checkbox()
-        self._set_button()
-
-    def _set_warning_text(self):
-        self._warning_text = Label(font_size=15, wrap=False)
-        self._warning_text.setText("High brightness may reduce CPU performance\n and harm you sight.")
-        self._warning_text.setAlignment(Qt.AlignCenter)
-        self._general_layout.addWidget(self._warning_text)
-
-    def _set_checkbox(self):
-        self.checkbox = CheckBox("Don't remind me again.")
-
-        checkbox_layout = QVBoxLayout()
-        checkbox_layout.addWidget(self.checkbox)
-        checkbox_layout.setAlignment(Qt.AlignHCenter)
-        self._general_layout.addLayout(checkbox_layout)
-
-    def _set_button(self):
-        self.button = Button(text="OK")
-        self._general_layout.addWidget(self.button)
-
-
