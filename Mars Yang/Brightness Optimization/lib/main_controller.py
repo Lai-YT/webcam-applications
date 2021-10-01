@@ -10,7 +10,7 @@ class GuiController(QObject):
         super().__init__()
 
         self._gui = gui
-
+        self._widget = self._gui.widget
         self._connect_signals()
 
 

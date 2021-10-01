@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QGridLayout, QMainWindow, QVBoxLayout, QWidget
+from lib.brightness_widget import BrightnessWidget
 
 from lib.component import Button, Label, OptionRadioButton
 
@@ -22,6 +23,8 @@ class MainGui(QMainWindow):
         self._set_label()
         self._set_ratio_buttons()
         self._set_buttons()
+        #
+        self.subwidgets = BrightnessWidget()
 
     def _set_label(self):
         self.label = Label("Please choose the optimization mode\n you prefer.", font_size=15)

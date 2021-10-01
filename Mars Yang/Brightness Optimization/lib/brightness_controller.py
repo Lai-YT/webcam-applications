@@ -3,13 +3,15 @@ import numpy as np
 import sys
 
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt, QThread
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication
 import screen_brightness_control as sbc
 
 from lib.brightness_calculator import BrightnessCalculator
 from lib.brightness_widget import BrightnessWidget, WarningWidget
+from lib.task_worker import TaskWorker
+
 
 
 method = "wmi"
@@ -23,30 +25,59 @@ class BrightnessController(QObject):
         self._mode = mode
         self._brightness_widget = BrightnessWidget()
         self._warning_widget = WarningWidget()
+        # Since there are multiple fuctions that need to access camera,
+        # make it an attribute instead of opening in a certain method.
         self.cam = cv2.VideoCapture(0)
+        self._f_exit = False
+        self._warning_flag = True
 
         self._connect_signals()
         self._advance_preparation()
         if self._mode == "color-system":
             print("Sorry, this part is not prepared yet.")
         else:
-            self._capture_image()
+            self._run()
 
+    def _run(self):
+        """Moves the _capture_image process to another thread and start it."""
+        self._thread = QThread()
+        self._worker = TaskWorker(self._capture_image)
+        self._worker.moveToThread(self._thread)
+        # Worker starts running after the thread is started.
+        self._thread.started.connect(self._worker.run)
+        # The job of thread and worker is finished after the App. calls stop.
+        self.s_exit.connect(self._thread.quit)
+        self.s_exit.connect(self._worker.deleteLater)
+        self._thread.finished.connect(self._thread.deleteLater)
+
+        self._thread.start()
 
     def _connect_signals(self):
         # Connect the siganls of the warning dialog.
         self._warning_widget.checkbox.toggled.connect(self._stop_warning)
         self._warning_widget.button.clicked.connect(self._close_dialog)
         # The slider has two states, depending on the action user takes.
-        self._brightness_widget.checkbox.stateChanged.connect(
-            lambda state:
-            self._update_base_brightness_values() if state == Qt.Checked \
-            else self._set_brightness(sbc.get_brightness(method=method), set_slider=True))
+        self._brightness_widget.checkbox.stateChanged.connect(self._update_brightness_and_slider_visibility)
         # Label and screen should be set when the user adjust the slider.
         self._brightness_widget.slider.valueChanged.connect(
             lambda: self._set_brightness(self._brightness_widget.slider.value(), set_slider=False))
         # Connect the exit signal.
         self.s_exit.connect(self._brightness_widget.close)
+
+    @pyqtSlot(int)
+    def _update_brightness_and_slider_visibility(self, check_state: int):
+        """
+        If the checkbox is checked, update the base values so can correctly
+        calculate the brightness and hide the slider since is now automatic;
+        otherwise, have the slider value match the current brightness and let
+        users adjust brightness by themselves.
+        """
+        if check_state == Qt.Checked:
+            self._update_base_brightness_values()
+            self._brightness_widget.slider.hide()
+        else:
+            self._set_brightness(sbc.get_brightness(method=method), set_slider=True)
+            self._brightness_widget.slider.show()
 
     def _advance_preparation(self):
         """Init the slider and label status to be as same as the user's screen brightness."""
@@ -55,9 +86,6 @@ class BrightnessController(QObject):
 
     def _capture_image(self):
         """Capture images and adjust the brightness instantly."""
-        self._f_exit = False
-        self._warning_flag = True
-
         while not self._f_exit:
             _, frame = self.cam.read()
             frame = cv2.flip(frame, flipCode=1) # horizontally flip
