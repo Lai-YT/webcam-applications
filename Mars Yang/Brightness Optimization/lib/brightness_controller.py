@@ -1,7 +1,12 @@
 import cv2
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt
-import screen_brightness_control as sbc
+import numpy as np
 import sys
+
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QApplication
+import screen_brightness_control as sbc
 
 from lib.brightness_calculator import BrightnessCalculator
 from lib.brightness_widget import BrightnessWidget, WarningWidget
@@ -61,7 +66,7 @@ class BrightnessController(QObject):
             # otherwise, users can adjust by themselves.
             if self._brightness_widget.checkbox.isChecked():
                 self._brightness_widget.slider.hide()
-                self._optimize_brightness(self._mode, frame)
+                self._optimize_brightness(frame)
             else:
                 self._brightness_widget.slider.show()
                 self._warn_if_too_bright()
@@ -73,13 +78,33 @@ class BrightnessController(QObject):
         cv2.destroyAllWindows()
         self.s_exit.emit()
 
-    def _optimize_brightness(self, mode: str, frame):
+    def _optimize_brightness(self, frame):
         """Control screen brightness automatically in two different modes."""
-        if mode == "webcam":
-            brightness = BrightnessCalculator.calculate_proper_screen_brightness(self._threshold, self._base_value, frame)
-            self._set_brightness(brightness, set_slider=False)
-        else: # mode == "color-system"
-            pass
+        # Screenshot and turn image type to np.array
+        if self._mode == "color-system":
+            screen = QtWidgets.QApplication.primaryScreen()
+            # image type: pixmap
+            image = screen.grabWindow(QApplication.desktop().winId())
+            image = self._pixmap_to_image(image)
+
+        brightness = BrightnessCalculator.calculate_proper_screen_brightness(self._mode, self._threshold, self._base_value, frame)
+        self._set_brightness(brightness, set_slider=False)
+
+    @staticmethod
+    def _pixmap_to_image(image: QPixmap):
+        ## Get the size of the current pixmap
+        size = image.size()
+        h = size.width()
+        w = size.height()
+
+        ## Get the QImage Item and convert it to a byte string
+        qimg = image.toImage()
+        byte_str = qimg.bits().tobytes()
+
+        ## Using the np.frombuffer function to convert the byte string into an np array
+        img = np.frombuffer(byte_str, dtype=np.uint8).reshape((w,h,4))
+
+        return img
 
     def _warn_if_too_bright(self):
         # If screen brightness > 80, the warning dialog will pop out.
