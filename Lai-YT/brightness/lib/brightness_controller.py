@@ -91,13 +91,13 @@ class BrightnessController(QObject):
         sbc.set_brightness(brightness, method=method)
 
     def _update_base_brightness_values(self):
-        """Updates the base environment and screen brightness value.
+        """Updates the base background and screen brightness value.
         They will be passed to the BrightnessCalculator to calculate modified brightness.
         """
-        _, environment_image = self._cam.read()
-        # threshold is the brightness value of the environment.
-        self._threshold = BrightnessCalculator.get_brightness_percentage(environment_image)
-        # base value is the brightness value of the screen under such environment,
+        _, background_image = self._cam.read()
+        # threshold is the brightness value of the background.
+        self._threshold = BrightnessCalculator.get_brightness_percentage(background_image)
+        # base value is the brightness value of the screen under such background,
         # which is the current slider value.
         self._base_value = self._gui.slider.value()
 

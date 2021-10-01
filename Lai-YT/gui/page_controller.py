@@ -5,7 +5,7 @@ from math import ceil
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
-from gui.component import CaptureMessageBox, ProgressDialog, FailMessageBox
+from gui.component import CaptureMessageBox, FailMessageBox, ProgressDialog
 from gui.task_worker import TaskWorker
 from lib.train import PostureLabel, ModelTrainer
 
@@ -345,11 +345,11 @@ class ModelController(PageController):
 
         capture_period = 300  # 1 per 300 ms
         if selected_option == "Good":
-            self._model_trainer.remove_sample_images(PostureLabel.good)
-            self._model_trainer.capture_sample_images(PostureLabel.good, capture_period=capture_period)
+            label = PostureLabel.good
         elif selected_option == "Slump":
-            self._model_trainer.remove_sample_images(PostureLabel.slump)
-            self._model_trainer.capture_sample_images(PostureLabel.slump, capture_period=capture_period)
+            label = PostureLabel.slump
+        self._model_trainer.remove_sample_images(label)
+        self._model_trainer.capture_sample_images(label, capture_period=capture_period)
 
     @pyqtSlot(str)
     def _show_train_message(self, message):

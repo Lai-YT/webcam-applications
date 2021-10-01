@@ -4,6 +4,7 @@ from functools import partial
 
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
+from gui.component import FailMessageBox
 from gui.page_controller import OptionController, SettingController, ModelController
 from gui.task_worker import TaskWorker
 from lib.train import ModelPath
@@ -91,6 +92,11 @@ class GuiController(QObject):
             self._page_controllers["Options"].show_message("error: please make sure all settings are done")
             self._end_loading()
             return
+        except FileNotFoundError as e:
+            self._page_controllers["Options"].show_message(str(e))
+            self._end_loading()
+            return
+
         # Tell OptionController to react.
         self._page_controllers["Options"].successful_start()
 
@@ -138,11 +144,18 @@ class GuiController(QObject):
             time_limit=self._config.getint("Focus Time", "Time Limit"),
             break_time=self._config.getint("Focus Time", "Break Time"))
 
+        # Get which model to use and sent it to the app.
+        # If is a custom model, also checks the existence. Inform ths user and abort
+        # the `start` if doesn't exist.
         selected_model_name = self._page_controllers["Options"].get_selected_model_name()
         if selected_model_name == "Default":
             model_path = ModelPath.default
         elif selected_model_name == "Custom":
             model_path = ModelPath.custom
+            if not os.path.isfile(model_path.value):
+                FailMessageBox("Please train the custom model first.").exec()
+                raise FileNotFoundError("error: please train the custom model first")
+
         self._app.enable_posture_detect(
             enable=self._pages["Options"].options["Posture Detect"].isChecked(),
             model_path=model_path,
