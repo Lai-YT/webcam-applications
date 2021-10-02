@@ -39,7 +39,7 @@ class PhotoDisplayer(QWidget):
         cam.release()
 
     @staticmethod
-    def ndarray_to_qimage(photo):
+    def ndarray_to_qimage(photo: "NDArray[(Any, Any, 3), UInt8]") -> "QImage":
         height, width, channel = photo.shape
         # RGB -> 3
         bytes_per_line = 3 * width
