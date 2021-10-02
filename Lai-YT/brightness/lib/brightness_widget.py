@@ -1,11 +1,11 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QDialog, QMessageBox, QVBoxLayout, QWidget
 
 from lib.component import Button, CheckBox, HorizontalSlider, Label
 
 
-class BrightnessGui(QMainWindow):
+class BrightnessWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -15,9 +15,7 @@ class BrightnessGui(QMainWindow):
         self.setWindowIcon(QIcon("sun.ico"))
 
         self._general_layout = QVBoxLayout()
-        self._central_widget = QWidget()
-        self._central_widget.setLayout(self._general_layout)
-        self.setCentralWidget(self._central_widget)
+        self.setLayout(self._general_layout)
         # Initialize widgets
         self._set_label()
         self._set_slider()
