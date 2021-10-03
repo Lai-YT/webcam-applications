@@ -6,37 +6,12 @@ only 1 camera, which is the webcam.
 ## Settings
 
 1. Put a front-face picture of yours named **ref_img.jpg** in folder **img**.
-1. Set the parameters in **parameters.txt**.
-1. Also run train_posture.py to set the model.
-  - First, run the "Capture" modes whilst moving a bit in space to give a variety amongst the images. \
-  Press the "Finish" button to stop capture after about 30 seconds.
-  - Then, press the "Train" button to train model with images.
+1. Run **main.py**, which is the GUI, you'll see more settings in the settings page.
 
 ## main
 
-It's the visualized version that shows the detection result and warnings. \
+Contains the applications developed in this repository.
 Using a friendly *Graphical User Interface* instead of Command Line Interface.
-
-## demo
-
-*This file is a non-GUI version, we will have it updated in the near future.*
-
-This is what we want to bring into practice. \
-All detections process in the background. Warnings pop when conditions meet. \
-Press "esc" to end the program.
-
-```
-usage: demo.py [-h] [-d] [-t] [-p]
-
-Webcam applications with distance measurement, eye focus timing and posture watching.
-Press "esc" to end the program.
-
-optional arguments:
-  -h, --help      show this help message and exit
-  -d, --distance  warning shows if the user gets too close to the screen
-  -t, --time      reminds when it's time to take a break
-  -p, --posture   sound plays when the user has bad posture
-```
 
 ## Topics
 

@@ -2,7 +2,7 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from alpha import WebcamApplication
+from lib.webcam_application import WebcamApplication
 from gui.main_controller import GuiController
 from gui.main_window import ApplicationGui
 
