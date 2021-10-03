@@ -13,6 +13,10 @@ only 1 camera, which is the webcam.
 Contains the applications developed in this repository.
 Using a friendly *Graphical User Interface* instead of Command Line Interface.
 
+Note that there are 2 kinds of model: default and custom, the latter can be \
+trained by the user while the former can't. The reason why we do not provide it \
+is because of the large file size it has.
+
 ## Topics
 
 ### Distance Measurement

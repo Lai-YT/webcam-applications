@@ -6,6 +6,7 @@ from nptyping import Float, Int, NDArray
 from playsound import playsound
 
 from lib.color import BLUE, GREEN, MAGENTA, RED
+from lib.concentration_grader import ConcentrationGrader
 from lib.cv_font import FONT_0, FONT_3
 from lib.image_type import ColorImage, GrayImage
 from lib.path import to_abs_path
@@ -43,6 +44,8 @@ class DistanceSentinel:
         # To avoid double play due to a near time check (less than 1 sec).
         self._f_played = False
 
+        self._grader = ConcentrationGrader(interval=100)
+
     def warn_if_too_close(self, canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         """Warning message shows when the distance is less than warn_dist.
 
@@ -55,6 +58,8 @@ class DistanceSentinel:
         # warning logic...
         self.put_distance_text(canvas, distance)
         if distance < self._warn_dist:
+            self._grader.increase_distraction()
+
             cv2.putText(canvas, "too close", (10, 150), FONT_0, 0.9, RED, 2)
             # If this is a new start of a too-close interval,
             # play sound and start another interval.
@@ -73,6 +78,8 @@ class DistanceSentinel:
         elif self._warning_repeat_timer.time() > 8:
             self._f_played = False
             self._warning_repeat_timer.reset()
+        else:
+            self._grader.increase_concentration()
 
     def put_distance_text(self, canvas: ColorImage, distance: float) -> None:
         """Puts distance text on the canvas.

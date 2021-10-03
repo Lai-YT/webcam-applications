@@ -84,7 +84,7 @@ class WebcamApplication(QObject):
             # separate detections and markings
             canvas: ColorImage = frame.copy()
             # Analyze the frame to get face landmarks.
-            landmarks = self._get_landmarks(canvas, frame)
+            landmarks: NDArray[(68, 2), Int[32]] = self._get_landmarks(canvas, frame)
             # Do applications!
             if self._distance_measure:
                 if landmarks.any():
@@ -111,7 +111,7 @@ class WebcamApplication(QObject):
         self.s_stopped.emit()
 
     @pyqtSlot()
-    def stop(self):
+    def stop(self) -> None:
         """Stops the execution loop by changing the flag."""
         self._f_ready = False
 
