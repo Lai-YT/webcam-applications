@@ -15,6 +15,10 @@ from lib.train import ModelTrainer, PostureLabel
 from gui.popup_shower import TimeShower
 
 
+# Module scope grader for all guards to share.
+_concentration_grader = ConcentrationGrader(interval=100)
+
+
 def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
     """Modifies the canvas with face area framed up and landmarks dotted.
 
@@ -44,8 +48,6 @@ class DistanceSentinel:
         # To avoid double play due to a near time check (less than 1 sec).
         self._f_played = False
 
-        self._grader = ConcentrationGrader(interval=100)
-
     def warn_if_too_close(self, canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         """Warning message shows when the distance is less than warn_dist.
 
@@ -58,7 +60,8 @@ class DistanceSentinel:
         # warning logic...
         self.put_distance_text(canvas, distance)
         if distance < self._warn_dist:
-            self._grader.increase_distraction()
+            # Too close is considered to be a distraction.
+            _concentration_grader.increase_distraction()
 
             cv2.putText(canvas, "too close", (10, 150), FONT_0, 0.9, RED, 2)
             # If this is a new start of a too-close interval,
@@ -78,8 +81,12 @@ class DistanceSentinel:
         elif self._warning_repeat_timer.time() > 8:
             self._f_played = False
             self._warning_repeat_timer.reset()
+
+        if distance < self._warn_dist:
+            # Too close is considered to be a distraction.
+            _concentration_grader.increase_distraction()
         else:
-            self._grader.increase_concentration()
+            _concentration_grader.increase_concentration()
 
     def put_distance_text(self, canvas: ColorImage, distance: float) -> None:
         """Puts distance text on the canvas.
@@ -133,6 +140,13 @@ class TimeSentinel:
 
             # Time record is only shown when not during the break.
             self.record_focus_time(canvas, timer.time(), timer.is_paused())
+
+            # Timer is paused if there's no face, which is considered to be a distraction.
+            # Not count during break time.
+            if timer.is_paused():
+                _concentration_grader.increase_distraction()
+            else:
+                _concentration_grader.increase_concentration()
         else:
             if not self._f_break_started:
                 self._time_shower.switch_time_state("break")
@@ -221,6 +235,11 @@ class PostureChecker:
         elif self._warning_repeat_timer.time() > 8:
             self._f_played = False
             self._warning_repeat_timer.reset()
+
+        if not good:
+            _concentration_grader.increase_distraction()
+        else:
+            _concentration_grader.increase_concentration()
 
         text, color = ("Good", GREEN) if good else ("Slump", RED)
         cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, thickness=2)

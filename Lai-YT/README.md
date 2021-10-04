@@ -10,7 +10,7 @@ only 1 camera, which is the webcam.
 
 ## main
 
-Contains the applications developed in this repository.
+Contains the applications developed in this repository. \
 Using a friendly *Graphical User Interface* instead of Command Line Interface.
 
 Note that there are 2 kinds of model: default and custom, the latter can be \

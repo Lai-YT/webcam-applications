@@ -18,7 +18,7 @@ class ConcentrationGrader:
     def increase_concentration(self) -> None:
         self._total += 1
         if self._interval is not None and self._total == self._interval:
-            self._log_grade()
+            self.log_grade()
             self.reset()
 
     def increase_distraction(self) -> None:
@@ -26,20 +26,18 @@ class ConcentrationGrader:
         self.increase_concentration()
 
     def get_grade(self) -> float:
-        """Returns the grade rounded to the 3rd decimal places."""
+        """Returns the grade rounded to the 3rd decimal places.
+        Grade is the 1 - (distraction increment / total increment).
+        """
         # handle zero division
         if self._total == 0:
             return 1.0
 
-        return round(self._concentration/self._total, 3)
+        return round(1 - self._distraction/self._total, 3)
 
     def reset(self):
         self._distraction = 0
         self._total = 0
 
-    @property
-    def _concentration(self) -> int:
-        return self._total - self._distraction
-
-    def _log_grade(self):
+    def log_grade(self):
         logging.info(f"{self.get_grade()}")
