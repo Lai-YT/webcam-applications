@@ -41,7 +41,7 @@ class DontShowAgainWarningMessage(QMessageBox):
     """This is a warning message box with don't show again checkbox."""
     def __init__(self, text, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Warining")
+        self.setWindowTitle("Warning")
         self.setIcon(QMessageBox.Warning)
         self.setText(text)
         self.setFont(QFont("Arial", 12))

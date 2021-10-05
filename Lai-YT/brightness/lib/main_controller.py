@@ -1,6 +1,7 @@
+from PyQt5.QtCore import QObject, pyqtSlot
+
 from lib.brightness_controller import BrightnessController
 from lib.main_window import MainGui
-from PyQt5.QtCore import QObject
 
 
 method = "wmi"
@@ -27,11 +28,20 @@ class GuiController(QObject):
         """Confirm the mode and start the process."""
         selected_mode = self._check_which_mode_to_apply()
 
-        # Close the previous controller if exist.
-        if hasattr(self, "_brightness_controller"):
-            self._brightness_controller.click_exit()
-        # Start a new one.
+        # Start a new controller.
         if selected_mode:
             self._brightness_controller = BrightnessController(selected_mode)
+            self._process_after_controller_initialized()
         else:
             print("Please choose one of the modes (webcam/color-system).")
+
+    @pyqtSlot()
+    def _process_after_controller_initialized(self):
+        """
+        Disable start button and connect signals
+        after BrightnessController initialized.
+        """
+        self._gui.buttons["Start"].setEnabled(False)
+        self._brightness_controller.enable_start_button.connect(
+            lambda: self._gui.buttons["Start"].setEnabled(True)
+        )
