@@ -1,9 +1,8 @@
 import cv2
 import numpy as np
-import sys
-import time
 
 import screen_brightness_control as sbc
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import QObject, QThread, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication
@@ -18,6 +17,7 @@ method = "wmi"
 class BrightnessController(QObject):
     # Emits when the `Exit` button is clicked.
     s_exit = pyqtSignal()
+    enable_start_button = pyqtSignal()
 
     def __init__(self, mode: str):
         super().__init__()
@@ -35,7 +35,7 @@ class BrightnessController(QObject):
         if self._mode == "color-system":
             print("Sorry, this part is not prepared yet.")
         else:
-            # The widget needs to be shown, otherwise it'll run invisibly.
+            # The widget needs to be shown, otherwise it will run invisibly.
             self._widget.show()
             self._run()
 
@@ -64,7 +64,7 @@ class BrightnessController(QObject):
     def _connect_signals(self):
         self._widget.buttons["Exit"].clicked.connect(self.click_exit)
         # To have all resources release correctly,
-        # make clicking `X` works as same as `Exit`.
+        # make clicking 'X' works as same as 'Exit'.
         self._widget.set_clean_up_before_destroy(self.click_exit)
         # The slider has two states, depending on the action user takes.
         self._widget.checkbox.stateChanged.connect(self._update_brightness_and_slider_visibility)
@@ -123,8 +123,12 @@ class BrightnessController(QObject):
     # BrightnessWidget.
     @pyqtSlot()
     def click_exit(self):
-        """Set exit flag to True."""
+        """
+        Set exit flag to True and emit a signal to main controller 
+        to enable the start button.
+        """
         self._f_exit = True
+        self.enable_start_button.emit() 
 
     def _optimize_brightness(self, frame):
         """Control screen brightness automatically in two different modes."""
@@ -133,7 +137,7 @@ class BrightnessController(QObject):
             screen = QtWidgets.QApplication.primaryScreen()
             # image type: pixmap
             image = screen.grabWindow(QApplication.desktop().winId())
-            image = self._pixmap_to_image(image)
+            image = self._qpixmap_to_ndarray(image)
 
         brightness = BrightnessCalculator.calculate_proper_screen_brightness(
             self._mode, self._threshold, self._base_value, frame)
@@ -144,20 +148,16 @@ class BrightnessController(QObject):
         self._set_brightness(brightness, set_slider=False)
 
     @staticmethod
-    def _pixmap_to_image(image: QPixmap):
-        ## Get the size of the current pixmap
-        size = image.size()
-        h = size.width()
-        w = size.height()
+    def _qpixmap_to_ndarray(image: QPixmap) -> "NDarray[(Any, Any, 3), UInt8]":
+        qimage = image.toImage()
+    
+        width = qimage.width()
+        height = qimage.height()
 
-        ## Get the QImage Item and convert it to a byte string
-        qimg = image.toImage()
-        byte_str = qimg.bits().tobytes()
+        byte_str = qimage.constBits().asstring(height * width * 4)
+        ndarray = np.frombuffer(byte_str, np.uint8).reshape((height, width, 4))
 
-        ## Using the np.frombuffer function to convert the byte string into an np array
-        img = np.frombuffer(byte_str, dtype=np.uint8).reshape((w,h,4))
-
-        return img
+        return ndarray
 
     @pyqtSlot()
     def _warn_if_too_bright(self):

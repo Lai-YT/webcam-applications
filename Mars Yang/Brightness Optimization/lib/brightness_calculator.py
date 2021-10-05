@@ -31,14 +31,14 @@ class BrightnessCalculator:
             frame_brightness: int = BrightnessCalculator.get_brightness_percentage(frame)
             offest: int = (frame_brightness - threshold) // 2
             suggested_brightness: int = base_value + offest
-
-            # The range of the brightness value is (0, 100),
-            # value which is out of range has the same effect as boundary value.
-            if suggested_brightness > 100:
-                suggested_brightness = 100
-            elif suggested_brightness < 0:
-                suggested_brightness = 0
         else: # mode == "color-system"
             pass
+
+        # The range of the brightness value is (0, 100),
+        # value which is out of range has the same effect as boundary value.
+        if suggested_brightness > 100:
+            suggested_brightness = 100
+        elif suggested_brightness < 0:
+            suggested_brightness = 0
             
         return suggested_brightness

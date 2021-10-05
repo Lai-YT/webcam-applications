@@ -1,7 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QGridLayout, QMainWindow, QVBoxLayout, QWidget
-from lib.brightness_widget import BrightnessWidget
 
 from lib.component import Button, Label, OptionRadioButton
 
