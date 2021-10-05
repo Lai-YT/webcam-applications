@@ -1,3 +1,6 @@
+## Adjustions (110/10/5) by Mars Yang
+Quote an algorithm to judge if the screen is in dark or light color, and provide corresponding offset values to adjust the brightness.
+
 ## Adjustions (110/9/30) by Mars Yang
 Provide two modes for users to choose, the "color-system" mode is not started yet.
 

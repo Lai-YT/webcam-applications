@@ -13,16 +13,15 @@ class DominantColorDetector:
         color_dict = color_lib.getColorList()
 
         for d in color_dict:
-            mask = cv2.inRange(hsv, color_dict[d][0], color_dict[d][1])
-            binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)[1]
+            binary = cv2.inRange(hsv, color_dict[d][0], color_dict[d][1])
             binary = cv2.dilate(binary, None, iterations=2)
             cnts = cv2.findContours(binary.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
             sum = 0
             for c in cnts:
                 sum += cv2.contourArea(c)
-        if sum > maxsum :
-            maxsum = sum
-            color = d
+            if sum > maxsum :
+                maxsum = sum
+                color = d
 
         print(color)
         return color
