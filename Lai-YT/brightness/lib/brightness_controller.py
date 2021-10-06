@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QApplication
 from lib.brightness_calculator import BrightnessCalculator
 from lib.brightness_widget import BrightnessWidget
 from lib.component import DontShowAgainWarningMessage
+from lib.image_convert import qpixmap_to_ndarray
 from lib.task_worker import TaskWorker
 
 
@@ -16,7 +17,7 @@ method = "wmi"
 class BrightnessController(QObject):
     # Emits when the `Exit` button is clicked.
     s_exit = pyqtSignal()
-    enable_start_button = pyqtSignal()
+    s_widget_exited = pyqtSignal()
 
     def __init__(self, mode: str):
         super().__init__()
@@ -29,7 +30,7 @@ class BrightnessController(QObject):
         self._cam = cv2.VideoCapture(0)
 
         self._connect_signals()
-        self._advance_preparation()
+        self._init_brightness_values()
 
         # The widget needs to be shown, otherwise it will run invisibly.
         self._widget.show()
@@ -58,10 +59,7 @@ class BrightnessController(QObject):
             parent=self._widget)  # modal dialog blocks inputs to parents.
 
     def _connect_signals(self):
-        self._widget.buttons["Exit"].clicked.connect(self.click_exit)
-        # To have all resources release correctly,
-        # make clicking 'X' works as same as 'Exit'.
-        self._widget.set_clean_up_before_destroy(self.click_exit)
+        self._widget.buttons["Exit"].clicked.connect(self._click_exit)
         # The slider has two states, depending on the action user takes.
         self._widget.checkbox.stateChanged.connect(self._update_brightness_and_slider_visibility)
         # Label and screen should be set when the user adjust the slider.
@@ -87,7 +85,7 @@ class BrightnessController(QObject):
             self._set_brightness(sbc.get_brightness(method=method), set_slider=True)
             self._widget.slider.show()
 
-    def _advance_preparation(self):
+    def _init_brightness_values(self):
         """Init the slider and label status to be as same as the user's screen brightness."""
         self._set_brightness(sbc.get_brightness(method=method), set_slider=True)
         # Note that if remove this call, AttributeError might be raise at the
@@ -110,19 +108,19 @@ class BrightnessController(QObject):
 
         # Close the webcam and emit the exit signal.
         self._cam.release()
-        cv2.destroyAllWindows()
         self.s_exit.emit()
 
     def _get_frame(self):
+        """Returns a frame according to the mode."""
         if self._mode == "webcam":
             _, frame = self._cam.read()
             frame = cv2.flip(frame, flipCode=1)
-        else: # mode == "color-system"
+        elif self._mode == "color-system":
             screenshot: QPixmap = self._take_screenshot()
-            frame = self._qpixmap_to_ndarray(screenshot)
+            frame = qpixmap_to_ndarray(screenshot)
         return frame
 
-    def _take_screenshot(self) -> "QPixmap":
+    def _take_screenshot(self) -> QPixmap:
         """Take a screenshot of the screen."""
         # Have a QScreen instance to grabWindow with.
         screen = QApplication.primaryScreen()
@@ -130,21 +128,8 @@ class BrightnessController(QObject):
 
         return screenshot
 
-    @staticmethod
-    def _qpixmap_to_ndarray(image: "QPixmap") -> "NDarray[(Any, Any, 3), UInt8]":
-        """Convert the QPixmap image to NDarray."""
-        qimage = image.toImage()
-
-        width = qimage.width()
-        height = qimage.height()
-
-        byte_str = qimage.constBits().asstring(height * width * 4)
-        ndarray = np.frombuffer(byte_str, np.uint8).reshape((height, width, 4))
-
-        return ndarray
-
     def _optimize_brightness(self, frame):
-        """Control screen brightness automatically in two different modes."""
+        """Control screen brightness automatically according to the mode."""
         brightness = BrightnessCalculator.calculate_proper_screen_brightness(
             self._mode, self._threshold, self._base_value, frame)
         # The value of the slider is kept unchanged, only the label and
@@ -185,13 +170,10 @@ class BrightnessController(QObject):
         # immediately after a sliderReleased), delay a short amount of time.
         cv2.waitKey(750)
 
-    # Note that this method is public to make main controller able to close the
-    # BrightnessWidget.
     @pyqtSlot()
-    def click_exit(self):
-        """
-        Set exit flag to True and emit a signal to main controller
-        to enable the start button.
+    def _click_exit(self):
+        """Sets exit flag to True and emits a signal to let others know the widget
+        is closed.
         """
         self._f_exit = True
-        self.enable_start_button.emit()
+        self.s_widget_exited.emit()

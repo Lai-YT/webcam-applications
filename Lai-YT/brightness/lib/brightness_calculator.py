@@ -21,7 +21,7 @@ class BrightnessCalculator:
             frame_brightness: int = BrightnessCalculator.get_brightness_percentage(frame)
             offest: int = (frame_brightness - threshold) // 2
             suggested_brightness: int = base_value + offest
-        else: # mode == "color-system"
+        elif mode == "color-system":
             # list of light colors
             light_colors = {
                 "white", "light red", "orange", "yellow", "green", "cyan"
@@ -55,6 +55,7 @@ class BrightnessCalculator:
         hue, saturation, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
         return int(100 * value.mean() / 255)
 
+    # reference: https://github.com/sunny-fang/SunnyFang-Collection/blob/cea68c9df1b07688424a6ba71167c9aac248cb9e/Graduate%20School/Python%20related/Main%20color%20analysis/%E4%B8%BB%E8%89%B2%E7%B3%BB%E5%88%86%E6%9E%90.py
     @staticmethod
     def get_dominant_color(frame):
         """Returns the dominant color of the image, which occupies the most area."""
@@ -66,7 +67,7 @@ class BrightnessCalculator:
             mask = cv2.inRange(hsv, *bounds)
             # Dilate to have the color areas connect together.
             binary = cv2.dilate(mask, None, iterations=2)
-            # Get the contours that circles the colored areas.
+            # Get the contours that circles the color area.
             contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             # Calculate the total area of this color.
             # And store as the current dominant color if this color has the current max area.

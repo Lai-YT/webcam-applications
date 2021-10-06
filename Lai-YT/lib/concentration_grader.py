@@ -2,7 +2,7 @@ import logging
 
 
 logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%m/%d/%Y %H:%M:%S",
-                    filename="concentation_grade.log", filemode="w", level=logging.INFO)
+                    filename="concentration_grade.log", filemode="w", level=logging.INFO)
 
 
 class ConcentrationGrader:

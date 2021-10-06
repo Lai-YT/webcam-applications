@@ -22,26 +22,6 @@ class BrightnessWidget(QWidget):
         self._set_checkbox()
         self._set_buttons()
 
-    # Override
-    def closeEvent(self, event):
-        """A clean up function is called before closed if set."""
-        # If there exists clean up callback, call it before passing the event
-        # to the original implementation.
-        if callable(getattr(self, "_clean_up_callback", False)):
-            self._clean_up_callback()
-        # Call the original implementation, which accepts and destroys the GUI
-        # in default.
-        super().closeEvent(event)
-
-    def set_clean_up_before_destroy(self, clean_up_callback):
-        """Sets the clean up function to give the ability to do extra process
-        before the GUI destroyed.
-
-        Arguments:
-            clean_up_callback (Callable[[], Any]): Is called before the GUI destroyed
-        """
-        self._clean_up_callback = clean_up_callback
-
     def _set_label(self):
         self.label = Label()
         self._general_layout.addWidget(self.label)
