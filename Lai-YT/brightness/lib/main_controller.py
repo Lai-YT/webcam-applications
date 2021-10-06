@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSlot
 
 from lib.brightness_controller import BrightnessController
+from lib.component import FailMessageBox
 from lib.main_window import MainGui
 
 
@@ -34,13 +35,13 @@ class GuiController(QObject):
             self._brightness_controller = BrightnessController(selected_mode)
             self._do_process_after_controller_initialized()
         else:
-            print("Please choose one of the modes (webcam/color-system).")
+            FailMessageBox("Please choose one of the modes (webcam/color-system).").exec()
 
     @pyqtSlot()
     def _do_process_after_controller_initialized(self):
         """Disable start button and connect signals after BrightnessController initialized.
         Note that this method should be called after brightness_controller is
-        initialized; otherwise AttributeError will be raised. 
+        initialized; otherwise AttributeError will be raised.
         """
         self._gui.buttons["Start"].setEnabled(False)
         self._brightness_controller.s_widget_exited.connect(
