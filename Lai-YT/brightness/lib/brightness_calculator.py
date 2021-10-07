@@ -17,22 +17,14 @@ class BrightnessCalculator:
             base_value (int): The base value of brightness (The value before checking the checkbox).
             frame (NDArray[(Any, Any, 3), UInt8)
         """
-        if mode == "webcam":
-            frame_brightness: int = BrightnessCalculator.get_brightness_percentage(frame)
-            offest: int = (frame_brightness - threshold) // 2
-            suggested_brightness: int = base_value + offest
-        elif mode == "color-system":
-            # list of light colors
-            light_colors = {
-                "white", "light red", "orange", "yellow", "green", "cyan"
-            }
+        frame_brightness: int = BrightnessCalculator.get_brightness_percentage(frame)
 
-            dominant_color = BrightnessCalculator.get_dominant_color(frame)
-            if dominant_color in light_colors:
-                offset = -20
-            else:
-                offset = 10
-            suggested_brightness: int = base_value + offset
+        if mode == "webcam":
+            offset: int = (frame_brightness - threshold) // 2
+        elif mode == "color-system":
+            offset: int = -(frame_brightness - threshold) // 2
+
+        suggested_brightness: int = base_value + offset
 
         # The range of the brightness value is (0, 100),
         # value which is out of range has the same effect as boundary value.

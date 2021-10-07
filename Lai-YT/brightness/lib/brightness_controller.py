@@ -161,9 +161,9 @@ class BrightnessController(QObject):
         """Updates the background and screen brightness value.
         They will be passed to the BrightnessCalculator to calculate modified brightness.
         """
-        _, background_image = self._cam.read()
+        threshold_image = self._get_frame()
         # threshold is the brightness value of the background.
-        self._threshold = BrightnessCalculator.get_brightness_percentage(background_image)
+        self._threshold = BrightnessCalculator.get_brightness_percentage(threshold_image)
         # base value is the current slider value, users can adjust it by themselves.
         self._base_value = self._widget.slider.value()
         # To reduce the camera resource access racing problem (the user click `start`

@@ -45,5 +45,4 @@ class GuiController(QObject):
         """
         self._gui.buttons["Start"].setEnabled(False)
         self._brightness_controller.s_widget_exited.connect(
-            lambda: self._gui.buttons["Start"].setEnabled(True)
-        )
+            lambda: self._gui.buttons["Start"].setEnabled(True))
