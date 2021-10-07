@@ -22,7 +22,7 @@ class BrightnessCalculator:
         if mode == "webcam":
             offset: int = (frame_brightness - threshold) // 2
         elif mode == "color-system":
-            offset: int = -(frame_brightness - 40) // 2
+            offset: int = -(frame_brightness - threshold) // 2
 
         suggested_brightness: int = base_value + offset
 
