@@ -11,7 +11,7 @@ COLOR_DICT: Dict[str, Tuple[NDArray[(3,), Int32], NDArray[(3,), Int32]]] = {
     "light red": (array([156, 43, 46]), array([180, 255, 255])),
     "dark red":  (array([0, 43, 46]),   array([10, 255, 255])),
     "orange":    (array([11, 43, 46]),  array([25, 255, 255])),
-    "yellow":    (array([26, 43, 46]),   array([34, 255, 255])),
+    "yellow":    (array([26, 43, 46]),  array([34, 255, 255])),
     "green":     (array([35, 43, 46]),  array([77, 255, 255])),
     "cyan":      (array([78, 43, 46]),  array([99, 255, 255])),
     "blue":      (array([100, 43, 46]), array([124, 255, 255])),
