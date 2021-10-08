@@ -8,7 +8,7 @@ class PanelWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        groups = {
+        self.groups = {
             "distance": DistanceGroupBox(),
             "time": TimeGroupBox(),
             "posture": PostureGroupBox(),
@@ -16,7 +16,7 @@ class PanelWidget(QWidget):
         }
 
         layout = QVBoxLayout()
-        for name, group in groups.items():
+        for name, group in self.groups.items():
             layout.addWidget(group, stretch=1)
         layout.addStretch(5)
         self.setLayout(layout)
