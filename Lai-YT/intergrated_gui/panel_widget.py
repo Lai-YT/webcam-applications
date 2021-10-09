@@ -1,28 +1,28 @@
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QFormLayout, QVBoxLayout, QWidget
 
-from intergrated_gui.component import CheckableGroupBox, Label, LineEdit, OptionRadioButton
-
+from intergrated_gui.component import (CheckableGroupBox, Label, LineEdit, OptionCheckBox,
+                                       OptionRadioButton)
 
 class PanelWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.groups = {
-            "distance": DistanceGroupBox(),
-            "time": TimeGroupBox(),
-            "posture": PostureGroupBox(),
-            "brightness": BrightnessGroupBox(),
+        self.panels = {
+            "distance": DistancePanel(),
+            "time": TimePanel(),
+            "posture": PosturePanel(),
+            "brightness": BrightnessPanel(),
         }
 
         layout = QVBoxLayout()
-        for name, group in self.groups.items():
-            layout.addWidget(group, stretch=1)
+        for name, panel in self.panels.items():
+            layout.addWidget(panel, stretch=1)
         layout.addStretch(5)
         self.setLayout(layout)
 
 
-class DistanceGroupBox(CheckableGroupBox):
+class DistancePanel(CheckableGroupBox):
     def __init__(self, parent=None):
         super().__init__("Distance Measurement", parent)
 
@@ -44,7 +44,7 @@ class DistanceGroupBox(CheckableGroupBox):
             self._layout.addRow(description, self.settings[name])
 
         # sound warning is enabled in default
-        self.warning = OptionRadioButton("enable sound warning")
+        self.warning = OptionCheckBox("enable sound warning")
         self.warning.setChecked(True)
         self._layout.addRow(self.warning)
 
@@ -62,7 +62,7 @@ class DistanceGroupBox(CheckableGroupBox):
             self.settings[name].setMaxLength(length)
 
 
-class TimeGroupBox(CheckableGroupBox):
+class TimePanel(CheckableGroupBox):
     def __init__(self, parent=None):
         super().__init__("Focus Timing", parent)
 
@@ -83,7 +83,7 @@ class TimeGroupBox(CheckableGroupBox):
             self._layout.addRow(description, self.settings[name])
 
         # sound warning is enabled in default
-        self.warning = OptionRadioButton("enable sound warning")
+        self.warning = OptionCheckBox("enable sound warning")
         self.warning.setChecked(True)
         self._layout.addRow(self.warning)
 
@@ -99,7 +99,7 @@ class TimeGroupBox(CheckableGroupBox):
             self.settings[name].setValidator(QIntValidator(*validator))
 
 
-class PostureGroupBox(CheckableGroupBox):
+class PosturePanel(CheckableGroupBox):
     def __init__(self, parent=None):
         super().__init__("Posture Detection", parent)
 
@@ -118,7 +118,12 @@ class PostureGroupBox(CheckableGroupBox):
             self.settings[name] = LineEdit()
             self._layout.addRow(description, self.settings[name])
 
-        self.custom = OptionRadioButton("use customized model")
+        # sound warning is enabled in default
+        self.warning = OptionCheckBox("enable sound warning")
+        self.warning.setChecked(True)
+        self._layout.addRow(self.warning)
+
+        self.custom = OptionCheckBox("use customized model")
         self._layout.addRow(self.custom)
 
     def _set_restrictions(self):
@@ -133,7 +138,7 @@ class PostureGroupBox(CheckableGroupBox):
             self.settings[name].setMaxLength(length)
 
 
-class BrightnessGroupBox(CheckableGroupBox):
+class BrightnessPanel(CheckableGroupBox):
     def __init__(self, parent=None):
         super().__init__("Brightness Optimization", parent)
 
@@ -155,3 +160,8 @@ class BrightnessGroupBox(CheckableGroupBox):
 
         # default mode
         self.modes["webcam"].setChecked(True)
+
+        # sound warning is enabled in default
+        self.warning = OptionCheckBox("enable sound warning")
+        self.warning.setChecked(True)
+        self._layout.addWidget(self.warning)
