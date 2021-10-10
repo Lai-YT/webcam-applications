@@ -47,6 +47,7 @@ class MainGui(QMainWindow):
         }
         for mode, des in modes.items():
             self.modes[mode] = OptionRadioButton(des, font_size=12)
+            self.modes[mode].setAutoExclusive(False)
             modes_layout.addWidget(self.modes[mode])
 
         self._general_layout.addLayout(modes_layout)

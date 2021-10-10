@@ -21,21 +21,24 @@ class GuiController(QObject):
 
     def _get_mode_to_apply(self):
         """Gets the mode user chooses, None if none of the modes are choosed."""
+        selected_mode = []
         for mode, radio_button in self._gui.modes.items():
             if radio_button.isChecked():
-                return mode
-        return None
+                selected_mode.append(mode)
+        return selected_mode
 
     def _click_start(self):
         """Confirm the mode and start the process."""
         selected_mode = self._get_mode_to_apply()
 
         # Start a new controller.
-        if selected_mode is not None:
-            self._brightness_controller = BrightnessController(selected_mode)
-            self._do_process_after_controller_initialized()
+        if len(selected_mode) == 1:
+            self._brightness_controller = BrightnessController(selected_mode[0])
+        elif len(selected_mode) == 2 :
+            self._brightness_controller = BrightnessController("both")
         else:
             FailMessageBox("Please choose one of the modes (webcam/color-system).").exec()
+        self._do_process_after_controller_initialized()
 
     @pyqtSlot()
     def _do_process_after_controller_initialized(self):

@@ -23,6 +23,14 @@ class BrightnessController(QObject):
         super().__init__()
 
         self._mode = mode
+        self._frame = {
+            "webcam": None,
+            "color-system": None,
+        }
+        self._threshold = {
+            "webcam": None,
+            "color-system": None,
+        }
         self._create_widgets()
 
         # Since there are multiple fuctions that need to access camera,
@@ -79,7 +87,7 @@ class BrightnessController(QObject):
         users adjust brightness by themselves.
         """
         if check_state == Qt.Checked:
-            self._update_base_brightness_values()
+            self._update_base_value_and_threshold()
             self._widget.slider.hide()
         else:
             self._set_brightness(sbc.get_brightness(method=method), set_slider=True)
@@ -92,17 +100,18 @@ class BrightnessController(QObject):
         # first time the checkbox is checked. This might be due to racing between
         # stateChanged and get_brightness_percentage. If the latter goes first,
         # self._threshold isn't defined yet.
-        self._update_base_brightness_values()
+        self._get_frame()
+        self._update_base_value_and_threshold()
 
     def _capture_image(self):
         """Capture images and adjust the brightness instantly."""
         self._f_exit = False
 
         while not self._f_exit:
-            frame = self._get_frame()
+            self._get_frame()
             # If "Brightness Optimization" is checked, adjust the brightness automatically.
             if self._widget.checkbox.isChecked():
-                self._optimize_brightness(frame)
+                self._optimize_brightness()
 
             cv2.waitKey(25)
 
@@ -112,13 +121,13 @@ class BrightnessController(QObject):
 
     def _get_frame(self):
         """Returns a frame according to the mode."""
-        if self._mode == "webcam":
+        # If self._mode == "both", both statements will be satisfied.
+        if self._mode in ("webcam", "both"):
             _, frame = self._cam.read()
-            frame = cv2.flip(frame, flipCode=1)
-        elif self._mode == "color-system":
+            self._frame["webcam"] = cv2.flip(frame, flipCode=1)
+        if self._mode in ("color-system", "both"):
             screenshot: QPixmap = self._take_screenshot()
-            frame = qpixmap_to_ndarray(screenshot)
-        return frame
+            self._frame["color-system"]  = qpixmap_to_ndarray(screenshot)
 
     def _take_screenshot(self) -> QPixmap:
         """Take a screenshot of the screen."""
@@ -128,10 +137,10 @@ class BrightnessController(QObject):
 
         return screenshot
 
-    def _optimize_brightness(self, frame):
+    def _optimize_brightness(self):
         """Control screen brightness automatically according to the mode."""
         brightness = BrightnessCalculator.calculate_proper_screen_brightness(
-            self._mode, self._threshold, self._base_value, frame)
+            self._mode, self._threshold, self._base_value, self._frame)
         # The value of the slider is kept unchanged, only the label and
         # the brightness of screen is adjusted.
         # This is because the slider is only used to change the base value,
@@ -157,15 +166,16 @@ class BrightnessController(QObject):
         self._widget.label.setText(f"Brightness: {brightness}")
         sbc.set_brightness(brightness, method=method)
 
-    def _update_base_brightness_values(self):
+    def _update_base_value_and_threshold(self):
         """Updates the background and screen brightness value.
         They will be passed to the BrightnessCalculator to calculate modified brightness.
         """
-        threshold_image = self._get_frame()
-        # threshold is the brightness value of the background.
-        self._threshold = BrightnessCalculator.get_brightness_percentage(threshold_image)
         # base value is the current slider value, users can adjust it by themselves.
         self._base_value = self._widget.slider.value()
+        # threshold is the brightness value of the background.
+        for mode, frame in self._frame.items():
+            if frame is not None:
+                self._threshold[mode] = BrightnessCalculator.get_brightness_percentage(frame)
         # To reduce the camera resource access racing problem (the user click `start`
         # immediately after a sliderReleased), delay a short amount of time.
         cv2.waitKey(750)
