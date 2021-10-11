@@ -60,7 +60,7 @@ class DistanceSentinel:
     def set_warning_enabled(self, enabled: bool) -> None:
         self._warning_enabled = enabled
 
-    def warn_if_too_close(self, canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
+    def warn_if_too_close(self, canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> Optional[float]:
         """Warning message shows when the distance is less than warn_dist.
 
         Arguments:
@@ -104,6 +104,8 @@ class DistanceSentinel:
             _concentration_grader.increase_distraction()
         else:
             _concentration_grader.increase_concentration()
+
+        return distance
 
     def _put_distance_text(self, canvas: ColorImage, distance: float) -> None:
         """Puts distance text on the canvas.
@@ -250,7 +252,7 @@ class PostureChecker:
     def set_warning_enabled(self, enabled: bool) -> None:
         self._warning_enabled = enabled
 
-    def check_posture(self, canvas: ColorImage, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
+    def check_posture(self, canvas: ColorImage, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> Optional[Tuple[PostureLabel, str]]:
         """Sound plays if is a "slump" posture.
         If the landmarks of face are clear, use AngleCalculator to calculate the slope
         precisely; otherwise use the model to predict the posture.
@@ -260,12 +262,15 @@ class PostureChecker:
             frame (NDArray[(Any, Any, 3), UInt8]): The image contains posture to be watched
             landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
         """
-        if landmarks.any():
-            good: bool = self._do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
-        else:
-            good = self._do_posture_model_predict(canvas, frame)
+        if not hasattr(self, "_angle_calculator") or not hasattr(self, "_warn_angle"):
+            return
 
-        if not good:
+        if landmarks.any():
+            posture, explanation = self._do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
+        else:
+            posture, explanation = self._do_posture_model_predict(canvas, frame)
+
+        if posture is not PostureLabel.good:
             # If this is a new start of a slumped posture interval,
             # play sound and start another interval.
             if not self._f_played:
@@ -285,15 +290,17 @@ class PostureChecker:
             self._f_played = False
             self._warning_repeat_timer.reset()
 
-        if not good:
+        if posture is not PostureLabel.good:
             _concentration_grader.increase_distraction()
         else:
             _concentration_grader.increase_concentration()
 
-        text, color = ("Good", GREEN) if good else ("Slump", RED)
+        text, color = ("Good", GREEN) if posture is PostureLabel.good else ("Slump", RED)
         cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, thickness=2)
 
-    def _do_posture_angle_check(self, canvas: ColorImage, angle: float) -> bool:
+        return posture, explanation
+
+    def _do_posture_angle_check(self, canvas: ColorImage, angle: float) -> Tuple[PostureLabel, str]:
         """Returns True if is a "Good" posture.
         Also puts posture and angle text on the canvas. "Good" in green if angle
         doesn't exceed the warn_angle, otherwise "Slump" in red.
@@ -302,13 +309,12 @@ class PostureChecker:
             canvas (NDArray[(Any, Any, 3), UInt8]): The image to put text on
             angle (float): The angle between the middle line of face and the vertical line of image
         """
-        good: bool = abs(angle) < self._warn_angle
+        explanation = f"By angle: {round(angle, 1)} degrees"
+        cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
 
-        cv2.putText(canvas, f"Slope Angle: {round(angle, 1)} degrees", (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
+        return (PostureLabel.good if abs(angle) < self._warn_angle else PostureLabel.slump), explanation
 
-        return good
-
-    def _do_posture_model_predict(self, canvas: ColorImage, frame: ColorImage) -> bool:
+    def _do_posture_model_predict(self, canvas: ColorImage, frame: ColorImage) -> Tuple[PostureLabel, str]:
         """Returns True if is a "Good" posture.
         Also puts posture label text on the canvas.
 
@@ -326,11 +332,10 @@ class PostureChecker:
         predictions: NDArray[(1, 2), Float[32]] = self._model.predict(im)
         class_pred: Int[64] = numpy.argmax(predictions)
         conf: Float[32] = predictions[0][class_pred]
-        good: bool = (class_pred == PostureLabel.good.value)
 
         cv2.resize(canvas, (640, 480), interpolation=cv2.INTER_AREA)
 
-        msg: str = f'Predict Conf.: {conf:.0%}'
-        cv2.putText(canvas, msg, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
+        explanation: str = f'By model: {conf:.0%}'
+        cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
 
-        return good
+        return (PostureLabel.good if class_pred == PostureLabel.good.value else PostureLabel.slump), explanation

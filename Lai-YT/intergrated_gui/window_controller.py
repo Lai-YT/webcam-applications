@@ -32,3 +32,4 @@ class WindowController(QObject):
     def _connect_signals(self):
         self._app.s_frame_refreshed.connect(lambda image: self._window.widgets["frame"].set_frame(image))
         self._app.s_distance_refreshed.connect(lambda distance: self._window.widgets["information"].update_distance(distance))
+        self._app.s_posture_refreshed.connect(lambda posture, explanation: self._window.widgets["information"].update_posture(posture, explanation))

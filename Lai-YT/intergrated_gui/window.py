@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 
 from intergrated_gui.frame_widget import FrameWidget
 from intergrated_gui.information_widget import InformationWidget
@@ -15,9 +15,17 @@ class Window(QMainWindow):
         self._central_widget.setLayout(self._general_layout)
         self.setCentralWidget(self._central_widget)
 
-        self.create_widgets()
+        self._create_widgets()
 
-    def create_widgets(self):
+    # Override
+    def closeEvent(self, event):
+        # Call the original implementation, which accepts and destroys the GUI
+        # in default.
+        super().closeEvent(event)
+        # All other windows (no matter child or not) close with this window.
+        QApplication.closeAllWindows()
+
+    def _create_widgets(self):
         """
         Information widget at the left-hand side, capture view in the middle,
         control panel at the right.

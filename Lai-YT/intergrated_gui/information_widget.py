@@ -12,8 +12,12 @@ class InformationWidget(QWidget):
 
         self._create_information()
 
-    def update_distance(self, distance: float) -> None:
+    def update_distance(self, distance):
         self.information["distance"].update_distance(distance)
+
+    def update_posture(self, posture, explanation):
+        self.information["posture"].update_posture(posture)
+        self.information["posture"].update_explanation(explanation)
 
     def _create_information(self):
         self.information = {
@@ -39,12 +43,12 @@ class DistanceInformationWidget(QWidget):
 
         self._create_labels()
 
+    def update_distance(self, distance: float) -> None:
+        self.distance.setText(f"{distance:.02f}")
+
     def _create_labels(self):
         self.distance = Label(font_size=16)
         self._layout.addRow(Label("Face Distance:", font_size=16), self.distance)
-
-    def update_distance(self, distance: float) -> None:
-        self.distance.setText(f"{distance:.02f}")
 
 
 class PostureInformationWidget(QWidget):
@@ -55,9 +59,17 @@ class PostureInformationWidget(QWidget):
 
         self._create_labels()
 
+    def update_posture(self, posture):
+        self.posture.setText(posture.name)
+
+    def update_explanation(self, explanation):
+        self.explanation.setText(explanation)
+
     def _create_labels(self):
         self.posture = Label(font_size=16)
         self._layout.addRow(Label("Posture Detect:", font_size=16), self.posture)
+        self.explanation = Label(font_size=16)
+        self._layout.addRow(Label("Explanation:", font_size=16), self.explanation)
 
 
 class TimeInformationWidget(QWidget):
