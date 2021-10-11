@@ -38,11 +38,11 @@ class WebcamApplication(QObject):
 
         self._create_face_detectors()
 
-    def enable_distance_measure(self, enable: bool, face_width: float, distance: float, warn_dist: float) -> None:
+    def enable_distance_measure(self, enable: bool, distance: float, warn_dist: float) -> None:
         """Note that if enable is False, other parameters are ignored."""
         self._distance_measure = enable
         if enable:
-            self._create_distance_sentinel(face_width, distance, warn_dist)
+            self._create_distance_sentinel(distance, warn_dist)
 
     def enable_focus_time(self, enable: bool, time_limit: int, break_time: int) -> None:
         """Note that if enable is False, other parameters are ignored."""
@@ -134,7 +134,7 @@ class WebcamApplication(QObject):
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
         self._shape_predictor = dlib.shape_predictor(to_abs_path("trained_models/shape_predictor_68_face_landmarks.dat"))
 
-    def _create_distance_sentinel(self, face_width: float, distance: float, warn_dist: float) -> None:
+    def _create_distance_sentinel(self, distance: float, warn_dist: float) -> None:
         # Creates the DistanceCalculator with reference image.
         ref_img: ColorImage = cv2.imread(to_abs_path("../img/ref_img.jpg"))
         faces: dlib.rectangles = self._face_detector(ref_img)
@@ -143,7 +143,7 @@ class WebcamApplication(QObject):
             raise ValueError("should have exactly 1 face in the reference image")
         landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
         self._distance_sentinel = DistanceSentinel(
-            DistanceCalculator(landmarks, distance, face_width), warn_dist)
+            DistanceCalculator(landmarks, distance), warn_dist)
 
     def _create_posture_checker(self, model_path: ModelPath, warn_angle: float) -> None:
         self._posture_checker = PostureChecker(

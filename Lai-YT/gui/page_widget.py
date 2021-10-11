@@ -58,7 +58,7 @@ class OptionWidget(QWidget):
         self._general_layout.addLayout(options_layout)
 
         self._create_model_options()
-        
+
         self.message = MessageLabel()
         self._general_layout.addWidget(self.message)
 
@@ -110,9 +110,8 @@ class SettingWidget(QWidget):
         # {option: [(parameter, description)]}
         settings = {
             "Distance Measure": [
-                ("Face Width","Face width:"),
-                ("Distance","Distance in reference:"),
-                ("Bound","Shortest distance allowed:"),
+                ("Distance", "Distance in reference:"),
+                ("Bound", "Shortest distance allowed:"),
             ],
             "Focus Time": [
                 ("Time Limit", "Time limit:"),

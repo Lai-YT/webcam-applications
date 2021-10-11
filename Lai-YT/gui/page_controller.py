@@ -171,10 +171,6 @@ class SettingController(PageController):
         # The user is still able to key in 00000~99999,
         # `intermediate` inputs will be found later at the button event stage
         # and error message will show.
-        self._widget.settings["Distance Measure"]["Face Width"].setPlaceholderText("5 ~ 24.99 (cm)")
-        self._widget.settings["Distance Measure"]["Face Width"].setValidator(QDoubleValidator(5, 24.99, 2))  # bottom, top, decimals
-        self._widget.settings["Distance Measure"]["Face Width"].setMaxLength(5)
-
         self._widget.settings["Distance Measure"]["Distance"].setPlaceholderText("10 ~ 99.99 (cm)")
         self._widget.settings["Distance Measure"]["Distance"].setValidator(QDoubleValidator(10, 99.99, 2))
         self._widget.settings["Distance Measure"]["Distance"].setMaxLength(5)

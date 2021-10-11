@@ -135,7 +135,6 @@ class GuiController(QObject):
         """
         self._app.enable_distance_measure(
             enable=self._pages["Options"].options["Distance Measure"].isChecked(),
-            face_width=self._config.getfloat("Distance Measure", "Face Width"),
             distance=self._config.getfloat("Distance Measure", "Distance"),
             warn_dist=self._config.getfloat("Distance Measure", "Bound"))
 

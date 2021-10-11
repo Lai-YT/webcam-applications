@@ -39,7 +39,7 @@ class LineEdit(QLineEdit):
     Also provides simple color setting method.
     """
     def __init__(self, text="", font_size=12):
-        super().__init__(text)
+        super().__init__()
         self.setPlaceholderText(text)
         self.setFont(QFont("Arial", font_size))
 
@@ -114,7 +114,7 @@ class StatusBar(QStatusBar):
 
 class FailMessageBox(QMessageBox):
     """The is a message box that shows an error (failed progress)."""
-    
+
     def __init__(self, fail_message, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Fail")
