@@ -12,6 +12,9 @@ class InformationWidget(QWidget):
 
         self._create_information()
 
+    def update_distance(self, distance: float) -> None:
+        self.information["distance"].update_distance(distance)
+
     def _create_information(self):
         self.information = {
             "distance": DistanceInformationWidget(),
@@ -39,6 +42,9 @@ class DistanceInformationWidget(QWidget):
     def _create_labels(self):
         self.distance = Label(font_size=16)
         self._layout.addRow(Label("Face Distance:", font_size=16), self.distance)
+
+    def update_distance(self, distance: float) -> None:
+        self.distance.setText(f"{distance:.02f}")
 
 
 class PostureInformationWidget(QWidget):

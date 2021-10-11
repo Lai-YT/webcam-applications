@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 
 from intergrated_gui.frame_widget import FrameWidget
+from intergrated_gui.information_widget import InformationWidget
 from intergrated_gui.panel_widget import PanelWidget
 from intergrated_gui.panel_controller import PanelController
-from intergrated_gui.information_widget import InformationWidget
 
 
 class Window(QMainWindow):
@@ -16,8 +16,6 @@ class Window(QMainWindow):
         self.setCentralWidget(self._central_widget)
 
         self.create_widgets()
-        # test
-        self._controller = PanelController(self.widgets["panel"])
 
     def create_widgets(self):
         """

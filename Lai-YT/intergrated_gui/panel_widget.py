@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QFormLayout, QVBoxLayout, QWidget
 from intergrated_gui.component import (CheckableGroupBox, Label, LineEdit, OptionCheckBox,
                                        OptionRadioButton)
 
+
 class PanelWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -34,7 +35,6 @@ class DistancePanel(CheckableGroupBox):
 
     def _create_settings(self):
         settings = {
-            "width": "Face width:",
             "distance": "Distance in reference:",
             "bound": "Shortest distance allowed:",
         }
@@ -51,7 +51,6 @@ class DistancePanel(CheckableGroupBox):
     def _set_restrictions(self):
         # placeholder, double validator, max length
         restrictions = {
-            "width": ("5 ~ 24.99 (cm)", (5, 24.99, 2), 5),
             "distance": ("10 ~ 99.99 (cm)", (10, 99.99, 2), 5),
             "bound": ("30 ~ 59.99 (cm)", (30, 59.99, 2), 5),
         }

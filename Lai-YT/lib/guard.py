@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import cv2
 import numpy
@@ -34,19 +34,31 @@ def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: ND
 
 
 class DistanceSentinel:
-    def __init__(self, distance_calculator, warn_dist: float) -> None:
+    def __init__(self, distance_calculator=None, warn_dist: Optional[float] = None) -> None:
         """
         Arguments:
             distance_calculator (DistanceCalculator): Use to calculate the distance between face and screen
             warn_dist (float): Distance closer than this is to be warned
         """
-        self._distance_calculator = distance_calculator
-        self._warn_dist = warn_dist
+        if distance_calculator is not None:
+            self._distance_calculator = distance_calculator
+        if warn_dist is not None:
+            self._warn_dist = warn_dist
 
+        self._warning_enabled = True
         self._wavfile = to_abs_path("sounds/too_close.wav")
         self._warning_repeat_timer = Timer()
         # To avoid double play due to a near time check (less than 1 sec).
         self._f_played = False
+
+    def set_distance_calculator(self, distance_calculator) -> None:
+        self._distance_calculator = distance_calculator
+
+    def set_warn_dist(self, warn_dist: float) -> None:
+        self._warn_dist = warn_dist
+
+    def set_warning_enabled(self, enabled: bool) -> None:
+        self._warning_enabled = enabled
 
     def warn_if_too_close(self, canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         """Warning message shows when the distance is less than warn_dist.
@@ -55,10 +67,14 @@ class DistanceSentinel:
             canvas (NDArray[(Any, Any, 3), UInt8])
             landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
         """
+        if not hasattr(self, "_distance_calculator") or not hasattr(self, "_warn_dist"):
+            # Should do nothing if the sentinel is not ready.
+            return
+
         distance = self._distance_calculator.calculate(landmarks)
 
         # warning logic...
-        self.put_distance_text(canvas, distance)
+        self._put_distance_text(canvas, distance)
         if distance < self._warn_dist:
             # Too close is considered to be a distraction.
             _concentration_grader.increase_distraction()
@@ -69,7 +85,8 @@ class DistanceSentinel:
             if not self._f_played:
                 self._f_played = True
                 self._warning_repeat_timer.start()
-                playsound(self._wavfile, block=False)
+                if self._warning_enabled:
+                    playsound(self._wavfile, block=False)
             # Every 9 seconds of a "consecutive" too-close, sound is repeated.
             # Note that the sound file is about 4 sec, take 5 sec as the interval.
             elif self._warning_repeat_timer.time() > 9:
@@ -88,7 +105,7 @@ class DistanceSentinel:
         else:
             _concentration_grader.increase_concentration()
 
-    def put_distance_text(self, canvas: ColorImage, distance: float) -> None:
+    def _put_distance_text(self, canvas: ColorImage, distance: float) -> None:
         """Puts distance text on the canvas.
 
         Arguments:
@@ -104,18 +121,31 @@ class TimeSentinel:
     TimeSentinel checks if the time held by a Timer exceeds time limit and
     interacts with a TimeShower to show the corresponding TimerWidget.
     """
-    def __init__(self, time_limit: int, break_time: int):
+    def __init__(self, time_limit: Optional[int] = None, break_time: Optional[int] = None):
         """
         Arguments:
             time_limit (int): Triggers a break if reached (minutes)
             break_time (int): How long the break should be (minutes)
         """
-        # minute to second
-        self._time_limit = time_limit * 60
-        self._break_time = break_time * 60
+        if time_limit is not None:
+            # minute to second
+            self._time_limit = time_limit * 60
+        if break_time is not None:
+            self._break_time = break_time * 60
+
         self._f_break_started = False
         self._break_timer = Timer()
+        self._warning_enabled = True
         self._time_shower = TimeShower()
+
+    def set_time_limit(self, time_limit: int) -> None:
+        self._time_limit = time_limit * 60
+
+    def set_break_time(self, break_time: int) -> None:
+        self._break_time = break_time * 60
+
+    def set_warning_enabled(self, enabled: bool) -> None:
+        self._warning_enabled = enabled
 
     def break_time_if_too_long(self, canvas: ColorImage, timer: Timer) -> None:
         """If the time record in the Timer object exceeds time limit, a break time countdown shows on the center of the canvas.
@@ -132,7 +162,8 @@ class TimeSentinel:
             self._time_shower.switch_time_state("work")
             # Set the flag and play the sound when leaving break.
             self._f_break_started = False
-            playsound(to_abs_path("sounds/break_over.wav"), block=False)
+            if self._warning_enabled:
+                playsound(to_abs_path("sounds/break_over.wav"), block=False)
         # not the time to take a break
         elif timer.time() < self._time_limit:
             # The time of the normal timer is to be shown.
@@ -151,9 +182,10 @@ class TimeSentinel:
             if not self._f_break_started:
                 self._time_shower.switch_time_state("break")
                 self._f_break_started = True
-                # Note that using flag instead of checking time to avoid double playing
-                # since the interval between time checkings is often less than 1 sec.
-                playsound(to_abs_path("sounds/break_start.wav"), block=False)
+                if self._warning_enabled:
+                    # Note that using flag instead of checking time to avoid double playing
+                    # since the interval between time checkings is often less than 1 sec.
+                    playsound(to_abs_path("sounds/break_start.wav"), block=False)
 
             timer.pause()
             self._break_timer.start()
@@ -186,21 +218,37 @@ class TimeSentinel:
 
 
 class PostureChecker:
-    def __init__(self, model, angle_calculator, warn_angle: float):
+    def __init__(self, model=None, angle_calculator=None, warn_angle: Optional[float] = None):
         """
         Arguments:
             model (tensorflow.keras.Model): Used to predict the label of image when a clear face isn't found
             angle_calculator (AngleCalculator): Used to calculate the angle of face when a face is found
             warn_angle (float): Face slope angle larger than this is considered to be a slump posture
         """
-        self._model = model
-        self._angle_calculator = angle_calculator
-        self._warn_angle = warn_angle
+        if model is not None:
+            self._model = model
+        if angle_calculator is not None:
+            self._angle_calculator = angle_calculator
+        if warn_angle is not None:
+            self._warn_angle = warn_angle
 
+        self._warning_enabled = True
         self._wavfile = to_abs_path("sounds/posture_slump.wav")
         self._warning_repeat_timer = Timer()
         # To avoid double play due to a near time check (less than 1 sec).
         self._f_played = False
+
+    def set_model(self, model) -> None:
+        self._model = model
+
+    def set_angle_calculator(self, angle_calculator) -> None:
+        self._angle_calculator = angle_calculator
+
+    def set_warn_angle(self, warn_angle: float) -> None:
+        self._warn_angle = warn_angle
+
+    def set_warning_enabled(self, enabled: bool) -> None:
+        self._warning_enabled = enabled
 
     def check_posture(self, canvas: ColorImage, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         """Sound plays if is a "slump" posture.
@@ -213,9 +261,9 @@ class PostureChecker:
             landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
         """
         if landmarks.any():
-            good: bool = self.do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
+            good: bool = self._do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
         else:
-            good = self.do_posture_model_predict(canvas, frame)
+            good = self._do_posture_model_predict(canvas, frame)
 
         if not good:
             # If this is a new start of a slumped posture interval,
@@ -223,7 +271,8 @@ class PostureChecker:
             if not self._f_played:
                 self._f_played = True
                 self._warning_repeat_timer.start()
-                playsound(self._wavfile, block=False)
+                if self._warning_enabled:
+                    playsound(self._wavfile, block=False)
             # Every 9 seconds of a "consecutive" slump, sound is repeated.
             # Note that the sound file is about 4 sec, take 5 sec as the interval.
             elif self._warning_repeat_timer.time() > 9:
@@ -244,7 +293,7 @@ class PostureChecker:
         text, color = ("Good", GREEN) if good else ("Slump", RED)
         cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, thickness=2)
 
-    def do_posture_angle_check(self, canvas: ColorImage, angle: float) -> bool:
+    def _do_posture_angle_check(self, canvas: ColorImage, angle: float) -> bool:
         """Returns True if is a "Good" posture.
         Also puts posture and angle text on the canvas. "Good" in green if angle
         doesn't exceed the warn_angle, otherwise "Slump" in red.
@@ -259,7 +308,7 @@ class PostureChecker:
 
         return good
 
-    def do_posture_model_predict(self, canvas: ColorImage, frame: ColorImage) -> bool:
+    def _do_posture_model_predict(self, canvas: ColorImage, frame: ColorImage) -> bool:
         """Returns True if is a "Good" posture.
         Also puts posture label text on the canvas.
 
