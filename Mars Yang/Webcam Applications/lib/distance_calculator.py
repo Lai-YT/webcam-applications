@@ -14,15 +14,13 @@ class DistanceCalculator:
     so can calculate the distance when the face width changes relatively.
     """
 
-    def __init__(self, landmarks: NDArray[(68, 2), Int[32]], camera_dist: float, face_width: float) -> None:
+    def __init__(self, landmarks: NDArray[(68, 2), Int[32]], camera_dist: float) -> None:
         """
         Arguments:
             landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
             camera_dist (float): Distance between face and camera when taking reference image
-            face_width (float): Face width of the user
         """
-        self._face_width: float = face_width
-        self._focal: float = (self._get_face_width(landmarks) * camera_dist) / face_width
+        self._product: float = (self._get_face_width(landmarks) * camera_dist)
         self._cache: Optional[float] = None
 
     def calculate(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:
@@ -31,7 +29,7 @@ class DistanceCalculator:
         Arguments:
             landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
         """
-        distance = (self._face_width * self._focal) / self._get_face_width(landmarks)
+        distance = self._product / self._get_face_width(landmarks)
         self._cache = distance
         return distance
 

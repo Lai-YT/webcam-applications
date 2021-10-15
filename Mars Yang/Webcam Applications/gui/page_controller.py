@@ -5,7 +5,7 @@ from math import ceil
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
-from gui.component import CaptureMessageBox, ProgressDialog, FailMessageBox
+from gui.component import CaptureMessageBox, FailMessageBox, ProgressDialog
 from gui.task_worker import TaskWorker
 from lib.train import PostureLabel, ModelTrainer
 
@@ -15,7 +15,7 @@ class PageController(QObject):
     A PageController should be able to have a load method and a store method,
     which do the action on their own page.
     """
-    
+
     @abstractmethod
     def load_configs(self, config):
         """
@@ -171,10 +171,6 @@ class SettingController(PageController):
         # The user is still able to key in 00000~99999,
         # `intermediate` inputs will be found later at the button event stage
         # and error message will show.
-        self._widget.settings["Distance Measure"]["Face Width"].setPlaceholderText("5 ~ 24.99 (cm)")
-        self._widget.settings["Distance Measure"]["Face Width"].setValidator(QDoubleValidator(5, 24.99, 2))  # bottom, top, decimals
-        self._widget.settings["Distance Measure"]["Face Width"].setMaxLength(5)
-
         self._widget.settings["Distance Measure"]["Distance"].setPlaceholderText("10 ~ 99.99 (cm)")
         self._widget.settings["Distance Measure"]["Distance"].setValidator(QDoubleValidator(10, 99.99, 2))
         self._widget.settings["Distance Measure"]["Distance"].setMaxLength(5)
@@ -250,6 +246,15 @@ class ModelController(PageController):
         # No state to store, intentionally empty.
         pass
 
+    def get_selected_option_name(self):
+        """Returns the selected option, None if no option is selected.
+        Since these buttons are exclusive, at most one can be selected.
+        """
+        for name, btn in self._widget.options.items():
+            if btn.isChecked():
+                return name
+        return None  # emphasize
+
     @pyqtSlot()
     def _train_model(self):
         self._worker = TaskWorker(self._model_trainer.train_model)
@@ -292,10 +297,10 @@ class ModelController(PageController):
                 "Capture": True,
                 "Train": True,
             },
-            # `Capture` is not handled since it's more complicated to check
-            # whether it should be enabled or not after the train.
+            # No button can be pressed during train.
             "Train": {
                 "Finish": False,
+                "Capture": False,
                 "Train": False,
             },
         }
@@ -316,6 +321,8 @@ class ModelController(PageController):
         # The `Train` button is enabled after the previous training is finished.
         self._model_trainer.s_train_finished.connect(
             lambda: self._widget.buttons["Train"].setEnabled(True))
+        # The `Capture` button is enabled after the train if any of the option is selected.
+        self._model_trainer.s_train_finished.connect(self._enable_capture_if_has_selected_option)
         # Quit countdown when training is finished.
         self._model_trainer.s_train_finished.connect(self._quit_countdown)
         self._model_trainer.s_train_failed.connect(self._show_train_message)
@@ -323,22 +330,22 @@ class ModelController(PageController):
         self._model_trainer.s_capture_finished.connect(self._show_capture_message)
 
     @pyqtSlot()
+    def _enable_capture_if_has_selected_option(self):
+        self._widget.buttons["Capture"].setEnabled(
+            self.get_selected_option_name() is not None)
+
+    @pyqtSlot()
     def _capture_sampe_images(self):
         """Removes the old sample images and captures new images."""
-        # Since these buttons are exclusive, at most one can be selected.
-        selected_option = None
-        for name, btn in self._widget.options.items():
-            if btn.isChecked():
-                selected_option = name
-                break
+        selected_option = self.get_selected_option_name()
 
         capture_period = 300  # 1 per 300 ms
         if selected_option == "Good":
-            self._model_trainer.remove_sample_images(PostureLabel.good)
-            self._model_trainer.capture_sample_images(PostureLabel.good, capture_period=capture_period)
+            label = PostureLabel.good
         elif selected_option == "Slump":
-            self._model_trainer.remove_sample_images(PostureLabel.slump)
-            self._model_trainer.capture_sample_images(PostureLabel.slump, capture_period=capture_period)
+            label = PostureLabel.slump
+        self._model_trainer.remove_sample_images(label)
+        self._model_trainer.capture_sample_images(label, capture_period=capture_period)
 
     @pyqtSlot(str)
     def _show_train_message(self, message):

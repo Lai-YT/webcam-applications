@@ -12,7 +12,6 @@ from nptyping import Float, Int, NDArray, UInt8
 from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
 
-from gui.component import FailMessageBox
 from lib.color import RED
 from lib.cv_font import FONT_3
 from lib.image_type import ColorImage, GrayImage
@@ -28,12 +27,12 @@ class PostureLabel(Enum):
 
 
 class ModelPath(Enum):
-    default = "lib/trained_models/default_model.h5"
-    custom = "lib/trained_models/custom_model.h5"
+    default = to_abs_path("trained_models/default_model.h5")
+    custom = to_abs_path("trained_models/custom_model.h5")
 
 
 class ModelTrainer(QObject):
-    SAMPLE_DIR: str = "lib/train_sample"
+    SAMPLE_DIR: str = to_abs_path("train_sample")
     IMAGE_DIMENSIONS: Tuple[int, int] = (224, 224)
 
     s_train_finished = pyqtSignal()  # Emit when the train_model() is finished (or failed).
@@ -160,9 +159,6 @@ class ModelTrainer(QObject):
 
     @staticmethod
     def load_model(model_path: ModelPath):
-        # if to_abs_path(model_path):
-            # box = FailMessageBox("87")
-            # box.exec()
         return models.load_model(model_path.value)
 
     def _count_images(self):
