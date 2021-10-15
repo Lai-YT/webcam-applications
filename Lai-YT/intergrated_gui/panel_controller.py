@@ -1,10 +1,11 @@
 from PyQt5.QtCore import QObject
 
 from lib.train import ModelPath
+from intergrated_gui.panel_widget import AngleTolerance
 
 
 class PanelController(QObject):
-    def __init__(self, panel_widget: "PanelWidget", app: "WebcamApplication"):
+    def __init__(self, panel_widget, app):
         super().__init__()
         self._panel = panel_widget
         self._app = app
@@ -48,9 +49,7 @@ class PanelController(QObject):
         panel = self._panel.panels["posture"]
 
         self._app.set_posture_detect(enabled=panel.isChecked())
-        angle = panel.settings["angle"]
-        if angle.text():
-            self._app.set_posture_detect(warn_angle=float(angle.text()))
+        self._app.set_posture_detect(warn_angle=(AngleTolerance.LOOSE if panel.angles[AngleTolerance.LOOSE].isChecked() else AngleTolerance.STRICT))
         custom = panel.custom
         self._app.set_posture_detect(model_path=(ModelPath.custom if custom.isChecked() else ModelPath.default))
         warning = panel.warning
@@ -91,10 +90,12 @@ class PanelController(QObject):
         panel = self._panel.panels["posture"]
 
         panel.toggled.connect(lambda checked: self._app.set_posture_detect(enabled=checked))
-        angle = panel.settings["angle"]
-        angle.editingFinished.connect(lambda: self._app.set_posture_detect(warn_angle=float(angle.text())))
+        panel.angles[AngleTolerance.LOOSE].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.LOOSE) if checked else None)
+        panel.angles[AngleTolerance.STRICT].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.STRICT) if checked else None)
+
         custom = panel.custom
         custom.toggled.connect(lambda checked: self._app.set_posture_detect(model_path=(ModelPath.custom if checked else ModelPath.default)))
+        
         warning = panel.warning
         warning.toggled.connect(lambda checked: self._app.set_posture_detect(warning_enabled=checked))
 

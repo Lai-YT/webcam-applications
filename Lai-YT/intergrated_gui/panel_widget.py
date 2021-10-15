@@ -1,5 +1,7 @@
+from enum import IntEnum
+
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtWidgets import QFormLayout, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QFormLayout, QGroupBox, QVBoxLayout, QWidget
 
 from intergrated_gui.component import (CheckableGroupBox, Label, LineEdit, OptionCheckBox,
                                        OptionRadioButton)
@@ -98,43 +100,46 @@ class TimePanel(CheckableGroupBox):
             self.settings[name].setValidator(QIntValidator(*validator))
 
 
+class AngleTolerance(IntEnum):
+    """An IntEnum used to represent the angle options of PosturePanel.
+    The int value is the angle allowed.
+    """
+    # Add member or modify value to provide more choices.
+    LOOSE = 25
+    STRICT = 15
+
 class PosturePanel(CheckableGroupBox):
     def __init__(self, parent=None):
         super().__init__("Posture Detection", parent)
 
-        self._layout = QFormLayout()
+        self._layout = QVBoxLayout()
         self.setLayout(self._layout)
 
         self._create_settings()
-        self._set_restrictions()
 
     def _create_settings(self):
-        settings = {
-            "angle": "Allowed slope angle:",
-        }
-        self.settings = {}
-        for name, description in settings.items():
-            self.settings[name] = LineEdit()
-            self._layout.addRow(description, self.settings[name])
+        group_box = QGroupBox("Allowed slope angle:")
+        box_layout = QVBoxLayout()
+        group_box.setLayout(box_layout)
+        self._layout.addWidget(group_box)
+
+        angles = [AngleTolerance.LOOSE, AngleTolerance.STRICT]
+        self.angles = {}
+        for tolerance in angles:
+            self.angles[tolerance] = OptionRadioButton(f"{tolerance.name.lower()} ({tolerance})")
+        # a loose angle tolerance is used in default
+        self.angles[AngleTolerance.LOOSE].setChecked(True)
+
+        for btn in self.angles.values():
+            box_layout.addWidget(btn)
 
         # sound warning is enabled in default
         self.warning = OptionCheckBox("enable sound warning")
         self.warning.setChecked(True)
-        self._layout.addRow(self.warning)
+        self._layout.addWidget(self.warning)
 
         self.custom = OptionCheckBox("use customized model")
-        self._layout.addRow(self.custom)
-
-    def _set_restrictions(self):
-        # placeholder, double validator, max length
-        restrictions = {
-            "angle": ("5 ~ 24.99 (deg)", (5, 24.99, 2), 5),
-        }
-
-        for name, (placeholder, validator, length) in restrictions.items():
-            self.settings[name].setPlaceholderText(placeholder)
-            self.settings[name].setValidator(QDoubleValidator(*validator))
-            self.settings[name].setMaxLength(length)
+        self._layout.addWidget(self.custom)
 
 
 class BrightnessPanel(CheckableGroupBox):
