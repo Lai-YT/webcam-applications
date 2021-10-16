@@ -92,10 +92,8 @@ class PanelController(QObject):
         panel.toggled.connect(lambda checked: self._app.set_posture_detect(enabled=checked))
         panel.angles[AngleTolerance.LOOSE].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.LOOSE) if checked else None)
         panel.angles[AngleTolerance.STRICT].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.STRICT) if checked else None)
-
         custom = panel.custom
         custom.toggled.connect(lambda checked: self._app.set_posture_detect(model_path=(ModelPath.custom if checked else ModelPath.default)))
-        
         warning = panel.warning
         warning.toggled.connect(lambda checked: self._app.set_posture_detect(warning_enabled=checked))
 

@@ -9,6 +9,7 @@ class InformationWidget(QWidget):
 
         self._layout = QVBoxLayout()
         self.setLayout(self._layout)
+        self.setStyleSheet("border: 1px solid black;")
 
         self._create_information()
 
