@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QObject
 
-from lib.train import ModelPath
 from intergrated_gui.panel_widget import AngleTolerance
+from lib.train import ModelPath
 
 
 class PanelController(QObject):

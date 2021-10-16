@@ -23,6 +23,7 @@ class WebcamApplication(QObject):
     """Signals used to communicate with controller."""
     s_frame_refreshed = pyqtSignal(QImage)
     s_distance_refreshed = pyqtSignal(float)
+    s_time_refreshed = pyqtSignal(int, str)
     s_posture_refreshed = pyqtSignal(PostureLabel, str)
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
@@ -72,8 +73,13 @@ class WebcamApplication(QObject):
             self._time_sentinel.set_warning_enabled(warning_enabled)
         # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
-            self._timer = Timer()  # Use a new timer.
+            self._time_sentinel.reset()
             self._focus_time = enabled
+            if enabled:
+                self._timer = Timer()  # Use a new timer.
+                self._time_sentinel.show()
+            else:
+                self._time_sentinel.hide()
 
     def set_posture_detect(
             self, *,
@@ -105,7 +111,6 @@ class WebcamApplication(QObject):
 
         # focus time needs a timer to help.
         if self._focus_time:
-            self._timer = Timer()
             self._timer.start()
 
         self.s_started.emit()
@@ -177,7 +182,10 @@ class WebcamApplication(QObject):
             raise ValueError("should have exactly 1 face in the reference image")
         self._landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
         self._distance_sentinel = DistanceSentinel()
+
         self._angle_calculator = AngleCalculator()
         self._posture_checker = PostureChecker(angle_calculator=self._angle_calculator)
+
         self._time_sentinel = TimeSentinel()
+        self._time_sentinel.s_time_refreshed.connect(self.s_time_refreshed)
         self.s_stopped.connect(self._time_sentinel.close_timer_widget)
