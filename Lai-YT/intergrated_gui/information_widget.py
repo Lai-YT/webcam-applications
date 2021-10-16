@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QFormLayout, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QFormLayout, QWidget
 
 from intergrated_gui.component import Label
 
@@ -7,106 +7,31 @@ class InformationWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._layout = QVBoxLayout()
+        self._layout = QFormLayout()
         self.setLayout(self._layout)
         self.setStyleSheet("border: 1px solid black;")
 
         self._create_information()
 
-    def update_distance(self, distance):
-        self.information["distance"].update_distance(distance)
+    def update_distance(self, distance: float) -> None:
+        self.information["distance"].setText(f"{distance:.02f}")
 
     def update_posture(self, posture, explanation):
-        self.information["posture"].update_posture(posture)
-        self.information["posture"].update_explanation(explanation)
+        self.information["posture"].setText(posture.name)
+        self.information["posture-explanation"].setText(explanation)
 
     def _create_information(self):
-        self.information = {
-            "distance": DistanceInformationWidget(),
-            "posture": PostureInformationWidget(),
-            "time": TimeInformationWidget(),
-            "concentration": ConcentrationInformationWidget(),
-            "brightness": BrightnessInformationWidget(),
+        information = {
+            "distance": "Face Distance:",
+            "posture": "Posture Detect:",
+            "posture-explanation": "Explanation:",
+            "time": "Focus Time:",
+            "concentration": "Concentration Grade:",
+            "brightness": "Screen Brightness:",
         }
+        self.information = {}
 
-        for widget in self.information.values():
-            self._layout.addWidget(widget, stretch=1)
-
-        self._layout.addStretch(5)
-
-
-class DistanceInformationWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self._layout = QFormLayout()
-        self.setLayout(self._layout)
-
-        self._create_labels()
-
-    def update_distance(self, distance: float) -> None:
-        self.distance.setText(f"{distance:.02f}")
-
-    def _create_labels(self):
-        self.distance = Label(font_size=16)
-        self._layout.addRow(Label("Face Distance:", font_size=16), self.distance)
-
-
-class PostureInformationWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._layout = QFormLayout()
-        self.setLayout(self._layout)
-
-        self._create_labels()
-
-    def update_posture(self, posture):
-        self.posture.setText(posture.name)
-
-    def update_explanation(self, explanation):
-        self.explanation.setText(explanation)
-
-    def _create_labels(self):
-        self.posture = Label(font_size=16)
-        self._layout.addRow(Label("Posture Detect:", font_size=16), self.posture)
-        self.explanation = Label(font_size=16)
-        self._layout.addRow(Label("Explanation:", font_size=16), self.explanation)
-
-
-class TimeInformationWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._layout = QFormLayout()
-        self.setLayout(self._layout)
-
-        self._create_labels()
-
-    def _create_labels(self):
-        self.time = Label(font_size=16)
-        self._layout.addRow(Label("Focus Time:", font_size=16), self.time)
-
-
-class ConcentrationInformationWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._layout = QFormLayout()
-        self.setLayout(self._layout)
-
-        self._create_labels()
-
-    def _create_labels(self):
-        self.concentration = Label(font_size=16)
-        self._layout.addRow(Label("Concentration Grade:", font_size=16), self.concentration)
-
-
-class BrightnessInformationWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._layout = QFormLayout()
-        self.setLayout(self._layout)
-
-        self._create_labels()
-
-    def _create_labels(self):
-        self.brightness = Label(font_size=16)
-        self._layout.addRow(Label("Screen Brightness:", font_size=16), self.brightness)
+        font_size=16
+        for name, description in information.items():
+            self.information[name] = Label(font_size=font_size, wrap=True)
+            self._layout.addRow(Label(description, font_size=font_size), self.information[name])

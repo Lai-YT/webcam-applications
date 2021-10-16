@@ -25,24 +25,6 @@ class Window(QMainWindow):
         # All other windows (no matter child or not) close with this window.
         QApplication.closeAllWindows()
 
-    # Override
-    def resizeEvent(self, event):
-        # Prevent the information widget from expanding by the inner labels.
-        total_stretch = self._get_total_stretch()
-        information_stretch = self._general_layout.stretch(self._general_layout.indexOf(self.widgets["information"]))
-        self.widgets["information"].setFixedSize(
-            self.frameGeometry().width() * information_stretch // total_stretch,
-            self.widgets["information"].sizeHint().height()
-        )
-
-        super().resizeEvent(event)
-
-    def _get_total_stretch(self):
-        total = 0
-        for i in range(len(self.widgets)):
-            total += self._general_layout.stretch(i)
-        return total
-
     def _create_widgets(self):
         """
         Information widget at the left-hand side, capture view in the middle,
