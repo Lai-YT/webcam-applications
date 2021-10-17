@@ -2,7 +2,7 @@ from typing import List, Optional, Tuple
 
 import cv2
 import numpy
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Float, Int, NDArray
 from playsound import playsound
 
@@ -154,10 +154,9 @@ class TimeSentinel(QObject):
     def set_warning_enabled(self, enabled: bool) -> None:
         self._warning_enabled = enabled
 
-    def break_time_if_too_long(self, canvas: ColorImage, timer: Timer) -> None:
+    def break_time_if_too_long(self, timer: Timer) -> None:
         """
         Arguments:
-            canvas (NDArray[(Any, Any, 3), UInt8]): The image to show break time information
             timer (Timer): Contains time record
         """
         if not hasattr(self, "_break_time") or not hasattr(self, "_time_limit"):
@@ -197,6 +196,7 @@ class TimeSentinel(QObject):
         self._time_shower.switch_time_state("work")
         self._break_timer.reset()
 
+    @pyqtSlot()
     def close_timer_widget(self):
         self._time_shower.close_timer_widget()
         # If not reset timer, a break-time-close might keep the countdown to next start.

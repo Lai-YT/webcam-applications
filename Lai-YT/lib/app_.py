@@ -141,7 +141,7 @@ class WebcamApplication(QObject):
                     self._timer.pause()
                 else:
                     self._timer.start()
-                self._time_sentinel.break_time_if_too_long(canvas, self._timer)
+                self._time_sentinel.break_time_if_too_long(self._timer)
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
             cv2.waitKey(refresh)
