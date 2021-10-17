@@ -2,7 +2,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QCheckBox, QGroupBox, QLCDNumber, QLabel, QLineEdit,
                              QMessageBox, QProgressBar, QProgressDialog, QPushButton,
-                             QRadioButton, QStatusBar)
+                             QRadioButton, QSlider, QStatusBar)
 
 
 class ActionButton(QPushButton):
@@ -26,6 +26,16 @@ class CheckableGroupBox(QGroupBox):
         self.setCheckable(True)
         self.setChecked(False)
         self.setFont(QFont("Arial", 12))
+
+
+class HorizontalSlider(QSlider):
+    def __init__(self, min_val=0, max_val=100, cur_val=30):
+        super().__init__(Qt.Horizontal)
+        self.setRange(min_val, max_val)
+        self.setValue(cur_val)
+        # Set the scale below the slider.
+        self.setTickPosition(QSlider.TicksBelow)
+        self.setTickInterval(10)
 
 
 class LCDClock(QLCDNumber):

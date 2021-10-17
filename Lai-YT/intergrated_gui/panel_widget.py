@@ -1,10 +1,10 @@
 from enum import IntEnum
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtWidgets import QFormLayout, QGroupBox, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QFormLayout, QGridLayout, QGroupBox, QVBoxLayout, QWidget
 
-from intergrated_gui.component import (CheckableGroupBox, Label, LineEdit, OptionCheckBox,
-                                       OptionRadioButton)
+from intergrated_gui.component import (CheckableGroupBox, HorizontalSlider, Label,
+                                       LineEdit, OptionCheckBox, OptionRadioButton)
 
 
 class PanelWidget(QWidget):
@@ -149,7 +149,20 @@ class BrightnessPanel(CheckableGroupBox):
         self._layout = QVBoxLayout()
         self.setLayout(self._layout)
 
+        self._create_slider()
         self._create_modes()
+
+    def _create_slider(self):
+        self.slider = HorizontalSlider()
+        self._min_value_label = Label("0", font_size=10)
+        self._max_value_label = Label("100", font_size=10)
+
+        slider_layout = QGridLayout()
+        slider_layout.addWidget(self.slider, 0, 0)
+        slider_layout.addWidget(self._min_value_label, 1, 0)
+        slider_layout.addWidget(self._max_value_label, 1, 1)
+
+        self._layout.addLayout(slider_layout)
 
     def _create_modes(self):
         # name | description
@@ -160,6 +173,7 @@ class BrightnessPanel(CheckableGroupBox):
         self.modes = {}
         for mode, description in modes.items():
             self.modes[mode] = OptionRadioButton(description)
+            self.modes[mode].setAutoExclusive(False)
             self._layout.addWidget(self.modes[mode])
 
         # default mode
