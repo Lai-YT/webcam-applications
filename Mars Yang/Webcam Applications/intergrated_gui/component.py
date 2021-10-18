@@ -27,6 +27,7 @@ class CheckableGroupBox(QGroupBox):
         self.setChecked(False)
         self.setFont(QFont("Arial", 12))
 
+
 class HorizontalSlider(QSlider):
     def __init__(self, min_val=0, max_val=100, cur_val=30):
         super().__init__(Qt.Horizontal)
@@ -35,6 +36,7 @@ class HorizontalSlider(QSlider):
         # Set the scale below the slider.
         self.setTickPosition(QSlider.TicksBelow)
         self.setTickInterval(10)
+
 
 class LCDClock(QLCDNumber):
     def __init__(self, color="black"):

@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QObject
 
-from lib.train import ModelPath
 from intergrated_gui.panel_widget import AngleTolerance
+from lib.train import ModelPath
 
 
 class PanelController(QObject):
@@ -92,12 +92,33 @@ class PanelController(QObject):
         panel.toggled.connect(lambda checked: self._app.set_posture_detect(enabled=checked))
         panel.angles[AngleTolerance.LOOSE].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.LOOSE) if checked else None)
         panel.angles[AngleTolerance.STRICT].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.STRICT) if checked else None)
-
         custom = panel.custom
         custom.toggled.connect(lambda checked: self._app.set_posture_detect(model_path=(ModelPath.custom if checked else ModelPath.default)))
-        
         warning = panel.warning
         warning.toggled.connect(lambda checked: self._app.set_posture_detect(warning_enabled=checked))
 
     def _connect_brightness_signals(self):
-        pass
+        panel = self._panel.panels["brightness"]
+
+        # _app -> set_brightness_optimization()
+        # group checkbox
+        panel.toggled.connect(lambda checked: self._app.set_brightness_optimization(enabled=checked))
+        
+        # slider
+        panel.slider.valueChanged.connect(
+            lambda: self._app._set_brightness_optimization(slider_value=panel.slider.value())
+        )
+
+        # switch
+        switch = panel.switch
+        switch.stateChanged.connect(
+            lambda checked: self._app.set_brightness_optimization(auto_optimization_enabled=checked)
+        )
+
+        # mode
+        panel.modes["webcam"].isChecked().connect(
+            lambda checked: self._app.set_brightness_optimization(webcam_enabled=checked)
+        )
+        panel.modes["color-system"].isChecked().connect(
+            lambda checked: self._app.set_brightness_optimization(color_system_enabled=checked)
+        )

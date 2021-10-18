@@ -15,8 +15,12 @@ class TimeShower(QObject):
         self._widget.switch_time_state("work")
 
         self._move_timer_to_upper_right_corner()
-        # Note that due to unknown reason, the whole app freezes if calling .show().
-        self._widget.setVisible(True)
+
+    def show(self):
+        self._widget.show()
+
+    def hide(self):
+        self._widget.hide()
 
     def switch_time_state(self, state: str):
         """Switches the state of the TimerWidget."""

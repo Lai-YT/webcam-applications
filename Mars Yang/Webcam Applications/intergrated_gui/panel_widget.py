@@ -1,11 +1,10 @@
 from enum import IntEnum
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QFormLayout, QGridLayout, QGroupBox, QVBoxLayout, QWidget
 
-from intergrated_gui.component import (CheckableGroupBox, HorizontalSlider, Label, LineEdit, OptionCheckBox,
-                                       OptionRadioButton)
+from intergrated_gui.component import (CheckableGroupBox, HorizontalSlider, Label,
+                                       LineEdit, OptionCheckBox, OptionRadioButton)
 
 
 class PanelWidget(QWidget):
@@ -127,7 +126,7 @@ class PosturePanel(CheckableGroupBox):
         angles = [AngleTolerance.LOOSE, AngleTolerance.STRICT]
         self.angles = {}
         for tolerance in angles:
-            self.angles[tolerance] = OptionRadioButton(f"{tolerance.name.lower()} ({tolerance} degrees)")
+            self.angles[tolerance] = OptionRadioButton(f"{tolerance.name.lower()} ({tolerance})")
         # a loose angle tolerance is used in default
         self.angles[AngleTolerance.LOOSE].setChecked(True)
 
@@ -180,7 +179,7 @@ class BrightnessPanel(CheckableGroupBox):
         # default mode
         self.modes["webcam"].setChecked(True)
 
-        # sound warning is enabled in default
-        self.warning = OptionCheckBox("enable sound warning")
-        self.warning.setChecked(True)
-        self._layout.addWidget(self.warning)
+        # auto optimization is disabled in default
+        self.switch = OptionCheckBox("Auto Optimization")
+        self.switch.setChecked(False)
+        self._layout.addWidget(self.switch)

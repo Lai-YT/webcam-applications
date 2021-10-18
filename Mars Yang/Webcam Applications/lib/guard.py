@@ -2,6 +2,7 @@ from typing import List, Optional, Tuple
 
 import cv2
 import numpy
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Float, Int, NDArray
 from playsound import playsound
 
@@ -118,17 +119,21 @@ class DistanceSentinel:
         cv2.putText(canvas, text, (10, 30), FONT_0, 0.9, MAGENTA, 2)
 
 
-class TimeSentinel:
+class TimeSentinel(QObject):
     """
     TimeSentinel checks if the time held by a Timer exceeds time limit and
     interacts with a TimeShower to show the corresponding TimerWidget.
     """
+
+    s_time_refreshed = pyqtSignal(int, str)
+
     def __init__(self, time_limit: Optional[int] = None, break_time: Optional[int] = None):
         """
         Arguments:
             time_limit (int): Triggers a break if reached (minutes)
             break_time (int): How long the break should be (minutes)
         """
+        super().__init__()
         if time_limit is not None:
             # minute to second
             self._time_limit = time_limit * 60
@@ -136,8 +141,8 @@ class TimeSentinel:
             self._break_time = break_time * 60
 
         self._f_break_started = False
-        self._break_timer = Timer()
         self._warning_enabled = True
+        self._break_timer = Timer()
         self._time_shower = TimeShower()
 
     def set_time_limit(self, time_limit: int) -> None:
@@ -149,31 +154,28 @@ class TimeSentinel:
     def set_warning_enabled(self, enabled: bool) -> None:
         self._warning_enabled = enabled
 
-    def break_time_if_too_long(self, canvas: ColorImage, timer: Timer) -> None:
-        """If the time record in the Timer object exceeds time limit, a break time countdown shows on the center of the canvas.
-        The timer will be paused during the break, reset after the break.
-
+    def break_time_if_too_long(self, timer: Timer) -> None:
+        """
         Arguments:
-            canvas (NDArray[(Any, Any, 3), UInt8]): The image to show break time information
             timer (Timer): Contains time record
         """
-        # Break time is over, reset the timer for a new start.
+        if not hasattr(self, "_break_time") or not hasattr(self, "_time_limit"):
+            # Only display the time if the sentinel is not ready.
+            self._time_shower.update_time(timer.time())
+            self.s_time_refreshed.emit(timer.time(), "work")
+            return
+
+        # Break time is over.
         if self._break_timer.time() > self._break_time:
             timer.reset()
-            self._break_timer.reset()
-            self._time_shower.switch_time_state("work")
-            # Set the flag and play the sound when leaving break.
-            self._f_break_started = False
-            if self._warning_enabled:
-                playsound(to_abs_path("sounds/break_over.wav"), block=False)
+            self._end_break()
         # not the time to take a break
-        elif timer.time() < self._time_limit:
+        # Note that an extra flag check to prevent state change during break due
+        # to a time limit setting.
+        elif timer.time() < self._time_limit and not self._f_break_started:
             # The time of the normal timer is to be shown.
             self._time_shower.update_time(timer.time())
-
-            # Time record is only shown when not during the break.
-            self.record_focus_time(canvas, timer.time(), timer.is_paused())
-
+            self.s_time_refreshed.emit(timer.time(), "work")
             # Timer is paused if there's no face, which is considered to be a distraction.
             # Not count during break time.
             if timer.is_paused():
@@ -181,42 +183,51 @@ class TimeSentinel:
             else:
                 _concentration_grader.increase_concentration()
         else:
-            if not self._f_break_started:
-                self._time_shower.switch_time_state("break")
-                self._f_break_started = True
-                if self._warning_enabled:
-                    # Note that using flag instead of checking time to avoid double playing
-                    # since the interval between time checkings is often less than 1 sec.
-                    playsound(to_abs_path("sounds/break_start.wav"), block=False)
+            self._take_break()
 
-            timer.pause()
-            self._break_timer.start()
-            countdown: int = self._break_time - self._break_timer.time()
-            # The time (countdown) of the break timer is to be shown.
-            self._time_shower.update_time(countdown)
+    def show(self):
+        self._time_shower.show()
 
-            time_left: str = f"{(countdown // 60):02d}:{(countdown % 60):02d}"
-            cv2.putText(canvas, "break left: " + time_left, (450, 80), FONT_3, 0.6, GREEN, 1)
+    def hide(self):
+        self._time_shower.hide()
 
-    def record_focus_time(self, canvas: ColorImage, time: float, paused: bool) -> None:
-        """Puts time record on the canvas, also extra text if paused.
+    def reset(self):
+        self._f_break_started = False
+        self._time_shower.switch_time_state("work")
+        self._break_timer.reset()
 
-        Arguments:
-            canvas (NDArray[(Any, Any, 3), UInt8]): The image to put time record on
-            time (float)
-            paused (bool)
-        """
-        time_duration: str = f"t. {(time // 60):02d}:{(time % 60):02d}"
-        cv2.putText(canvas, time_duration, (500, 20), FONT_0, 0.8, BLUE, 1)
-
-        if paused:
-            cv2.putText(canvas, "time paused", (500, 40), FONT_0, 0.6, RED, 1)
-
+    @pyqtSlot()
     def close_timer_widget(self):
         self._time_shower.close_timer_widget()
         # If not reset timer, a break-time-close might keep the countdown to next start.
         # (no effect if every start is a fresh new sentinel)
         self._break_timer.reset()
+
+    def _take_break(self):
+        # If is the very moment to enter the break.
+        if not self._f_break_started:
+            self._enter_break()
+        countdown: int = self._break_time - self._break_timer.time()
+        # The time (countdown) of the break timer is to be shown.
+        self._time_shower.update_time(countdown)
+        self.s_time_refreshed.emit(countdown, "break")
+
+    def _enter_break(self):
+        self._time_shower.switch_time_state("break")
+        self._f_break_started = True
+        self._break_timer.start()
+        if self._warning_enabled:
+            # Note that using flag instead of checking time to avoid double playing
+            # since the interval between time checkings is often less than 1 sec.
+            playsound(to_abs_path("sounds/break_start.wav"), block=False)
+
+    def _end_break(self):
+        self._break_timer.reset()
+        self._time_shower.switch_time_state("work")
+        # Set the flag and play the sound when leaving break.
+        self._f_break_started = False
+        if self._warning_enabled:
+            playsound(to_abs_path("sounds/break_over.wav"), block=False)
 
 
 class PostureChecker:
@@ -309,7 +320,7 @@ class PostureChecker:
             canvas (NDArray[(Any, Any, 3), UInt8]): The image to put text on
             angle (float): The angle between the middle line of face and the vertical line of image
         """
-        explanation = f"By angle: {round(angle, 1)} degrees"
+        explanation = f"by angle: {round(angle, 1)} degrees"
         cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
 
         return (PostureLabel.good if abs(angle) < self._warn_angle else PostureLabel.slump), explanation
@@ -335,7 +346,7 @@ class PostureChecker:
 
         cv2.resize(canvas, (640, 480), interpolation=cv2.INTER_AREA)
 
-        explanation: str = f'By model: {conf:.0%}'
+        explanation: str = f"by model: {conf:.0%}"
         cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
 
         return (PostureLabel.good if class_pred == PostureLabel.good.value else PostureLabel.slump), explanation

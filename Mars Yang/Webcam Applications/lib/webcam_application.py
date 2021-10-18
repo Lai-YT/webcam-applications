@@ -99,7 +99,7 @@ class WebcamApplication(QObject):
                     self._timer.pause()
                 else:
                     self._timer.start()
-                self._time_sentinel.break_time_if_too_long(canvas, self._timer)
+                self._time_sentinel.break_time_if_too_long(self._timer)
 
             # zoom in the canvas (keep the ratio)
             canvas = imutils.resize(canvas, width=960)
@@ -151,4 +151,5 @@ class WebcamApplication(QObject):
 
     def _create_time_sentinel(self, time_limit: int, break_time: int) -> None:
         self._time_sentinel = TimeSentinel(time_limit, break_time)
+        self._time_sentinel.show()
         self.s_stopped.connect(self._time_sentinel.close_timer_widget)
