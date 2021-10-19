@@ -126,14 +126,10 @@ class WebcamApplication(QObject):
             # Do applications!
             if self._distance_measure:
                 if landmarks.any():
-                    distance = self._distance_sentinel.warn_if_too_close(canvas, landmarks)
-                    if distance is not None:
-                        self.s_distance_refreshed.emit(distance)
+                    self._distance_sentinel.warn_if_too_close(canvas, landmarks)
             if self._posture_detect:
                 draw_landmarks_used_by_angle_calculator(canvas, landmarks)
-                posture_and_explanation: Optional[Tuple[PostureLabel, str]] = self._posture_checker.check_posture(canvas, frame, landmarks)
-                if posture_and_explanation is not None:
-                    self.s_posture_refreshed.emit(*posture_and_explanation)
+                self._posture_checker.check_posture(canvas, frame, landmarks)
             if self._focus_time:
                 # If the landmarks of face are clear, ths user is considered not focusing
                 # on the screen, so the timer is paused.
@@ -182,9 +178,11 @@ class WebcamApplication(QObject):
             raise ValueError("should have exactly 1 face in the reference image")
         self._landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
         self._distance_sentinel = DistanceSentinel()
+        self._distance_sentinel.s_distance_refreshed.connect(self.s_distance_refreshed)
 
         self._angle_calculator = AngleCalculator()
         self._posture_checker = PostureChecker(angle_calculator=self._angle_calculator)
+        self._posture_checker.s_posture_refreshed.connect(self.s_posture_refreshed)
 
         self._time_sentinel = TimeSentinel()
         self._time_sentinel.s_time_refreshed.connect(self.s_time_refreshed)
