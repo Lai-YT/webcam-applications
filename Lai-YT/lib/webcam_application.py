@@ -21,7 +21,7 @@ from lib.path import to_abs_path
 # or directly call it with client code.
 class WebcamApplication(QObject):
 
-    """Signals used to communicate with controller."""
+    # Signals used to communicate with controller.
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 

@@ -20,7 +20,7 @@ from lib.path import to_abs_path
 
 class WebcamApplication(QObject):
 
-    """Signals used to communicate with controller."""
+    # Signals used to communicate with controller.
     s_frame_refreshed = pyqtSignal(QImage)
     s_distance_refreshed = pyqtSignal(float)
     s_time_refreshed = pyqtSignal(int, str)
