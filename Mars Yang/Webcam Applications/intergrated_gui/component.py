@@ -33,10 +33,7 @@ class HorizontalSlider(QSlider):
         super().__init__(Qt.Horizontal)
         self.setRange(min_val, max_val)
         self.setValue(cur_val)
-        # Set the scale below the slider.
-        self.setTickPosition(QSlider.TicksBelow)
-        self.setTickInterval(10)
-
+        
 
 class LCDClock(QLCDNumber):
     def __init__(self, color="black"):

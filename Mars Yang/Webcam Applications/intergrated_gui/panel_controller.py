@@ -56,7 +56,10 @@ class PanelController(QObject):
         self._app.set_posture_detect(warning_enabled=warning.isChecked())
 
     def _init_brightness_states(self):
-        pass
+        panel = self._panel.panels["brightness"]
+
+        self._app.set_brightness_optimization(enabled=panel.isChecked(),
+                                              slider_value=30)
 
     def _connect_signals(self):
         self._connect_distance_signals()
@@ -100,25 +103,21 @@ class PanelController(QObject):
     def _connect_brightness_signals(self):
         panel = self._panel.panels["brightness"]
 
-        # _app -> set_brightness_optimization()
         # group checkbox
         panel.toggled.connect(lambda checked: self._app.set_brightness_optimization(enabled=checked))
         
         # slider
         panel.slider.valueChanged.connect(
-            lambda: self._app._set_brightness_optimization(slider_value=panel.slider.value())
-        )
-
-        # switch
-        switch = panel.switch
-        switch.stateChanged.connect(
-            lambda checked: self._app.set_brightness_optimization(auto_optimization_enabled=checked)
+            lambda value: 
+                self._app.set_brightness_optimization(slider_value=value,
+                                                      webcam_enabled=panel.modes["webcam"].isChecked(),
+                                                      color_system_enabled=panel.modes["color-system"].isChecked())
         )
 
         # mode
-        panel.modes["webcam"].isChecked().connect(
+        panel.modes["webcam"].toggled.connect(
             lambda checked: self._app.set_brightness_optimization(webcam_enabled=checked)
         )
-        panel.modes["color-system"].isChecked().connect(
+        panel.modes["color-system"].toggled.connect(
             lambda checked: self._app.set_brightness_optimization(color_system_enabled=checked)
         )

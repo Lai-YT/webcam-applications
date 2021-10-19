@@ -7,12 +7,11 @@ class BrightnessCalculator:
     """Handle processes which require value modulation."""
 
     @staticmethod
-    def calculate_proper_screen_brightness(mode: str, threshold: Dict[str, int], base_value: int, frame: Dict[str, np.ndarray]) -> int:
+    def calculate_proper_screen_brightness(mode: str, base_value: int, frame: Dict[str, np.ndarray]) -> int:
         """Returns the suggested screen brightness value, which is between 0 and 100.
 
         Arguments:
             mode ("webcam" | "color-system"): Mode affects algorithm used in calculation
-            threshold (int): The brightness of the initial frame, affecting the offset value.
             base_value (int): The base value of brightness (The value before checking the checkbox).
             frame (NDArray[(Any, Any, 3), UInt8)
         """
@@ -22,12 +21,12 @@ class BrightnessCalculator:
             color_system_frame_brightness: int = BrightnessCalculator.get_brightness_percentage(frame["color-system"])
         
         if mode == "webcam":
-            offset: int = (webcam_frame_brightness - threshold["webcam"]) // 2
+            offset: int = (webcam_frame_brightness - base_value) // 2
         elif mode == "color-system":
-            offset: int = -(color_system_frame_brightness - threshold["color-system"]) // 2
+            offset: int = -(color_system_frame_brightness - base_value) // 2
         elif mode == "both":
-            offset = (webcam_frame_brightness - threshold["webcam"]) // 2
-            offset = offset + (color_system_frame_brightness - threshold["color-system"]) // 4
+            offset = (webcam_frame_brightness - base_value) // 2
+            offset = offset + (color_system_frame_brightness - base_value) // 4
 
         suggested_brightness: int = base_value + offset
 

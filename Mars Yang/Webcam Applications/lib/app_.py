@@ -27,6 +27,7 @@ class WebcamApplication(QObject):
     s_distance_refreshed = pyqtSignal(float)
     s_time_refreshed = pyqtSignal(int, str)
     s_posture_refreshed = pyqtSignal(PostureLabel, str)
+    s_brightness_refreshed = pyqtSignal(int)
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 
@@ -104,19 +105,21 @@ class WebcamApplication(QObject):
             self, *,
             enabled: Optional[bool] = None,
             slider_value: Optional[int] = None,
-            webcam_enabled: Optional[bool] = None,
-            color_system_enabled: Optional[bool] = None) -> None:
+            webcam_enabled: Optional[bool] = False,
+            color_system_enabled: Optional[bool] = False) -> None:
 
         if slider_value is not None:
             self._slider_value = slider_value
 
-        if webcam_enabled is not None and color_system_enabled is not None:
+        if webcam_enabled and color_system_enabled:
             self._brightness_mode = "both"
-        elif webcam_enabled is not None:
+        elif webcam_enabled:
             self._brightness_mode = "webcam"
-        elif color_system_enabled is not None:
+        elif color_system_enabled:
             self._brightness_mode = "color-system"
-        
+        else:
+            self._brightness_mode = None
+
         # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
             self._brightness_optimization = enabled
@@ -168,13 +171,21 @@ class WebcamApplication(QObject):
                 self._time_sentinel.break_time_if_too_long(self._timer)
 
             if self._brightness_optimization:
-                # pass canvas if webcam is checked
-                if self._brightness_mode in ("webcam", "both"):
-                    self._brightness_controller.collect_webcam_frame(canvas)
-                if self._brightness_mode in ("color-system", "both"):
-                    self._brightness_controller.collect_screenshot()
+                # Default brightness is the slider value.
+                brightness = self._slider_value
 
-                self._brightness_controller.optimize_brightness(base_value=self._slider_value)
+                if self._brightness_mode is not None:
+                    self._brightness_controller.set_mode(self._brightness_mode)
+                    # pass canvas if webcam is checked
+                    if self._brightness_mode in ("webcam", "both"):
+                        self._brightness_controller.collect_webcam_frame(canvas)
+                    if self._brightness_mode in ("color-system", "both"):
+                        self._brightness_controller.collect_screenshot()
+
+                    brightness = self._brightness_controller.get_optimized_brightness(base_value=self._slider_value)
+
+                self._brightness_controller._set_brightness(brightness)
+                self.s_brightness_refreshed.emit(brightness)
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
             cv2.waitKey(refresh)
@@ -208,7 +219,7 @@ class WebcamApplication(QObject):
     
     def _create_brightness_controller(self):
         """Creates brightness calculator for further use."""
-        self._brightness_controller = BrightnessController(mode=self._brightness_mode)
+        self._brightness_controller = BrightnessController()
     
     def _create_guards(self):
         # Creates the DistanceCalculator with reference image.

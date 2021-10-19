@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 import screen_brightness_control as sbc
 
 from PyQt5.QtWidgets import QApplication
@@ -7,8 +8,8 @@ from lib.brightness_calcuator import BrightnessCalculator
 
 class BrightnessController:
 
-    def __init__(self, mode) -> None:
-        self._mode = mode
+    def __init__(self) -> None:
+        self._mode = None
         self._frame = {
             "webcam": None,
             "color-system": None,
@@ -18,6 +19,9 @@ class BrightnessController:
             "color-system": None,
         }
 
+    def set_mode(self, mode: str):
+        self._mode = mode
+
     def collect_webcam_frame(self, frame):
         self._frame["webcam"] = frame
 
@@ -25,13 +29,23 @@ class BrightnessController:
         screen = QApplication.primaryScreen()
         screenshot = screen.grabWindow(QApplication.desktop().winId())
 
-        self._frame["color-system"] = screenshot
+        self._frame["color-system"] = self._qpixmap_to_ndarray(screenshot)
 
-    def optimize_brightness(self, base_value: int):
-        brightness = BrightnessCalculator.calculate_proper_screen_brightness(
+    @staticmethod
+    def _qpixmap_to_ndarray(image: "QPixmap") -> "NDArray[(Any, Any, 3), UInt8]":
+        qimage = image.toImage()
+
+        width = qimage.width()
+        height = qimage.height()
+
+        byte_str = qimage.constBits().asstring(height * width * 4)
+        ndarray = np.frombuffer(byte_str, np.uint8).reshape((height, width, 4))
+
+        return ndarray
+
+    def get_optimized_brightness(self, base_value: int):
+        return BrightnessCalculator.calculate_proper_screen_brightness(
             self._mode, base_value, self._frame)
-        
-        self._set_brightness(brightness)
 
     def _set_brightness(self, brightness: int):
         sbc.set_brightness(brightness, method="wmi")

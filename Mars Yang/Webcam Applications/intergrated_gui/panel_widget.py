@@ -154,15 +154,7 @@ class BrightnessPanel(CheckableGroupBox):
 
     def _create_slider(self):
         self.slider = HorizontalSlider()
-        self._min_value_label = Label("0", font_size=10)
-        self._max_value_label = Label("100", font_size=10)
-
-        slider_layout = QGridLayout()
-        slider_layout.addWidget(self.slider, 0, 0)
-        slider_layout.addWidget(self._min_value_label, 1, 0)
-        slider_layout.addWidget(self._max_value_label, 1, 1)
-
-        self._layout.addLayout(slider_layout)
+        self._layout.addWidget(self.slider)
 
     def _create_modes(self):
         # name | description
@@ -177,9 +169,5 @@ class BrightnessPanel(CheckableGroupBox):
             self._layout.addWidget(self.modes[mode])
 
         # default mode
-        self.modes["webcam"].setChecked(True)
-
-        # auto optimization is disabled in default
-        self.switch = OptionCheckBox("Auto Optimization")
-        self.switch.setChecked(False)
-        self._layout.addWidget(self.switch)
+        self.modes["webcam"].setChecked(False)
+        self.modes["color-system"].setChecked(False)
