@@ -297,9 +297,9 @@ class TimeSentinel(QObject):
             playsound(to_abs_path("sounds/break_over.wav"), block=False)
 
     @staticmethod
-    def _min_to_sec(min: int) -> int:
+    def _min_to_sec(time_in_min: int) -> int:
         """Simple minute to second conversion method without any check."""
-        return min * 60
+        return time_in_min * 60
 
 
 class PostureChecker(QObject):
