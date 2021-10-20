@@ -1,2 +1,0 @@
-reference image = "img/ref_img.jpg"
-background image = "img/bg.jpg"
