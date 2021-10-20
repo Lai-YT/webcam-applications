@@ -39,6 +39,10 @@ class InformationWidget(QWidget):
         self.information["posture"].setText(posture.name)
         self.information["posture-explanation"].setText(explanation)
 
+    @pyqtSlot(int)
+    def update_brightness(self, brightness: int) -> None:
+        self.information["brightness"].setNum(brightness)
+
     # To show and hide the row of QFormLayout,
     # extra effort is required.
     def hide(self, info: str) -> None:

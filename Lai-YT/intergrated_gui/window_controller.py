@@ -35,6 +35,7 @@ class WindowController(QObject):
         self._app.s_distance_refreshed.connect(information.update_distance)
         self._app.s_posture_refreshed.connect(information.update_posture)
         self._app.s_time_refreshed.connect(information.update_time)
+        self._app.s_brightness_refreshed.connect(information.update_brightness)
 
     def _connect_app_and_frame(self):
         frame = self._window.widgets["frame"]
