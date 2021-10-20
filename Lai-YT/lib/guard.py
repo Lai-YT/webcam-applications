@@ -37,8 +37,8 @@ def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: ND
         cv2.circle(canvas, (lx, ly), 1, GREEN, -1)
 
 
-class DistanceSentinel(QObject):
-    """DistanceSentinel checks whether the face obtained by the landmarks are at
+class DistanceGuard(QObject):
+    """DistanceGuard checks whether the face obtained by the landmarks are at
     a short distance.
 
     Signals:
@@ -49,14 +49,17 @@ class DistanceSentinel(QObject):
 
     def __init__(self,
                  distance_calculator: Optional[DistanceCalculator] = None,
-                 warn_dist: Optional[float] = None) -> None:
+                 warn_dist: Optional[float] = None,
+                 warning_enabled: bool = True) -> None:
         """
-        All arguments are with default None. They can be set later with
-        their corresponding setters.
+        All arguments can be set later with their corresponding setters.
 
         Arguments:
             distance_calculator: Use to calculate the distance between face and screen.
             warn_dist : Distance closer than this is to be warned.
+            warning_enabled:
+                Whether there's sound that warns the user when the distance is
+                too close.
         """
         super().__init__()
 
@@ -65,7 +68,7 @@ class DistanceSentinel(QObject):
         if warn_dist is not None:
             self._warn_dist: float = warn_dist
         # Sound warning is enabled as default.
-        self._warning_enabled: bool = True
+        self._warning_enabled: bool = warning_enabled
 
         self._wavfile: str = to_abs_path("sounds/too_close.wav")
         self._warning_repeat_timer = Timer()
@@ -73,12 +76,26 @@ class DistanceSentinel(QObject):
         self._f_played: bool = False
 
     def set_distance_calculator(self, distance_calculator: DistanceCalculator) -> None:
+        """
+        Arguments:
+            distance_calculator: Use to calculate the distance between face and screen.
+        """
         self._distance_calculator = distance_calculator
 
     def set_warn_dist(self, warn_dist: float) -> None:
+        """
+        Arguments:
+            warn_dist : Distance closer than this is to be warned.
+        """
         self._warn_dist = warn_dist
 
     def set_warning_enabled(self, enabled: bool) -> None:
+        """
+        Arguments:
+            enabled:
+                Whether there's sound that warns the user when the distance is
+                too close.
+        """
         self._warning_enabled = enabled
 
     def warn_if_too_close(self, canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
@@ -86,21 +103,25 @@ class DistanceSentinel(QObject):
 
         Signal s_distance_refreshed is emitted with the distance calculated.
 
-        Notice that this method does nothing if distance calculator or warn dist
-        haven't been set yet.
+        Notice that this method does nothing if distance calculator haven't been
+        set yet; no warning if warn dist haven't been set yet.
 
         Arguments:
             canvas: The image to put text on.
             landmarks: (x, y) coordinates of the 68 face landmarks.
         """
-        if not hasattr(self, "_distance_calculator") or not hasattr(self, "_warn_dist"):
-            # Should do nothing if the sentinel is not ready.
+        # Can't do any thing without DistanceCalculator.
+        if not hasattr(self, "_distance_calculator"):
             return
+        # Distance can be calculated when DistanceCalculator exists, but without
+        # warn dist, there's no further process.
+        if hasattr(self, "_distance_calculator"):
+            distance: float = self._distance_calculator.calculate(landmarks)
+            self.s_distance_refreshed.emit(distance)
+            self._put_distance_text(canvas, distance)
 
-        distance: float = self._distance_calculator.calculate(landmarks)
-        self.s_distance_refreshed.emit(distance)
-
-        self._put_distance_text(canvas, distance)
+        if not hasattr(self, "_warn_dist"):
+            return
 
         # warning logic...
         if distance < self._warn_dist:
@@ -144,8 +165,8 @@ class DistanceSentinel(QObject):
         cv2.putText(canvas, text, (10, 30), FONT_0, 0.9, MAGENTA, 2)
 
 
-class TimeSentinel(QObject):
-    """TimeSentinel checks whether the time held by a Timer exceeds time limit
+class TimeGuard(QObject):
+    """TimeGuard checks whether the time held by a Timer exceeds time limit
     and interacts with a TimeShower to show the corresponding TimerWidget.
 
     Signals:
@@ -159,24 +180,29 @@ class TimeSentinel(QObject):
 
     def __init__(self,
                  time_limit: Optional[int] = None,
-                 break_time: Optional[int] = None) -> None:
+                 break_time: Optional[int] = None,
+                 warning_enabled: bool = True) -> None:
         """
-        All arguments are with default None. They can be set later with
-        their corresponding setters.
+        All arguments can be set later with their corresponding setters.
 
         Arguments:
             time_limit: Triggers a break if reached (minutes).
             break_time: How long the break should be (minutes).
+            warning_enabled:
+                Whether there's sound that plays when it's time to take a break
+                and end a break.
         """
         super().__init__()
 
         if time_limit is not None:
-            self._time_limit: int = TimeSentinel._min_to_sec(time_limit)
+            self._time_limit: int = TimeGuard._min_to_sec(time_limit)
         if break_time is not None:
-            self._break_time: int = TimeSentinel._min_to_sec(break_time)
-        self._warning_enabled: bool = True
+            self._break_time: int = TimeGuard._min_to_sec(break_time)
+        self._warning_enabled: bool = warning_enabled
 
         self._f_break_started: bool = False
+        self._end_break_sound: str = to_abs_path("sounds/break_over.wav")
+        self._enter_break_sound: str = to_abs_path("sounds/break_start.wav")
         self._break_timer = Timer()
         self._time_shower = TimeShower()
 
@@ -185,16 +211,22 @@ class TimeSentinel(QObject):
         Arguments:
             time_limit: Triggers a break if reached (minutes).
         """
-        self._time_limit = TimeSentinel._min_to_sec(time_limit)
+        self._time_limit = TimeGuard._min_to_sec(time_limit)
 
     def set_break_time(self, break_time: int) -> None:
         """
         Arguments:
             break_time: How long the break should be (minutes).
         """
-        self._break_time = TimeSentinel._min_to_sec(break_time)
+        self._break_time = TimeGuard._min_to_sec(break_time)
 
     def set_warning_enabled(self, enabled: bool) -> None:
+        """
+        Arguments:
+            enabled:
+                Whether there's sound that plays when it's time to take a break
+                and end a break.
+        """
         self._warning_enabled = enabled
 
     def break_time_if_too_long(self, timer: Timer) -> None:
@@ -212,7 +244,7 @@ class TimeSentinel(QObject):
             timer: Contains time record.
         """
         if not hasattr(self, "_break_time") or not hasattr(self, "_time_limit"):
-            # Only display the time if the sentinel is not ready.
+            # Only display the time if the guard is not ready.
             self._time_shower.update_time(timer.time())
             self.s_time_refreshed.emit(timer.time(), "work")
             return
@@ -246,7 +278,7 @@ class TimeSentinel(QObject):
         self._time_shower.hide()
 
     def reset(self) -> None:
-        """If the TimeSentinel is now taking a break, this method ends the break
+        """If the TimeGuard is now taking a break, this method ends the break
         and switches back to work mode.
         """
         self._f_break_started = False
@@ -257,7 +289,7 @@ class TimeSentinel(QObject):
     def close_timer_widget(self) -> None:
         self._time_shower.close_timer_widget()
         # If not reset, a break-time-close might keep the countdown to next start.
-        # (no effect if every start is a fresh new sentinel)
+        # (no effect if every start is a fresh new guard)
         self.reset()
 
     def _take_break(self) -> None:
@@ -285,7 +317,7 @@ class TimeSentinel(QObject):
         if self._warning_enabled:
             # Note that using flag instead of checking time to avoid double playing
             # since the interval between time checkings is often less than 1 sec.
-            playsound(to_abs_path("sounds/break_start.wav"), block=False)
+            playsound(self._enter_break_sound, block=False)
 
     def _end_break(self) -> None:
         """Sound warning is played if it's enabled.
@@ -294,7 +326,7 @@ class TimeSentinel(QObject):
         """
         self.reset()
         if self._warning_enabled:
-            playsound(to_abs_path("sounds/break_over.wav"), block=False)
+            playsound(self._end_break_sound, block=False)
 
     @staticmethod
     def _min_to_sec(time_in_min: int) -> int:
@@ -302,8 +334,8 @@ class TimeSentinel(QObject):
         return time_in_min * 60
 
 
-class PostureChecker(QObject):
-    """PostureChecker checks whether the face obtained by landmarks implies a
+class PostureGuard(QObject):
+    """PostureGuard checks whether the face obtained by landmarks implies a
     good or slump posture.
 
     Signals:
@@ -318,10 +350,10 @@ class PostureChecker(QObject):
     def __init__(self,
                  model: Optional[Sequential] = None,
                  angle_calculator: Optional[AngleCalculator] = None,
-                 warn_angle: Optional[float] = None) -> None:
+                 warn_angle: Optional[float] = None,
+                 warning_enabled: bool = True) -> None:
         """
-        All arguments are with default None. They can be set later with
-        their corresponding setters.
+        All arguments can be set later with their corresponding setters.
 
         Arguments:
             model:
@@ -330,6 +362,8 @@ class PostureChecker(QObject):
                 Used to calculate the angle of face when a face is found.
             warn_angle:
                 Face slope angle larger than this is considered to be a slump posture.
+            warning_enabled:
+                Whether there's sound that warns the user when a slump posture occurs.
         """
         super().__init__()
 
@@ -339,7 +373,7 @@ class PostureChecker(QObject):
             self._angle_calculator: AngleCalculator = angle_calculator
         if warn_angle is not None:
             self._warn_angle: float = warn_angle
-        self._warning_enabled: bool = True
+        self._warning_enabled: bool = warning_enabled
 
         self._wavfile: str = to_abs_path("sounds/posture_slump.wav")
         self._warning_repeat_timer = Timer()
@@ -347,15 +381,32 @@ class PostureChecker(QObject):
         self._f_played: bool = False
 
     def set_model(self, model: Sequential) -> None:
+        """
+        Arguments:
+            model: Used to predict the label of image when a clear face isn't found.
+        """
         self._model = model
 
     def set_angle_calculator(self, angle_calculator: AngleCalculator) -> None:
+        """
+        Arguments: Used to calculate the angle of face when a face is found.
+        """
         self._angle_calculator = angle_calculator
 
     def set_warn_angle(self, warn_angle: float) -> None:
+        """
+        Arguments:
+            warn_angle:
+                Face slope angle larger than this is considered to be a slump posture.
+        """
         self._warn_angle = warn_angle
 
     def set_warning_enabled(self, enabled: bool) -> None:
+        """
+        Arguments:
+            enabled:
+                Whether there's sound that warns the user when a slump posture occurs.
+        """
         self._warning_enabled = enabled
 
     def check_posture(self, canvas: ColorImage, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:

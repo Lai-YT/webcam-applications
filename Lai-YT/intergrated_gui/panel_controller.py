@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QObject
 
 from intergrated_gui.panel_widget import AngleTolerance
+from lib.brightness_calcuator import BrightnessMode
 from lib.train import ModelPath
 
 
@@ -16,7 +17,7 @@ class PanelController(QObject):
     def _init_states(self):
         self._init_distance_states()
         self._init_time_states()
-        self._init_posture_signals()
+        self._init_posture_states()
         self._init_brightness_states()
 
     def _init_distance_states(self):
@@ -45,21 +46,26 @@ class PanelController(QObject):
         warning = panel.warning
         self._app.set_focus_time(warning_enabled=warning.isChecked())
 
-    def _init_posture_signals(self):
+    def _init_posture_states(self):
         panel = self._panel.panels["posture"]
 
         self._app.set_posture_detect(enabled=panel.isChecked())
-        self._app.set_posture_detect(warn_angle=(AngleTolerance.LOOSE if panel.angles[AngleTolerance.LOOSE].isChecked() else AngleTolerance.STRICT))
+        if panel.angles[AngleTolerance.LOOSE].isChecked():
+            self._app.set_posture_detect(warn_angle=AngleTolerance.LOOSE)
+        else:
+            self._app.set_posture_detect(warn_angle=AngleTolerance.STRICT)
         custom = panel.custom
-        self._app.set_posture_detect(model_path=(ModelPath.custom if custom.isChecked() else ModelPath.default))
+        if custom.isChecked():
+            self._app.set_posture_detect(model_path=ModelPath.custom)
+        else:
+            self._app.set_posture_detect(model_path=ModelPath.default)
         warning = panel.warning
         self._app.set_posture_detect(warning_enabled=warning.isChecked())
 
     def _init_brightness_states(self):
         panel = self._panel.panels["brightness"]
 
-        self._app.set_brightness_optimization(enabled=panel.isChecked(),
-                                              slider_value=30)
+        self._app.set_brightness_optimization(enabled=panel.isChecked(), slider_value=30)
 
     def _connect_signals(self):
         self._connect_distance_signals()
@@ -103,21 +109,7 @@ class PanelController(QObject):
     def _connect_brightness_signals(self):
         panel = self._panel.panels["brightness"]
 
-        # group checkbox
         panel.toggled.connect(lambda checked: self._app.set_brightness_optimization(enabled=checked))
-
-        # slider
-        panel.slider.valueChanged.connect(
-            lambda value:
-                self._app.set_brightness_optimization(slider_value=value,
-                                                      webcam_enabled=panel.modes["webcam"].isChecked(),
-                                                      color_system_enabled=panel.modes["color-system"].isChecked())
-        )
-
-        # mode
-        panel.modes["webcam"].toggled.connect(
-            lambda checked: self._app.set_brightness_optimization(webcam_enabled=checked)
-        )
-        panel.modes["color-system"].toggled.connect(
-            lambda checked: self._app.set_brightness_optimization(color_system_enabled=checked)
-        )
+        panel.slider.valueChanged.connect(lambda value: self._app.set_brightness_optimization(slider_value=value))
+        panel.modes[BrightnessMode.WEBCAM].toggled.connect(lambda checked: self._app.set_brightness_optimization(webcam_enabled=checked))
+        panel.modes[BrightnessMode.COLOR_SYSTEM].toggled.connect(lambda checked: self._app.set_brightness_optimization(color_system_enabled=checked))

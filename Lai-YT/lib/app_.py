@@ -9,9 +9,10 @@ from imutils import face_utils
 from nptyping import Int, NDArray
 
 from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
+from lib.brightness_calcuator import BrightnessMode
 from lib.brightness_controller import BrightnessController
 from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
-from lib.guard import DistanceSentinel, PostureChecker, TimeSentinel, mark_face
+from lib.guard import DistanceGuard, PostureGuard, TimeGuard, mark_face
 from lib.image_convert import ndarray_to_qimage
 from lib.timer import Timer
 from lib.train import ModelPath, ModelTrainer, PostureLabel
@@ -54,11 +55,11 @@ class WebcamApplication(QObject):
             warn_dist: Optional[float] = None,
             warning_enabled: Optional[bool] = None) -> None:
         if camera_dist is not None:
-            self._distance_sentinel.set_distance_calculator(DistanceCalculator(self._landmarks, camera_dist))
+            self._distance_guard.set_distance_calculator(DistanceCalculator(self._landmarks, camera_dist))
         if warn_dist is not None:
-            self._distance_sentinel.set_warn_dist(warn_dist)
+            self._distance_guard.set_warn_dist(warn_dist)
         if warning_enabled is not None:
-            self._distance_sentinel.set_warning_enabled(warning_enabled)
+            self._distance_guard.set_warning_enabled(warning_enabled)
         # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
             self._distance_measure = enabled
@@ -70,20 +71,20 @@ class WebcamApplication(QObject):
             break_time: Optional[int] = None,
             warning_enabled: Optional[bool] = None) -> None:
         if time_limit is not None:
-            self._time_sentinel.set_time_limit(time_limit)
+            self._time_guard.set_time_limit(time_limit)
         if break_time is not None:
-            self._time_sentinel.set_break_time(break_time)
+            self._time_guard.set_break_time(break_time)
         if warning_enabled is not None:
-            self._time_sentinel.set_warning_enabled(warning_enabled)
+            self._time_guard.set_warning_enabled(warning_enabled)
         # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
-            self._time_sentinel.reset()
+            self._time_guard.reset()
             self._focus_time = enabled
             if enabled:
                 self._timer = Timer()  # Use a new timer.
-                self._time_sentinel.show()
+                self._time_guard.show()
             else:
-                self._time_sentinel.hide()
+                self._time_guard.hide()
 
     def set_posture_detect(
             self, *,
@@ -92,11 +93,11 @@ class WebcamApplication(QObject):
             warn_angle: Optional[float] = None,
             warning_enabled: Optional[bool] = None) -> None:
         if model_path is not None:
-            self._posture_checker.set_model(ModelTrainer.load_model(model_path))
+            self._posture_guard.set_model(ModelTrainer.load_model(model_path))
         if warn_angle is not None:
-            self._posture_checker.set_warn_angle(warn_angle)
+            self._posture_guard.set_warn_angle(warn_angle)
         if warning_enabled is not None:
-            self._posture_checker.set_warning_enabled(warning_enabled)
+            self._posture_guard.set_warning_enabled(warning_enabled)
         # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
             self._posture_detect = enabled
@@ -105,21 +106,25 @@ class WebcamApplication(QObject):
             self, *,
             enabled: Optional[bool] = None,
             slider_value: Optional[int] = None,
-            webcam_enabled: Optional[bool] = False,
-            color_system_enabled: Optional[bool] = False) -> None:
+            webcam_enabled: Optional[bool] = None,
+            color_system_enabled: Optional[bool] = None) -> None:
         if slider_value is not None:
-            self._slider_value = slider_value
-        if webcam_enabled and color_system_enabled:
-            self._brightness_mode = "both"
-        elif webcam_enabled:
-            self._brightness_mode = "webcam"
-        elif color_system_enabled:
-            self._brightness_mode = "color-system"
-        else:
-            self._brightness_mode = None
+            self._brightness_controller.set_base_value(slider_value)
+        if webcam_enabled is not None:
+            self._brightness_modes_enabled[BrightnessMode.WEBCAM] = webcam_enabled
+        if color_system_enabled is not None:
+            self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM] = color_system_enabled
+        # If any of the enabled is changed, reset the mode.
+        if webcam_enabled or color_system_enabled:
+            if all(self._brightness_modes_enabled.values()):
+                self._brightness_controller.set_mode(BrightnessMode.BOTH)
+            elif self._brightness_modes_enabled[BrightnessMode.WEBCAM]:
+                self._brightness_controller.set_mode(BrightnessMode.WEBCAM)
+            elif self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM]:
+                self._brightness_controller.set_mode(BrightnessMode.COLOR_SYSTEM)
         # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
-            self._brightness_optimization = enabled
+            self._brightness_optimize = enabled
 
     @pyqtSlot()
     @pyqtSlot(int)
@@ -150,10 +155,10 @@ class WebcamApplication(QObject):
             # Do applications!
             if self._distance_measure:
                 if landmarks.any():
-                    self._distance_sentinel.warn_if_too_close(canvas, landmarks)
+                    self._distance_guard.warn_if_too_close(canvas, landmarks)
             if self._posture_detect:
                 draw_landmarks_used_by_angle_calculator(canvas, landmarks)
-                self._posture_checker.check_posture(canvas, frame, landmarks)
+                self._posture_guard.check_posture(canvas, frame, landmarks)
             if self._focus_time:
                 # If the landmarks of face are clear, ths user is considered not focusing
                 # on the screen, so the timer is paused.
@@ -161,23 +166,14 @@ class WebcamApplication(QObject):
                     self._timer.pause()
                 else:
                     self._timer.start()
-                self._time_sentinel.break_time_if_too_long(self._timer)
-            if self._brightness_optimization:
-                # Default brightness is the slider value.
-                brightness = self._slider_value
-
-                if self._brightness_mode is not None:
-                    self._brightness_controller.set_mode(self._brightness_mode)
-                    # pass canvas if webcam is checked
-                    if self._brightness_mode in ("webcam", "both"):
-                        self._brightness_controller.collect_webcam_frame(canvas)
-                    if self._brightness_mode in ("color-system", "both"):
-                        self._brightness_controller.collect_screenshot()
-
-                    brightness = self._brightness_controller.get_optimized_brightness(base_value=self._slider_value)
-
-                self._brightness_controller._set_brightness(brightness)
-                self.s_brightness_refreshed.emit(brightness)
+                self._time_guard.break_time_if_too_long(self._timer)
+            if self._brightness_optimize:
+                # pass canvas if webcam is checked
+                if self._brightness_modes_enabled[BrightnessMode.WEBCAM]:
+                    self._brightness_controller.set_webcam_frame(canvas)
+                if self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM]:
+                    self._brightness_controller.refresh_color_system_screenshot()
+                self._brightness_controller.optimize_brightness()
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
             cv2.waitKey(refresh)
@@ -191,8 +187,14 @@ class WebcamApplication(QObject):
         self._f_ready = False
 
     def _get_landmarks(self, canvas: ColorImage, frame: ColorImage) -> NDArray[(68, 2), Int[32]]:
-        """Returns the numpy array with all elements in 0 if there isn't exactly 1 face in the frame.
+        """Returns the numpy array with all elements in 0 if there isn't exactly
+        1 face in the frame.
+
         Note that one can use .any() to check if any of the elements is not 0.
+
+        Arguments:
+            canvas: The image to draw the landmarks on.
+            frame: The image to get landmarks of.
         """
         faces: dlib.rectangles = self._face_detector(frame)
         # doesn't handle multiple faces
@@ -205,15 +207,23 @@ class WebcamApplication(QObject):
         return landmarks
 
     def _create_face_detectors(self) -> None:
-        """Creates face detector and shape predictor for further use."""
+        """Creates face detector and shape predictor."""
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
         self._shape_predictor = dlib.shape_predictor(to_abs_path("trained_models/shape_predictor_68_face_landmarks.dat"))
 
     def _create_brightness_controller(self):
-        """Creates brightness calculator for further use."""
+        """Creates brightness calculator and connects its signals."""
         self._brightness_controller = BrightnessController()
+        self._brightness_controller.s_brightness_refreshed.connect(self.s_brightness_refreshed)
+        # This dict records whether the modes have been enabled.
+        # So when both modes are True, we know a BOTH mode should be set.
+        self._brightness_modes_enabled: Dict[BrightnessMode, bool] = {
+            BrightnessMode.WEBCAM: False,
+            BrightnessMode.COLOR_SYSTEM: False,
+        }
 
     def _create_guards(self):
+        """Creates guards used in WebcamApplication and connects their signals."""
         # Creates the DistanceCalculator with reference image.
         ref_img: ColorImage = cv2.imread(to_abs_path("../img/ref_img.jpg"))
         faces: dlib.rectangles = self._face_detector(ref_img)
@@ -221,13 +231,13 @@ class WebcamApplication(QObject):
             # must have exactly one face in the reference image
             raise ValueError("should have exactly 1 face in the reference image")
         self._landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
-        self._distance_sentinel = DistanceSentinel()
-        self._distance_sentinel.s_distance_refreshed.connect(self.s_distance_refreshed)
+        self._distance_guard = DistanceGuard()
+        self._distance_guard.s_distance_refreshed.connect(self.s_distance_refreshed)
 
         self._angle_calculator = AngleCalculator()
-        self._posture_checker = PostureChecker(angle_calculator=self._angle_calculator)
-        self._posture_checker.s_posture_refreshed.connect(self.s_posture_refreshed)
+        self._posture_guard = PostureGuard(angle_calculator=self._angle_calculator)
+        self._posture_guard.s_posture_refreshed.connect(self.s_posture_refreshed)
 
-        self._time_sentinel = TimeSentinel()
-        self._time_sentinel.s_time_refreshed.connect(self.s_time_refreshed)
-        self.s_stopped.connect(self._time_sentinel.close_timer_widget)
+        self._time_guard = TimeGuard()
+        self._time_guard.s_time_refreshed.connect(self.s_time_refreshed)
+        self.s_stopped.connect(self._time_guard.close_timer_widget)

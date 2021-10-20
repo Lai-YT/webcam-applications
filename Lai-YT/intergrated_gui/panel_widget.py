@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QFormLayout, QGridLayout, QGroupBox, QVBoxLayout, QW
 
 from intergrated_gui.component import (CheckableGroupBox, HorizontalSlider, Label,
                                        LineEdit, OptionCheckBox, OptionRadioButton)
+from lib.brightness_calcuator import BrightnessMode
 
 
 class PanelWidget(QWidget):
@@ -159,8 +160,8 @@ class BrightnessPanel(CheckableGroupBox):
     def _create_modes(self):
         # name | description
         modes = {
-            "webcam": "Webcam-based brightness detector \n(webcam required)",
-            "color-system": "Color-system mode",
+            BrightnessMode.WEBCAM: "Webcam-based brightness detector \n(webcam required)",
+            BrightnessMode.COLOR_SYSTEM: "Color-system mode",
         }
         self.modes = {}
         for mode, description in modes.items():
@@ -169,5 +170,5 @@ class BrightnessPanel(CheckableGroupBox):
             self._layout.addWidget(self.modes[mode])
 
         # default mode
-        self.modes["webcam"].setChecked(False)
-        self.modes["color-system"].setChecked(False)
+        self.modes[BrightnessMode.WEBCAM].setChecked(False)
+        self.modes[BrightnessMode.COLOR_SYSTEM].setChecked(False)
