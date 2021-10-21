@@ -13,7 +13,7 @@ from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_c
 from lib.brightness_calcuator import BrightnessMode
 from lib.brightness_controller import BrightnessController
 from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
-from lib.guard import DistanceGuard, PostureGuard, TimeGuard, mark_face
+from lib.guard import DistanceGuard, PostureGuard, TimeGuard, global_grader_for_guards, mark_face
 from lib.image_convert import ndarray_to_qimage
 from lib.timer import Timer
 from lib.train import ModelPath, ModelTrainer, PostureLabel
@@ -32,19 +32,22 @@ class WebcamApplication(QObject):
     Signals:
         s_distance_refreshed:
             Emits everytime distance measurement has a new result.
-            Sents the new distance.
+            Sends the new distance.
         s_time_refreshed:
             Emits everytime the timer is updated.
-            Sents the time and its state.
+            Sends the time and its state.
         s_posture_refreshed:
             Emits everytime posture detection has a new result.
-            Sents the label of posture and few explanations.
+            Sends the label of posture and few explanations.
         s_brightness_refreshed:
             Emits everytime the brightness of screen is updated.
-            Sents the new brightness value.
+            Sends the new brightness value.
+        s_grade_refreshed:
+            Emits everytime a new grade is published.
+            Sends the new concentration grade.
         s_frame_refreshed:
             Emits every time a new frame is captured.
-            Sents the new frame.
+            Sends the new frame.
         s_started:
             Emits after the WebcamApplication starts running.
         s_stopped:
@@ -57,6 +60,7 @@ class WebcamApplication(QObject):
     s_time_refreshed = pyqtSignal(int, TimeState)
     s_posture_refreshed = pyqtSignal(PostureLabel, str)
     s_brightness_refreshed = pyqtSignal(int)
+    s_grade_refreshed = pyqtSignal(float)
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 
@@ -76,6 +80,7 @@ class WebcamApplication(QObject):
         self._create_face_detectors()
         self._create_brightness_controller()
         self._create_guards()
+        self._connect_concentration_grader()
 
     def set_distance_measure(
             self, *,
@@ -270,3 +275,7 @@ class WebcamApplication(QObject):
         self._time_guard = TimeGuard()
         self._time_guard.s_time_refreshed.connect(self.s_time_refreshed)
         self.s_stopped.connect(self._time_guard.close_timer_widget)
+
+    def _connect_concentration_grader(self) -> None:
+        """Connects signals of the ConcentrationGrader used by guards."""
+        global_grader_for_guards.s_grade_refreshed.connect(self.s_grade_refreshed)

@@ -46,6 +46,10 @@ class InformationWidget(QWidget):
     def update_brightness(self, brightness: int) -> None:
         self.information["brightness"].setNum(brightness)
 
+    @pyqtSlot(float)
+    def update_grade(self, grade: float) -> None:
+        self.information["concentration"].setNum(grade)
+
     # To show and hide the row of QFormLayout,
     # extra effort is required.
     def hide(self, info: str) -> None:

@@ -21,7 +21,7 @@ from gui.popup_widget import TimeState
 
 
 # Module scope grader for all guards to share.
-_concentration_grader = ConcentrationGrader(interval=100)
+global_grader_for_guards = ConcentrationGrader(interval=100)
 
 
 def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
@@ -148,9 +148,9 @@ class DistanceGuard(QObject):
         # The grading part.
         if distance < self._warn_dist:
             # Too close is considered to be a distraction.
-            _concentration_grader.increase_distraction()
+            global_grader_for_guards.increase_distraction()
         else:
-            _concentration_grader.increase_concentration()
+            global_grader_for_guards.increase_concentration()
 
     def _put_distance_text(self, canvas: ColorImage, distance: float) -> None:
         """Puts distance text on the canvas.
@@ -264,9 +264,9 @@ class TimeGuard(QObject):
             # Timer is paused if there's no face, which is considered to be a distraction.
             # Not count during break time.
             if timer.is_paused():
-                _concentration_grader.increase_distraction()
+                global_grader_for_guards.increase_distraction()
             else:
-                _concentration_grader.increase_concentration()
+                global_grader_for_guards.increase_concentration()
         else:
             self._take_break()
 
@@ -461,9 +461,9 @@ class PostureGuard(QObject):
             self._warning_repeat_timer.reset()
 
         if posture is not PostureLabel.GOOD:
-            _concentration_grader.increase_distraction()
+            global_grader_for_guards.increase_distraction()
         else:
-            _concentration_grader.increase_concentration()
+            global_grader_for_guards.increase_concentration()
 
         text, color = ("Good", GREEN) if posture is PostureLabel.GOOD else ("Slump", RED)
         cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, thickness=2)

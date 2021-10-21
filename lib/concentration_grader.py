@@ -1,16 +1,19 @@
-import logging
+from PyQt5.QtCore import QObject, pyqtSignal
 
 
-logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%m/%d/%Y %H:%M:%S",
-                    filename="concentration_grade.log", filemode="w", level=logging.INFO)
+class ConcentrationGrader(QObject):
 
+    s_grade_refreshed = pyqtSignal(float)
 
-class ConcentrationGrader:
-    def __init__(self, interval=None):
+    def __init__(self, interval: int = None):
         """
         Arguments:
-            interval (int): Logs grade after interval times of increment. No logging in default.
+            interval:
+            Sends grade by signal after interval times of increment.
+            Not to send in default.
         """
+        super().__init__()
+
         self._distraction: int = 0
         self._total: int = 0   # concentration + distraction
         self._interval = interval
@@ -18,7 +21,7 @@ class ConcentrationGrader:
     def increase_concentration(self) -> None:
         self._total += 1
         if self._interval is not None and self._total == self._interval:
-            self.log_grade()
+            self.s_grade_refreshed.emit(self.get_grade())
             self.reset()
 
     def increase_distraction(self) -> None:
@@ -35,9 +38,6 @@ class ConcentrationGrader:
 
         return round(1 - self._distraction/self._total, 3)
 
-    def reset(self):
+    def reset(self) -> None:
         self._distraction = 0
         self._total = 0
-
-    def log_grade(self):
-        logging.info(f"{self.get_grade()}")
