@@ -10,7 +10,7 @@ from nptyping import Int, NDArray
 
 from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
 from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
-from lib.guard import DistanceSentinel, PostureChecker, TimeSentinel, mark_face
+from lib.guard import DistanceGuard, PostureGuard, TimeGuard, mark_face
 from lib.timer import Timer
 from lib.train import ModelPath, ModelTrainer
 from lib.image_type import ColorImage
@@ -42,19 +42,19 @@ class WebcamApplication(QObject):
         """Note that if enable is False, other parameters are ignored."""
         self._distance_measure = enable
         if enable:
-            self._create_distance_sentinel(distance, warn_dist)
+            self._create_distance_guard(distance, warn_dist)
 
     def enable_focus_time(self, enable: bool, time_limit: int, break_time: int) -> None:
         """Note that if enable is False, other parameters are ignored."""
         self._focus_time = enable
         if enable:
-            self._create_time_sentinel(time_limit, break_time)
+            self._create_time_guard(time_limit, break_time)
 
     def enable_posture_detect(self, enable: bool, model_path: ModelPath, warn_angle: float) -> None:
         """Note that if enable is False, other parameters are ignored."""
         self._posture_detect = enable
         if enable:
-            self._create_posture_checker(model_path, warn_angle)
+            self._create_posture_guard(model_path, warn_angle)
 
     @pyqtSlot()
     @pyqtSlot(int)
@@ -88,9 +88,9 @@ class WebcamApplication(QObject):
             # Do applications!
             if self._distance_measure:
                 if landmarks.any():
-                    self._distance_sentinel.warn_if_too_close(canvas, landmarks)
+                    self._distance_guard.warn_if_too_close(canvas, landmarks)
             if self._posture_detect:
-                self._posture_checker.check_posture(canvas, frame, landmarks)
+                self._posture_guard.check_posture(canvas, frame, landmarks)
                 draw_landmarks_used_by_angle_calculator(canvas, landmarks)
             if self._focus_time:
                 # If the landmarks of face are clear, ths user is considered not focusing
@@ -99,7 +99,7 @@ class WebcamApplication(QObject):
                     self._timer.pause()
                 else:
                     self._timer.start()
-                self._time_sentinel.break_time_if_too_long(self._timer)
+                self._time_guard.break_time_if_too_long(self._timer)
 
             # zoom in the canvas (keep the ratio)
             canvas = imutils.resize(canvas, width=960)
@@ -134,7 +134,7 @@ class WebcamApplication(QObject):
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
         self._shape_predictor = dlib.shape_predictor(to_abs_path("trained_models/shape_predictor_68_face_landmarks.dat"))
 
-    def _create_distance_sentinel(self, distance: float, warn_dist: float) -> None:
+    def _create_distance_guard(self, distance: float, warn_dist: float) -> None:
         # Creates the DistanceCalculator with reference image.
         ref_img: ColorImage = cv2.imread(to_abs_path("../img/ref_img.jpg"))
         faces: dlib.rectangles = self._face_detector(ref_img)
@@ -142,14 +142,14 @@ class WebcamApplication(QObject):
             # must have exactly one face in the reference image
             raise ValueError("should have exactly 1 face in the reference image")
         landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
-        self._distance_sentinel = DistanceSentinel(
+        self._distance_guard = DistanceGuard(
             DistanceCalculator(landmarks, distance), warn_dist)
 
-    def _create_posture_checker(self, model_path: ModelPath, warn_angle: float) -> None:
-        self._posture_checker = PostureChecker(
+    def _create_posture_guard(self, model_path: ModelPath, warn_angle: float) -> None:
+        self._posture_guard = PostureGuard(
             ModelTrainer.load_model(model_path), AngleCalculator(), warn_angle)
 
-    def _create_time_sentinel(self, time_limit: int, break_time: int) -> None:
-        self._time_sentinel = TimeSentinel(time_limit, break_time)
-        self._time_sentinel.show()
-        self.s_stopped.connect(self._time_sentinel.close_timer_widget)
+    def _create_time_guard(self, time_limit: int, break_time: int) -> None:
+        self._time_guard = TimeGuard(time_limit, break_time)
+        self._time_guard.show()
+        self.s_stopped.connect(self._time_guard.close_timer_widget)

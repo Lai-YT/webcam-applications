@@ -12,9 +12,8 @@ class VideoWriter:
     def __init__(self, video_path: str, fps: float = 10.0) -> None:
         """
         Arguments:
-            video_path (str): The path to output the video
-            fps (float): If higher than the writing rate,
-                         the video will be fast-forwarded
+            video_path: The path to output the video.
+            fps: If higher than the writing rate, the video will be fast-forwarded.
         """
         fourcc: int = cv2.VideoWriter_fourcc(*"mp4v")
         self._video_writer = cv2.VideoWriter(video_path + ".mp4", fourcc, fps, (640, 480))

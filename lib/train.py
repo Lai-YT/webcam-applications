@@ -1,7 +1,7 @@
 import os
 import copy
 import shutil
-from enum import Enum, unique
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -11,6 +11,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Float, Int, NDArray, UInt8
 from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
+from tensorflow.python.keras.engine.sequential import Sequential
 
 from lib.color import RED
 from lib.cv_font import FONT_3
@@ -18,20 +19,24 @@ from lib.image_type import ColorImage, GrayImage
 from lib.path import to_abs_path
 
 
-@unique
 class PostureLabel(Enum):
-    # The values should start from 0 and be consecutive,
+    """Posture can be good or slump."""
+    # The values should start from 0 and be consecutive
     # since they're also used to represent the result of prediction.
-    good:  int = 0
-    slump: int = 1
+    GOOD:  int = 0
+    SLUMP: int = 1
 
 
 class ModelPath(Enum):
-    default = to_abs_path("trained_models/default_model.h5")
-    custom = to_abs_path("trained_models/custom_model.h5")
+    """Kinds of models with their value as the path of itself."""
+    DEFAULT = to_abs_path("trained_models/default_model.h5")
+    CUSTOM = to_abs_path("trained_models/custom_model.h5")
 
 
 class ModelTrainer(QObject):
+    """ModelTrainer provides methods of capturing sampling images and training
+    models.
+    """
     SAMPLE_DIR: str = to_abs_path("train_sample")
     IMAGE_DIMENSIONS: Tuple[int, int] = (224, 224)
 
@@ -39,7 +44,7 @@ class ModelTrainer(QObject):
     s_train_failed = pyqtSignal(str)  # Emit if the train_model() fails, str is the message.
     s_capture_finished = pyqtSignal([PostureLabel, int])  # int is the number of sample images.
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self._count_images()
@@ -48,10 +53,10 @@ class ModelTrainer(QObject):
         """Capture images for train_model().
 
         Arguments:
-            label (PostureLabel): Label of the posture, good or slump
-            capture_period (bool): Captures 1 image per capture_period (ms). 300 in default
+            label: Label of the posture.
+            capture_period: Captures 1 image per capture_period (ms). 300 in default.
         """
-        output_folder: str = f"{ModelTrainer.SAMPLE_DIR}/{label.name}"
+        output_folder: str = f"{ModelTrainer.SAMPLE_DIR}/{label.name.lower()}"
         print(f"Capturing samples into folder {output_folder}...")
         # mkdir anyway to make sure the label folders exist.
         Path(output_folder).mkdir(parents=True, exist_ok=True)
@@ -81,7 +86,7 @@ class ModelTrainer(QObject):
         cv2.destroyAllWindows()
         self.s_capture_finished.emit(label, self._image_count[label])
 
-    def stop_capturing(self):
+    def stop_capturing(self) -> None:
         """This will stops the capturing of capture_sample_images().
         No effect if already stopped.
         """
@@ -96,20 +101,20 @@ class ModelTrainer(QObject):
         fail_message: str = ""  # Will be sent if the training fails.
 
         # The order(index) of the class is the order of the ints that PostureLabels represent.
-        # i.e., good.value = 0, slump.value = 1
+        # i.e., GOOD.value = 0, SLUMP.value = 1
         # So is clear when the result of the prediction is 1, we now it's slump.
-        class_folders: List[PostureLabel] = [PostureLabel.good, PostureLabel.slump]
+        class_folders: List[PostureLabel] = [PostureLabel.GOOD, PostureLabel.SLUMP]
         class_label_indexer: int = 0
         for label in class_folders:
             if self._image_count[label] == 0:
-                print(f"No image of label '{label.name}'.")
-                fail_message += f"No image of label '{label.name}'.\n"
+                print(f"No image of label '{label.name.lower()}'.")
+                fail_message += f"No image of label '{label.name.lower()}'.\n"
             else:
-                print(f"Training with label {label.name}...")
+                print(f"Training with label {label.name.lower()}...")
 
-                image_paths = os.listdir(f"{ModelTrainer.SAMPLE_DIR}/{label.name}")
+                image_paths = os.listdir(f"{ModelTrainer.SAMPLE_DIR}/{label.name.lower()}")
                 for path in image_paths:
-                    image: GrayImage = cv2.imread(f"{ModelTrainer.SAMPLE_DIR}/{label.name}/{path}", cv2.IMREAD_GRAYSCALE)
+                    image: GrayImage = cv2.imread(f"{ModelTrainer.SAMPLE_DIR}/{label.name.lower()}/{path}", cv2.IMREAD_GRAYSCALE)
                     image = cv2.resize(image, ModelTrainer.IMAGE_DIMENSIONS)
                     train_images.append(image)
                     train_labels.append(class_label_indexer)
@@ -141,7 +146,7 @@ class ModelTrainer(QObject):
         model.add(layers.Dense(len(class_folders), activation="softmax"))
         model.compile(optimizer="adam", loss="sparse_categorical_crossentropy",  metrics=["accuracy"])
         model.fit(images, labels, epochs=epochs, class_weight=weights)
-        model.save(ModelPath.custom.value)
+        model.save(ModelPath.CUSTOM.value)
 
         print("Training finished.")
         self.s_train_finished.emit()
@@ -151,22 +156,22 @@ class ModelTrainer(QObject):
         Ignore errors when folder not exist.
         """
         # Remove the entire label folder and set count to 0.
-        shutil.rmtree(f"{ModelTrainer.SAMPLE_DIR}/{label.name}", ignore_errors=True)
+        shutil.rmtree(f"{ModelTrainer.SAMPLE_DIR}/{label.name.lower()}", ignore_errors=True)
         self._image_count[label] = 0
 
-    def get_image_count(self):
+    def get_image_count(self) -> Dict[PostureLabel, int]:
         return copy.deepcopy(self._image_count)
 
     @staticmethod
-    def load_model(model_path: ModelPath):
+    def load_model(model_path: ModelPath) -> Sequential:
         return models.load_model(model_path.value)
 
-    def _count_images(self):
+    def _count_images(self) -> None:
         self._image_count: Dict[PostureLabel, int] = {}
         for label in PostureLabel:
             # The label file might not exist if haven't trained yet.
             try:
-                count = len(os.listdir(f"{ModelTrainer.SAMPLE_DIR}/{label.name}"))
+                count = len(os.listdir(f"{ModelTrainer.SAMPLE_DIR}/{label.name.lower()}"))
             except FileNotFoundError:
                 count = 0
             self._image_count[label] = count

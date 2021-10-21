@@ -8,9 +8,9 @@ from playsound import playsound
 from tensorflow.python.keras.engine.sequential import Sequential
 
 from lib.angle_calculator import AngleCalculator
-from lib.color import BLUE, GREEN, MAGENTA, RED
+from lib.color import GREEN, MAGENTA, RED
 from lib.concentration_grader import ConcentrationGrader
-from lib.cv_font import FONT_0, FONT_3
+from lib.cv_font import FONT_0
 from lib.distance_calculator import DistanceCalculator
 from lib.image_type import ColorImage, GrayImage
 from lib.path import to_abs_path
@@ -92,16 +92,12 @@ class DistanceGuard(QObject):
     def set_warning_enabled(self, enabled: bool) -> None:
         """
         Arguments:
-            enabled:
-                Whether there's sound that warns the user when the distance is
-                too close.
+            enabled: Whether there's sound that warns the user when the distance is too close.
         """
         self._warning_enabled = enabled
 
     def warn_if_too_close(self, canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         """Warning message shows when the distance is less than warn_dist.
-
-        Signal s_distance_refreshed is emitted with the distance calculated.
 
         Notice that this method does nothing if distance calculator haven't been
         set yet; no warning if warn dist haven't been set yet.
@@ -109,6 +105,9 @@ class DistanceGuard(QObject):
         Arguments:
             canvas: The image to put text on.
             landmarks: (x, y) coordinates of the 68 face landmarks.
+
+        Emits:
+            s_distance_refreshed: With the distance calculated.
         """
         # Can't do any thing without DistanceCalculator.
         if not hasattr(self, "_distance_calculator"):
@@ -233,15 +232,16 @@ class TimeGuard(QObject):
         """The timer widget switches to break mode if the time held by timer exceeds
         the time limit.
 
-        Signal s_time_refreshed is emitted.
-        If isn't time to take a break, the time held by timer and state work is
-        sent; otherwise the countdown of break and state break is sent.
-
         Notice that the time is simply updated to the timer widget and kept in
         work mode if time limit or break time haven't been set yet.
 
         Arguments:
             timer: Contains time record.
+
+        Emits:
+            s_time_refreshed:
+                If isn't time to take a break, the time held by timer and state work is
+                sent; otherwise the countdown of break and state break is sent.
         """
         if not hasattr(self, "_break_time") or not hasattr(self, "_time_limit"):
             # Only display the time if the guard is not ready.
@@ -295,8 +295,8 @@ class TimeGuard(QObject):
     def _take_break(self) -> None:
         """Updates the time of the break timer to the timer widget.
 
-        Signal s_time_refreshed is emitted with the countdown of break and the
-        state of break.
+        Emits:
+            s_time_refreshed: Emits with the countdown of break and the state of break.
         """
         # If is the very moment to enter the break.
         if not self._f_break_started:
@@ -389,30 +389,28 @@ class PostureGuard(QObject):
 
     def set_angle_calculator(self, angle_calculator: AngleCalculator) -> None:
         """
-        Arguments: Used to calculate the angle of face when a face is found.
+        Arguments:
+            angle_calculator: Used to calculate the angle of face when a face is found.
         """
         self._angle_calculator = angle_calculator
 
     def set_warn_angle(self, warn_angle: float) -> None:
         """
         Arguments:
-            warn_angle:
-                Face slope angle larger than this is considered to be a slump posture.
+            warn_angle: Face slope angle larger than this is considered to be a slump posture.
         """
         self._warn_angle = warn_angle
 
     def set_warning_enabled(self, enabled: bool) -> None:
         """
         Arguments:
-            enabled:
-                Whether there's sound that warns the user when a slump posture occurs.
+            enabled: Whether there's sound that warns the user when a slump posture occurs.
         """
         self._warning_enabled = enabled
 
     def check_posture(self, canvas: ColorImage, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         """Sound plays if is a "slump" posture and warning is enabled.
 
-        Signal s_posture_refreshed is emitted to show the result of the check.
         If the landmarks of face are clear, use AngleCalculator to calculate the
         slope precisely; otherwise use the model to predict the posture.
 
@@ -423,6 +421,9 @@ class PostureGuard(QObject):
             canvas: The prediction will be texted on the canvas.
             frame: The image contains posture to be watched.
             landmarks: (x, y) coordinates of the 68 face landmarks.
+
+        Emits:
+            s_posture_refreshed: Sends the posture label and result explanation.
 
         Returns:
             The PostureLabel and the explanation string of the determination.
@@ -438,7 +439,7 @@ class PostureGuard(QObject):
             posture, explanation = self._do_posture_model_predict(canvas, frame)
         self.s_posture_refreshed.emit(posture, explanation)
 
-        if posture is not PostureLabel.good:
+        if posture is not PostureLabel.GOOD:
             # If this is a new start of a slumped posture interval,
             # play sound and start another interval.
             if not self._f_played:
@@ -458,12 +459,12 @@ class PostureGuard(QObject):
             self._f_played = False
             self._warning_repeat_timer.reset()
 
-        if posture is not PostureLabel.good:
+        if posture is not PostureLabel.GOOD:
             _concentration_grader.increase_distraction()
         else:
             _concentration_grader.increase_concentration()
 
-        text, color = ("Good", GREEN) if posture is PostureLabel.good else ("Slump", RED)
+        text, color = ("Good", GREEN) if posture is PostureLabel.GOOD else ("Slump", RED)
         cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, thickness=2)
 
     def _do_posture_angle_check(self, canvas: ColorImage, angle: float) -> Tuple[PostureLabel, str]:
@@ -480,7 +481,7 @@ class PostureGuard(QObject):
         explanation: str = f"by angle: {round(angle, 1)} degrees"
         cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
 
-        return (PostureLabel.good if abs(angle) < self._warn_angle else PostureLabel.slump), explanation
+        return (PostureLabel.GOOD if abs(angle) < self._warn_angle else PostureLabel.SLUMP), explanation
 
     def _do_posture_model_predict(self, canvas: ColorImage, frame: ColorImage) -> Tuple[PostureLabel, str]:
         """Puts posture label text on the canvas.
@@ -509,4 +510,4 @@ class PostureGuard(QObject):
         explanation: str = f"by model: {conf:.0%}"
         cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
 
-        return (PostureLabel.good if class_pred == PostureLabel.good.value else PostureLabel.slump), explanation
+        return (PostureLabel.GOOD if class_pred == PostureLabel.GOOD.value else PostureLabel.SLUMP), explanation

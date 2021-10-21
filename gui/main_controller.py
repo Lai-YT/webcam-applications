@@ -148,9 +148,9 @@ class GuiController(QObject):
         # the `start` if doesn't exist.
         selected_model_name = self._page_controllers["Options"].get_selected_model_name()
         if selected_model_name == "Default":
-            model_path = ModelPath.default
+            model_path = ModelPath.DEFAULT
         elif selected_model_name == "Custom":
-            model_path = ModelPath.custom
+            model_path = ModelPath.CUSTOM
             if not os.path.isfile(model_path.value):
                 FailMessageBox("Please train the custom model first.").exec()
                 raise FileNotFoundError("error: please train the custom model first")

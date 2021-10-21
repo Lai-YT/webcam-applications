@@ -341,9 +341,9 @@ class ModelController(PageController):
 
         capture_period = 300  # 1 per 300 ms
         if selected_option == "Good":
-            label = PostureLabel.good
+            label = PostureLabel.GOOD
         elif selected_option == "Slump":
-            label = PostureLabel.slump
+            label = PostureLabel.SLUMP
         self._model_trainer.remove_sample_images(label)
         self._model_trainer.capture_sample_images(label, capture_period=capture_period)
 
