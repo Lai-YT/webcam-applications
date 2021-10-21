@@ -56,9 +56,9 @@ class PanelController(QObject):
             self._app.set_posture_detect(warn_angle=AngleTolerance.STRICT)
         custom = panel.custom
         if custom.isChecked():
-            self._app.set_posture_detect(model_path=ModelPath.custom)
+            self._app.set_posture_detect(model_path=ModelPath.CUSTOM)
         else:
-            self._app.set_posture_detect(model_path=ModelPath.default)
+            self._app.set_posture_detect(model_path=ModelPath.DEFAULT)
         warning = panel.warning
         self._app.set_posture_detect(warning_enabled=warning.isChecked())
 
@@ -102,7 +102,7 @@ class PanelController(QObject):
         panel.angles[AngleTolerance.LOOSE].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.LOOSE) if checked else None)
         panel.angles[AngleTolerance.STRICT].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.STRICT) if checked else None)
         custom = panel.custom
-        custom.toggled.connect(lambda checked: self._app.set_posture_detect(model_path=(ModelPath.custom if checked else ModelPath.default)))
+        custom.toggled.connect(lambda checked: self._app.set_posture_detect(model_path=(ModelPath.CUSTOM if checked else ModelPath.DEFAULT)))
         warning = panel.warning
         warning.toggled.connect(lambda checked: self._app.set_posture_detect(warning_enabled=checked))
 

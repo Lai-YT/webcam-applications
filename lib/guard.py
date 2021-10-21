@@ -17,6 +17,7 @@ from lib.path import to_abs_path
 from lib.timer import Timer
 from lib.train import ModelTrainer, PostureLabel
 from gui.popup_shower import TimeShower
+from gui.popup_widget import TimeState
 
 
 # Module scope grader for all guards to share.
@@ -175,7 +176,7 @@ class TimeGuard(QObject):
             is sent; otherwise the countdown of break and state break is sent.
     """
 
-    s_time_refreshed = pyqtSignal(int, str)
+    s_time_refreshed = pyqtSignal(int, TimeState)
 
     def __init__(self,
                  time_limit: Optional[int] = None,
@@ -240,13 +241,13 @@ class TimeGuard(QObject):
 
         Emits:
             s_time_refreshed:
-                If isn't time to take a break, the time held by timer and state work is
-                sent; otherwise the countdown of break and state break is sent.
+                If isn't time to take a break, the time held by timer and work state is
+                sent; otherwise the countdown of break and break state is sent.
         """
         if not hasattr(self, "_break_time") or not hasattr(self, "_time_limit"):
             # Only display the time if the guard is not ready.
             self._time_shower.update_time(timer.time())
-            self.s_time_refreshed.emit(timer.time(), "work")
+            self.s_time_refreshed.emit(timer.time(), TimeState.WORK)
             return
 
         # Break time is over.
@@ -259,7 +260,7 @@ class TimeGuard(QObject):
         elif timer.time() < self._time_limit and not self._f_break_started:
             # The time of the normal timer is to be shown.
             self._time_shower.update_time(timer.time())
-            self.s_time_refreshed.emit(timer.time(), "work")
+            self.s_time_refreshed.emit(timer.time(), TimeState.WORK)
             # Timer is paused if there's no face, which is considered to be a distraction.
             # Not count during break time.
             if timer.is_paused():
@@ -279,10 +280,10 @@ class TimeGuard(QObject):
 
     def reset(self) -> None:
         """If the TimeGuard is now taking a break, this method ends the break
-        and switches back to work mode.
+        and switches back to work state.
         """
         self._f_break_started = False
-        self._time_shower.switch_time_state("work")
+        self._time_shower.switch_time_state(TimeState.WORK)
         self._break_timer.reset()
 
     @pyqtSlot()
@@ -296,7 +297,7 @@ class TimeGuard(QObject):
         """Updates the time of the break timer to the timer widget.
 
         Emits:
-            s_time_refreshed: Emits with the countdown of break and the state of break.
+            s_time_refreshed: Emits with the countdown of break and the break state.
         """
         # If is the very moment to enter the break.
         if not self._f_break_started:
@@ -304,14 +305,14 @@ class TimeGuard(QObject):
         countdown: int = self._break_time - self._break_timer.time()
         # The time (countdown) of the break timer is to be shown.
         self._time_shower.update_time(countdown)
-        self.s_time_refreshed.emit(countdown, "break")
+        self.s_time_refreshed.emit(countdown, TimeState.BREAK)
 
     def _enter_break(self) -> None:
         """Sound warning is played if it's enabled.
 
         Call this method if is the very moment to enter the break.
         """
-        self._time_shower.switch_time_state("break")
+        self._time_shower.switch_time_state(TimeState.BREAK)
         self._f_break_started = True
         self._break_timer.start()
         if self._warning_enabled:

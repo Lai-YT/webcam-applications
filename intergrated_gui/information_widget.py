@@ -1,12 +1,15 @@
+from typing import Dict
+
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QFormLayout, QFrame, QWidget
 
+from gui.popup_widget import TimeState
 from intergrated_gui.component import Label
 from lib.train import PostureLabel
 
 
 class InformationWidget(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
 
         self._layout = QFormLayout()
@@ -19,24 +22,24 @@ class InformationWidget(QWidget):
         """Updates distance to the corresponding information label.
 
         Arguments:
-            distance (float): It is rounded to two decimal places
+            distance: It is rounded to two decimal places.
         """
         self.information["distance"].setNum(round(distance, 2))
 
-    @pyqtSlot(int, str)
-    def update_time(self, time: int, state: str) -> None:
+    @pyqtSlot(int, TimeState)
+    def update_time(self, time: int, state: TimeState) -> None:
         """
         Arguments:
-            time (int): Time to update, in seconds
-            state (str): The state of the time to display
+            time: Time to update, in seconds.
+            state: The state of the time to display.
         """
-        time_str = f"{(time // 60):02d}:{(time % 60):02d}"
+        time_str: str = f"{(time // 60):02d}:{(time % 60):02d}"
         self.information["time"].setText(time_str)
-        self.information["time-state"].setText(state)
+        self.information["time-state"].setText(state.name.lower())
 
     @pyqtSlot(PostureLabel, str)
     def update_posture(self, posture: PostureLabel, explanation: str) -> None:
-        self.information["posture"].setText(posture.name)
+        self.information["posture"].setText(posture.name.lower())
         self.information["posture-explanation"].setText(explanation)
 
     @pyqtSlot(int)
@@ -57,7 +60,7 @@ class InformationWidget(QWidget):
         self._layout.itemAt(row, QFormLayout.LabelRole).widget().show()
         self._layout.itemAt(row, QFormLayout.FieldRole).widget().show()
 
-    def _create_information(self):
+    def _create_information(self) -> None:
         information = {
             "distance": "Face Distance:",
             "posture": "Posture Detect:",
@@ -67,9 +70,9 @@ class InformationWidget(QWidget):
             "concentration": "Concentration Grade:",
             "brightness": "Screen Brightness:",
         }
-        self.information = {}
+        self.information: Dict[str, Label] = {}
 
-        font_size=16
+        font_size: int = 16
         for name, description in information.items():
             # Notice that if the line warp isn't set to True,
             # the label might grow and affect size of other widget.

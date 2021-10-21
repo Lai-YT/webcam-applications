@@ -8,6 +8,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
+from gui.popup_widget import TimeState
 from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
 from lib.brightness_calcuator import BrightnessMode
 from lib.brightness_controller import BrightnessController
@@ -21,11 +22,39 @@ from lib.path import to_abs_path
 
 
 class WebcamApplication(QObject):
+    """
+    The WebcamApplication provides 4 main applications:
+        distance measurement,
+        focus timing,
+        posture detection,
+        brightness optimization
+
+    Signals:
+        s_distance_refreshed:
+            Emits everytime distance measurement has a new result.
+            Sents the new distance.
+        s_time_refreshed:
+            Emits everytime the timer is updated.
+            Sents the time and its state.
+        s_posture_refreshed:
+            Emits everytime posture detection has a new result.
+            Sents the label of posture and few explanations.
+        s_brightness_refreshed:
+            Emits everytime the brightness of screen is updated.
+            Sents the new brightness value.
+        s_frame_refreshed:
+            Emits every time a new frame is captured.
+            Sents the new frame.
+        s_started:
+            Emits after the WebcamApplication starts running.
+        s_stopped:
+            Emits after the WebcamApplication stops running.
+    """
 
     # Signals used to communicate with controller.
     s_frame_refreshed = pyqtSignal(QImage)
     s_distance_refreshed = pyqtSignal(float)
-    s_time_refreshed = pyqtSignal(int, str)
+    s_time_refreshed = pyqtSignal(int, TimeState)
     s_posture_refreshed = pyqtSignal(PostureLabel, str)
     s_brightness_refreshed = pyqtSignal(int)
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
