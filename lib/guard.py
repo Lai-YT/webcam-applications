@@ -123,14 +123,14 @@ class DistanceGuard(QObject):
         # Can't do any thing without DistanceCalculator.
         if not hasattr(self, "_distance_calculator"):
             return
-        # Distance can be calculated when DistanceCalculator exists, but without
-        # warn dist, there's no further process.
+        # Distance can be calculated when DistanceCalculator exists.
         if hasattr(self, "_distance_calculator"):
             distance: float = self._distance_calculator.calculate(landmarks)
-            self.s_distance_refreshed.emit(distance, DistanceState.NORMAL)
             self._put_distance_text(canvas, distance)
-
+        # Has DistanceCalculator but no warn dist.
+        # Send the distance with normal state. And no further process.
         if not hasattr(self, "_warn_dist"):
+            self.s_distance_refreshed.emit(distance, DistanceState.NORMAL)
             return
 
         # default state
@@ -157,6 +157,8 @@ class DistanceGuard(QObject):
         elif self._warning_repeat_timer.time() > 8:
             self._f_played = False
             self._warning_repeat_timer.reset()
+
+        self.s_distance_refreshed.emit(distance, state)
 
         # The grading part.
         if distance < self._warn_dist:
