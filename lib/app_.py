@@ -13,7 +13,7 @@ from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_c
 from lib.brightness_calcuator import BrightnessMode
 from lib.brightness_controller import BrightnessController
 from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
-from lib.guard import DistanceGuard, PostureGuard, TimeGuard, global_grader_for_guards, mark_face
+from lib.guard import DistanceGuard, PostureGuard, TimeGuard, TextColor, global_grader_for_guards, mark_face
 from lib.image_convert import ndarray_to_qimage
 from lib.timer import Timer
 from lib.train import ModelPath, ModelTrainer, PostureLabel
@@ -56,9 +56,9 @@ class WebcamApplication(QObject):
 
     # Signals used to communicate with controller.
     s_frame_refreshed = pyqtSignal(QImage)
-    s_distance_refreshed = pyqtSignal(float)
+    s_distance_refreshed = pyqtSignal(float, TextColor)
     s_time_refreshed = pyqtSignal(int, TimeState)
-    s_posture_refreshed = pyqtSignal(PostureLabel, str)
+    s_posture_refreshed = pyqtSignal(PostureLabel, str, TextColor)
     s_brightness_refreshed = pyqtSignal(int)
     s_grade_refreshed = pyqtSignal(float)
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()

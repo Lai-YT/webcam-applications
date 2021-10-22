@@ -47,6 +47,9 @@ class Label(QLabel):
         super().__init__(text)
         self.setFont(QFont("Arial", font_size))
         self.setWordWrap(wrap)
+    
+    def set_color(self, color):
+        self.setStyleSheet(f"color: {color};")
 
 
 class LineEdit(QLineEdit):

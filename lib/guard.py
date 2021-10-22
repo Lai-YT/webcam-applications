@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 
 import cv2
+from enum import Enum
 import numpy
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Float, Int, NDArray
@@ -23,6 +24,9 @@ from gui.popup_widget import TimeState
 # Module scope grader for all guards to share.
 global_grader_for_guards = ConcentrationGrader(interval=100)
 
+class TextColor(Enum):
+    WARNING = "red"
+    NORMAL  = "black"
 
 def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
     """Modifies the canvas with face area framed up and landmarks dotted.
@@ -46,7 +50,7 @@ class DistanceGuard(QObject):
         s_distance_refreshed: Emits everytime a new distance is calculated.
     """
 
-    s_distance_refreshed = pyqtSignal(float)
+    s_distance_refreshed = pyqtSignal(float, TextColor)
 
     def __init__(self,
                  distance_calculator: Optional[DistanceCalculator] = None,
@@ -73,6 +77,7 @@ class DistanceGuard(QObject):
 
         self._wavfile: str = to_abs_path("sounds/too_close.wav")
         self._warning_repeat_timer = Timer()
+        self.textcolor = TextColor.NORMAL
         # To avoid double play due to a near time check (less than 1 sec).
         self._f_played: bool = False
 
@@ -117,14 +122,16 @@ class DistanceGuard(QObject):
         # warn dist, there's no further process.
         if hasattr(self, "_distance_calculator"):
             distance: float = self._distance_calculator.calculate(landmarks)
-            self.s_distance_refreshed.emit(distance)
+            self.s_distance_refreshed.emit(distance, self.textcolor)
             self._put_distance_text(canvas, distance)
 
         if not hasattr(self, "_warn_dist"):
             return
 
+        self.textcolor = TextColor.NORMAL
         # warning logic...
         if distance < self._warn_dist:
+            self.textcolor = TextColor.WARNING
             cv2.putText(canvas, "too close", (10, 150), FONT_0, 0.9, RED, 2)
             # If this is a new start of a too-close interval,
             # play sound and start another interval.
@@ -346,7 +353,7 @@ class PostureGuard(QObject):
             determination.
     """
 
-    s_posture_refreshed = pyqtSignal(PostureLabel, str)
+    s_posture_refreshed = pyqtSignal(PostureLabel, str, TextColor)
 
     def __init__(self,
                  model: Optional[Sequential] = None,
@@ -378,6 +385,7 @@ class PostureGuard(QObject):
 
         self._wavfile: str = to_abs_path("sounds/posture_slump.wav")
         self._warning_repeat_timer = Timer()
+        self.textcolor = TextColor.NORMAL
         # To avoid double play due to a near time check (less than 1 sec).
         self._f_played: bool = False
 
@@ -438,7 +446,7 @@ class PostureGuard(QObject):
             posture, explanation = self._do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
         else:
             posture, explanation = self._do_posture_model_predict(canvas, frame)
-        self.s_posture_refreshed.emit(posture, explanation)
+        self.s_posture_refreshed.emit(posture, explanation, self.textcolor)
 
         if posture is not PostureLabel.GOOD:
             # If this is a new start of a slumped posture interval,
@@ -461,8 +469,10 @@ class PostureGuard(QObject):
             self._warning_repeat_timer.reset()
 
         if posture is not PostureLabel.GOOD:
+            self.textcolor = TextColor.WARNING
             global_grader_for_guards.increase_distraction()
         else:
+            self.textcolor = TextColor.NORMAL
             global_grader_for_guards.increase_concentration()
 
         text, color = ("Good", GREEN) if posture is PostureLabel.GOOD else ("Slump", RED)
@@ -479,7 +489,7 @@ class PostureGuard(QObject):
         Returns:
             The PostureLabel and the explanation string of the determination.
         """
-        explanation: str = f"by angle: {round(angle, 1)} degrees"
+        explanation: str = f"by angle: \n{round(angle, 1)} degrees"
         cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
 
         return (PostureLabel.GOOD if abs(angle) < self._warn_angle else PostureLabel.SLUMP), explanation
@@ -508,7 +518,7 @@ class PostureGuard(QObject):
         # Gets the confidence value.
         conf: Float[32] = predictions[0][class_pred]
 
-        explanation: str = f"by model: {conf:.0%}"
+        explanation: str = f"by model: \n{conf:.0%}"
         cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
 
         return (PostureLabel.GOOD if class_pred == PostureLabel.GOOD.value else PostureLabel.SLUMP), explanation

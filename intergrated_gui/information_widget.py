@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QFormLayout, QFrame, QWidget
 
 from gui.popup_widget import TimeState
 from intergrated_gui.component import Label
+from lib.guard import TextColor
 from lib.train import PostureLabel
 
 
@@ -17,14 +18,15 @@ class InformationWidget(QWidget):
 
         self._create_information()
 
-    @pyqtSlot(float)
-    def update_distance(self, distance: float) -> None:
+    @pyqtSlot(float, TextColor)
+    def update_distance(self, distance: float, text_color: TextColor) -> None:
         """Updates distance to the corresponding information label.
 
         Arguments:
             distance: It is rounded to two decimal places.
         """
         self.information["distance"].setNum(round(distance, 2))
+        self.information["distance"].set_color(text_color.value)
 
     @pyqtSlot(int, TimeState)
     def update_time(self, time: int, state: TimeState) -> None:
@@ -37,9 +39,10 @@ class InformationWidget(QWidget):
         self.information["time"].setText(time_str)
         self.information["time-state"].setText(state.name.lower())
 
-    @pyqtSlot(PostureLabel, str)
-    def update_posture(self, posture: PostureLabel, explanation: str) -> None:
+    @pyqtSlot(PostureLabel, str, TextColor)
+    def update_posture(self, posture: PostureLabel, explanation: str, text_color: TextColor) -> None:
         self.information["posture"].setText(posture.name.lower())
+        self.information["posture"].set_color(text_color.value)
         self.information["posture-explanation"].setText(explanation)
 
     @pyqtSlot(int)
@@ -76,7 +79,7 @@ class InformationWidget(QWidget):
         }
         self.information: Dict[str, Label] = {}
 
-        font_size: int = 16
+        font_size: int = 15
         for name, description in information.items():
             # Notice that if the line warp isn't set to True,
             # the label might grow and affect size of other widget.
