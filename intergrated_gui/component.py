@@ -48,7 +48,7 @@ class Label(QLabel):
         self.setFont(QFont("Arial", font_size))
         self.setWordWrap(wrap)
     
-    def set_color(self, color):
+    def set_text_color(self, color):
         self.setStyleSheet(f"color: {color};")
 
 

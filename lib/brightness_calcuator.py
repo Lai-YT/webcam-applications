@@ -2,7 +2,6 @@ from enum import Enum, auto
 from typing import Dict
 
 import cv2
-import numpy as np
 
 from lib.image_type import ColorImage
 

@@ -1,10 +1,8 @@
+import screen_brightness_control as sbc
 from typing import Dict, Optional
 
-import cv2
-import numpy as np
-import screen_brightness_control as sbc
 from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication
 
 from lib.brightness_calcuator import BrightnessCalculator, BrightnessMode
@@ -92,6 +90,7 @@ class BrightnessController(QObject):
         aren't set.
         """
         if not hasattr(self, "_mode") or not hasattr(self, "_base_value") or not self._frames:
+            self.s_brightness_refreshed.emit(sbc.get_brightness(method="wmi"))
             return
 
         new_brightness = BrightnessCalculator.calculate_proper_screen_brightness(self._mode, self._base_value, self._frames)

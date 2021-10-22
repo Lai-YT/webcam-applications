@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Dict
 
 from PyQt5.QtCore import pyqtSlot
@@ -5,9 +6,13 @@ from PyQt5.QtWidgets import QFormLayout, QFrame, QWidget
 
 from gui.popup_widget import TimeState
 from intergrated_gui.component import Label
-from lib.guard import TextColor
+from lib.guard import DistanceState
 from lib.train import PostureLabel
 
+class TextColor(Enum):
+    """If info state has to be warned, set info text in red."""
+    RED = "red"
+    BLACK  = "black"
 
 class InformationWidget(QWidget):
     def __init__(self, parent: QWidget = None) -> None:
@@ -18,15 +23,18 @@ class InformationWidget(QWidget):
 
         self._create_information()
 
-    @pyqtSlot(float, TextColor)
-    def update_distance(self, distance: float, text_color: TextColor) -> None:
+    @pyqtSlot(float, DistanceState)
+    def update_distance(self, distance: float, state: DistanceState) -> None:
         """Updates distance to the corresponding information label.
 
         Arguments:
             distance: It is rounded to two decimal places.
         """
         self.information["distance"].setNum(round(distance, 2))
-        self.information["distance"].set_color(text_color.value)
+        if state is DistanceState.WARNING:
+            self.information["distance"].set_text_color(TextColor.RED.value)
+        else:
+            self.information["distance"].set_text_color(TextColor.BLACK.value)
 
     @pyqtSlot(int, TimeState)
     def update_time(self, time: int, state: TimeState) -> None:
@@ -39,11 +47,29 @@ class InformationWidget(QWidget):
         self.information["time"].setText(time_str)
         self.information["time-state"].setText(state.name.lower())
 
-    @pyqtSlot(PostureLabel, str, TextColor)
-    def update_posture(self, posture: PostureLabel, explanation: str, text_color: TextColor) -> None:
+        if state is TimeState.BREAK:
+            self.information["time"].set_text_color(TextColor.RED.value)
+            self.information["time-state"].set_text_color(TextColor.RED.value)
+        else:
+            self.information["time"].set_text_color(TextColor.BLACK.value)
+            self.information["time-state"].set_text_color(TextColor.BLACK.value)
+
+
+
+    @pyqtSlot(PostureLabel, str)
+    def update_posture(self, posture: PostureLabel, explanation: str) -> None:
         self.information["posture"].setText(posture.name.lower())
-        self.information["posture"].set_color(text_color.value)
-        self.information["posture-explanation"].setText(explanation)
+
+        mode, degree = explanation.split(":")
+        wrapped_explanation = mode + ":\n" + degree
+        self.information["posture-explanation"].setText(wrapped_explanation)
+
+        if posture is PostureLabel.SLUMP:
+            self.information["posture"].set_text_color(TextColor.RED.value)
+            self.information["posture-explanation"].set_text_color(TextColor.RED.value)
+        else:
+            self.information["posture"].set_text_color(TextColor.BLACK.value)
+            self.information["posture-explanation"].set_text_color(TextColor.BLACK.value)
 
     @pyqtSlot(int)
     def update_brightness(self, brightness: int) -> None:
