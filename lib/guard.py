@@ -1,4 +1,4 @@
-from enum import auto, Enum
+from enum import Enum, auto
 from typing import List, Optional, Tuple
 
 import cv2
@@ -38,13 +38,15 @@ def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: ND
     for lx, ly in landmarks:
         cv2.circle(canvas, (lx, ly), 1, GREEN, -1)
 
+
 class DistanceState(Enum):
     """
-    Two states represent two different relationships 
+    Two states represent two different relationships
     between distance and limit.
     """
-    WARNING = auto()
     NORMAL = auto()
+    WARNING = auto()
+
 
 class DistanceGuard(QObject):
     """DistanceGuard checks whether the face obtained by the landmarks are at
@@ -81,8 +83,6 @@ class DistanceGuard(QObject):
 
         self._wavfile: str = to_abs_path("sounds/too_close.wav")
         self._warning_repeat_timer = Timer()
-        # init state
-        self._state = DistanceState.NORMAL
         # To avoid double play due to a near time check (less than 1 sec).
         self._f_played: bool = False
 
@@ -127,17 +127,17 @@ class DistanceGuard(QObject):
         # warn dist, there's no further process.
         if hasattr(self, "_distance_calculator"):
             distance: float = self._distance_calculator.calculate(landmarks)
-            self.s_distance_refreshed.emit(distance, self._state)
+            self.s_distance_refreshed.emit(distance, DistanceState.NORMAL)
             self._put_distance_text(canvas, distance)
 
         if not hasattr(self, "_warn_dist"):
             return
 
         # default state
-        self._state = DistanceState.NORMAL
+        state = DistanceState.NORMAL
         # warning logic...
         if distance < self._warn_dist:
-            self._state = DistanceState.WARNING
+            state = DistanceState.WARNING
             cv2.putText(canvas, "too close", (10, 150), FONT_0, 0.9, RED, 2)
             # If this is a new start of a too-close interval,
             # play sound and start another interval.
@@ -492,7 +492,7 @@ class PostureGuard(QObject):
         Returns:
             The PostureLabel and the explanation string of the determination.
         """
-        explanation: str = f"by angle:{round(angle, 1)} degrees"
+        explanation: str = f"by angle: {round(angle, 1)} degrees"
         cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
 
         return (PostureLabel.GOOD if abs(angle) < self._warn_angle else PostureLabel.SLUMP), explanation
@@ -521,7 +521,7 @@ class PostureGuard(QObject):
         # Gets the confidence value.
         conf: Float[32] = predictions[0][class_pred]
 
-        explanation: str = f"by model:{conf:.0%}"
+        explanation: str = f"by model: {conf:.0%}"
         cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
 
         return (PostureLabel.GOOD if class_pred == PostureLabel.GOOD.value else PostureLabel.SLUMP), explanation

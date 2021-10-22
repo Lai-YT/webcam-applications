@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional
 import cv2
 import dlib
 import numpy
-import screen_brightness_control as sbc
 from PyQt5.QtGui import QImage
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
@@ -14,7 +13,7 @@ from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_c
 from lib.brightness_calcuator import BrightnessMode
 from lib.brightness_controller import BrightnessController
 from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
-from lib.guard import DistanceState, DistanceGuard, PostureGuard, TimeGuard, global_grader_for_guards, mark_face
+from lib.guard import DistanceGuard, DistanceState, PostureGuard, TimeGuard, global_grader_for_guards, mark_face
 from lib.image_convert import ndarray_to_qimage
 from lib.timer import Timer
 from lib.train import ModelPath, ModelTrainer, PostureLabel
