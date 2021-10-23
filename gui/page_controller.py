@@ -5,9 +5,10 @@ from math import ceil
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
-from gui.component import CaptureMessageBox, FailMessageBox, ProgressDialog
 from gui.task_worker import TaskWorker
-from lib.train import PostureLabel, ModelTrainer
+from intergrated_gui.component import CaptureMessageBox, FailMessageBox, ProgressDialog
+from lib.guard import PostureLabel
+from lib.train import ModelTrainer
 
 
 class PageController(QObject):

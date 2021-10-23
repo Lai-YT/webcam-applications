@@ -4,9 +4,8 @@ from typing import Dict
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QFormLayout, QFrame, QWidget
 
-from gui.popup_widget import TimeState
 from intergrated_gui.component import Label
-from lib.guard import DistanceState
+from lib.guard import DistanceState, TimeState
 from lib.train import PostureLabel
 
 
@@ -36,7 +35,7 @@ class InformationWidget(QWidget):
             distance: It is rounded to two decimal places.
         """
         self.information["distance"].setNum(round(distance, 2))
-        
+
         if state is DistanceState.WARNING:
             self.information["distance"].set_color(TextColor.RED.value)
         else:

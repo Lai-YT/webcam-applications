@@ -3,8 +3,8 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QFormLayout, QGridLayout, QGroupBox, QHBoxLayout,
                              QTabWidget, QVBoxLayout, QWidget)
 
-from gui.component import (ActionButton, Label, LineEdit, OptionCheckBox,
-                           OptionRadioButton, MessageLabel)
+from intergrated_gui.component import (ActionButton, Label, LineEdit, OptionCheckBox,
+                                       OptionRadioButton, MessageLabel)
 
 
 class PageWidget(QTabWidget):

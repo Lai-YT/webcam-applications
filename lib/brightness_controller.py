@@ -1,9 +1,9 @@
 from typing import Dict, Optional
 
+import screen_brightness_control as sbc
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication
-import screen_brightness_control as sbc
 
 from lib.brightness_calcuator import BrightnessCalculator, BrightnessMode
 from lib.image_convert import qpixmap_to_ndarray
