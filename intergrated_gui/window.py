@@ -1,3 +1,4 @@
+from PyQt5.QtGui import QResizeEvent
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 
 from intergrated_gui.frame_widget import FrameWidget
@@ -17,6 +18,10 @@ class Window(QMainWindow):
 
         self._create_widgets()
 
+        self._screen_size = QApplication.instance().primaryScreen().availableSize()
+        # Limit the size to stay in comfort
+        self.setMinimumSize(self._screen_size / 2)
+
     # Override
     def closeEvent(self, event):
         # Call the original implementation, which accepts and destroys the GUI
@@ -24,6 +29,20 @@ class Window(QMainWindow):
         super().closeEvent(event)
         # All other windows (no matter child or not) close with this window.
         QApplication.closeAllWindows()
+
+    # Override
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        # The frame widget is shown only when the window is big enough;
+        # otherwise hide it to keep the window clean.
+        # (also prevents the frame from distortion under unbalanced window size)
+        new_size = event.size()
+        if (new_size.width() < self._screen_size.width() * 0.8
+                or new_size.height() < self._screen_size.height() * 0.8):
+            self.widgets["frame"].hide()
+        else:
+            self.widgets["frame"].show()
+        # still the resize is allowed
+        super().resizeEvent(event)
 
     def _create_widgets(self):
         """
