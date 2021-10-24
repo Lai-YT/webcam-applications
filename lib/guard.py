@@ -357,7 +357,7 @@ class PostureGuard(QObject):
     Signals:
         s_posture_refreshed:
             Emits everytime a posture is checked (all attributes need to be set).
-            It sents the PostureLabel and the explanation string of the
+            It sents the PostureLabel and the detail string of the
             determination.
     """
 
@@ -439,10 +439,10 @@ class PostureGuard(QObject):
             landmarks: (x, y) coordinates of the 68 face landmarks.
 
         Emits:
-            s_posture_refreshed: Sends the posture label and result explanation.
+            s_posture_refreshed: Sends the posture label and result detail.
 
         Returns:
-            The PostureLabel and the explanation string of the determination.
+            The PostureLabel and the detail string of the determination.
             None if any of the necessary attributes aren't set.
         """
         if not hasattr(self, "_angle_calculator") or not hasattr(self, "_warn_angle"):
@@ -450,10 +450,10 @@ class PostureGuard(QObject):
 
         # Having face or not.
         if landmarks.any():
-            posture, explanation = self._do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
+            posture, detail = self._do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
         else:
-            posture, explanation = self._do_posture_model_predict(canvas, frame)
-        self.s_posture_refreshed.emit(posture, explanation)
+            posture, detail = self._do_posture_model_predict(canvas, frame)
+        self.s_posture_refreshed.emit(posture, detail)
 
         if posture is not PostureLabel.GOOD:
             # If this is a new start of a slumped posture interval,
@@ -492,12 +492,12 @@ class PostureGuard(QObject):
             angle: The angle between the middle line of face and the vertical line of image.
 
         Returns:
-            The PostureLabel and the explanation string of the determination.
+            The PostureLabel and the detail string of the determination.
         """
-        explanation: str = f"by angle: {round(angle, 1)} degrees"
-        cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
+        detail: str = f"by angle: {round(angle, 1)} degrees"
+        cv2.putText(canvas, detail, (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
 
-        return (PostureLabel.GOOD if abs(angle) < self._warn_angle else PostureLabel.SLUMP), explanation
+        return (PostureLabel.GOOD if abs(angle) < self._warn_angle else PostureLabel.SLUMP), detail
 
     def _do_posture_model_predict(self, canvas: ColorImage, frame: ColorImage) -> Tuple[PostureLabel, str]:
         """Puts posture label text on the canvas.
@@ -507,7 +507,7 @@ class PostureGuard(QObject):
             frame: The image contains posture to be watched.
 
         Returns:
-            The PostureLabel and the explanation string of the determination.
+            The PostureLabel and the detail string of the determination.
         """
         im: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -523,7 +523,7 @@ class PostureGuard(QObject):
         # Gets the confidence value.
         conf: Float[32] = predictions[0][class_pred]
 
-        explanation: str = f"by model: {conf:.0%}"
-        cv2.putText(canvas, explanation, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
+        detail: str = f"by model: {conf:.0%}"
+        cv2.putText(canvas, detail, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
 
-        return (PostureLabel.GOOD if class_pred == PostureLabel.GOOD.value else PostureLabel.SLUMP), explanation
+        return (PostureLabel.GOOD if class_pred == PostureLabel.GOOD.value else PostureLabel.SLUMP), detail

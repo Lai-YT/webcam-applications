@@ -38,7 +38,7 @@ class WebcamApplication(QObject):
             Sends the time and its state.
         s_posture_refreshed:
             Emits everytime posture detection has a new result.
-            Sends the label of posture and few explanations.
+            Sends the label of posture and few detection details.
         s_brightness_refreshed:
             Emits everytime the brightness of screen is updated.
             Sends the new brightness value.

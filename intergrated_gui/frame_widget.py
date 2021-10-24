@@ -1,10 +1,10 @@
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, pyqtSlot
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QWidget
 
 
 class FrameWidget(QLabel):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.setStyleSheet("border: 1px solid black;")
 
@@ -20,7 +20,7 @@ class FrameWidget(QLabel):
         # Because the image is always as big as the widget and PyQt will always
         # give use a bigger widget, unstoppable.
         self.setPixmap(QPixmap.fromImage(frame).scaled(
-            self.frameGeometry().width()-10,
-            self.frameGeometry().height()-10,
+            self.frameGeometry().width() - 10,
+            self.frameGeometry().height() - 10,
             Qt.KeepAspectRatio
         ))

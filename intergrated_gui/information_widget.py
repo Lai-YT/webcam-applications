@@ -32,8 +32,11 @@ class InformationWidget(QWidget):
     def update_distance(self, distance: float, state: DistanceState) -> None:
         """Updates distance to the corresponding information label.
 
+        The text color is red if is a warning state; otherwise black.
+
         Arguments:
             distance: It is rounded to two decimal places.
+            state: The state of the distance.
         """
         self.information["distance"].setNum(round(distance, 2))
 
@@ -44,10 +47,13 @@ class InformationWidget(QWidget):
 
     @pyqtSlot(int, TimeState)
     def update_time(self, time: int, state: TimeState) -> None:
-        """
+        """Updates time to the corresponding information label.
+
+        The text color is red if is a break state; otherwise black.
+
         Arguments:
             time: Time to update, in seconds.
-            state: The state of the time to display.
+            state: The state of the time.
         """
         time_str: str = f"{(time // 60):02d}:{(time % 60):02d}"
         self.information["time"].setText(time_str)
@@ -61,19 +67,26 @@ class InformationWidget(QWidget):
             self.information["time-state"].set_color(TextColor.BLACK.value)
 
     @pyqtSlot(PostureLabel, str)
-    def update_posture(self, posture: PostureLabel, explanation: str) -> None:
-        self.information["posture"].setText(posture.name.lower())
+    def update_posture(self, posture: PostureLabel, detail: str) -> None:
+        """Updates posture and its detail to the corresponding information label.
 
-        mode, degree = explanation.split(":")
-        wrapped_explanation: str = mode + ":\n" + degree
-        self.information["posture-explanation"].setText(wrapped_explanation)
+        The text color is red if is a slump posture; otherwise black.
+
+        Arguments:
+            posture: The label of the posture.
+            detail: The extra information to tell about the posture.
+        """
+        self.information["posture"].setText(posture.name.lower())
+        # wraps after colons
+        wrapped_detail: str = detail.replace(":", ":\n")
+        self.information["posture-detail"].setText(wrapped_detail)
 
         if posture is PostureLabel.SLUMP:
             self.information["posture"].set_color(TextColor.RED.value)
-            self.information["posture-explanation"].set_color(TextColor.RED.value)
+            self.information["posture-detail"].set_color(TextColor.RED.value)
         else:
             self.information["posture"].set_color(TextColor.BLACK.value)
-            self.information["posture-explanation"].set_color(TextColor.BLACK.value)
+            self.information["posture-detail"].set_color(TextColor.BLACK.value)
 
     @pyqtSlot(int)
     def update_brightness(self, brightness: int) -> None:
@@ -98,10 +111,12 @@ class InformationWidget(QWidget):
         self._layout.itemAt(row, QFormLayout.FieldRole).widget().show()
 
     def _create_information(self) -> None:
+        """Creates the labels for information."""
+        
         information: Dict[str, str] = {
             "distance": "Face Distance:",
             "posture": "Posture Detect:",
-            "posture-explanation": "Explanation:",
+            "posture-detail": "Detail:",
             "time": "Focus Time:",
             "time-state": "Timer State:",
             "concentration": "Concentration Grade:",
