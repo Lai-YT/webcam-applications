@@ -54,14 +54,7 @@ class BlinkDetector:
         """
         ratio = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
 
-        # check to see if the eye aspect ratio is below the blink
-        # threshold, and if so, increment the blink frame counter
-        if ratio < self._ratio_threshold:
-        	blinked = True
-        else:
-            blinked = False
-
-        return blinked
+        return ratio < self._ratio_threshold:
 
     @staticmethod
     def _get_eye_aspect_ratio(eye: NDArray[(6, 2), Int[32]]) -> float:

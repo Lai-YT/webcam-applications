@@ -53,7 +53,7 @@ class WindowController(QObject):
         relations = {
             "distance": ("distance",),
             "time": ("time", "time-state"),
-            "posture": ("posture", "posture-explanation"),
+            "posture": ("posture", "posture-detail"),
             "brightness": ("brightness",),
         }
         # init state

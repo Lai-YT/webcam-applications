@@ -133,30 +133,26 @@ class DistanceGuard(QObject):
             self.s_distance_refreshed.emit(distance, DistanceState.NORMAL)
             return
 
-        # default state
-        state = DistanceState.NORMAL
         # warning logic...
-        if distance < self._warn_dist:
-            state = DistanceState.WARNING
-            cv2.putText(canvas, "too close", (10, 150), FONT_0, 0.9, RED, 2)
+        if distance < self._warn_dist and self._warning_enabled:
             # If this is a new start of a too-close interval,
             # play sound and start another interval.
             if not self._f_played:
                 self._f_played = True
                 self._warning_repeat_timer.start()
-                if self._warning_enabled:
-                    playsound(self._wavfile, block=False)
-            # Every 9 seconds of a "consecutive" too-close, sound is repeated.
-            # Note that the sound file is about 4 sec, take 5 sec as the interval.
-            elif self._warning_repeat_timer.time() > 9:
+                playsound(self._wavfile, block=False)
+            # Only after certain interval can the sound be repeated.
+            # Note that the sound file is about 4 sec, take 5 sec as the delay.
+            elif self._warning_repeat_timer.time() > 8:
                 # Reset the timer and flag, so can be caught as a new start of interval.
                 self._f_played = False
                 self._warning_repeat_timer.reset()
-        # Reset the timer once after an short interval.
-        # This can avoid sounds from overlapping when moving between proper and non-proper distance.
-        elif self._warning_repeat_timer.time() > 8:
-            self._f_played = False
-            self._warning_repeat_timer.reset()
+
+        # default state
+        state = DistanceState.NORMAL
+        if distance < self._warn_dist:
+            state = DistanceState.WARNING
+            cv2.putText(canvas, "too close", (10, 150), FONT_0, 0.9, RED, 2)
 
         self.s_distance_refreshed.emit(distance, state)
 
@@ -166,6 +162,7 @@ class DistanceGuard(QObject):
             global_grader_for_guards.increase_distraction()
         else:
             global_grader_for_guards.increase_concentration()
+
 
     def _put_distance_text(self, canvas: ColorImage, distance: float) -> None:
         """Puts distance text on the canvas.
@@ -448,33 +445,29 @@ class PostureGuard(QObject):
         if not hasattr(self, "_angle_calculator") or not hasattr(self, "_warn_angle"):
             return
 
-        # Having face or not.
+        # Get posture label...
         if landmarks.any():
             posture, detail = self._do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
         else:
             posture, detail = self._do_posture_model_predict(canvas, frame)
         self.s_posture_refreshed.emit(posture, detail)
 
-        if posture is not PostureLabel.GOOD:
+        # sound warning logic
+        if posture is not PostureLabel.GOOD and self._warning_enabled:
             # If this is a new start of a slumped posture interval,
-            # play sound and start another interval.
+            # play sound then start another interval.
             if not self._f_played:
                 self._f_played = True
                 self._warning_repeat_timer.start()
-                if self._warning_enabled:
-                    playsound(self._wavfile, block=False)
-            # Every 9 seconds of a "consecutive" slump, sound is repeated.
-            # Note that the sound file is about 4 sec, take 5 sec as the interval.
-            elif self._warning_repeat_timer.time() > 9:
+                playsound(self._wavfile, block=False)
+            # Only after certain interval can the sound be repeated.
+            # Note that the sound file is about 3 sec, take 5 sec as the delay.
+            elif self._warning_repeat_timer.time() > 8:
                 # Reset the timer and flag, so can be caught as a new start of interval.
                 self._f_played = False
                 self._warning_repeat_timer.reset()
-        # Reset the timer once after an interval.
-        # This can avoid sounds from overlapping when sitching between "Good" and "Slump"
-        elif self._warning_repeat_timer.time() > 8:
-            self._f_played = False
-            self._warning_repeat_timer.reset()
 
+        # grade concentration
         if posture is not PostureLabel.GOOD:
             global_grader_for_guards.increase_distraction()
         else:
