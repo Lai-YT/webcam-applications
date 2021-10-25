@@ -19,6 +19,10 @@ class EyeSide(Enum):
 
 
 class BlinkDetector:
+    """Detects whether the eyes are blinking or not by calculating
+    the eye aspect ratio (EAR).
+    """
+
     LEFT_EYE_START_END_IDXS = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
     RIGHT_EYE_START_END_IDXS = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
@@ -30,7 +34,7 @@ class BlinkDetector:
         self._ratio_threshold = ratio_threshold
 
     @classmethod
-    def get_average_eye_aspect_ratio(cls, landmarks) -> float:
+    def get_average_eye_aspect_ratio(cls, landmarks: NDArray[(68, 2), Int[32]]) -> float:
         """Returns the average EAR from the left and right eye.
 
         Arguments:
@@ -44,7 +48,6 @@ class BlinkDetector:
         # average the eye aspect ratio together for both eyes
         ratio = statistics.mean((left_ratio, right_ratio))
         return ratio
-
 
     def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> bool:
         """Returns whether the eyes in the face landmarks are blinking or not.
