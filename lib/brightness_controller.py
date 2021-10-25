@@ -93,16 +93,14 @@ class BrightnessController(QObject):
                 If all attributes required are set, it sends the new brightness
                 value; otherwise it sends the current brightness value.
         """
-        # If any of the attributes aren't ready, keep the brightness unchanged.
-        if (not hasattr(self, "_mode")
-                or not hasattr(self, "_base_value")
-                or not self._frames):
-            self.s_brightness_refreshed.emit(sbc.get_brightness(method="wmi"))
-            return
-
-        new_brightness = (
-            BrightnessCalculator.calculate_proper_screen_brightness(
+        print(self._mode)
+        if self._mode is BrightnessMode.MANUAL:
+            sbc.set_brightness(self._base_value, method="wmi")
+            self.s_brightness_refreshed.emit(self._base_value)
+        else:
+            new_brightness = (
+                BrightnessCalculator.calculate_proper_screen_brightness(
                 self._mode, self._base_value, self._frames)
-        )
-        sbc.set_brightness(new_brightness, method="wmi")
-        self.s_brightness_refreshed.emit(new_brightness)
+            )
+            sbc.set_brightness(new_brightness, method="wmi")
+            self.s_brightness_refreshed.emit(new_brightness)

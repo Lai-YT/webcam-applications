@@ -65,7 +65,8 @@ class PanelController(QObject):
     def _init_brightness_states(self):
         panel = self._panel.panels["brightness"]
 
-        self._app.set_brightness_optimization(enabled=panel.isChecked(), slider_value=30)
+        self._app.set_brightness_optimization(enabled=panel.isChecked(), 
+                                              slider_value=panel.slider.value())
 
     def _connect_signals(self):
         self._connect_distance_signals()
