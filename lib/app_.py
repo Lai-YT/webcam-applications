@@ -156,6 +156,8 @@ class WebcamApplication(QObject):
                 self._brightness_controller.set_mode(BrightnessMode.WEBCAM)
             elif self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM]:
                 self._brightness_controller.set_mode(BrightnessMode.COLOR_SYSTEM)
+            # else:
+                # self._brightness_controller.set_mode(BrightnessMode.MANUAL)
         # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
             self._brightness_optimize = enabled
@@ -248,6 +250,7 @@ class WebcamApplication(QObject):
     def _create_brightness_controller(self):
         """Creates brightness calculator and connects its signals."""
         self._brightness_controller = BrightnessController()
+        # self._brightness_controller.set_mode(BrightnessMode.MANUAL)
         self._brightness_controller.s_brightness_refreshed.connect(self.s_brightness_refreshed)
         # This dict records whether the modes have been enabled.
         # So when both modes are True, we know a BOTH mode should be set.

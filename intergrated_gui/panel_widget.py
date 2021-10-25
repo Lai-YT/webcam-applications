@@ -165,8 +165,7 @@ class BrightnessPanel(CheckableGroupBox):
         }
         self.modes = {}
         for mode, description in modes.items():
-            self.modes[mode] = OptionRadioButton(description)
-            self.modes[mode].setAutoExclusive(False)
+            self.modes[mode] = OptionCheckBox(description)
             self._layout.addWidget(self.modes[mode])
 
         # default mode

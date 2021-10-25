@@ -11,6 +11,7 @@ class BrightnessMode(Enum):
     WEBCAM = auto()
     COLOR_SYSTEM = auto()
     BOTH = auto()
+    # MANUAL = auto()
 
 
 class BrightnessCalculator:
