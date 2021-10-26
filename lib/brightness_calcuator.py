@@ -27,25 +27,45 @@ class BrightnessCalculator:
             frames:
                 Image of the corresponding brightness mode. If mode is BOTH, there should be two frames.
         """
+        # Init previous weighted value.
+        pre_weighted_value = 0
+
         # Get the brightness precentage of the frame(s).
         if mode is BrightnessMode.WEBCAM or mode is BrightnessMode.BOTH:
             webcam_frame_brightness: int = BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.WEBCAM])
         if mode is BrightnessMode.COLOR_SYSTEM or mode is BrightnessMode.BOTH:
-            color_system_frame_brightness: int = BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.COLOR_SYSTEM])
+            screenshot_brightness: int = BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.COLOR_SYSTEM])
 
-        # Higher the brightness if the environment is bright to keep the screen clear.
+        # Weight the frame brightness with pre-weighted value to get new weighted value.
         if mode is BrightnessMode.WEBCAM:
-            offset: int = (webcam_frame_brightness - base_value) // 2
-        # Lower the brightness if the background of screen is light colored.
+            new_weighted_value = (
+                webcam_frame_brightness if pre_weighted_value == 0 else
+                webcam_frame_brightness * 0.4 + pre_weighted_value * 0.6
+            )
         elif mode is BrightnessMode.COLOR_SYSTEM:
-            offset = -(color_system_frame_brightness - base_value) // 2
-        # Algorithm of BOTH is not simply an additon of the above.
-        # WEBCAM takes the lead and has COLOR_SYSTEM with a smaller factor.
+            new_weighted_value = (
+                screenshot_brightness if pre_weighted_value == 0 else
+                screenshot_brightness * 0.4 + pre_weighted_value * 0.6
+            )
+        # Algorithm of BOTH
+        # First, get the weighted frame brightness by weighting brightness of two frames,
+        # then weight the weighted frame brightness with pre-weighted value. 
         elif mode is BrightnessMode.BOTH:
-            offset = ((webcam_frame_brightness - base_value) // 2
-                      - (color_system_frame_brightness - base_value) // 4)
-        # The range of the screen brightness value is [0, 100].
-        suggested_brightness: int = BrightnessCalculator._clamp(base_value + offset, 0, 100)
+            # WEBCAM frame takes the lead and has COLOR_SYSTEM frame with a smaller factor.
+            weighted_frame_brightness = webcam_frame_brightness * 0.6 + (100 - screenshot_brightness) * 0.4
+            new_weighted_value = (
+                weighted_frame_brightness if pre_weighted_value == 0 else
+                weighted_frame_brightness * 0.4 + pre_weighted_value * 0.6
+            )
+        # Set new weighted value to be previous.
+        pre_weighted_value = new_weighted_value
+        # Slider value takes the lead of optimization and has weighted brightness with a smaller factor.
+        # Higher the brightness if the environment is bright to keep the screen clear and
+        # lower the brightness if the background of screen is light colored.
+        if mode is BrightnessMode.WEBCAM or BrightnessMode.BOTH:
+            suggested_brightness: int = base_value * 0.75 + new_weighted_value * 0.25
+        elif mode is BrightnessMode.COLOR_SYSTEM:
+            suggested_brightness: int = base_value * 0.75 + (100 - new_weighted_value) * 0.25
 
         return suggested_brightness
 
@@ -60,21 +80,3 @@ class BrightnessCalculator:
         # Value is as known as brightness.
         hue, saturation, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
         return int(100 * value.mean() / 255)
-
-    @staticmethod
-    def _clamp(value: int, v_min: int, v_max: int) -> int:
-        """Clamps the value into the range [v_min, v_max].
-
-        e.g., _clamp(50, 20, 40) returns 40.
-
-        Raises:
-            ValueError: Error occurs when v_min >= v_max.
-        """
-        if not v_min < v_max:
-            raise ValueError("v_min is the lower bound, which should be smaller than v_max")
-
-        if value > v_max:
-            value = v_max
-        elif value < v_min:
-            value = v_min
-        return value

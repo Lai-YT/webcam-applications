@@ -55,14 +55,6 @@ class BrightnessController(QObject):
         """
         self._mode = mode
 
-    def set_webcam_frame(self, frame: ColorImage) -> None:
-        """
-        Arguments:
-            frame:
-                The image used to compare brightness with in WEBCAM (BOTH) mode.
-        """
-        self._frames[BrightnessMode.WEBCAM] = frame
-
     def set_base_value(self, base_value: int) -> None:
         """
         Arguments:
@@ -71,6 +63,14 @@ class BrightnessController(QObject):
                 up and down with respect to it.
         """
         self._base_value = base_value
+
+    def set_webcam_frame(self, frame: ColorImage) -> None:
+        """
+        Arguments:
+            frame:
+                The image used to compare brightness with in WEBCAM (BOTH) mode.
+        """
+        self._frames[BrightnessMode.WEBCAM] = frame
 
     def refresh_color_system_screenshot(self) -> None:
         """Takes a screenshot of the current screen and sets it as the frame of
@@ -93,7 +93,6 @@ class BrightnessController(QObject):
                 If all attributes required are set, it sends the new brightness
                 value; otherwise it sends the current brightness value.
         """
-        print(self._mode)
         if self._mode is BrightnessMode.MANUAL:
             sbc.set_brightness(self._base_value, method="wmi")
             self.s_brightness_refreshed.emit(self._base_value)
