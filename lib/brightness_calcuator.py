@@ -18,7 +18,10 @@ class BrightnessCalculator:
     """Handle processes which require value modulation."""
 
     @staticmethod
-    def calculate_proper_screen_brightness(mode: BrightnessMode, base_value: int, frames: Dict[BrightnessMode, ColorImage]) -> int:
+    def calculate_proper_screen_brightness(
+            mode: BrightnessMode,
+            base_value: int,
+            frames: Dict[BrightnessMode, ColorImage]) -> int:
         """Returns the suggested screen brightness value, which is between 0 and 100.
 
         Arguments:
@@ -66,9 +69,7 @@ class BrightnessCalculator:
         """Clamps the value into the range [v_min, v_max].
 
         e.g., _clamp(50, 20, 40) returns 40.
-
-        Raises:
-            ValueError: Error occurs when v_min >= v_max.
+        v_min should be less or equal to v_max. (v_min <= v_max)
         """
         if not v_min < v_max:
             raise ValueError("v_min is the lower bound, which should be smaller than v_max")

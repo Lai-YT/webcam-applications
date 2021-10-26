@@ -11,8 +11,8 @@ from lib.image_type import ColorImage
 
 
 class BrightnessController(QObject):
-    """BrightnessController adjusts the brightness of screen depending on the mode
-    you set.
+    """BrightnessController adjusts the brightness of screen depending on the
+    mode you set.
 
     Signals:
         s_brightness_refreshed:
@@ -24,12 +24,11 @@ class BrightnessController(QObject):
     s_brightness_refreshed = pyqtSignal(int)
 
     def __init__(self,
-                 mode: Optional[BrightnessMode] = None,
+                 mode: Optional[BrightnessMode] = BrightnessMode.MANUAL,
                  base_value: Optional[int] = None,
                  frames: Optional[Dict[BrightnessMode, ColorImage]] = None) -> None:
         """
-        All arguments are with default None. They can be set later with
-        their corresponding setters.
+        All arguments can be set later with their corresponding setters.
 
         Arguments:
             mode: Mode that the brightness adjustment depends on.
@@ -40,8 +39,7 @@ class BrightnessController(QObject):
         """
         super().__init__()
 
-        if mode is not None:
-            self._mode: BrightnessMode = mode
+        self._mode: BrightnessMode = mode
         if base_value is not None:
             self._base_value: int = base_value
         self._frames: Dict[BrightnessMode, ColorImage] = {}
@@ -93,14 +91,15 @@ class BrightnessController(QObject):
                 If all attributes required are set, it sends the new brightness
                 value; otherwise it sends the current brightness value.
         """
-        print(self._mode)
-        if self._mode is BrightnessMode.MANUAL:
+        if (self._mode is BrightnessMode.MANUAL
+                or not hasattr(self, "_base_value")
+                or not self._frames):
             sbc.set_brightness(self._base_value, method="wmi")
             self.s_brightness_refreshed.emit(self._base_value)
         else:
             new_brightness = (
                 BrightnessCalculator.calculate_proper_screen_brightness(
-                self._mode, self._base_value, self._frames)
+                    self._mode, self._base_value, self._frames)
             )
             sbc.set_brightness(new_brightness, method="wmi")
             self.s_brightness_refreshed.emit(new_brightness)

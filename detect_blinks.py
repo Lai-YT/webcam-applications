@@ -30,7 +30,8 @@ detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("lib/trained_models/shape_predictor_68_face_landmarks.dat")
 
 print("[INFO] preparing blink detector...")
-blink_detector = BlinkDetector(EYE_AR_THRESH)
+# use self-adjustment EAR threshold by not passing one
+blink_detector = BlinkDetector()
 
 # start the video stream
 print("[INFO] starting video stream...")

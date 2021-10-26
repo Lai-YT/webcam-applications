@@ -149,14 +149,15 @@ class WebcamApplication(QObject):
         if color_system_enabled is not None:
             self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM] = color_system_enabled
         # If any of the enabled is changed, reset the mode.
-        if all(self._brightness_modes_enabled.values()):
-            self._brightness_controller.set_mode(BrightnessMode.BOTH)
-        elif self._brightness_modes_enabled[BrightnessMode.WEBCAM]:
-            self._brightness_controller.set_mode(BrightnessMode.WEBCAM)
-        elif self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM]:
-            self._brightness_controller.set_mode(BrightnessMode.COLOR_SYSTEM)
-        else:
-            self._brightness_controller.set_mode(BrightnessMode.MANUAL)
+        if webcam_enabled is not None or color_system_enabled is not None:
+            if all(self._brightness_modes_enabled.values()):
+                self._brightness_controller.set_mode(BrightnessMode.BOTH)
+            elif self._brightness_modes_enabled[BrightnessMode.WEBCAM]:
+                self._brightness_controller.set_mode(BrightnessMode.WEBCAM)
+            elif self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM]:
+                self._brightness_controller.set_mode(BrightnessMode.COLOR_SYSTEM)
+            else:
+                self._brightness_controller.set_mode(BrightnessMode.MANUAL)
         # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
             self._brightness_optimize = enabled

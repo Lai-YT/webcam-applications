@@ -3,6 +3,7 @@
 
 import statistics
 from enum import Enum, auto
+from typing import Optional, Tuple
 
 import cv2
 from imutils import face_utils
@@ -18,6 +19,49 @@ class EyeSide(Enum):
     RIGHT = auto()
 
 
+class _SelfAdjustmentNormalEyeAspectRatioMaker:
+    """Take a certain number of frames that contains face to determine
+    the normal EAR of the user.
+    """
+    def __init__(
+            self,
+            temp_ratio: float = 0.3,
+            number_threshold: int = 100) -> None:
+        """
+        temp_ratio is used before the normal EAR is determined.
+        """
+        if temp_ratio < 0.15 or temp_ratio > 0.5:
+            raise ValueError("normal eye aspect ratio should >= 0.15 and <= 0.5")
+        if number_threshold < 100:
+            raise ValueError("number of samples under 100 makes the normal eye aspect ratio susceptible to extreme values")
+
+        self._temp_ratio = temp_ratio
+        self._number_threshold = number_threshold
+        self._sample_ratios = []
+
+    def read_sample(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
+        """Adds a new sample of EAR."""
+        # Empty landmarks is not count.
+        if not landmarks.any():
+            return
+        self._sample_ratios.append(BlinkDetector.get_average_eye_aspect_ratio(landmarks))
+
+    def get_normal_ratio(self) -> Tuple[int, float]:
+        """Returns the self-adjustment EAR when the number of sample ratio is
+        enough; otherwise the temp ratio.
+        """
+        num_of_sample = len(self._sample_ratios)
+        # If the number of samples isn't enough,
+        # temp_ratio is used as the normal EAR.
+        if num_of_sample < self._number_threshold:
+            return num_of_sample, self._temp_ratio
+        # Sort the ratios and take the mean of the upper 75% as the normal EAR.
+        # The lower 25% is not taken under consideration because those may be blinking.
+        self._sample_ratios.sort()
+        ratio = statistics.mean(self._sample_ratios[int(num_of_sample*0.25):])
+        return num_of_sample, ratio
+
+
 class BlinkDetector:
     """Detects whether the eyes are blinking or not by calculating
     the eye aspect ratio (EAR).
@@ -26,12 +70,17 @@ class BlinkDetector:
     LEFT_EYE_START_END_IDXS = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
     RIGHT_EYE_START_END_IDXS = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
-    def __init__(self, ratio_threshold: float = 0.25) -> None:
+    def __init__(self, ratio_threshold: Optional[float] = None) -> None:
         """
         Arguments:
-            ratio_threshold: An eye aspect ratio lower than this is considered to be blinked.
+            ratio_threshold:
+                An eye aspect ratio lower than this is considered to be blinked.
+                If not given, the threshold is determined by algorithm.
         """
-        self._ratio_threshold = ratio_threshold
+        if ratio_threshold is None:
+            self._ratio_maker = _SelfAdjustmentNormalEyeAspectRatioMaker(0.3, 500)
+        else:
+            self._ratio_threshold = ratio_threshold
 
     @classmethod
     def get_average_eye_aspect_ratio(cls, landmarks: NDArray[(68, 2), Int[32]]) -> float:
@@ -55,9 +104,27 @@ class BlinkDetector:
         Arguments:
             landmark: (x, y) coordinates of the 68 face landmarks.
         """
-        ratio = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
+        # Keep feeding samples if a algorithm-based threshold is used
+        # and not yet determined.
+        if hasattr(self, "_ratio_maker"):
+            self._ratio_maker.read_sample(landmarks)
 
-        return ratio < self._ratio_threshold
+        ratio = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
+        return ratio < self._get_ratio_threshold()
+
+    def _get_ratio_threshold(self) -> float:
+        # If an algorithm-based threshold is used,
+        # first get the normal EAR from maker,
+        # then has 0.85 of it as the threshold.
+        if hasattr(self, "_ratio_maker"):
+            num, ratio = self._ratio_maker.get_normal_ratio()
+            threshold = ratio * 0.85
+            if num >= 500:
+                self._ratio_threshold = threshold
+                # The threshold is determined, maker is not needed any more.
+                del self._ratio_maker
+            return threshold
+        return self._ratio_threshold
 
     @staticmethod
     def _get_eye_aspect_ratio(eye: NDArray[(6, 2), Int[32]]) -> float:

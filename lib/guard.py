@@ -142,7 +142,7 @@ class DistanceGuard(QObject):
                 self._warning_repeat_timer.start()
                 playsound(self._wavfile, block=False)
             # Only after certain interval can the sound be repeated.
-            # Note that the sound file is about 4 sec, take 5 sec as the delay.
+            # Note that the sound file is about 3 sec, take 5 sec as the delay.
             elif self._warning_repeat_timer.time() > 8:
                 # Reset the timer and flag, so can be caught as a new start of interval.
                 self._f_played = False
