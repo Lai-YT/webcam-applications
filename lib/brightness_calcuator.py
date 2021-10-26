@@ -18,7 +18,10 @@ class BrightnessCalculator:
     """Handle processes which require value modulation."""
 
     @staticmethod
-    def calculate_proper_screen_brightness(mode: BrightnessMode, base_value: int, frames: Dict[BrightnessMode, ColorImage]) -> int:
+    def calculate_proper_screen_brightness(
+            mode: BrightnessMode,
+            base_value: int,
+            frames: Dict[BrightnessMode, ColorImage]) -> int:
         """Returns the suggested screen brightness value, which is between 0 and 100.
 
         Arguments:
