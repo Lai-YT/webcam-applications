@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import cv2
 
@@ -35,37 +35,42 @@ class BrightnessCalculator:
                 Image of the corresponding brightness mode.
                 If mode is BOTH, there should have two frames.
         """
-        # Get the brightness precentage of the frame(s).
+        # Prepare the brightness precentage of the frame(s) that will be used
+        # under the corresponding mode.
         if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
             webcam_frame_brightness: int = BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.WEBCAM])
         if mode in (BrightnessMode.COLOR_SYSTEM, BrightnessMode.BOTH):
             screenshot_brightness: int = BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.COLOR_SYSTEM])
+        if mode is BrightnessMode.BOTH:
+            # webcam frame takes the lead
+            weighted_frame_brightness: float = _weighted_sum(
+                (webcam_frame_brightness, 0.6),
+                (100-screenshot_brightness, 0.4)
+            )
 
-        # Weight the frame brightness with pre-weighted value to get new weighted value.
-        if mode is BrightnessMode.WEBCAM:
-            if self._pre_weighted_value is None:
-                new_weighted_value: int = webcam_frame_brightness
-            else:
-                new_weighted_value = _weighted_sum((webcam_frame_brightness, 0.4), (self._pre_weighted_value, 0.6))
-        elif mode is BrightnessMode.COLOR_SYSTEM:
-            if self._pre_weighted_value is None:
-                new_weighted_value = screenshot_brightness
-            else:
-                new_weighted_value = _weighted_sum((screenshot_brightness, 0.4), (self._pre_weighted_value, 0.6))
-        # Algorithm of BOTH:
-        #   First, get the weighted frame brightness by weighting brightness of two frames,
-        #   then weight the weighted frame brightness with pre-weighted value.
-        elif mode is BrightnessMode.BOTH:
-            # WEBCAM frame takes the lead and has COLOR_SYSTEM frame with a smaller factor.
-            weighted_frame_brightness: float = _weighted_sum((webcam_frame_brightness, 0.6), (100-screenshot_brightness, 0.4))
-            if self._pre_weighted_value is None:
-                new_weighted_value = weighted_frame_brightness
-            else:
-                new_weighted_value = _weighted_sum((weighted_frame_brightness, 0.4), (self._pre_weighted_value, 0.6))
+        # All remain weights are on self._pre_weighted_value.
+        weight_of_modes: Dict[BrightnessMode, Tuple[str, float]] = {
+            BrightnessMode.WEBCAM: ("webcam_frame_brightness", 0.4),
+            BrightnessMode.COLOR_SYSTEM: ("screenshot_brightness", 0.4),
+            BrightnessMode.BOTH: ("weighted_frame_brightness", 0.4),
+        }
 
-        # Set new weighted value to be previous.
+        # locals() returns the local_vars with type Dict[str, Any]
+        frame_brightness: float = locals()[weight_of_modes[mode][0]]
+        brightness_weight: float = weight_of_modes[mode][1]
+        if self._pre_weighted_value is None:
+            # _pre_weighted_value takes no more weight
+            new_weighted_value: float = frame_brightness * 1
+        else:
+            new_weighted_value = _weighted_sum(
+                (frame_brightness, brightness_weight),
+                (self._pre_weighted_value, 1-brightness_weight)
+            )
+        # Update previous value.
         self._pre_weighted_value = new_weighted_value
-        # Slider value takes the lead of optimization and has weighted brightness with a smaller factor.
+
+        # base value (from slider) takes the lead of optimization and has weighted
+        # brightness with a smaller weight.
         # Higher the brightness if the environment is bright to keep the screen clear and
         # lower the brightness if the background of screen is light colored.
         if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
@@ -92,7 +97,7 @@ class BrightnessCalculator:
 
 def _weighted_sum(*number_and_weights: Tuple[float, float]) -> float:
     """Returns the weighted sum of each (number, weight) pair."""
-    sum: float = 0
+    weighted_sum: float = 0
     for num, weight in number_and_weights:
-        sum += num * weight
-    return sum
+        weighted_sum += num * weight
+    return weighted_sum
