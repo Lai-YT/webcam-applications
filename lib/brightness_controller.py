@@ -24,7 +24,7 @@ class BrightnessController(QObject):
     s_brightness_refreshed = pyqtSignal(int)
 
     def __init__(self,
-                 mode: Optional[BrightnessMode] = BrightnessMode.MANUAL,
+                 mode: BrightnessMode = BrightnessMode.MANUAL,
                  base_value: Optional[int] = None,
                  frames: Optional[Dict[BrightnessMode, ColorImage]] = None) -> None:
         """
@@ -45,6 +45,7 @@ class BrightnessController(QObject):
         self._frames: Dict[BrightnessMode, ColorImage] = {}
         if frames is not None:
             self._frames = frames
+        self._brightness_calculator = BrightnessCalculator()
 
     def set_mode(self, mode: BrightnessMode) -> None:
         """
@@ -98,7 +99,7 @@ class BrightnessController(QObject):
             self.s_brightness_refreshed.emit(self._base_value)
         else:
             new_brightness = (
-                BrightnessCalculator.calculate_proper_screen_brightness(
+                self._brightness_calculator.calculate_proper_screen_brightness(
                     self._mode, self._base_value, self._frames)
             )
             sbc.set_brightness(new_brightness, method="wmi")
