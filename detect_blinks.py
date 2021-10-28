@@ -7,7 +7,11 @@ import imutils
 import time
 from imutils import face_utils
 
-from lib.blink_detector import BlinkDetector, draw_landmarks_used_by_blink_detector
+from lib.blink_detector import (
+	BlinkDetector,
+	TailorMadeNormalEyeAspectRatioMaker,
+	draw_landmarks_used_by_blink_detector,
+)
 
 
 # define two constants, one for the eye aspect ratio to indicate
@@ -18,6 +22,8 @@ EYE_AR_CONSEC_FRAMES = 3
 # if the number of consecutive frames exceeds, the user may be
 # fatigue and sleepy.
 CONSEC_FATIGUE_THRESH = 10
+# after reading how many eye aspect ratios can a tailor-made EAR be reliable
+SAMPLE_THRESHOLD = 500
 
 # initialize the frame counters and the total number of blinks
 counter = 0
@@ -30,8 +36,8 @@ detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("lib/trained_models/shape_predictor_68_face_landmarks.dat")
 
 print("[INFO] preparing blink detector...")
-# use self-adjustment EAR threshold by not passing one
-blink_detector = BlinkDetector()
+blink_detector = BlinkDetector(EYE_AR_THRESH)
+ratio_adjuster = TailorMadeNormalEyeAspectRatioMaker(0.28, SAMPLE_THRESHOLD)
 
 # start the video stream
 print("[INFO] starting video stream...")
@@ -42,7 +48,6 @@ time.sleep(1.0)
 with open("eye_aspect_ratio.log", "w+") as f:
 	# loop over frames from the video stream
 	while cam.isOpened():
-
 		# grab the frame from the camera, resize
 		# it, and convert it to grayscale channels
 		_, frame = cam.read()
@@ -62,6 +67,11 @@ with open("eye_aspect_ratio.log", "w+") as f:
 
 			ratio = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
 			ratio = round(ratio, 3)
+			# Reset the EAR threshold if the tailor-made normal EAR is ready.
+			ratio_adjuster.read_sample(landmarks)
+			num_of_samples, normal_ratio = ratio_adjuster.get_normal_ratio()
+			if num_of_samples >= SAMPLE_THRESHOLD:
+				blink_detector.set_ratio_threshold(normal_ratio * 0.85)
 			blinked = blink_detector.detect_blink(landmarks)
 
 			# check to see if the eye aspect ratio is below the blink
