@@ -1,3 +1,4 @@
+import screen_brightness_control as sbc
 from PyQt5.QtCore import QObject
 
 from intergrated_gui.panel_widget import AngleTolerance
@@ -64,8 +65,9 @@ class PanelController(QObject):
 
     def _init_brightness_states(self):
         panel = self._panel.panels["brightness"]
-
-        self._app.set_brightness_optimization(enabled=panel.isChecked(), 
+        # Have the initial value of the slider sync up with the current brightness.
+        panel.slider.setValue(sbc.get_brightness(method="wmi"))
+        self._app.set_brightness_optimization(enabled=panel.isChecked(),
                                               slider_value=panel.slider.value())
 
     def _connect_signals(self):
