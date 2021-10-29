@@ -95,6 +95,7 @@ class BrightnessController(QObject):
         if (self._mode is BrightnessMode.MANUAL
                 or not hasattr(self, "_base_value")
                 or not self._frames):
+            self._brightness_calculator.clear()
             sbc.set_brightness(self._base_value, method="wmi")
             self.s_brightness_refreshed.emit(self._base_value)
         else:

@@ -20,11 +20,13 @@ class BrightnessCalculator:
     def __init__(self) -> None:
         # Init previous weighted value.
         self._pre_weighted_value: Optional[float] = None
+        self._base_value: Optional[int] = None
+        self._brightness_value: Optional[float] = None
 
     def calculate_proper_screen_brightness(
             self,
             mode: BrightnessMode,
-            base_value: int,
+            current_base_value: int,
             frames: Dict[BrightnessMode, ColorImage]) -> int:
         """Returns the suggested screen brightness value, which is between 0 and 100.
 
@@ -35,6 +37,11 @@ class BrightnessCalculator:
                 Image of the corresponding brightness mode.
                 If mode is BOTH, there should have two frames.
         """
+        # Init variables of calculator
+        if self._base_value == None:
+            self._base_value = current_base_value
+        if self._brightness_value == None:
+            self._brightness_value = current_base_value
         # Prepare the brightness precentage of the frame(s) that will be used
         # under the corresponding mode.
         if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
@@ -61,24 +68,32 @@ class BrightnessCalculator:
         if self._pre_weighted_value is None:
             # _pre_weighted_value takes no more weight
             new_weighted_value: float = frame_brightness * 1
+            # Set _pre_weighted_value as new_weighted_value to avoid NoneType Error.
+            self._pre_weighted_value = new_weighted_value
         else:
             new_weighted_value = _weighted_sum(
                 (frame_brightness, brightness_weight),
                 (self._pre_weighted_value, 1-brightness_weight)
             )
-        # Update previous value.
-        self._pre_weighted_value = new_weighted_value
+        # Both value differences affect the brightness value.
+        base_value_difference = current_base_value - self._base_value
+        weighted_value_difference = int(new_weighted_value - self._pre_weighted_value)
 
-        # base value (from slider) takes the lead of optimization and has weighted
-        # brightness with a smaller weight.
+        # Add value difference effect on current brightness value and store the value.
         # Higher the brightness if the environment is bright to keep the screen clear and
         # lower the brightness if the background of screen is light colored.
         if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
-            suggested_brightness: float = _weighted_sum((base_value, 0.75), (new_weighted_value, 0.25))
+            self._brightness_value += base_value_difference + weighted_value_difference * 0.25
         elif mode is BrightnessMode.COLOR_SYSTEM:
-            suggested_brightness = _weighted_sum((base_value, 0.75), (100-new_weighted_value, 0.25))
+            self._brightness_value += base_value_difference - weighted_value_difference * 0.25
 
-        return int(suggested_brightness)
+        # Clamp brightness value
+        self._brightness_value = clamp(self._brightness_value, 0, 100)
+        # Update previous value.
+        self._base_value = current_base_value
+        self._pre_weighted_value = new_weighted_value
+
+        return int(self._brightness_value)
 
     @staticmethod
     def get_brightness_percentage(frame: ColorImage) -> int:
@@ -92,6 +107,11 @@ class BrightnessCalculator:
         hue, saturation, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
         return int(100 * value.mean() / 255)
 
+    def clear(self):
+        """Clear the variables to make every time auto optimization triggered independent."""
+        self._pre_weighted_value = None
+        self._base_value = None
+        self._brightness_value = None
 
 # outer utilities
 
@@ -101,3 +121,12 @@ def _weighted_sum(*number_and_weights: Tuple[float, float]) -> float:
     for num, weight in number_and_weights:
         weighted_sum += num * weight
     return weighted_sum
+
+def clamp(num: float, min: float, max: float) -> float:
+    """Returns the clamped value within given boundary."""
+    if num < min:
+        return min
+    elif num > max:
+        return max
+    else:
+        return num
