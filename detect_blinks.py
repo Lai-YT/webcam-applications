@@ -1,10 +1,11 @@
 # reference:
 # https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
 
+import time
+
 import cv2
 import dlib
 import imutils
-import time
 from imutils import face_utils
 
 from lib.blink_detector import (
