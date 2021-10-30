@@ -24,7 +24,7 @@ ignore=CVS
 
 # Add files or directories matching the regex patterns to the ignore-list. The
 # regex matches against paths.
-ignore-paths=
+ignore-paths=gui\img\icon.py
 
 # Files or directories matching the regex patterns are skipped. The regex
 # matches against base names, not paths.
@@ -270,7 +270,7 @@ indent-after-paren=4
 
 # String used as indentation unit. This is usually "    " (4 spaces) or "\t" (1
 # tab).
-indent-string='    '
+indent-string='\t'
 
 # Maximum number of characters on a single line.
 max-line-length=80
