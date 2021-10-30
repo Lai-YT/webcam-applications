@@ -65,8 +65,7 @@ class AngleCalculator:
             return math.atan((y2 - y1) / (x2 - x1)) * 180 / math.pi
 
     def angle(self) -> Optional[float]:
-        if self._cache is not None:
-            return self._cache
+        return self._cache
 
 
 def draw_landmarks_used_by_angle_calculator(canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]], color: BGR = GREEN) -> ColorImage:

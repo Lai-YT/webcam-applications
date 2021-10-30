@@ -34,8 +34,7 @@ class DistanceCalculator:
         return distance
 
     def distance(self) -> Optional[float]:
-        if self._cache is not None:
-            return self._cache
+        return self._cache
 
     @staticmethod
     def _get_face_width(landmarks: NDArray[(68, 2), Int[32]]) -> float:

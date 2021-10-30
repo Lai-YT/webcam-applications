@@ -3,7 +3,7 @@
 
 import statistics
 from enum import Enum, auto
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import cv2
 from imutils import face_utils
@@ -22,7 +22,7 @@ class EyeSide(Enum):
 class TailorMadeNormalEyeAspectRatioMaker:
     """Take a certain number of landmarks that contains face to determine
     a tailor-made normal EAR of the user.
-    
+
     It can be used with a BlinkDetector to provide better detections on different
     users.
     """
@@ -44,7 +44,7 @@ class TailorMadeNormalEyeAspectRatioMaker:
 
         self._temp_ratio = temp_ratio
         self._number_threshold = number_threshold
-        self._sample_ratios = []
+        self._sample_ratios: List[float] = []
 
     def read_sample(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         """Adds a new sample of EAR."""
@@ -74,8 +74,8 @@ class BlinkDetector:
     the eye aspect ratio (EAR).
     """
 
-    LEFT_EYE_START_END_IDXS = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
-    RIGHT_EYE_START_END_IDXS = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
+    LEFT_EYE_START_END_IDXS: Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
+    RIGHT_EYE_START_END_IDXS: Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
     def __init__(self, ratio_threshold: float = 0.24) -> None:
         """
@@ -101,8 +101,7 @@ class BlinkDetector:
         right_ratio = BlinkDetector._get_eye_aspect_ratio(cls._extract_eye(landmarks, EyeSide.RIGHT))
 
         # average the eye aspect ratio together for both eyes
-        ratio = statistics.mean((left_ratio, right_ratio))
-        return ratio
+        return statistics.mean((left_ratio, right_ratio))
 
     def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> bool:
         """Returns whether the eyes in the face landmarks are blinking or not.
@@ -135,11 +134,7 @@ class BlinkDetector:
         hor = []
         hor.append(dist.euclidean(eye[0], eye[3]))
 
-        # compute the eye aspect ratio
-        ratio = statistics.mean(vert) / statistics.mean(hor)
-
-        # return the eye aspect ratio
-        return ratio
+        return statistics.mean(vert) / statistics.mean(hor)
 
     @classmethod
     def _extract_eye(cls, landmarks: NDArray[(68, 2), Int[32]], side: EyeSide) -> NDArray[(6, 2), Int[32]]:
