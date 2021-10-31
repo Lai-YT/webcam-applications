@@ -21,4 +21,4 @@ jobs:
     - name: Analysing the code with mypy
       # only run mypy on the .py files under cwd
       run: |
-        mypy `ls -R|grep .py$|xargs` --ignore-missing-imports
+        mypy . --ignore-missing-imports
