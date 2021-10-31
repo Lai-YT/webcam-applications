@@ -29,8 +29,8 @@ class PostureLabel(Enum):
 
 class ModelPath(Enum):
     """Kinds of models with their value as the path of itself."""
-    DEFAULT = to_abs_path("trained_models/default_model.h5")
-    CUSTOM = to_abs_path("trained_models/custom_model.h5")
+    DEFAULT: str = to_abs_path("trained_models/default_model.h5")
+    CUSTOM:  str = to_abs_path("trained_models/custom_model.h5")
 
 
 class ModelTrainer(QObject):

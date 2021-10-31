@@ -51,3 +51,8 @@ class Timer:
     @staticmethod
     def _get_time() -> int:
         return int(time.time())
+
+
+def min_to_sec(time_in_min: int) -> int:
+    """Simple minute to second conversion method without any check."""
+    return time_in_min * 60

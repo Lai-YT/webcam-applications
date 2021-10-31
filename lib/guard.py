@@ -15,17 +15,22 @@ from lib.cv_font import FONT_0
 from lib.distance_calculator import DistanceCalculator
 from lib.image_type import ColorImage, GrayImage
 from lib.path import to_abs_path
-from lib.timer import Timer
+from lib.timer import Timer, min_to_sec
 from lib.train import ModelTrainer, PostureLabel
 from gui.popup_shower import TimeShower
 from gui.popup_widget import TimeState
 
 
 # Module scope grader for all guards to share.
-global_grader_for_guards = ConcentrationGrader(interval=100)
+_grader_of_guards = ConcentrationGrader(interval=100)
+def get_grader_instance_of_guards() -> ConcentrationGrader:
+    return _grader_of_guards
 
 
-def mark_face(canvas: ColorImage, face: Tuple[int, int, int, int], landmarks: NDArray[(68, 2), Int[32]]) -> None:
+def mark_face(
+        canvas: ColorImage,
+        face: Tuple[int, int, int, int],
+        landmarks: NDArray[(68, 2), Int[32]]) -> None:
     """Modifies the canvas with face area framed up and landmarks dotted.
 
     Arguments:
@@ -44,7 +49,7 @@ class DistanceState(Enum):
     Two states represent two different relationships
     between distance and limit.
     """
-    NORMAL = auto()
+    NORMAL  = auto()
     WARNING = auto()
 
 
@@ -159,9 +164,9 @@ class DistanceGuard(QObject):
         # The grading part.
         if distance < self._warn_dist:
             # Too close is considered to be a distraction.
-            global_grader_for_guards.increase_distraction()
+            get_grader_instance_of_guards().increase_distraction()
         else:
-            global_grader_for_guards.increase_concentration()
+            get_grader_instance_of_guards().increase_concentration()
 
 
     def _put_distance_text(self, canvas: ColorImage, distance: float) -> None:
@@ -207,9 +212,9 @@ class TimeGuard(QObject):
         super().__init__()
 
         if time_limit is not None:
-            self._time_limit: int = TimeGuard._min_to_sec(time_limit)
+            self._time_limit: int = min_to_sec(time_limit)
         if break_time is not None:
-            self._break_time: int = TimeGuard._min_to_sec(break_time)
+            self._break_time: int = min_to_sec(break_time)
         self._warning_enabled: bool = warning_enabled
 
         self._f_break_started: bool = False
@@ -223,14 +228,14 @@ class TimeGuard(QObject):
         Arguments:
             time_limit: Triggers a break if reached (minutes).
         """
-        self._time_limit = TimeGuard._min_to_sec(time_limit)
+        self._time_limit = min_to_sec(time_limit)
 
     def set_break_time(self, break_time: int) -> None:
         """
         Arguments:
             break_time: How long the break should be (minutes).
         """
-        self._break_time = TimeGuard._min_to_sec(break_time)
+        self._break_time = min_to_sec(break_time)
 
     def set_warning_enabled(self, enabled: bool) -> None:
         """
@@ -276,9 +281,9 @@ class TimeGuard(QObject):
             # Timer is paused if there's no face, which is considered to be a distraction.
             # Not count during break time.
             if timer.is_paused():
-                global_grader_for_guards.increase_distraction()
+                get_grader_instance_of_guards().increase_distraction()
             else:
-                global_grader_for_guards.increase_concentration()
+                get_grader_instance_of_guards().increase_concentration()
         else:
             self._take_break()
 
@@ -340,11 +345,6 @@ class TimeGuard(QObject):
         self.reset()
         if self._warning_enabled:
             playsound(self._end_break_sound, block=False)
-
-    @staticmethod
-    def _min_to_sec(time_in_min: int) -> int:
-        """Simple minute to second conversion method without any check."""
-        return time_in_min * 60
 
 
 class PostureGuard(QObject):
@@ -446,6 +446,8 @@ class PostureGuard(QObject):
             return
 
         # Get posture label...
+        posture: PostureLabel
+        detect: str
         if landmarks.any():
             posture, detail = self._do_posture_angle_check(canvas, self._angle_calculator.calculate(landmarks))
         else:
@@ -469,9 +471,9 @@ class PostureGuard(QObject):
 
         # grade concentration
         if posture is not PostureLabel.GOOD:
-            global_grader_for_guards.increase_distraction()
+            get_grader_instance_of_guards().increase_distraction()
         else:
-            global_grader_for_guards.increase_concentration()
+            get_grader_instance_of_guards().increase_concentration()
 
         text, color = ("Good", GREEN) if posture is PostureLabel.GOOD else ("Slump", RED)
         cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, thickness=2)

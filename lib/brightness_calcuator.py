@@ -65,9 +65,10 @@ class BrightnessCalculator:
 
         frame_brightness: float = locals()[weight_of_modes[mode][0]]
         brightness_weight: float = weight_of_modes[mode][1]
+        new_weighted_value: float
         if self._pre_weighted_value is None:
             # _pre_weighted_value takes no more weight
-            new_weighted_value: float = frame_brightness * 1
+            new_weighted_value = frame_brightness * 1
             # Set _pre_weighted_value as new_weighted_value to avoid NoneType Error.
             self._pre_weighted_value = new_weighted_value
         else:

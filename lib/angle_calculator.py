@@ -84,11 +84,8 @@ def draw_landmarks_used_by_angle_calculator(canvas: ColorImage, landmarks: NDArr
     ]
     # connect sides with line
     for facemark in facemarks_idxs:
-        cv2.line(
-            canvas_,
-            landmarks[facemark[0]], landmarks[facemark[1]],
-            color, 2, cv2.LINE_AA
-        )
+        cv2.line(canvas_, landmarks[facemark[0]], landmarks[facemark[1]],
+                 color, 2, cv2.LINE_AA)
     # make lines transparent
     canvas_ = cv2.addWeighted(canvas_, 0.4, canvas, 0.6, 0)
     return canvas_

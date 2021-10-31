@@ -99,7 +99,7 @@ class BrightnessController(QObject):
             sbc.set_brightness(self._base_value, method="wmi")
             self.s_brightness_refreshed.emit(self._base_value)
         else:
-            new_brightness = (
+            new_brightness: int = (
                 self._brightness_calculator.calculate_proper_screen_brightness(
                     self._mode, self._base_value, self._frames)
             )

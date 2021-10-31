@@ -106,7 +106,7 @@ class AngleTolerance(IntEnum):
     The int value is the angle allowed.
     """
     # Add member or modify value to provide more choices.
-    LOOSE = 25
+    LOOSE  = 25
     STRICT = 15
 
 class PosturePanel(CheckableGroupBox):

@@ -15,7 +15,7 @@ from lib.image_type import ColorImage
 
 
 class EyeSide(Enum):
-    LEFT = auto()
+    LEFT  = auto()
     RIGHT = auto()
 
 
@@ -74,7 +74,7 @@ class BlinkDetector:
     the eye aspect ratio (EAR).
     """
 
-    LEFT_EYE_START_END_IDXS: Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
+    LEFT_EYE_START_END_IDXS:  Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
     RIGHT_EYE_START_END_IDXS: Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
     def __init__(self, ratio_threshold: float = 0.24) -> None:
@@ -144,6 +144,7 @@ class BlinkDetector:
             landmarks: (x, y) coordinates of the 68 face landmarks.
             side: The side of eye to be extracted.
         """
+        eye: NDArray[(6, 2), Int[32]]
         if side is EyeSide.LEFT:
             eye = landmarks[cls.LEFT_EYE_START_END_IDXS[0]:cls.LEFT_EYE_START_END_IDXS[1]]
         elif side is EyeSide.RIGHT:
@@ -164,7 +165,7 @@ def draw_landmarks_used_by_blink_detector(
         landmarks: (x, y) coordinates of the 68 face landmarks.
         color: Color of the lines, green (0, 255, 0) in default.
     """
-    canvas_ = canvas.copy()
+    canvas_: ColorImage = canvas.copy()
 
 	# compute the convex hull for the left and right eye, then
 	# visualize each of the eyes

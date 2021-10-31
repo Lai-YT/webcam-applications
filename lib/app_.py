@@ -9,11 +9,14 @@ from imutils import face_utils
 from nptyping import Int, NDArray
 
 from gui.popup_widget import TimeState
-from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
+from lib.angle_calculator import (AngleCalculator,
+                                  draw_landmarks_used_by_angle_calculator)
 from lib.brightness_calcuator import BrightnessMode
 from lib.brightness_controller import BrightnessController
-from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
-from lib.guard import DistanceGuard, DistanceState, PostureGuard, TimeGuard, global_grader_for_guards, mark_face
+from lib.distance_calculator import (DistanceCalculator,
+                                     draw_landmarks_used_by_distance_calculator)
+from lib.guard import (DistanceGuard, DistanceState, PostureGuard, TimeGuard,
+                       get_grader_instance_of_guards, mark_face)
 from lib.image_convert import ndarray_to_qimage
 from lib.timer import Timer
 from lib.train import ModelPath, ModelTrainer, PostureLabel
@@ -168,7 +171,7 @@ class WebcamApplication(QObject):
         """Starts the applications that has been enabled.
 
         Arguments:
-            refresh (int): Refresh speed in millisecond. 1ms in default.
+            refresh: Refresh speed in millisecond. 1ms in default.
         """
         # Set the flag to True so can start capturing.
         # Loop breaks if someone calls stop() and sets the flag to False.
@@ -181,6 +184,7 @@ class WebcamApplication(QObject):
         self.s_started.emit()
 
         while self._f_ready:
+            frame: ColorImage
             _, frame = self._webcam.read()
             # mirrors, so horizontally flip
             frame = cv2.flip(frame, flipCode=1)
@@ -235,8 +239,9 @@ class WebcamApplication(QObject):
         """
         faces: dlib.rectangles = self._face_detector(frame)
         # doesn't handle multiple faces
+        landmarks: NDArray[(68, 2), Int[32]]
         if len(faces) == 1:
-            landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(frame, faces[0]))
+            landmarks = face_utils.shape_to_np(self._shape_predictor(frame, faces[0]))
             mark_face(canvas, face_utils.rect_to_bb(faces[0]), landmarks)
             draw_landmarks_used_by_distance_calculator(canvas, landmarks)
         else:
@@ -283,4 +288,4 @@ class WebcamApplication(QObject):
 
     def _connect_concentration_grader(self) -> None:
         """Connects signals of the ConcentrationGrader used by guards."""
-        global_grader_for_guards.s_grade_refreshed.connect(self.s_grade_refreshed)
+        get_grader_instance_of_guards().s_grade_refreshed.connect(self.s_grade_refreshed)
