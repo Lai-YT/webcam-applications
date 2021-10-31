@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from typing import Dict
 
 from PyQt5.QtCore import QEvent, QObject, QPoint, Qt
 from PyQt5.QtGui import QIcon, QMouseEvent
@@ -36,6 +37,7 @@ class TimerWidget(QWidget):
         self._create_whats_this_button()
         self._create_clocks()
         # Work state is the initial state.
+        self._current_state: TimeState
         self.switch_time_state(TimeState.WORK)
 
     def current_state(self) -> TimeState:
@@ -102,7 +104,7 @@ class TimerWidget(QWidget):
         self._clock_widget = StackedClockWidget()
         self._general_layout.addWidget(self._clock_widget)
         # Forward the clocks of StackedClockWidget to provide simple access.
-        self.clocks = self._clock_widget.clocks
+        self.clocks: Dict[TimeState, LCDClock] = self._clock_widget.clocks
 
 
 class StackedClockWidget(QStackedWidget):
@@ -113,7 +115,7 @@ class StackedClockWidget(QStackedWidget):
         self._create_clocks()
 
     def _create_clocks(self) -> None:
-        self.clocks = {
+        self.clocks: Dict[TimeState, LCDClock] = {
             TimeState.WORK: LCDClock(),
             TimeState.BREAK: LCDClock(color="red"),
         }
