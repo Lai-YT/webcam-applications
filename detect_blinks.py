@@ -23,7 +23,7 @@ from lib.blink_detector import (
 	TailorMadeNormalEyeAspectRatioMaker,
 	draw_landmarks_used_by_blink_detector,
 )
-from lib.blink_ratio_counter import BlinkRatioCounter
+from lib.blink_rate_counter import BlinkRateCounter
 
 
 # define two constants, one for the eye aspect ratio to indicate
@@ -48,7 +48,7 @@ predictor = dlib.shape_predictor("lib/trained_models/shape_predictor_68_face_lan
 
 blink_detector = BlinkDetector(EYE_AR_THRESH)
 # ratio_adjuster = TailorMadeNormalEyeAspectRatioMaker(0.28, SAMPLE_THRESHOLD)
-ratio_counter = BlinkRatioCounter()
+rate_counter = BlinkRateCounter()
 
 frame_count: int = 0  # increase every loop
 face_count: int = 0  # increase every face
@@ -60,13 +60,13 @@ time.sleep(1.0)
 logging.basicConfig(
 	format="%(asctime)s %(message)s",
 	datefmt="%I:%M:%S",
-	filename="eye_aspect_ratio.log",
+	filename="blink_rate.log",
 	# filemode="w+",
 	level=logging.DEBUG,
 )
 
-ratio_counter.s_ratio_refreshed.connect(lambda ratio: logging.info(f"blink: {ratio}/min"))
-ratio_counter.start()
+rate_counter.s_rate_refreshed.connect(lambda rate: logging.info(f"blink: {rate}/min"))
+rate_counter.start()
 # loop over frames from the video stream
 while cam.isOpened():
 	# grab the frame from the camera, resize
@@ -106,7 +106,7 @@ while cam.isOpened():
 			# then increment the total number of blinks
 			if count >= EYE_AR_CONSEC_FRAMES:
 				total += 1
-				ratio_counter.blink()
+				rate_counter.blink()
 
 			# reset the eye frame count
 			count = 0
@@ -122,7 +122,7 @@ while cam.isOpened():
 		cv2.putText(frame, f"EAR: {ratio:.2f}", (450, 30),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-	if ratio_counter.check():
+	if rate_counter.check():
 		# face equals frame means the face sticks to the screen
 		# so there's always a face with a frame.
 		logging.info(f"face: {face_count}/min")
@@ -141,4 +141,4 @@ while cam.isOpened():
 # do a bit of cleanup
 cv2.destroyAllWindows()
 cam.release()
-ratio_counter.stop()
+rate_counter.stop()

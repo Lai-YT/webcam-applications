@@ -19,6 +19,5 @@ jobs:
         python -m pip install --upgrade pip
         pip install mypy
     - name: Analysing the code with mypy
-      # only run mypy on the .py files under cwd
       run: |
         mypy . --ignore-missing-imports

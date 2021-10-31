@@ -3,14 +3,14 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from lib.timer import Timer
 
 
-class BlinkRatioCounter(QObject):
+class BlinkRateCounter(QObject):
     """Counts times of blink per minute.
 
     Signals:
-        s_ratio_refreshed
+        s_rate_refreshed
     """
 
-    s_ratio_refreshed = pyqtSignal(float)
+    s_rate_refreshed = pyqtSignal(float)
 
     def __init__(self) -> None:
         super().__init__()
@@ -29,8 +29,8 @@ class BlinkRatioCounter(QObject):
     def check(self) -> bool:
         time: int = self._minute_timer.time()
         if time >= 60:
-            # time might exceed 1 minute, normalize the ratio
-            self.s_ratio_refreshed.emit(self._blink_count * 60 / time)
+            # time might exceed 1 minute, normalize the rate
+            self.s_rate_refreshed.emit(self._blink_count * 60 / time)
             self._reset()
             self._minute_timer.start()
             return True
