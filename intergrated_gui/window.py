@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout,
 from intergrated_gui.frame_widget import FrameWidget
 from intergrated_gui.information_widget import InformationWidget
 from intergrated_gui.panel_widget import PanelWidget
-from intergrated_gui.panel_controller import PanelController
 
 
 class Window(QMainWindow):

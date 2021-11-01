@@ -18,6 +18,22 @@ class BrightnessCalculator:
     """Handle processes which require value modulation."""
 
     def __init__(self) -> None:
+        """
+        Arguments:
+            _pre_weighted_value: 
+                Used to weight with frame brightness to reduce the effect of 
+                brightness difference, which may cause dramatically increase of 
+                brightness value.
+            _base_value:
+                Store current slider value. 
+                If slider value changes, get the difference of two values
+                and update base value.
+            _brightness_value:
+                Store current screen brightness value.
+                Every new frame generates a new offset of brightness, then the
+                process will add the offset to current brightness value, 
+                emit the signal of value change, and update current brightness value.
+        """
         self._pre_weighted_value: Optional[float] = None
         self._base_value: Optional[int] = None
         self._brightness_value: Optional[float] = None
@@ -80,7 +96,7 @@ class BrightnessCalculator:
         base_value_diff: float = current_base_value - self._base_value
         weighted_value_diff: float = new_weighted_value - self._pre_weighted_value
 
-        # Add value difference effect on current brightness value and store the value.
+        # Add value difference effect as offset on current brightness value.
         # Higher the brightness if the environment is bright to keep the screen clear and
         # lower the brightness if the background of screen is light colored.
         if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
