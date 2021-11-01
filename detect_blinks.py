@@ -126,19 +126,23 @@ while cam.isOpened():
 		# face equals frame means the face sticks to the screen
 		# so there's always a face with a frame.
 		logging.info(f"face: {face_count}/min")
-		logging.info(f"frame: {frame_count}/min\n")
+		logging.info(f"frame: {frame_count}/min")
+		if face_count < frame_count * 0.7:
+			logging.info(f"low face existence, not reliable")
+		logging.info("\n")
 		face_count = 0
 		frame_count = 0
 
 	# show the frame
 	cv2.imshow("Frame", frame)
-	key = cv2.waitKey(1) & 0xFF
+	# delay 25 to prevent the frame count from fluctuating
+	key = cv2.waitKey(25) & 0xFF
 
 	# if the `q` key was pressed, break from the loop
 	if key == ord("q"):
 		break
 
-# do a bit of cleanup
+# do a bit of clean up
 cv2.destroyAllWindows()
 cam.release()
 rate_counter.stop()

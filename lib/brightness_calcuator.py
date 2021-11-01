@@ -18,24 +18,18 @@ class BrightnessCalculator:
     """Handle processes which require value modulation."""
 
     def __init__(self) -> None:
-        """
-        Arguments:
-            _pre_weighted_value: 
-                Used to weight with frame brightness to reduce the effect of 
-                brightness difference, which may cause dramatically increase of 
-                brightness value.
-            _base_value:
-                Store current slider value. 
-                If slider value changes, get the difference of two values
-                and update base value.
-            _brightness_value:
-                Store current screen brightness value.
-                Every new frame generates a new offset of brightness, then the
-                process will add the offset to current brightness value, 
-                emit the signal of value change, and update current brightness value.
-        """
+        # Used to weight with frame brightness to reduce the effect of
+        # brightness difference, which may cause dramatically increase of
+        # brightness value.
         self._pre_weighted_value: Optional[float] = None
+        # Store current slider value.
+        # If slider value changes, get the difference of two values
+        # and update base value.
         self._base_value: Optional[int] = None
+        # Store current screen brightness value.
+        # Every new frame generates a new offset of brightness, then the
+        # process will add the offset to current brightness value,
+        # emit the signal of value change, and update current brightness value.
         self._brightness_value: Optional[float] = None
 
     def calculate_proper_screen_brightness(
@@ -123,8 +117,8 @@ class BrightnessCalculator:
         hue, saturation, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
         return int(100 * value.mean() / 255)
 
-    def clear(self) -> None:
-        """Clear the variables to make every time auto optimization triggered independent."""
+    def reset(self) -> None:
+        """Reset the variables to make every time auto optimization triggered independent."""
         self._pre_weighted_value = None
         self._base_value = None
         self._brightness_value = None
