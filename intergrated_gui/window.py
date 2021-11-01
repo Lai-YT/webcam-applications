@@ -16,7 +16,6 @@ class Window(QMainWindow):
         self.setCentralWidget(self._central_widget)
 
         self._create_widgets()
-        self._connect_signals()
 
         self._screen_size = QApplication.instance().primaryScreen().availableSize()
         # Limit the size to stay in comfort
@@ -39,10 +38,8 @@ class Window(QMainWindow):
         if (new_size.width() < self._screen_size.width() * 0.8
                 or new_size.height() < self._screen_size.height() * 0.8):
             self.widgets["frame"].hide()
-            self.widgets["panel"].hide_frame_checkbox.setEnabled(False)
         else:
             self.widgets["frame"].show()
-            self.widgets["panel"].hide_frame_checkbox.setEnabled(True)
         # still the resize is allowed
         super().resizeEvent(event)
 
@@ -62,14 +59,3 @@ class Window(QMainWindow):
             self.widgets[name] = widget
             self._general_layout.addWidget(widget, stretch=stretch)
 
-    def _connect_signals(self):
-        """Connect signal of hide_frame_checkbox."""
-        self.widgets["panel"].hide_frame_checkbox.toggled.connect(
-            lambda checked: self._hide_frame_widget(checked)
-        )
-
-    def _hide_frame_widget(self, checked: bool) -> None:
-        if checked:
-            self.widgets["frame"].hide()
-        else:
-            self.widgets["frame"].show()

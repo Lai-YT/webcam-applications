@@ -22,13 +22,8 @@ class PanelWidget(QWidget):
         layout = QVBoxLayout()
         for name, panel in self.panels.items():
             layout.addWidget(panel, stretch=1)
-        layout.addStretch(1)
 
-        # Add a checkbox at the bottom of panel widget.
-        self.hide_frame_checkbox = OptionCheckBox("Hide webcam frame")
-        layout.addWidget(self.hide_frame_checkbox)
-
-        layout.addStretch(10)
+        layout.addStretch(5)
         self.setLayout(layout)
 
 
