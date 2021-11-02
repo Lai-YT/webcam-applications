@@ -101,3 +101,7 @@
 10:09:08 blink: 4.0/min
 10:09:08 normal ratio: 0.3, face: 721/min, frame: 721/min
 10:09:08
+
+11:09:49 blink: 7.0/min
+11:09:49 ratio threshold: 0.26, face: 655/min, frame: 698/min
+11:09:49

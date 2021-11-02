@@ -85,7 +85,12 @@ class BlinkDetector:
         """
         self._ratio_threshold = ratio_threshold
 
-    def set_ratio_threshold(self, threshold: float) -> None:
+    @property
+    def ratio_threshold(self) -> float:
+        return self._ratio_threshold
+
+    @ratio_threshold.setter
+    def ratio_threshold(self, threshold: float) -> None:
         self._ratio_threshold = threshold
 
     @classmethod

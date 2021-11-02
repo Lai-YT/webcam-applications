@@ -125,7 +125,7 @@ while cam.isOpened():
 		ratio_adjuster.read_sample(landmarks)
 		num_of_samples, normal_ratio = ratio_adjuster.get_normal_ratio()
 		if num_of_samples >= SAMPLE_THRESHOLD:
-			blink_detector.set_ratio_threshold(normal_ratio * 0.85)
+			blink_detector.ratio_threshold = normal_ratio * 0.85
 
 		blink_counter.detect_blink(landmarks)
 		# A new blink is counted.
@@ -141,7 +141,7 @@ while cam.isOpened():
 		cv2.putText(frame, f"EAR: {ratio:.2f}", (450, 30),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-	details: List[str] = [f"normal ratio: {round(normal_ratio, 2)}"]
+	details: List[str] = [f"ratio threshold: {round(blink_detector.ratio_threshold, 2)}"]
 	if rate_counter.check():
 		details.append(f"face: {face_count}/min")
 		details.append(f"frame: {frame_count}/min")
