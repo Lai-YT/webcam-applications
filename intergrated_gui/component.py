@@ -1,3 +1,9 @@
+"""PyQt5.QtWidgets with common-use settings.
+
+All with font "Arial".
+"""
+
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QCheckBox, QGroupBox, QLCDNumber, QLabel, QLineEdit,
@@ -66,6 +72,7 @@ class LineEdit(QLineEdit):
 
 
 class LoadingBar(QProgressBar):
+    """The min and max range are both set to 0 to provide a loading effect."""
     def __init__(self):
         super().__init__()
         self.setRange(0, 0)

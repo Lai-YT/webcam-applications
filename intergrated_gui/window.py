@@ -1,4 +1,7 @@
-from PyQt5.QtGui import QResizeEvent
+from typing import Dict
+
+from PyQt5.QtCore import QSize
+from PyQt5.QtGui import QCloseEvent, QResizeEvent
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 
 from intergrated_gui.frame_widget import FrameWidget
@@ -7,7 +10,7 @@ from intergrated_gui.panel_widget import PanelWidget
 
 
 class Window(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self._general_layout = QHBoxLayout()
@@ -17,12 +20,12 @@ class Window(QMainWindow):
 
         self._create_widgets()
 
-        self._screen_size = QApplication.instance().primaryScreen().availableSize()
+        self._screen_size: QSize = QApplication.instance().primaryScreen().availableSize()
         # Limit the size to stay in comfort
         self.setMinimumSize(self._screen_size / 2)
 
     # Override
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         # Call the original implementation, which accepts and destroys the GUI
         # in default.
         super().closeEvent(event)
@@ -43,7 +46,7 @@ class Window(QMainWindow):
         # still the resize is allowed
         super().resizeEvent(event)
 
-    def _create_widgets(self):
+    def _create_widgets(self) -> None:
         """
         Information widget at the left-hand side, capture view in the middle,
         control panel at the right.
@@ -54,8 +57,7 @@ class Window(QMainWindow):
             "frame": (FrameWidget(), 2),
             "panel": (PanelWidget(), 1),
         }
-        self.widgets = {}
+        self.widgets: Dict[str, QWidget] = {}
         for name, (widget, stretch) in widgets.items():
             self.widgets[name] = widget
             self._general_layout.addWidget(widget, stretch=stretch)
-
