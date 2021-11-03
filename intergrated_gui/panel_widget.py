@@ -39,8 +39,8 @@ class DistancePanel(CheckableGroupBox):
 
     def _create_settings(self):
         settings = {
-            "distance": "Distance in reference:",
-            "bound": "Shortest distance allowed:",
+            "camera_dist": "Distance in reference:",
+            "warn_dist": "Shortest distance allowed:",
         }
         self.settings = {}
         for name, description in settings.items():
@@ -55,8 +55,8 @@ class DistancePanel(CheckableGroupBox):
     def _set_restrictions(self):
         # placeholder, double validator, max length
         restrictions = {
-            "distance": ("10 ~ 99.99 (cm)", (10, 99.99, 2), 5),
-            "bound": ("30 ~ 59.99 (cm)", (30, 59.99, 2), 5),
+            "camera_dist": ("10 ~ 99.99 (cm)", (10, 99.99, 2), 5),
+            "warn_dist": ("30 ~ 59.99 (cm)", (30, 59.99, 2), 5),
         }
 
         for name, (placeholder, validator, length) in restrictions.items():
@@ -77,8 +77,8 @@ class TimePanel(CheckableGroupBox):
 
     def _create_settings(self):
         settings = {
-            "limit": "Time limit:",
-            "break": "Break time:",
+            "time_limit": "Time limit:",
+            "break_time": "Break time:",
         }
         self.settings = {}
         for name, description in settings.items():
@@ -93,8 +93,8 @@ class TimePanel(CheckableGroupBox):
     def _set_restrictions(self):
         # placeholder, validator
         restrictions = {
-            "limit": ("1 ~ 59 (min)", (1, 59)),
-            "break": ("1 ~ 59 (min)", (1, 59)),
+            "time_limit": ("1 ~ 59 (min)", (1, 59)),
+            "break_time": ("1 ~ 59 (min)", (1, 59)),
         }
 
         for name, (placeholder, validator) in restrictions.items():
