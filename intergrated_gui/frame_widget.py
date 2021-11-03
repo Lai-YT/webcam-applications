@@ -12,9 +12,14 @@ class FrameWidget(QLabel):
     def set_frame(self, frame: QImage) -> None:
         """Sets frame to the widget in respect of the size of widget.
 
+        Notice that this method does nothing when the FrameWidget is not visible.
+
         Arguments:
             frame (QImage): The image to be set.
         """
+        if not self.isVisible():
+            # to save efficiency
+            return
         # This is a self-adjust way.
         # If simply use self.frameGeometry().width(), the image will grow.
         # Because the image is always as big as the widget and PyQt will always
