@@ -1,14 +1,12 @@
 import os
+from configparser import ConfigParser
+
 from PyQt5.QtCore import QObject, pyqtSlot
 
-from configparser import ConfigParser
-from distutils.util import strtobool
 from intergrated_gui.panel_widget import AngleTolerance
 from lib.brightness_calcuator import BrightnessMode
 from lib.train import ModelPath
 
-# Path of the config file.
-CONFIG = os.path.join(os.path.abspath(os.path.dirname(__file__)), "gui_state.ini")
 
 class PanelController(QObject):
     def __init__(self, panel_widget, app):
@@ -25,25 +23,26 @@ class PanelController(QObject):
         self._init_posture_states()
         self._init_brightness_states()
 
-    def load_configs(self, config):
-        """Load the configs and set init state of each mode and
-        its following detailed widgets.
+    def load_configs(self, config: ConfigParser):
+        """Loads the configs and set init state of each mode
+        and its following detailed widgets.
+
         The init state of the widgets will affect the initialization of app.
         """
         panels = self._panel.panels
 
         # Enable modes that are set True.
         for mode, panel in panels.items():
-            panel.setChecked(strtobool(config.get(mode, "checked")))
+            panel.setChecked(config.getboolean(mode, "checked"))
 
         # distance
         for name, line_edit in panels["distance"].settings.items():
             line_edit.setText(config.get("distance", name))
-        panels["distance"].warning.setChecked(strtobool(config.get("distance", "warning_enabled")))
+        panels["distance"].warning.setChecked(config.getboolean("distance", "warning_enabled"))
         # time
         for name, line_edit in panels["time"].settings.items():
             line_edit.setText(config.get("time", name))
-        panels["time"].warning.setChecked(strtobool(config.get("time", "warning_enabled")))        
+        panels["time"].warning.setChecked(config.getboolean("time", "warning_enabled"))
         # posture
         if config.get("posture", "warn_angle") == "loose":
             panels["posture"].angles[AngleTolerance.LOOSE].setChecked(True)
@@ -53,46 +52,47 @@ class PanelController(QObject):
             panels["posture"].custom.setChecked(True)
         elif config.get("posture", "model_path") == "default":
             panels["posture"].custom.setChecked(False)
-        panels["posture"].warning.setChecked(strtobool(config.get("posture", "warning_enabled")))        
+        panels["posture"].warning.setChecked(config.getboolean("posture", "warning_enabled"))
         # brightness
-        panels["brightness"].slider.setValue(int(config.get("brightness", "slider_value")))
-        if strtobool(config.get("brightness", "webcam_enabled")):
+        panels["brightness"].slider.setValue(config.getint("brightness", "slider_value"))
+        if config.getboolean("brightness", "webcam_enabled"):
             panels["brightness"].modes[BrightnessMode.WEBCAM].setChecked(True)
-        if strtobool(config.get("brightness", "color_system_enabled")):
+        if config.getboolean("brightness", "color_system_enabled"):
             panels["brightness"].modes[BrightnessMode.COLOR_SYSTEM].setChecked(True)
 
-    def store_configs(self, config):
-        """Store data of each mode and its following detailed widgets 
-        in the configs."""
+    def store_configs(self, config: ConfigParser):
+        """Stores data of each mode and its following detailed widgets
+        in the configs.
+        """
         panels = self._panel.panels
 
         # Set true if the group box is checked.
         for section, check_box in panels.items():
-            config.set(section, "checked", "True" if check_box.isChecked() else "False")
+            config.set(section, "checked", str(check_box.isChecked()))
 
         # distance
         for name, line_edit in panels["distance"].settings.items():
             config.set("distance", name, line_edit.text())
-        config.set("distance", "warning_enabled", 
-            "True" if panels["distance"].warning.isChecked() else "False")
+        config.set("distance", "warning_enabled",
+            str(panels["distance"].warning.isChecked()))
         # time
         for name, line_edit in panels["time"].settings.items():
             config.set("time", name, line_edit.text())
-        config.set("time", "warning_enabled", 
-            "True" if panels["distance"].warning.isChecked() else "False")
+        config.set("time", "warning_enabled",
+            str(panels["distance"].warning.isChecked()))
         # posture
         config.set("posture", "warn_angle",
             "loose" if panels["posture"].angles[AngleTolerance.LOOSE].isChecked() else "strict")
         config.set("posture", "model_path",
             "custom" if panels["posture"].custom.isChecked() else "default")
-        config.set("posture", "warning_enabled", 
-            "True" if panels["distance"].warning.isChecked() else "False")
+        config.set("posture", "warning_enabled",
+            str(panels["distance"].warning.isChecked()))
         # brightness
         config.set("brightness", "slider_value", str(panels["brightness"].slider.value()))
         config.set("brightness", "webcam_enabled",
-            "True" if panels["brightness"].modes[BrightnessMode.WEBCAM].isChecked() else "False")
+            str(panels["brightness"].modes[BrightnessMode.WEBCAM].isChecked()))
         config.set("brightness", "color_system_enabled",
-            "True" if panels["brightness"].modes[BrightnessMode.COLOR_SYSTEM].isChecked() else "False")
+            str(panels["brightness"].modes[BrightnessMode.COLOR_SYSTEM].isChecked()))
 
     def _init_distance_states(self):
         panel = self._panel.panels["distance"]

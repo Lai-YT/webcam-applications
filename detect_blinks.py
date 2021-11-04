@@ -108,6 +108,7 @@ while cam.isOpened():
 		if num_of_samples >= SAMPLE_THRESHOLD:
 			blink_detector.blink_detector.ratio_threshold = normal_ratio * 0.85
 
+		# main algorithm...
 		blink_detector.detect_blink(landmarks)
 
 		frame = draw_landmarks_used_by_blink_detector(frame, landmarks)

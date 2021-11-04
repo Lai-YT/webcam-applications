@@ -262,13 +262,13 @@ class GoodBlinkRateIntervalDetector(QObject):
         # If it is, emit the signal to tell there's a good interval and remove
         # the blink records of that minute; if not, pop out the oldest blink
         # record until the list only contains blinks within one minute again.
-        if len(self._blink_records) and time_record-self._blink_records[0] > 60:
+        if self._blink_records and time_record-self._blink_records[0] > 60:
             if self._good_rate_range[0] <= len(self._blink_records) <= self._good_rate_range[1]:
                 self.s_good_interval_detected.emit(self._blink_records[0], self._blink_records[-1])
                 self._blink_records.clear()
             else:
                 # can't be a good interval, forward the window
-                while len(self._blink_records) and time_record-self._blink_records[0] > 60:
+                while self._blink_records and time_record-self._blink_records[0] > 60:
                     self._blink_records.pop(0)
         # let this new blink be considered at the next add_blink
         self._blink_records.append(time_record)

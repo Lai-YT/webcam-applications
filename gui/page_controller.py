@@ -81,7 +81,7 @@ class OptionController(PageController):
             config (ConfigParser): The parser which reads the config file
         """
         for section, check_box in self._widget.options.items():
-            config.set(section, "checked", "True" if check_box.isChecked() else "False")
+            config.set(section, "checked", str(check_box.isChecked()))
 
         config.set("Posture Detect", "model", self.get_selected_model_name())
 

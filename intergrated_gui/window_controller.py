@@ -21,7 +21,7 @@ class WindowController(QObject):
         self._connect_app_and_information()
         self._connect_app_and_frame()
         self._connect_information_and_panel()
-        self._connect_cleanup_signal()
+        self._connect_clean_up_signal()
         self._start_app()
 
     def _start_app(self):
@@ -79,7 +79,7 @@ class WindowController(QObject):
                     else info_widget.hide(info)
                 )
 
-    def _connect_cleanup_signal(self):
+    def _connect_clean_up_signal(self):
         # Have the configs save before GUI being destroyed.
         self._window.set_clean_up_before_destroy(self._store_panel_configs)
 
