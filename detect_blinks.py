@@ -21,12 +21,21 @@ from imutils import face_utils
 from nptyping import Int, NDArray
 
 from lib.blink_detector import (
-	AntiNoiseBlinkCounter,
+	AntiNoiseBlinkDetector,
 	BlinkDetector,
+	GoodBlinkRateIntervalDetector,
 	TailorMadeNormalEyeAspectRatioMaker,
 	draw_landmarks_used_by_blink_detector,
 )
 from lib.blink_rate_counter import BlinkRateCounter
+
+
+logging.basicConfig(
+	format="%(asctime)s %(message)s",
+	datefmt="%I:%M:%S",
+	filename="blink_rate.log",
+	level=logging.DEBUG,
+)
 
 
 # if the number of consecutive frames exceeds, the user may be
@@ -40,29 +49,34 @@ SAMPLE_THRESHOLD: int = 500
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("lib/trained_models/shape_predictor_68_face_landmarks.dat")
 
-# counts the total number of blinks
-blink_counter = AntiNoiseBlinkCounter()
-# adjust the blink counter of the AntiNoiseBlinkCounter
-ratio_adjuster = TailorMadeNormalEyeAspectRatioMaker(0.3, SAMPLE_THRESHOLD)
-# counts the blink rate (blinks per minute)
+# count and log the blink rate (blinks per minute)
 rate_counter = BlinkRateCounter()
+rate_counter.s_rate_refreshed.connect(lambda rate: logging.info(f"blink: {rate}/min"))
+
+good_interval_detector = GoodBlinkRateIntervalDetector((15, 25))
+good_interval_detector.s_good_interval_detected.connect(
+		lambda t_s, t_e: logging.info(f"good interval: {t_s} ~ {t_e}, {t_e - t_s} sec"))
 
 blink_count: int = 0  # increase when a new blink is detected
 frame_count: int = 0  # increase every loop
 face_count: int = 0  # increase every face
 
+def count_blink() -> None:
+	global blink_count
+	blink_count += 1
+	rate_counter.blink()
+	good_interval_detector.add_blink()
+
+# counts the total number of blinks
+blink_detector = AntiNoiseBlinkDetector()
+blink_detector.s_blinked.connect(count_blink)
+# adjust the normal BlinkDetector held by the AntiNoiseBlinkDetector
+ratio_adjuster = TailorMadeNormalEyeAspectRatioMaker(0.3, SAMPLE_THRESHOLD)
+
 # start the video stream
 cam = cv2.VideoCapture(0)
 time.sleep(1.0)
 
-logging.basicConfig(
-	format="%(asctime)s %(message)s",
-	datefmt="%I:%M:%S",
-	filename="blink_rate.log",
-	level=logging.DEBUG,
-)
-# log the blink rate
-rate_counter.s_rate_refreshed.connect(lambda rate: logging.info(f"blink: {rate}/min"))
 rate_counter.start()
 
 # loop over frames from the video stream
@@ -92,13 +106,9 @@ while cam.isOpened():
 		ratio_adjuster.read_sample(landmarks)
 		num_of_samples, normal_ratio = ratio_adjuster.get_normal_ratio()
 		if num_of_samples >= SAMPLE_THRESHOLD:
-			blink_counter.blink_detector.ratio_threshold = normal_ratio * 0.85
+			blink_detector.blink_detector.ratio_threshold = normal_ratio * 0.85
 
-		blink_counter.detect_blink(landmarks)
-		# A new blink is counted.
-		if blink_counter.blink_count > blink_count:
-			rate_counter.blink()
-			blink_count = blink_counter.blink_count
+		blink_detector.detect_blink(landmarks)
 
 		frame = draw_landmarks_used_by_blink_detector(frame, landmarks)
 		# draw the total number of blinks on the frame along with
@@ -108,7 +118,7 @@ while cam.isOpened():
 		cv2.putText(frame, f"EAR: {ratio:.2f}", (450, 30),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-	details: List[str] = [f"ratio threshold: {round(blink_counter.blink_detector.ratio_threshold, 2)}"]
+	details: List[str] = [f"ratio threshold: {round(blink_detector.blink_detector.ratio_threshold, 2)}"]
 	if rate_counter.check():
 		details.append(f"face: {face_count}/min")
 		details.append(f"frame: {frame_count}/min")
@@ -116,8 +126,7 @@ while cam.isOpened():
 		# so there's always a face with a frame.
 		if face_count < frame_count * 0.7:
 			details.append(f"low face existence, not reliable")
-		logging.info(", ".join(details))
-		logging.info("\n")
+		logging.info(", ".join(details) + "\n")
 		# resets the counts for a new interval
 		face_count = 0
 		frame_count = 0

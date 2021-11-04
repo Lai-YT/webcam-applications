@@ -1,120 +1,26 @@
-09:41:54 blink: 8.0/min
-09:41:54 normal ratio: 0.31, face: 627/min, frame: 726/min
-09:41:54
+12:12:04 blink: 6.0/min
+12:12:04 ratio threshold: 0.24, face: 691/min, frame: 733/min
 
-09:42:54 blink: 18.0/min
-09:42:54 normal ratio: 0.3, face: 756/min, frame: 756/min
-09:42:54
+12:13:04 blink: 13.0/min
+12:13:04 ratio threshold: 0.26, face: 744/min, frame: 746/min
 
-09:43:54 blink: 12.0/min
-09:43:54 normal ratio: 0.29, face: 741/min, frame: 742/min
-09:43:54
+12:13:09 good interval: 1636042328 ~ 1636042388, 60 sec
+12:14:04 blink: 32.0/min
+12:14:04 ratio threshold: 0.27, face: 718/min, frame: 725/min
 
-09:44:54 blink: 4.0/min
-09:44:54 normal ratio: 0.29, face: 731/min, frame: 742/min
-09:44:54
+12:14:25 good interval: 1636042404 ~ 1636042462, 58 sec
+12:15:04 blink: 18.0/min
+12:15:04 ratio threshold: 0.27, face: 655/min, frame: 731/min
 
-09:45:54 blink: 15.0/min
-09:45:54 normal ratio: 0.29, face: 732/min, frame: 741/min
-09:45:54
+12:15:27 good interval: 1636042465 ~ 1636042516, 51 sec
+12:16:04 blink: 26.0/min
+12:16:04 ratio threshold: 0.28, face: 672/min, frame: 731/min
 
-09:46:54 blink: 11.0/min
-09:46:54 normal ratio: 0.29, face: 258/min, frame: 749/min, low face existence, not reliable
-09:46:54
+12:17:04 blink: 25.0/min
+12:17:04 ratio threshold: 0.28, face: 693/min, frame: 732/min
 
-09:47:54 blink: 15.0/min
-09:47:54 normal ratio: 0.29, face: 455/min, frame: 726/min, low face existence, not reliable
-09:47:54
+12:17:19 good interval: 1636042578 ~ 1636042638, 60 sec
+12:41:05 blink: 15.0/min
+12:41:05 ratio threshold: 0.25, face: 697/min, frame: 704/min
 
-09:48:54 blink: 11.0/min
-09:48:54 normal ratio: 0.29, face: 686/min, frame: 695/min
-09:48:54
-
-09:49:54 blink: 2.0/min
-09:49:54 normal ratio: 0.3, face: 685/min, frame: 699/min
-09:49:54
-
-09:50:54 blink: 3.0/min
-09:50:54 normal ratio: 0.3, face: 379/min, frame: 733/min, low face existence, not reliable
-09:50:54
-
-09:51:54 blink: 13.0/min
-09:51:54 normal ratio: 0.3, face: 361/min, frame: 736/min, low face existence, not reliable
-09:51:54
-
-09:52:54 blink: 10.0/min
-09:52:54 normal ratio: 0.3, face: 317/min, frame: 724/min, low face existence, not reliable
-09:52:54
-
-09:53:54 blink: 12.0/min
-09:53:54 normal ratio: 0.3, face: 209/min, frame: 716/min, low face existence, not reliable
-09:53:54
-
-09:54:54 blink: 13.0/min
-09:54:54 normal ratio: 0.3, face: 272/min, frame: 709/min, low face existence, not reliable
-09:54:54
-
-09:55:54 blink: 9.0/min
-09:55:54 normal ratio: 0.29, face: 324/min, frame: 706/min, low face existence, not reliable
-09:55:54
-
-09:56:54 blink: 1.0/min
-09:56:54 normal ratio: 0.29, face: 80/min, frame: 721/min, low face existence, not reliable
-09:56:54
-
-09:57:54 blink: 6.0/min
-09:57:54 normal ratio: 0.29, face: 63/min, frame: 728/min, low face existence, not reliable
-09:57:54
-
-10:01:08 blink: 22.0/min
-10:01:08 normal ratio: 0.26, face: 608/min, frame: 717/min
-10:01:08
-
-10:02:08 blink: 3.0/min
-10:02:08 normal ratio: 0.26, face: 81/min, frame: 721/min, low face existence, not reliable
-10:02:08
-
-10:03:08 blink: 5.0/min
-10:03:08 normal ratio: 0.27, face: 185/min, frame: 706/min, low face existence, not reliable
-10:03:08
-
-10:04:08 blink: 8.0/min
-10:04:08 normal ratio: 0.27, face: 630/min, frame: 721/min
-10:04:08
-
-10:05:08 blink: 3.0/min
-10:05:08 normal ratio: 0.28, face: 569/min, frame: 742/min
-10:05:08
-
-10:06:08 blink: 7.0/min
-10:06:08 normal ratio: 0.28, face: 258/min, frame: 773/min, low face existence, not reliable
-10:06:08
-
-10:07:08 blink: 3.0/min
-10:07:08 normal ratio: 0.29, face: 619/min, frame: 746/min
-10:07:08
-
-10:08:08 blink: 11.0/min
-10:08:08 normal ratio: 0.3, face: 638/min, frame: 745/min
-10:08:08
-
-10:09:08 blink: 4.0/min
-10:09:08 normal ratio: 0.3, face: 721/min, frame: 721/min
-10:09:08
-
-11:09:49 blink: 7.0/min
-11:09:49 ratio threshold: 0.26, face: 655/min, frame: 698/min
-11:09:49
-01:54:38 blink: 20.0/min
-01:54:38 ratio threshold: 0.25, face: 680/min, frame: 731/min
-01:54:38
-10:00:50 blink: 14.0/min
-10:00:50 ratio threshold: 0.23, face: 712/min, frame: 712/min
-10:00:50
-10:01:50 blink: 14.0/min
-10:01:50 ratio threshold: 0.24, face: 692/min, frame: 729/min
-10:01:50
-10:02:50 blink: 18.0/min
-10:02:50 ratio threshold: 0.25, face: 710/min, frame: 737/min
-10:02:50 
-
+12:41:12 good interval: 1636044008 ~ 1636044066, 58 sec
