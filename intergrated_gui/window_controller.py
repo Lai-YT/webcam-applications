@@ -1,8 +1,13 @@
-from PyQt5.QtCore import QObject, QThread
+import os
+from configparser import ConfigParser
+
+from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
 from gui.task_worker import TaskWorker
 from intergrated_gui.panel_controller import PanelController
 
+# Path of the config file.
+CONFIG = os.path.join(os.path.abspath(os.path.dirname(__file__)), "gui_state.ini")
 
 class WindowController(QObject):
     def __init__(self, window, app):
@@ -12,9 +17,11 @@ class WindowController(QObject):
         self._app = app
         self._panel_controller = PanelController(window.widgets["panel"], self._app)
 
+        self._load_panel_configs()
         self._connect_app_and_information()
         self._connect_app_and_frame()
         self._connect_information_and_panel()
+        self._connect_cleanup_signal()
         self._start_app()
 
     def _start_app(self):
@@ -71,3 +78,23 @@ class WindowController(QObject):
                     info_widget.show(info) if checked
                     else info_widget.hide(info)
                 )
+
+    def _connect_cleanup_signal(self):
+        # Have the configs save before GUI being destroyed.
+        self._window.set_clean_up_before_destroy(self._store_panel_configs)
+
+    def _load_panel_configs(self):
+        """Loads the configs of panel controller."""
+        # Create a shared parser since they depends on the same config file.
+        self._config = ConfigParser()
+        self._config.read(CONFIG)
+
+        self._panel_controller.load_configs(self._config)
+
+    @pyqtSlot()
+    def _store_panel_configs(self):
+        """Stores the configs of panel controller."""
+        self._panel_controller.store_configs(self._config)
+        # Save the states of all pages back to the config file all at once.
+        with open(CONFIG, "w") as f:
+            self._config.write(f)
