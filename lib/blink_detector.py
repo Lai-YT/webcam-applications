@@ -44,6 +44,8 @@ class TailorMadeNormalEyeAspectRatioMaker:
 
         self._temp_ratio = temp_ratio
         self._number_threshold = number_threshold
+        # TODO: This list is used as a fix-sized queue but sort and sum is
+        #   also performed. Is there any better data structure?
         self._sample_ratios: List[float] = []
 
     def read_sample(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
@@ -52,6 +54,9 @@ class TailorMadeNormalEyeAspectRatioMaker:
         if not landmarks.any():
             return
         self._sample_ratios.append(BlinkDetector.get_average_eye_aspect_ratio(landmarks))
+        # keep the length of the samples fixed to number threshold
+        if len(self._sample_ratios) > self._number_threshold:
+            self._sample_ratios.pop(0)
 
     def get_normal_ratio(self) -> Tuple[int, float]:
         """Returns the tailor-made EAR when the number of sample ratios is
@@ -181,3 +186,42 @@ def draw_landmarks_used_by_blink_detector(
     # make lines transparent
     canvas_ = cv2.addWeighted(canvas_, 0.4, canvas, 0.6, 0)
     return canvas_
+
+
+class AntiNoiseBlinkCounter:
+	"""Consecutive low EAR is required to indicate a single blink."""
+
+	# define two constants, one for the eye aspect ratio to indicate
+	# blink and then a second constant for the number of consecutive
+	# frames the eye must be below the threshold
+	EYE_AR_THRESH: float = 0.24
+	EYE_AR_CONSEC_FRAMES: int = 3
+
+	def __init__(self) -> None:
+		self._blink_detector = BlinkDetector(self.EYE_AR_THRESH)
+		self._consec_count: int = 0
+		self._blink_count: int = 0
+
+	@property
+	def blink_count(self) -> int:
+		return self._blink_count
+
+	@property
+	def blink_detector(self) -> int:
+		return self._blink_detector
+
+	def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
+		blinked: bool = self._blink_detector.detect_blink(landmarks)
+		# check to see if the eye aspect ratio is below the blink
+		# threshold, and if so, increment the blink frame count
+		if blinked:
+			self._consec_count += 1
+		# otherwise, the eye aspect ratio is not below the blink threshold
+		else:
+			# if the eyes were closed for a sufficient number of
+			# then increment the total number of blinks
+			if self._consec_count >= self.EYE_AR_CONSEC_FRAMES:
+				self._blink_count += 1
+
+			# reset the eye frame count
+			self._consec_count = 0

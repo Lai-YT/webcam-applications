@@ -18,50 +18,15 @@ import cv2
 import dlib
 import imutils
 from imutils import face_utils
+from nptyping import Int, NDArray
 
 from lib.blink_detector import (
+	AntiNoiseBlinkCounter,
 	BlinkDetector,
 	TailorMadeNormalEyeAspectRatioMaker,
 	draw_landmarks_used_by_blink_detector,
 )
 from lib.blink_rate_counter import BlinkRateCounter
-
-
-class AntiNoiseBlinkCounter:
-	"""Consecutive low EAR is required to indicate a single blink."""
-
-	# define two constants, one for the eye aspect ratio to indicate
-	# blink and then a second constant for the number of consecutive
-	# frames the eye must be below the threshold
-	EYE_AR_THRESH: float = 0.24
-	EYE_AR_CONSEC_FRAMES: int = 3
-
-	def __init__(self, blink_detector: Optional[BlinkDetector]) -> None:
-		if blink_detector is None:
-			blink_detector = BlinkDetector(self.EYE_AR_THRESH)
-		self._blink_detector = blink_detector
-		self._consec_count: int = 0
-		self._blink_count: int = 0
-
-	@property
-	def blink_count(self) -> int:
-		return self._blink_count
-
-	def detect_blink(self, landmarks) -> None:
-		blinked: bool = self._blink_detector.detect_blink(landmarks)
-		# check to see if the eye aspect ratio is below the blink
-		# threshold, and if so, increment the blink frame count
-		if blinked:
-			self._consec_count += 1
-		# otherwise, the eye aspect ratio is not below the blink threshold
-		else:
-			# if the eyes were closed for a sufficient number of
-			# then increment the total number of blinks
-			if self._consec_count >= self.EYE_AR_CONSEC_FRAMES:
-				self._blink_count += 1
-
-			# reset the eye frame count
-			self._consec_count = 0
 
 
 # if the number of consecutive frames exceeds, the user may be
@@ -75,9 +40,11 @@ SAMPLE_THRESHOLD: int = 500
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("lib/trained_models/shape_predictor_68_face_landmarks.dat")
 
-blink_detector = BlinkDetector(AntiNoiseBlinkCounter.EYE_AR_THRESH)
+# counts the total number of blinks
+blink_counter = AntiNoiseBlinkCounter()
+# adjust the blink counter of the AntiNoiseBlinkCounter
 ratio_adjuster = TailorMadeNormalEyeAspectRatioMaker(0.3, SAMPLE_THRESHOLD)
-blink_counter = AntiNoiseBlinkCounter(blink_detector)
+# counts the blink rate (blinks per minute)
 rate_counter = BlinkRateCounter()
 
 blink_count: int = 0  # increase when a new blink is detected
@@ -125,7 +92,7 @@ while cam.isOpened():
 		ratio_adjuster.read_sample(landmarks)
 		num_of_samples, normal_ratio = ratio_adjuster.get_normal_ratio()
 		if num_of_samples >= SAMPLE_THRESHOLD:
-			blink_detector.ratio_threshold = normal_ratio * 0.85
+			blink_counter.blink_detector.ratio_threshold = normal_ratio * 0.85
 
 		blink_counter.detect_blink(landmarks)
 		# A new blink is counted.
@@ -141,7 +108,7 @@ while cam.isOpened():
 		cv2.putText(frame, f"EAR: {ratio:.2f}", (450, 30),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-	details: List[str] = [f"ratio threshold: {round(blink_detector.ratio_threshold, 2)}"]
+	details: List[str] = [f"ratio threshold: {round(blink_counter.blink_detector.ratio_threshold, 2)}"]
 	if rate_counter.check():
 		details.append(f"face: {face_count}/min")
 		details.append(f"frame: {frame_count}/min")

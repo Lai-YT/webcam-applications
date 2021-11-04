@@ -10,9 +10,8 @@ class FrameWidget(QLabel):
 
     @pyqtSlot(QImage)
     def set_frame(self, frame: QImage) -> None:
-        """Sets frame to the widget in respect of the size of widget.
-
-        Notice that this method does nothing when the FrameWidget is not visible.
+        """Sets frame to the widget in respect of the size of widget if
+        the widget is visible.
 
         Arguments:
             frame (QImage): The image to be set.

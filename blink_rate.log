@@ -105,3 +105,16 @@
 11:09:49 blink: 7.0/min
 11:09:49 ratio threshold: 0.26, face: 655/min, frame: 698/min
 11:09:49
+01:54:38 blink: 20.0/min
+01:54:38 ratio threshold: 0.25, face: 680/min, frame: 731/min
+01:54:38
+10:00:50 blink: 14.0/min
+10:00:50 ratio threshold: 0.23, face: 712/min, frame: 712/min
+10:00:50
+10:01:50 blink: 14.0/min
+10:01:50 ratio threshold: 0.24, face: 692/min, frame: 729/min
+10:01:50
+10:02:50 blink: 18.0/min
+10:02:50 ratio threshold: 0.25, face: 710/min, frame: 737/min
+10:02:50 
+
