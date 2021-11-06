@@ -1,6 +1,6 @@
 import os
 from configparser import ConfigParser
-from typing import Tuple
+from typing import Dict, Tuple
 
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
