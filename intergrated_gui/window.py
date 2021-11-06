@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Callable, Dict, Tuple
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QCloseEvent, QResizeEvent
@@ -37,12 +37,12 @@ class Window(QMainWindow):
         # All other windows (no matter child or not) close with this window.
         QApplication.closeAllWindows()
 
-    def set_clean_up_before_destroy(self, clean_up_callback):
+    def set_clean_up_before_destroy(self, clean_up_callback: Callable[[], Any]) -> None:
         """Sets the clean up function to give the ability to do extra process
         before the GUI destroyed.
 
         Arguments:
-            clean_up_callback (Callable[[], Any]): Is called before the GUI destroyed
+            clean_up_callback: Is called before the GUI destroyed.
         """
         self._clean_up_callback = clean_up_callback
 
@@ -66,7 +66,7 @@ class Window(QMainWindow):
         control panel at the right.
         """
         # The number is the stretch of the widget.
-        widgets = {
+        widgets: Dict[str, Tuple[QWidget, int]] = {
             "information": (InformationWidget(), 1),
             "frame": (FrameWidget(), 2),
             "panel": (PanelWidget(), 1),

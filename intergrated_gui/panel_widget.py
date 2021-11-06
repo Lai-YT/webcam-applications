@@ -1,4 +1,5 @@
 from enum import IntEnum
+from typing import Dict
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QFormLayout, QGridLayout, QGroupBox, QVBoxLayout, QWidget
@@ -9,10 +10,10 @@ from lib.brightness_calcuator import BrightnessMode
 
 
 class PanelWidget(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget= None) -> None:
         super().__init__(parent)
 
-        self.panels = {
+        self.panels: Dict[str, CheckableGroupBox] = {
             "distance": DistancePanel(),
             "time": TimePanel(),
             "posture": PosturePanel(),
@@ -28,7 +29,7 @@ class PanelWidget(QWidget):
 
 
 class DistancePanel(CheckableGroupBox):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Distance Measurement", parent)
 
         self._layout = QFormLayout()
@@ -37,12 +38,12 @@ class DistancePanel(CheckableGroupBox):
         self._create_settings()
         self._set_restrictions()
 
-    def _create_settings(self):
+    def _create_settings(self) -> None:
         settings = {
             "camera_dist": "Distance in reference:",
             "warn_dist": "Shortest distance allowed:",
         }
-        self.settings = {}
+        self.settings: Dict[str, LineEdit] = {}
         for name, description in settings.items():
             self.settings[name] = LineEdit()
             self._layout.addRow(description, self.settings[name])
@@ -52,7 +53,7 @@ class DistancePanel(CheckableGroupBox):
         self.warning.setChecked(True)
         self._layout.addRow(self.warning)
 
-    def _set_restrictions(self):
+    def _set_restrictions(self) -> None:
         # placeholder, double validator, max length
         restrictions = {
             "camera_dist": ("10 ~ 99.99 (cm)", (10, 99.99, 2), 5),
@@ -66,7 +67,7 @@ class DistancePanel(CheckableGroupBox):
 
 
 class TimePanel(CheckableGroupBox):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Focus Timing", parent)
 
         self._layout = QFormLayout()
@@ -75,12 +76,12 @@ class TimePanel(CheckableGroupBox):
         self._create_settings()
         self._set_restrictions()
 
-    def _create_settings(self):
+    def _create_settings(self) -> None:
         settings = {
             "time_limit": "Time limit:",
             "break_time": "Break time:",
         }
-        self.settings = {}
+        self.settings: Dict[str, LineEdit] = {}
         for name, description in settings.items():
             self.settings[name] = LineEdit()
             self._layout.addRow(description, self.settings[name])
@@ -90,7 +91,7 @@ class TimePanel(CheckableGroupBox):
         self.warning.setChecked(True)
         self._layout.addRow(self.warning)
 
-    def _set_restrictions(self):
+    def _set_restrictions(self) -> None:
         # placeholder, validator
         restrictions = {
             "time_limit": ("1 ~ 59 (min)", (1, 59)),
@@ -111,7 +112,7 @@ class AngleTolerance(IntEnum):
     STRICT = 15
 
 class PosturePanel(CheckableGroupBox):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Posture Detection", parent)
 
         self._layout = QVBoxLayout()
@@ -119,14 +120,14 @@ class PosturePanel(CheckableGroupBox):
 
         self._create_settings()
 
-    def _create_settings(self):
+    def _create_settings(self) -> None:
         group_box = QGroupBox("Allowed slope angle:")
         box_layout = QVBoxLayout()
         group_box.setLayout(box_layout)
         self._layout.addWidget(group_box)
 
         angles = [AngleTolerance.LOOSE, AngleTolerance.STRICT]
-        self.angles = {}
+        self.angles: Dict[AngleTolerance, OptionRadioButton] = {}
         for tolerance in angles:
             self.angles[tolerance] = OptionRadioButton(f"{tolerance.name.lower()} ({tolerance})")
         # a loose angle tolerance is used in default
@@ -145,7 +146,7 @@ class PosturePanel(CheckableGroupBox):
 
 
 class BrightnessPanel(CheckableGroupBox):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Brightness Optimization", parent)
 
         self._layout = QVBoxLayout()
@@ -154,17 +155,17 @@ class BrightnessPanel(CheckableGroupBox):
         self._create_slider()
         self._create_modes()
 
-    def _create_slider(self):
+    def _create_slider(self) -> None:
         self.slider = HorizontalSlider()
         self._layout.addWidget(self.slider)
 
-    def _create_modes(self):
+    def _create_modes(self) -> None:
         # name | description
         modes = {
             BrightnessMode.WEBCAM: "Webcam-based brightness detector \n(webcam required)",
             BrightnessMode.COLOR_SYSTEM: "Color-system mode",
         }
-        self.modes = {}
+        self.modes: Dict[BrightnessMode, OptionCheckBox] = {}
         for mode, description in modes.items():
             self.modes[mode] = OptionCheckBox(description)
             self._layout.addWidget(self.modes[mode])

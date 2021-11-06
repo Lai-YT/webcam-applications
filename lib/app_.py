@@ -253,7 +253,7 @@ class WebcamApplication(QObject):
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
         self._shape_predictor = dlib.shape_predictor(to_abs_path("trained_models/shape_predictor_68_face_landmarks.dat"))
 
-    def _create_brightness_controller(self):
+    def _create_brightness_controller(self) -> None:
         """Creates brightness calculator and connects its signals."""
         self._brightness_controller = BrightnessController()
         # Init controller mode to MANUAL.
@@ -266,7 +266,7 @@ class WebcamApplication(QObject):
             BrightnessMode.COLOR_SYSTEM: False,
         }
 
-    def _create_guards(self):
+    def _create_guards(self) -> None:
         """Creates guards used in WebcamApplication and connects their signals."""
         # Creates the DistanceCalculator with reference image.
         ref_img: ColorImage = cv2.imread(to_abs_path("../img/ref_img.jpg"))
