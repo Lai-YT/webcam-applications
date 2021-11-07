@@ -2,6 +2,7 @@
 # https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
 
 import time
+import math
 import statistics
 from enum import Enum, auto
 from typing import List, Optional, Tuple
@@ -10,7 +11,6 @@ import cv2
 from PyQt5.QtCore import QObject, pyqtSignal
 from imutils import face_utils
 from nptyping import Int, NDArray
-from scipy.spatial import distance as dist
 
 from lib.color import BGR, GREEN
 from lib.image_type import ColorImage
@@ -55,7 +55,8 @@ class TailorMadeNormalEyeAspectRatioMaker:
         if not landmarks.any():
             return
         self._sample_ratios.append(BlinkDetector.get_average_eye_aspect_ratio(landmarks))
-        # keep the length of the samples fixed to number threshold
+        # Keep the length of the samples fixed to number threshold,
+        # which is the recent samples.
         if len(self._sample_ratios) > self._number_threshold:
             self._sample_ratios.pop(0)
 
@@ -70,8 +71,13 @@ class TailorMadeNormalEyeAspectRatioMaker:
             return num_of_sample, self._temp_ratio
         # Sort the ratios and take the mean of the upper 75% as the normal EAR.
         # The lower 25% is not taken under consideration because those may be blinking.
-        self._sample_ratios.sort()
-        ratio = statistics.mean(self._sample_ratios[int(num_of_sample*0.25):])
+        #
+        # Note that we can't sort the samples in-place because we want to keep
+        # the recent samples, which is the append order.
+        # If the sort is in-place, we don't know which one to pop next time a
+        # new sample is appended.
+        sample_ratios: List[float] = sorted(self._sample_ratios)
+        ratio = statistics.mean(sample_ratios[int(num_of_sample*0.25):])
         return num_of_sample, ratio
 
     def clear(self) -> None:
@@ -141,13 +147,13 @@ class BlinkDetector:
     	# compute the euclidean distances between the two sets of
     	# vertical eye landmarks (x, y)-coordinates
         vert = []
-        vert.append(dist.euclidean(eye[1], eye[5]))
-        vert.append(dist.euclidean(eye[2], eye[4]))
+        vert.append(math.dist(eye[1], eye[5]))
+        vert.append(math.dist(eye[2], eye[4]))
 
         # compute the euclidean distance between the horizontal
         # eye landmark (x, y)-coordinates
         hor = []
-        hor.append(dist.euclidean(eye[0], eye[3]))
+        hor.append(math.dist(eye[0], eye[3]))
 
         return statistics.mean(vert) / statistics.mean(hor)
 
