@@ -1,8 +1,8 @@
 # reference:
 # https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
 
-import time
 import math
+import time
 import statistics
 from enum import Enum, auto
 from typing import List, Optional, Tuple
@@ -50,13 +50,17 @@ class TailorMadeNormalEyeAspectRatioMaker:
         self._sample_ratios: List[float] = []
 
     def read_sample(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
-        """Adds a new sample of EAR."""
+        """Reads in landmarks of face, gets its EAR value and stores as a sample.
+
+        Arguments:
+            landmarks: (x, y) coordinates of the 68 face landmarks.
+        """
         # Empty landmarks is not count.
         if not landmarks.any():
             return
         self._sample_ratios.append(BlinkDetector.get_average_eye_aspect_ratio(landmarks))
         # Keep the length of the samples fixed to number threshold,
-        # which is the recent samples.
+        # which is the most recent samples.
         if len(self._sample_ratios) > self._number_threshold:
             self._sample_ratios.pop(0)
 
@@ -76,8 +80,8 @@ class TailorMadeNormalEyeAspectRatioMaker:
         # the recent samples, which is the append order.
         # If the sort is in-place, we don't know which one to pop next time a
         # new sample is appended.
-        sample_ratios: List[float] = sorted(self._sample_ratios)
-        ratio = statistics.mean(sample_ratios[int(num_of_sample*0.25):])
+        sorted_samples: List[float] = sorted(self._sample_ratios)
+        ratio = statistics.mean(sorted_samples[int(num_of_sample*0.25):])
         return num_of_sample, ratio
 
     def clear(self) -> None:
@@ -88,6 +92,14 @@ class TailorMadeNormalEyeAspectRatioMaker:
 class BlinkDetector:
     """Detects whether the eyes are blinking or not by calculating
     the eye aspect ratio (EAR).
+
+    Attributes:
+        LEFT_EYE_START_END_IDXS:
+            The start and end index (end excluded) which represents the left
+            eye in the 68 face landmarks.
+        RIGHT_EYE_START_END_IDXS:
+            The start and end index (end excluded) which represents the right
+            eye in the 68 face landmarks.
     """
 
     LEFT_EYE_START_END_IDXS:  Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
@@ -97,16 +109,23 @@ class BlinkDetector:
         """
         Arguments:
             ratio_threshold:
-                An eye aspect ratio lower than this is considered to be blinked.
+                An eye aspect ratio lower than this is considered to be a blink.
         """
         self._ratio_threshold = ratio_threshold
 
     @property
     def ratio_threshold(self) -> float:
+        """Returns the ratio threshold used to consider an EAR lower than it
+        to be a blink."""
         return self._ratio_threshold
 
     @ratio_threshold.setter
     def ratio_threshold(self, threshold: float) -> None:
+        """
+        Arguments:
+            threshold:
+                An eye aspect ratio lower than this is considered to be a blink.
+        """
         self._ratio_threshold = threshold
 
     @classmethod

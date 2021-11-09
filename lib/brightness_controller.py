@@ -2,7 +2,7 @@ from typing import Dict, Optional
 
 import screen_brightness_control as sbc
 from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QScreen
 from PyQt5.QtWidgets import QApplication
 
 from lib.brightness_calcuator import BrightnessCalculator, BrightnessMode
@@ -42,6 +42,7 @@ class BrightnessController(QObject):
         self._mode: BrightnessMode = mode
         if base_value is not None:
             self._base_value: int = base_value
+        # frame dict is empty if no frame passed
         self._frames: Dict[BrightnessMode, ColorImage] = {}
         if frames is not None:
             self._frames = frames
@@ -75,7 +76,7 @@ class BrightnessController(QObject):
         """Takes a screenshot of the current screen and sets it as the frame of
         color system.
         """
-        screen = QApplication.primaryScreen()
+        screen: QScreen = QApplication.primaryScreen()
         screenshot: QPixmap = screen.grabWindow(QApplication.desktop().winId())
 
         self._frames[BrightnessMode.COLOR_SYSTEM] = qpixmap_to_ndarray(screenshot)
@@ -95,7 +96,10 @@ class BrightnessController(QObject):
         if (self._mode is BrightnessMode.MANUAL
                 or not hasattr(self, "_base_value")
                 or not self._frames):
+            # The latest use of the brightness calculator is finished,
+            # so it is reset to clean all weighted value of the history.
             self._brightness_calculator.reset()
+            # No new value, the current brightness value is sent.
             sbc.set_brightness(self._base_value, method="wmi")
             self.s_brightness_refreshed.emit(self._base_value)
         else:
