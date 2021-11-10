@@ -10,7 +10,7 @@ class ConcentrationGrader(QObject):
         Arguments:
             interval:
             Sends grade by signal after interval times of increment.
-            Not to send in default.
+            No grade is sent in default.
         """
         super().__init__()
 
@@ -29,6 +29,7 @@ class ConcentrationGrader(QObject):
         self._grade_if_interval_ends()
 
     def _grade_if_interval_ends(self) -> None:
+        """Grade if increment time reaches the interval number."""
         if self._interval is not None and self._total == self._interval:
             self.s_grade_refreshed.emit(self.get_grade())
             self.reset()

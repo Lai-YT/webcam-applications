@@ -19,7 +19,7 @@ class BrightnessCalculator:
 
     def __init__(self) -> None:
         # Used to weight with frame brightness to reduce the effect of
-        # brightness difference, which may cause dramatically increase of
+        # brightness difference, which may cause dramatical value change of
         # brightness value.
         self._pre_weighted_value: Optional[float] = None
         # Store current slider value.
@@ -42,8 +42,7 @@ class BrightnessCalculator:
         Arguments:
             mode: Mode affects algorithm used in calculation.
             current_base_value:
-                The base value of brightness (The value before checking the
-                checkbox).
+                The base value of brightness (The value of the slider).
             frames:
                 Frame of the corresponding brightness mode.
                 If mode is BOTH, there should have two frames.
@@ -66,7 +65,8 @@ class BrightnessCalculator:
                 webcam_frame_brightness * 0.6 + (100-screenshot_brightness) * 0.4
             )
 
-        # All remain weights are on self._pre_weighted_value.
+        # New frame brightness has the weight of 0.4 while the remaining
+        # is on previous weighted value.
         weight_of_modes: Dict[BrightnessMode, Tuple[str, float]] = {
             BrightnessMode.WEBCAM: ("webcam_frame_brightness", 0.4),
             BrightnessMode.COLOR_SYSTEM: ("screenshot_brightness", 0.4),
@@ -77,9 +77,11 @@ class BrightnessCalculator:
         brightness_weight: float = weight_of_modes[mode][1]
         new_weighted_value: float
         if self._pre_weighted_value is None:
-            # _pre_weighted_value takes no more weight
+            # No previous weighted value, so new weighted value should be set
+            # the same value as frame_brightness
             new_weighted_value = frame_brightness * 1
-            # Set _pre_weighted_value as new_weighted_value to avoid NoneType Error.
+            # Set previous weighted value as new weighted value
+            # to avoid NoneType Error while computing offset.
             self._pre_weighted_value = new_weighted_value
         else:
             new_weighted_value = (
@@ -91,8 +93,9 @@ class BrightnessCalculator:
         weighted_value_diff: float = new_weighted_value - self._pre_weighted_value
 
         # Add value difference effect as offset on current brightness value.
-        # Higher the brightness if the environment is bright to keep the screen clear and
-        # lower the brightness if the background of screen is light colored.
+        # Higher the brightness if the surrounding light is bright to keep the screen clear
+        # and lower the brightness if the display on the screen is light colored
+        # to reduce contrast of light.
         if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
             self._brightness_value += base_value_diff + weighted_value_diff * 0.25
         elif mode is BrightnessMode.COLOR_SYSTEM:

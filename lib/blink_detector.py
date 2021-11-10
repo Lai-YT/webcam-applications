@@ -5,7 +5,7 @@ import math
 import time
 import statistics
 from enum import Enum, auto
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import cv2
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -37,7 +37,7 @@ class TailorMadeNormalEyeAspectRatioMaker:
             temp_ratio:
                 Used before the normal EAR is determined. Prevents from getting
                 an unreliable normal EAR due to low number of samples.
-            number_threshold: Number of samples higher than this is considered to be reliable.
+            number_threshold: Higher number of samples than this is considered to be reliable.
         """
         if temp_ratio < 0.15 or temp_ratio > 0.5:
             raise ValueError("normal eye aspect ratio should >= 0.15 and <= 0.5")

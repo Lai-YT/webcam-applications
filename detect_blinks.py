@@ -12,13 +12,12 @@
 
 import logging
 import time
-from typing import List, Optional
+from typing import List
 
 import cv2
 import dlib
 import imutils
 from imutils import face_utils
-from nptyping import Int, NDArray
 
 from lib.blink_detector import (
 	AntiNoiseBlinkDetector,
@@ -59,7 +58,7 @@ good_interval_detector.s_good_interval_detected.connect(
 
 blink_count: int = 0  # increase when a new blink is detected
 frame_count: int = 0  # increase every loop
-face_count: int = 0  # increase every face
+face_count: int = 0  # increase when face is detected in a new frame
 
 def count_blink() -> None:
 	global blink_count
@@ -112,7 +111,7 @@ while cam.isOpened():
 		blink_detector.detect_blink(landmarks)
 
 		frame = draw_landmarks_used_by_blink_detector(frame, landmarks)
-		# draw the total number of blinks on the frame along with
+		# display the total number of blinks on the frame along with
 		# the computed eye aspect ratio for the frame
 		cv2.putText(frame, f"Blinks: {blink_count}", (10, 30),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
@@ -123,8 +122,8 @@ while cam.isOpened():
 	if rate_counter.check():
 		details.append(f"face: {face_count}/min")
 		details.append(f"frame: {frame_count}/min")
-		# face equals frame means the face sticks to the screen
-		# so there's always a face with a frame.
+		# face count equals frame count means the face is detected in every frame,
+		# low face existence may cause lack of reliance of blinking rate
 		if face_count < frame_count * 0.7:
 			details.append(f"low face existence, not reliable")
 		logging.info(", ".join(details) + "\n")
@@ -134,7 +133,7 @@ while cam.isOpened():
 
 	# show the frame
 	cv2.imshow("Frame", frame)
-	# delay 25 to prevent the frame count from fluctuating
+	# delay 25 ms to prevent the frame count from fluctuating
 	key = cv2.waitKey(25) & 0xFF
 
 	# if the `q` key was pressed, break from the loop

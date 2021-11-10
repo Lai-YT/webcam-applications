@@ -29,7 +29,9 @@ class BlinkRateCounter(QObject):
     def check(self) -> bool:
         time: int = self._minute_timer.time()
         if time >= 60:
-            # time might exceed 1 minute, normalize the rate
+            # If timer starts for over 1 minute, emits a signal of blinking rate,
+            # restarts the timer, and return True to let main process display the
+            # blinking rate on the frame.
             self.s_rate_refreshed.emit(self._blink_count * 60 / time)
             self._reset()
             self._minute_timer.start()
