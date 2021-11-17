@@ -57,3 +57,25 @@
 06:04:48 ratio threshold: 0.24, face: 558/min, frame: 734/min
 
 06:05:13 good interval: 1636279452 ~ 1636279512, 60 sec
+02:49:16 blink: 11.0/min
+02:49:16 ratio threshold: 0.25, face: 583/min, frame: 718/min
+
+02:50:16 blink: 13.0/min
+02:50:16 ratio threshold: 0.27, face: 709/min, frame: 729/min
+
+02:51:04 good interval: 1637131803 ~ 1637131861, 58 sec
+02:51:16 blink: 12.0/min
+02:51:16 ratio threshold: 0.25, face: 588/min, frame: 716/min
+
+02:52:16 blink: 6.0/min
+02:52:16 ratio threshold: 0.25, face: 259/min, frame: 745/min, low face existence, not reliable
+
+02:53:16 blink: 6.0/min
+02:53:16 ratio threshold: 0.26, face: 508/min, frame: 722/min
+
+02:54:07 good interval: 1637131956 ~ 1637132010, 54 sec
+02:54:16 blink: 11.0/min
+02:54:16 ratio threshold: 0.27, face: 734/min, frame: 735/min
+
+02:55:16 blink: 6.0/min
+02:55:16 ratio threshold: 0.26, face: 179/min, frame: 744/min, low face existence, not reliable

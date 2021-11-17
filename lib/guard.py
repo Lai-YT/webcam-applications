@@ -9,6 +9,7 @@ from playsound import playsound
 from tensorflow.python.keras.engine.sequential import Sequential
 
 from lib.angle_calculator import AngleCalculator
+from lib.blink_detector import AntiNoiseBlinkDetector
 from lib.color import GREEN, MAGENTA, RED
 from lib.concentration_grader import ConcentrationGrader
 from lib.cv_font import FONT_0
@@ -22,10 +23,7 @@ from gui.popup_widget import TimeState
 
 
 # Module scope grader for all guards to share.
-_grader_of_guards = ConcentrationGrader(interval=100)
-def get_grader_instance_of_guards() -> ConcentrationGrader:
-    return _grader_of_guards
-
+CONCENT_GRADER_OF_GUARDS = ConcentrationGrader(AntiNoiseBlinkDetector())
 
 def mark_face(
         canvas: ColorImage,
@@ -164,9 +162,9 @@ class DistanceGuard(QObject):
         # The grading part.
         if distance < self._warn_dist:
             # Too close is considered to be a distraction.
-            get_grader_instance_of_guards().increase_distraction()
+            CONCENT_GRADER_OF_GUARDS.add_body_distraction()
         else:
-            get_grader_instance_of_guards().increase_concentration()
+            CONCENT_GRADER_OF_GUARDS.add_body_concentration()
 
 
     def _put_distance_text(self, canvas: ColorImage, distance: float) -> None:
@@ -281,9 +279,9 @@ class TimeGuard(QObject):
             # Timer is paused if there's no face, which is considered to be a distraction.
             # Not count during break time.
             if timer.is_paused():
-                get_grader_instance_of_guards().increase_distraction()
+                CONCENT_GRADER_OF_GUARDS.add_body_distraction()
             else:
-                get_grader_instance_of_guards().increase_concentration()
+                CONCENT_GRADER_OF_GUARDS.add_body_concentration()
         else:
             self._take_break()
 
@@ -421,7 +419,11 @@ class PostureGuard(QObject):
         """
         self._warning_enabled = enabled
 
-    def check_posture(self, canvas: ColorImage, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]]) -> None:
+    def check_posture(
+            self,
+            canvas: ColorImage,
+            frame: ColorImage,
+            landmarks: NDArray[(68, 2), Int[32]]) -> None:
         """Sound plays if is a "slump" posture and warning is enabled.
 
         If the landmarks of face are clear, use AngleCalculator to calculate the
@@ -471,9 +473,9 @@ class PostureGuard(QObject):
 
         # grade concentration
         if posture is not PostureLabel.GOOD:
-            get_grader_instance_of_guards().increase_distraction()
+            CONCENT_GRADER_OF_GUARDS.add_body_distraction()
         else:
-            get_grader_instance_of_guards().increase_concentration()
+            CONCENT_GRADER_OF_GUARDS.add_body_concentration()
 
         text, color = ("Good", GREEN) if posture is PostureLabel.GOOD else ("Slump", RED)
         cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, thickness=2)

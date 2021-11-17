@@ -15,8 +15,8 @@ from lib.brightness_calcuator import BrightnessMode
 from lib.brightness_controller import BrightnessController
 from lib.distance_calculator import (DistanceCalculator,
                                      draw_landmarks_used_by_distance_calculator)
-from lib.guard import (DistanceGuard, DistanceState, PostureGuard, TimeGuard,
-                       get_grader_instance_of_guards, mark_face)
+from lib.guard import (CONCENT_GRADER_OF_GUARDS, DistanceGuard, DistanceState,
+                       PostureGuard, TimeGuard, mark_face)
 from lib.image_convert import ndarray_to_qimage
 from lib.timer import Timer
 from lib.train import ModelPath, ModelTrainer, PostureLabel
@@ -45,7 +45,7 @@ class WebcamApplication(QObject):
         s_brightness_refreshed:
             Emits everytime the brightness of screen is updated.
             Sends the new brightness value.
-        s_grade_refreshed:
+        s_concent_interval_refreshed:
             Emits everytime a new grade is published.
             Sends the new concentration grade.
         s_frame_refreshed:
@@ -63,7 +63,7 @@ class WebcamApplication(QObject):
     s_time_refreshed = pyqtSignal(int, TimeState)
     s_posture_refreshed = pyqtSignal(PostureLabel, str)
     s_brightness_refreshed = pyqtSignal(int)
-    s_grade_refreshed = pyqtSignal(float)
+    s_concent_interval_refreshed = pyqtSignal(int, int)
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 
@@ -215,6 +215,8 @@ class WebcamApplication(QObject):
                     self._brightness_controller.refresh_color_system_screenshot()
                 # Optimize brightness after passing required images.
                 self._brightness_controller.optimize_brightness()
+            if landmarks.any():
+                CONCENT_GRADER_OF_GUARDS.blink_detector.detect_blink(landmarks)
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
             cv2.waitKey(refresh)
@@ -288,4 +290,4 @@ class WebcamApplication(QObject):
 
     def _connect_concentration_grader(self) -> None:
         """Connects signals of the ConcentrationGrader used by guards."""
-        get_grader_instance_of_guards().s_grade_refreshed.connect(self.s_grade_refreshed)
+        CONCENT_GRADER_OF_GUARDS.s_concent_interval_refreshed.connect(self.s_concent_interval_refreshed)

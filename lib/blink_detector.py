@@ -149,6 +149,9 @@ class BlinkDetector:
         Arguments:
             landmark: (x, y) coordinates of the 68 face landmarks.
         """
+        if not landmarks.any():
+            raise ValueError("landmarks should represent a face")
+
         ratio = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
         return ratio < self._ratio_threshold
 
@@ -242,16 +245,16 @@ class AntiNoiseBlinkDetector(QObject):
     def __init__(self) -> None:
         super().__init__()
         # the underlaying BlinkDetector
-        self._blink_detector = BlinkDetector(self.EYE_AR_THRESH)
+        self._base_detector = BlinkDetector(self.EYE_AR_THRESH)
         self._consec_count: int = 0
 
     @property
-    def blink_detector(self) -> BlinkDetector:
+    def base_detector(self) -> BlinkDetector:
         """Gets the normal BlinkDetector used by AntiNoiseBlinkDetector."""
-        return self._blink_detector
+        return self._base_detector
 
     def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
-    	blinked: bool = self._blink_detector.detect_blink(landmarks)
+    	blinked: bool = self._base_detector.detect_blink(landmarks)
     	if blinked:
     		self._consec_count += 1
     	else:
@@ -266,10 +269,10 @@ class GoodBlinkRateIntervalDetector(QObject):
 
     s_good_interval_detected = pyqtSignal(int, int)  # start time, end time
 
-    def __init__(self, good_rate_range: Tuple[float, float]) -> None:
+    def __init__(self, good_rate_range: Tuple[float, float] = (15, 25)) -> None:
         """
         Arguments:
-            good_rate_range: The min and max boundary of the good blink rate (blinks per minute)
+            good_rate_range: The min and max boundary of the good blink rate (blinks per minute).
         """
         super().__init__()
         self._good_rate_range = good_rate_range
@@ -278,22 +281,23 @@ class GoodBlinkRateIntervalDetector(QObject):
 
     def add_blink(self) -> None:
         # the time this new blink is made
-        time_record = int(time.time())
+        new_time_record = int(time.time())
         # This is a sliding window algorithm.
         #
         # The list "blink records" always contains the blinks within one minute.
-        # When adding a new blink makes it exceed one minute, that means its
+        # When adding a new blink makes it exceed one minute, that means it's
         # time to check whether that very minute is a good interval or not.
         # If it is, emit the signal to tell there's a good interval and remove
         # the blink records of that minute; if not, pop out the oldest blink
         # record until the list only contains blinks within one minute again.
-        if self._blink_records and time_record-self._blink_records[0] > 60:
+        if self._blink_records and new_time_record-self._blink_records[0] > 60:
             if self._good_rate_range[0] <= len(self._blink_records) <= self._good_rate_range[1]:
                 self.s_good_interval_detected.emit(self._blink_records[0], self._blink_records[-1])
                 self._blink_records.clear()
             else:
                 # can't be a good interval, forward the window
-                while self._blink_records and time_record-self._blink_records[0] > 60:
+                while (self._blink_records
+                        and (new_time_record - self._blink_records[0]) > 60):
                     self._blink_records.pop(0)
         # let this new blink be considered at the next add_blink
-        self._blink_records.append(time_record)
+        self._blink_records.append(new_time_record)

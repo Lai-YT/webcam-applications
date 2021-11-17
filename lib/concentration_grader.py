@@ -1,50 +1,73 @@
+import logging
+import time
+from collections import deque
+from typing import Deque
+
 from PyQt5.QtCore import QObject, pyqtSignal
+
+import lib.blink_detector as bd
+
+
+logging.basicConfig(
+	format="%(asctime)s %(message)s",
+	datefmt="%I:%M:%S",
+	filename="concent_interval.log",
+	level=logging.DEBUG,
+)
 
 
 class ConcentrationGrader(QObject):
 
-    s_grade_refreshed = pyqtSignal(float)
+    s_concent_interval_refreshed = pyqtSignal(int, int)  # start time, end time
 
-    def __init__(self, interval: int = None):
-        """
-        Arguments:
-            interval:
-            Sends grade by signal after interval times of increment.
-            No grade is sent in default.
-        """
+    def __init__(self, blink_detector: bd.AntiNoiseBlinkDetector) -> None:
         super().__init__()
 
-        self._concentration: int = 0
-        self._total: int = 0   # concentration + distraction
-        self._interval = interval
+        self._body_concentrations: Deque[int] = deque()
+        self._body_distractions: Deque[int] = deque()
 
-    def increase_concentration(self) -> None:
-        self._total += 1
-        self._concentration += 1
-        self._grade_if_interval_ends()
+        self._blink_detector = blink_detector
+        self._interval_detector = bd.GoodBlinkRateIntervalDetector((15, 25))
+        self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
+        self._interval_detector.s_good_interval_detected.connect(self.check_body_concentration)
+        self._interval_detector.s_good_interval_detected.connect(
+            lambda start, end: logging.info(f"good blink rate at {start} ~ {end}"))
+        self.s_concent_interval_refreshed.connect(
+            lambda start, end: logging.info(f"good concentration at {start} ~ {end}"))
 
-    def increase_distraction(self) -> None:
-        # Increase of distraction is invloved by total.
-        self._total += 1
-        self._grade_if_interval_ends()
+    @property
+    def blink_detector(self) -> bd.AntiNoiseBlinkDetector:
+		"""Returns the AntiNoiseBlinkDetector used by the ConcentrationGrader."""
+        return self._blink_detector
 
-    def _grade_if_interval_ends(self) -> None:
-        """Grade if increment time reaches the interval number."""
-        if self._interval is not None and self._total == self._interval:
-            self.s_grade_refreshed.emit(self.get_grade())
-            self.reset()
+    def add_body_concentration(self) -> None:
+        self._body_concentrations.append(int(time.time()))
+        while (self._body_concentrations
+                and (self._body_concentrations[-1] - self._body_concentrations[0]) > 60):
+            self._body_concentrations.popleft()
 
-    def get_grade(self) -> float:
-        """Returns the grade rounded to the 3rd decimal places.
-        Grade is the (concentration increment / total increment).
-        """
-        # handle zero division
-        if self._total == 0:
-            return 1.0
+    def add_body_distraction(self) -> None:
+        self._body_distractions.append(int(time.time()))
+        while (self._body_distractions
+                and (self._body_distractions[-1] - self._body_distractions[0]) > 60):
+            self._body_distractions.popleft()
 
-        return round(self._concentration/self._total, 3)
+    def check_body_concentration(self, start_time: int, end_time: int) -> None:
+        # get concentration
+        concent_count: int = 0
+        for concent_time in self._body_concentrations:
+            if concent_time < start_time or concent_time > end_time:
+                break
+            concent_count += 1
 
-    def reset(self) -> None:
-        """Resets the records to start a new interval."""
-        self._concentration = 0
-        self._total = 0
+        # get concentration
+        distract_count: int = 0
+        for distract_time in self._body_distractions:
+            if distract_time < start_time or distract_time > end_time:
+                break
+            distract_count += 1
+
+        logging.info(f"body concentration is {concent_count / (concent_count + distract_count):.2f}")
+        # more than 66%
+        if concent_count > distract_count*2:
+            self.s_concent_interval_refreshed.emit(start_time, end_time)
