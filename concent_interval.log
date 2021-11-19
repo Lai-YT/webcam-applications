@@ -1,7 +1,45 @@
-03:15:40 Creating converter from 3 to 5
-03:16:51 body concentration is 1.00
-03:16:51 good concentration at 1637133345 ~ 1637133392
-03:16:51 good blink rate at 1637133345 ~ 1637133392
-03:19:28 body concentration is 1.00
-03:19:28 good concentration at 1637133504 ~ 1637133563
-03:19:28 good blink rate at 1637133504 ~ 1637133563
+05:51:05 manual blink rate: 7.00/min
+
+05:51:37 good blink rate at 1637315436 ~ 1637315496, rate = 15
+05:51:37 body concentration is 0.67
+05:51:37
+05:52:05 manual blink rate: 25.00/min
+
+05:53:05 manual blink rate: 6.00/min
+
+05:53:07 good blink rate at 1637315497 ~ 1637315554, rate = 21
+05:53:07 body concentration is 0.63
+05:53:07
+05:54:05 manual blink rate: 5.00/min
+
+05:55:05 manual blink rate: 9.00/min
+
+05:56:05 manual blink rate: 7.00/min
+
+05:56:54 good blink rate at 1637315739 ~ 1637315794, rate = 22
+05:56:54 body concentration is 0.68
+05:56:54 good concentration at 1637315739 ~ 1637315794
+05:56:54
+05:57:05 manual blink rate: 18.00/min
+
+05:57:55 good blink rate at 1637315814 ~ 1637315873, rate = 17
+05:57:55 body concentration is 0.68
+05:57:55 good concentration at 1637315814 ~ 1637315873
+05:57:55
+05:58:05 manual blink rate: 16.00/min
+
+05:59:05 manual blink rate: 21.00/min
+
+05:59:10 good blink rate at 1637315875 ~ 1637315935, rate = 23
+05:59:10 body concentration is 0.64
+05:59:10
+06:00:05 manual blink rate: 26.00/min
+
+06:01:03 Creating converter from 3 to 5 (Don't know what this is.)
+06:06:18 manual blink rate: 6.00/min
+06:06:55 good blink rate at 1637316353 ~ 1637316413, rate = 17
+06:06:55 low face existence, not reliable
+06:06:55 body concentration is 0.66
+06:06:55 
+06:07:18 manual blink rate: 26.00/min
+

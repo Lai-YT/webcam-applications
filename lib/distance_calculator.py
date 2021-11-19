@@ -1,4 +1,4 @@
-from math import sqrt
+import math
 from typing import Optional
 
 import cv2
@@ -43,10 +43,7 @@ class DistanceCalculator:
         Arguments:
             landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
         """
-        x1, y1 = landmarks[1]
-        x2, y2 = landmarks[15]
-        # Euclidean distance
-        return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        return math.dist(landmarks[1], landmarks[15])
 
 
 # outer util method

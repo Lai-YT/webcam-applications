@@ -24,6 +24,29 @@ from lib.image_type import ColorImage
 from lib.path import to_abs_path
 
 
+class FaceExistenceRateCounter:
+	"""Everytime a new frame is refreshed, there may exist a face or not. Record
+	the existence using this object and simply get the existence rate.
+	"""
+	def __init__(self) -> None:
+		self._frame_count: int = 0
+		self._face_count: int = 0
+
+	def add_frame(self) -> None:
+		self._frame_count += 1
+
+	def add_face(self) -> None:
+		self._face_count += 1
+
+	def reset(self) -> None:
+		"""Resets the frame count and face count to 0."""
+		self._frame_count = 0
+		self._face_count = 0
+
+	def get_face_existence_rate(self) -> float:
+		return round(self._face_count / self._frame_count, 2)
+
+
 class WebcamApplication(QObject):
     """
     The WebcamApplication provides 4 main applications:
@@ -215,8 +238,12 @@ class WebcamApplication(QObject):
                     self._brightness_controller.refresh_color_system_screenshot()
                 # Optimize brightness after passing required images.
                 self._brightness_controller.optimize_brightness()
+
+            # Do concentration gradings!
+            CONCENT_GRADER_OF_GUARDS.add_frame()
             if landmarks.any():
-                CONCENT_GRADER_OF_GUARDS.blink_detector.detect_blink(landmarks)
+                CONCENT_GRADER_OF_GUARDS.add_face()
+                CONCENT_GRADER_OF_GUARDS.detect_blink(landmarks)
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
             cv2.waitKey(refresh)

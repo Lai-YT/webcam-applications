@@ -1,73 +1,127 @@
 import logging
 import time
 from collections import deque
-from typing import Deque
+from typing import Deque, Tuple
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from nptyping import Int, NDArray
 
-import lib.blink_detector as bd
+from lib.blink_detector import AntiNoiseBlinkDetector, GoodBlinkRateIntervalDetector
 
 
 logging.basicConfig(
-	format="%(asctime)s %(message)s",
-	datefmt="%I:%M:%S",
-	filename="concent_interval.log",
-	level=logging.DEBUG,
+    format="%(asctime)s %(message)s",
+    datefmt="%I:%M:%S",
+    filename="concent_interval.log",
+    level=logging.DEBUG,
 )
+
+
+class FaceExistenceRateCounter:
+    """Everytime a new frame is refreshed, there may exist a face or not. Record
+    the existence within 1 minute and simply get the existence rate.
+    """
+    def __init__(self) -> None:
+        self._frame_times: Deque[int] = deque()
+        self._face_times: Deque[int] = deque()
+
+    def add_frame(self) -> None:
+        self._frame_times.append(int(time.time()))
+        keep_sliding_window_in_one_minute(self._frame_times)
+
+    def add_face(self) -> None:
+        self._face_times.append(int(time.time()))
+        keep_sliding_window_in_one_minute(self._face_times)
+
+    def get_face_existence_rate(self) -> float:
+        return round(len(self._face_times) / len(self._frame_times), 2)
 
 
 class ConcentrationGrader(QObject):
 
-	s_concent_interval_refreshed = pyqtSignal(int, int)  # start time, end time
+    s_concent_interval_refreshed = pyqtSignal(int, int)  # start time, end time
 
-	def __init__(self, blink_detector: bd.AntiNoiseBlinkDetector) -> None:
-		super().__init__()
+    def __init__(
+            self,
+            ratio_threshold: float = 0.24,
+            consec_frame: int = 3,
+            good_rate_range: Tuple[int, int] = (15, 25)) -> None:
+        super().__init__()
 
-		self._body_concentrations: Deque[int] = deque()
-		self._body_distractions: Deque[int] = deque()
+        self._body_concentration_times: Deque[int] = deque()
+        self._body_distraction_times: Deque[int] = deque()
 
-		self._blink_detector = blink_detector
-		self._interval_detector = bd.GoodBlinkRateIntervalDetector((15, 25))
-		self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
-		self._interval_detector.s_good_interval_detected.connect(self.check_body_concentration)
-		self._interval_detector.s_good_interval_detected.connect(
-		    lambda start, end: logging.info(f"good blink rate at {start} ~ {end}"))
-		self.s_concent_interval_refreshed.connect(
-		    lambda start, end: logging.info(f"good concentration at {start} ~ {end}"))
+        self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
+        self._interval_detector = GoodBlinkRateIntervalDetector(good_rate_range)
+        self._face_existence_counter = FaceExistenceRateCounter()
 
-	@property
-	def blink_detector(self) -> bd.AntiNoiseBlinkDetector:
-		"""Returns the AntiNoiseBlinkDetector used by the ConcentrationGrader."""
-		return self._blink_detector
+        self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
+        self._interval_detector.s_good_interval_detected.connect(self.check_body_concentration)
 
-	def add_body_concentration(self) -> None:
-		self._body_concentrations.append(int(time.time()))
-		while (self._body_concentrations
-				and (self._body_concentrations[-1] - self._body_concentrations[0]) > 60):
-			self._body_concentrations.popleft()
+    def get_ratio_threshold_of_blink_detector(self) -> float:
+        """Returns the ratio threshold used to consider an EAR lower than it
+        to be a blink with noise."""
+        return self._blink_detector.ratio_threshold
 
-	def add_body_distraction(self) -> None:
-		self._body_distractions.append(int(time.time()))
-		while (self._body_distractions
-	    		and (self._body_distractions[-1] - self._body_distractions[0]) > 60):
-			self._body_distractions.popleft()
+    def set_ratio_threshold_of_blink_detector(self, threshold: float) -> None:
+        """
+        Arguments:
+            threshold:
+                An eye aspect ratio lower than this is considered to be a blink with noise.
+        """
+        self._blink_detector.ratio_threshold = threshold
 
-	def check_body_concentration(self, start_time: int, end_time: int) -> None:
-	    # get concentration
-	    concent_count: int = 0
-	    for concent_time in self._body_concentrations:
-	        if concent_time < start_time or concent_time > end_time:
-	            break
-	        concent_count += 1
+    def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
+        self._blink_detector.detect_blink(landmarks)
 
-	    # get concentration
-	    distract_count: int = 0
-	    for distract_time in self._body_distractions:
-	        if distract_time < start_time or distract_time > end_time:
-	            break
-	        distract_count += 1
+    def add_frame(self) -> None:
+        self._face_existence_counter.add_frame()
 
-	    logging.info(f"body concentration is {concent_count / (concent_count + distract_count):.2f}")
-	    # more than 66%
-	    if concent_count > distract_count*2:
-	        self.s_concent_interval_refreshed.emit(start_time, end_time)
+    def add_face(self) -> None:
+        self._face_existence_counter.add_face()
+
+    def add_body_concentration(self) -> None:
+        self._body_concentration_times.append(int(time.time()))
+        keep_sliding_window_in_one_minute(self._body_concentration_times)
+
+    def add_body_distraction(self) -> None:
+        self._body_distraction_times.append(int(time.time()))
+        keep_sliding_window_in_one_minute(self._body_distraction_times)
+
+    @pyqtSlot(int, int, int)
+    def check_body_concentration(self, start_time: int, end_time: int, blink_rate: int) -> None:
+        logging.info(f"good blink rate at {start_time} ~ {end_time}, rate = {blink_rate}")
+        face_existence_rate: float = self._face_existence_counter.get_face_existence_rate()
+        if face_existence_rate < 0.6:
+            logging.info("low face existence, not reliable")
+
+        # get concentration
+        concent_count: int = 0
+        for concent_time in self._body_concentration_times:
+            if concent_time < start_time or concent_time > end_time:
+                break
+            concent_count += 1
+
+        # get concentration
+        distract_count: int = 0
+        for distract_time in self._body_distraction_times:
+            if distract_time < start_time or distract_time > end_time:
+                break
+            distract_count += 1
+
+        logging.info(f"body concentration is {concent_count / (concent_count + distract_count):.2f}")
+        # more than 66%
+        if concent_count > distract_count*2:
+            self.s_concent_interval_refreshed.emit(start_time, end_time)
+            logging.info(f"good concentration at {start_time} ~ {end_time}")
+        logging.info("")
+
+
+def keep_sliding_window_in_one_minute(window: Deque[int]) -> None:
+    """Compares the earliest and latest time stamp in the window, keep them within a minute.
+
+    Arguments:
+        window: The time stamps. Should be sorted in ascending order with respect to time.
+    """
+    while window and window[-1] - window[0] > 60:
+        window.popleft()

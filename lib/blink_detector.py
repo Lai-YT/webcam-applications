@@ -166,8 +166,8 @@ class BlinkDetector:
         Arguments:
             eye: (x, y) coordinates of the 6 single eye landmarks.
         """
-    	# compute the euclidean distances between the two sets of
-    	# vertical eye landmarks (x, y)-coordinates
+        # compute the euclidean distances between the two sets of
+        # vertical eye landmarks (x, y)-coordinates
         vert = []
         vert.append(math.dist(eye[1], eye[5]))
         vert.append(math.dist(eye[2], eye[4]))
@@ -210,8 +210,8 @@ def draw_landmarks_used_by_blink_detector(
     """
     canvas_: ColorImage = canvas.copy()
 
-	# compute the convex hull for the left and right eye, then
-	# visualize each of the eyes
+    # compute the convex hull for the left and right eye, then
+    # visualize each of the eyes
     for start, end in (BlinkDetector.LEFT_EYE_START_END_IDXS, BlinkDetector.RIGHT_EYE_START_END_IDXS):
         hull = cv2.convexHull(landmarks[start:end])
         cv2.drawContours(canvas_, [hull], -1, color, 1)
@@ -227,56 +227,77 @@ class AntiNoiseBlinkDetector(QObject):
     So the AntiNoiseBlinkDetector agrees a "blink" only if it continues for a
     sufficient number of frames.
 
-    Attributes:
-        EYE_AR_THRESH: The eye aspect ratio to indicate blink.
-        EYE_AR_CONSEC_FRAMES:
-            The number of consecutive frames the eye must be below the threshold
-            to indicate a anti-noise blink.
-
     Signals:
         s_blinked: Emits everytime a blink is detected.
     """
 
     s_blinked = pyqtSignal()
 
-    EYE_AR_THRESH: float = 0.24
-    EYE_AR_CONSEC_FRAMES: int = 3
-
-    def __init__(self) -> None:
+    def __init__(self, ratio_threshold: float = 0.24, consec_frame: int = 3) -> None:
+        """
+        Arguments:
+            ratio_threshold: The eye aspect ratio to indicate blink.
+            consec_frame:
+                The number of consecutive frames the eye must be below the threshold
+                to indicate an anti-noise blink.
+        """
         super().__init__()
         # the underlaying BlinkDetector
-        self._base_detector = BlinkDetector(self.EYE_AR_THRESH)
+        self._base_detector = BlinkDetector(ratio_threshold)
+        self._consec_frame = consec_frame
         self._consec_count: int = 0
 
     @property
-    def base_detector(self) -> BlinkDetector:
-        """Gets the normal BlinkDetector used by AntiNoiseBlinkDetector."""
-        return self._base_detector
+    def ratio_threshold(self) -> float:
+        """Returns the ratio threshold used to consider an EAR lower than it
+        to be a blink with noise."""
+        return self._base_detector.ratio_threshold
+
+    @ratio_threshold.setter
+    def ratio_threshold(self, threshold: float) -> None:
+        """
+        Arguments:
+            threshold:
+                An eye aspect ratio lower than this is considered to be a blink with noise.
+        """
+        self._base_detector.ratio_threshold = threshold
 
     def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
-    	blinked: bool = self._base_detector.detect_blink(landmarks)
-    	if blinked:
-    		self._consec_count += 1
-    	else:
-    		# if the eyes were closed for a sufficient number of frames,
+        """Uses the base detector with EYE_AR_CONSEC_FRAMES to determine whether
+        there's an anti-noise blink.
+
+        Emits:
+            s_blinked: Emits when a anti-noise blink is detected.
+        """
+        blinked: bool = self._base_detector.detect_blink(landmarks)
+        if blinked:
+           self._consec_count += 1
+        else:
+            # if the eyes were closed for a sufficient number of frames,
             # it's considered to be a real blink
-    		if self._consec_count >= self.EYE_AR_CONSEC_FRAMES:
-    			self.s_blinked.emit()
-    		self._consec_count = 0
+            if self._consec_count >= self._consec_frame:
+                self.s_blinked.emit()
+            self._consec_count = 0
 
 
 class GoodBlinkRateIntervalDetector(QObject):
 
-    s_good_interval_detected = pyqtSignal(int, int)  # start time, end time
+    s_good_interval_detected = pyqtSignal(int, int, int)  # start time, end time, rate
 
-    def __init__(self, good_rate_range: Tuple[float, float] = (15, 25)) -> None:
+    def __init__(self, good_rate_range: Tuple[int, int] = (15, 25)) -> None:
         """
         Arguments:
-            good_rate_range: The min and max boundary of the good blink rate (blinks per minute).
+            good_rate_range:
+                The min and max boundary of the good blink rate (blinks per minute).
+                It's not about the average rate, so both are with type int.
+                15 ~ 25 in default. For a proper blink rate, one may refer to
+                https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6118863/
         """
         super().__init__()
         self._good_rate_range = good_rate_range
-        # time record of blinks
+        # Time record of blinks.
+        # The length of it also indicates how many blinks there are within the
+        # time between index 0 and -1.
         self._blink_records: List[int] = []
 
     def add_blink(self) -> None:
@@ -290,9 +311,11 @@ class GoodBlinkRateIntervalDetector(QObject):
         # If it is, emit the signal to tell there's a good interval and remove
         # the blink records of that minute; if not, pop out the oldest blink
         # record until the list only contains blinks within one minute again.
-        if self._blink_records and new_time_record-self._blink_records[0] > 60:
-            if self._good_rate_range[0] <= len(self._blink_records) <= self._good_rate_range[1]:
-                self.s_good_interval_detected.emit(self._blink_records[0], self._blink_records[-1])
+        if self._blink_records and (new_time_record - self._blink_records[0]) > 60:
+            blink_rate: int = len(self._blink_records)
+            if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
+                self.s_good_interval_detected.emit(
+                    self._blink_records[0], self._blink_records[-1], blink_rate)
                 self._blink_records.clear()
             else:
                 # can't be a good interval, forward the window
