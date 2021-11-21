@@ -9,7 +9,6 @@ from playsound import playsound
 from tensorflow.python.keras.engine.sequential import Sequential
 
 from lib.angle_calculator import AngleCalculator
-from lib.blink_detector import AntiNoiseBlinkDetector
 from lib.color import GREEN, MAGENTA, RED
 from lib.concentration_grader import ConcentrationGrader
 from lib.cv_font import FONT_0
@@ -165,7 +164,6 @@ class DistanceGuard(QObject):
             CONCENT_GRADER_OF_GUARDS.add_body_distraction()
         else:
             CONCENT_GRADER_OF_GUARDS.add_body_concentration()
-
 
     def _put_distance_text(self, canvas: ColorImage, distance: float) -> None:
         """Puts distance text on the canvas.
@@ -352,8 +350,7 @@ class PostureGuard(QObject):
     Signals:
         s_posture_refreshed:
             Emits everytime a posture is checked (all attributes need to be set).
-            It sents the PostureLabel and the detail string of the
-            determination.
+            It sents the PostureLabel and the detail string of the determination.
     """
 
     s_posture_refreshed = pyqtSignal(PostureLabel, str)
@@ -472,10 +469,10 @@ class PostureGuard(QObject):
                 self._warning_repeat_timer.reset()
 
         # grade concentration
-        if posture is not PostureLabel.GOOD:
-            CONCENT_GRADER_OF_GUARDS.add_body_distraction()
-        else:
+        if posture is PostureLabel.GOOD:
             CONCENT_GRADER_OF_GUARDS.add_body_concentration()
+        else:
+            CONCENT_GRADER_OF_GUARDS.add_body_distraction()
 
         text, color = ("Good", GREEN) if posture is PostureLabel.GOOD else ("Slump", RED)
         cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, thickness=2)

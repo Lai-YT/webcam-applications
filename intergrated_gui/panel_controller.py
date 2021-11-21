@@ -14,7 +14,7 @@ class PanelController(QObject):
         super().__init__()
         self._panel = panel_widget
         self._app = app
-
+        # TODO: The order of init, connect and load seems broken. Params of distance are set but not read.
         self._init_states()
         self._connect_signals()
 

@@ -18,7 +18,7 @@ logging.basicConfig(
 
 
 class FaceExistenceRateCounter:
-    """Everytime a new frame is refreshed, there may exist a face or not. Record
+    """Everytime a new frame is refreshed, there may exist a face or not. Count
     the existence within 1 minute and simply get the existence rate.
     """
     def __init__(self) -> None:

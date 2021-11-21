@@ -1,15 +1,3 @@
-# reference:
-#   eye aspect ratio (2016):
-#   https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
-#
-# blink rate (2017):
-#   https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6118863/
-#   The mean ± standard deviation blink rate was 19.74 ± 9.12/min at baseline.
-#   A mean blink rate of up to 22 blinks/min has been reported under relaxed conditions.
-#   The blink rate decreased significantly under both reading conditions
-#   (to 11.35 ± 10.20 and 14.93 ± 10.90/min when reading from a book and a tablet, respectively).
-#   There was no significant difference in the blink rate over 15 min during either type of reading.
-
 import logging
 import random
 import time

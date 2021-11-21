@@ -1,11 +1,21 @@
 # reference:
-# https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
+#   eye aspect ratio (2016):
+#   https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
+#
+#   blink rate (2017):
+#   https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6118863/
+#   The mean ± standard deviation blink rate was 19.74 ± 9.12/min at baseline.
+#   A mean blink rate of up to 22 blinks/min has been reported under relaxed conditions.
+#   The blink rate decreased significantly under both reading conditions
+#   (to 11.35 ± 10.20 and 14.93 ± 10.90/min when reading from a book and a tablet, respectively).
+#   There was no significant difference in the blink rate over 15 min during either type of reading.
 
 import math
 import time
 import statistics
+from collections import deque
 from enum import Enum, auto
-from typing import List, Tuple
+from typing import Deque, List, Tuple
 
 import cv2
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -281,6 +291,18 @@ class AntiNoiseBlinkDetector(QObject):
 
 
 class GoodBlinkRateIntervalDetector(QObject):
+    """Detects whether the blink rate is in the good rate range or not.
+
+    The number of blinks per minute is the blink rate, which is an integer here
+    since it counts but does not take the average.
+
+    Signals:
+        s_good_interval_detected:
+            Emits when a good blink rate is detected.
+            It sends the first and last time of the blinks in that minute,
+            which mean their difference may not be 60 seconds, and the blink
+            rate of that minute.
+    """
 
     s_good_interval_detected = pyqtSignal(int, int, int)  # start time, end time, rate
 
@@ -298,29 +320,36 @@ class GoodBlinkRateIntervalDetector(QObject):
         # Time record of blinks.
         # The length of it also indicates how many blinks there are within the
         # time between index 0 and -1.
-        self._blink_records: List[int] = []
+        self._blink_times: Deque[int] = deque()
 
     def add_blink(self) -> None:
+        """Adds a new time of blink and checks whether there's a good interval.
+
+        Emits:
+            s_good_interval_detected:
+                Emits when there's a good interval.
+                Sends the start, end time and the blink rate,
+        """
         # the time this new blink is made
         new_time_record = int(time.time())
         # This is a sliding window algorithm.
         #
-        # The list "blink records" always contains the blinks within one minute.
+        # The deque "blink times" always contains the blinks within one minute.
         # When adding a new blink makes it exceed one minute, that means it's
         # time to check whether that very minute is a good interval or not.
         # If it is, emit the signal to tell there's a good interval and remove
         # the blink records of that minute; if not, pop out the oldest blink
-        # record until the list only contains blinks within one minute again.
-        if self._blink_records and (new_time_record - self._blink_records[0]) > 60:
-            blink_rate: int = len(self._blink_records)
+        # record until the deque only contains blinks within one minute again.
+        if self._blink_times and (new_time_record - self._blink_times[0]) > 60:
+            blink_rate: int = len(self._blink_times)
             if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
                 self.s_good_interval_detected.emit(
-                    self._blink_records[0], self._blink_records[-1], blink_rate)
-                self._blink_records.clear()
+                    self._blink_times[0], self._blink_times[-1], blink_rate)
+                self._blink_times.clear()
             else:
                 # can't be a good interval, forward the window
-                while (self._blink_records
-                        and (new_time_record - self._blink_records[0]) > 60):
-                    self._blink_records.pop(0)
+                while (self._blink_times
+                        and (new_time_record - self._blink_times[0]) > 60):
+                    self._blink_times.popleft()
         # let this new blink be considered at the next add_blink
-        self._blink_records.append(new_time_record)
+        self._blink_times.append(new_time_record)
