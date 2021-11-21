@@ -14,9 +14,10 @@ class PanelController(QObject):
         super().__init__()
         self._panel = panel_widget
         self._app = app
-        # TODO: The order of init, connect and load seems broken. Params of distance are set but not read.
-        self._init_states()
+        # Connect signals first so for sure the init state can trigger their
+        # corresponding methods.
         self._connect_signals()
+        self._init_states()
 
     def _init_states(self) -> None:
         self._init_distance_states()
@@ -155,7 +156,7 @@ class PanelController(QObject):
 
     def _connect_distance_signals(self) -> None:
         panel = self._panel.panels["distance"]
-
+        # FIXME: Signal "editingFinished" of LineEdit won't be emitted through setText.
         panel.toggled.connect(lambda checked: self._app.set_distance_measure(enabled=checked))
         distance = panel.settings["camera_dist"]
         distance.editingFinished.connect(lambda: self._app.set_distance_measure(camera_dist=float(distance.text())))
