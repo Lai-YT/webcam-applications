@@ -1,7 +1,8 @@
 import os
 from configparser import ConfigParser
 
-from PyQt5.QtCore import QObject, pyqtSlot
+from PyQt5.QtCore import QCoreApplication, QEvent, QObject, Qt, pyqtSlot
+from PyQt5.QtGui import QKeyEvent
 
 from intergrated_gui.panel_widget import AngleTolerance, PanelWidget
 from lib.app_ import WebcamApplication
@@ -14,7 +15,7 @@ class PanelController(QObject):
         super().__init__()
         self._panel = panel_widget
         self._app = app
-        # Connect signals first so for sure the init state can trigger their
+        # Connect signals first to make sure the init states can trigger their
         # corresponding methods.
         self._connect_signals()
         self._init_states()
@@ -37,13 +38,20 @@ class PanelController(QObject):
         for mode, panel in panels.items():
             panel.setChecked(config.getboolean(mode, "checked"))
 
+        # A simple setText does not trigger the editingFinished signal since
+        # no enter or return key is pressed. So send a return pressed event
+        # everytime after the setText to act like a manual user.
+        return_pressed_event = QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier)
+
         # distance
         for name, line_edit in panels["distance"].settings.items():
             line_edit.setText(config.get("distance", name))
+            QCoreApplication.sendEvent(line_edit, return_pressed_event)
         panels["distance"].warning.setChecked(config.getboolean("distance", "warning_enabled"))
         # time
         for name, line_edit in panels["time"].settings.items():
             line_edit.setText(config.get("time", name))
+            QCoreApplication.sendEvent(line_edit, return_pressed_event)
         panels["time"].warning.setChecked(config.getboolean("time", "warning_enabled"))
         # posture
         if config.get("posture", "warn_angle") == "loose":
@@ -156,7 +164,6 @@ class PanelController(QObject):
 
     def _connect_distance_signals(self) -> None:
         panel = self._panel.panels["distance"]
-        # FIXME: Signal "editingFinished" of LineEdit won't be emitted through setText.
         panel.toggled.connect(lambda checked: self._app.set_distance_measure(enabled=checked))
         distance = panel.settings["camera_dist"]
         distance.editingFinished.connect(lambda: self._app.set_distance_measure(camera_dist=float(distance.text())))
