@@ -10,8 +10,7 @@ from lib.blink_detector import AntiNoiseBlinkDetector, GoodBlinkRateIntervalDete
 
 
 logging.basicConfig(
-    format="%(asctime)s %(message)s",
-    datefmt="%I:%M:%S",
+    format="%(message)s",
     filename="concent_interval.log",
     level=logging.DEBUG,
 )
@@ -45,8 +44,12 @@ class ConcentrationGrader(QObject):
             self,
             ratio_threshold: float = 0.24,
             consec_frame: int = 3,
-            good_rate_range: Tuple[int, int] = (15, 25)) -> None:
+            good_rate_range: Tuple[int, int] = (10, 30)) -> None:
         super().__init__()
+        logging.info("ConcentrationGrader configs:")
+        logging.info(f" ratio thres  = {ratio_threshold}")
+        logging.info(f" consec frame = {consec_frame}")
+        logging.info(f" good range   = {good_rate_range}\n")
 
         self._body_concentration_times: Deque[int] = deque()
         self._body_distraction_times: Deque[int] = deque()
@@ -90,7 +93,7 @@ class ConcentrationGrader(QObject):
 
     @pyqtSlot(int, int, int)
     def check_body_concentration(self, start_time: int, end_time: int, blink_rate: int) -> None:
-        logging.info(f"good blink rate at {start_time} ~ {end_time}, rate = {blink_rate}")
+        logging.info(f"good blink rate at {to_date_time(start_time)} ~ {to_date_time(end_time)}, rate = {blink_rate}")
         face_existence_rate: float = self._face_existence_counter.get_face_existence_rate()
         if face_existence_rate < 0.6:
             logging.info("low face existence, not reliable")
@@ -113,7 +116,7 @@ class ConcentrationGrader(QObject):
         # more than 66%
         if concent_count > distract_count*2:
             self.s_concent_interval_refreshed.emit(start_time, end_time)
-            logging.info(f"good concentration at {start_time} ~ {end_time}")
+            logging.info(f"good concentration at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
         logging.info("")
 
 
@@ -125,3 +128,7 @@ def keep_sliding_window_in_one_minute(window: Deque[int]) -> None:
     """
     while window and window[-1] - window[0] > 60:
         window.popleft()
+
+
+def to_date_time(epoch_time: int) -> str:
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch_time))
