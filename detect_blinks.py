@@ -6,8 +6,11 @@ from typing import List
 import cv2
 import dlib
 import imutils
+import numpy
 from imutils import face_utils
+from scipy import ndimage
 
+from lib.angle_calculator import AngleCalculator
 from lib.blink_detector import (
     AntiNoiseBlinkDetector,
     BlinkDetector,
@@ -36,9 +39,27 @@ SAMPLE_THRESHOLD: int = 500
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("lib/trained_models/shape_predictor_68_face_landmarks.dat")
 
+def get_face_landmarks_from_frame(frame):
+    """Gets the face landmarks if there contains exactly 1 face in the frame;
+    otherwise the landmarks are filled with all 0.
+    """
+    # detect faces in the grayscale frame
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = detector(gray)
+    # determine the facial landmarks for the face region, then
+    # convert the facial landmark (x, y)-coordinates to a NumPy
+    # array
+    if len(faces) != 1:
+        return numpy.zeros(shape=(68, 2), dtype=numpy.int32)
+    shape = predictor(gray, faces[0])  # faces[0] is the only face
+    return face_utils.shape_to_np(shape)
+
 # adjust the normal BlinkDetector held by the AntiNoiseBlinkDetector
 # ratio_adjuster = TailorMadeNormalEyeAspectRatioMaker(0.3, SAMPLE_THRESHOLD)
 
+# to get better detection on a rotated face, use angle calculator with image rotate
+# so everytime the blink detector deal with a straight face
+angle_calculator = AngleCalculator()
 blink_detector = AntiNoiseBlinkDetector(0.23, 2)
 concentration_grader = ConcentrationGrader(0.23, 2, (15, 25))
 manual_rate_counter = BlinkRateCounter()
@@ -58,14 +79,11 @@ manual_rate_counter.start()
 
 # loop over frames from the video stream
 while cam.isOpened():
-    # grab the frame from the camera, resize
-    # it, and convert it to grayscale channels
+    # grab the frame from the camera and resize it
     _, frame = cam.read()
     frame = imutils.resize(frame, width=600)
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # detect faces in the grayscale frame
-    faces = detector(gray)
+    concentration_grader.add_frame()
 
     # Simulate the body concentration grade randomly.
     # Have the expected value right at the edge (0.667),
@@ -75,37 +93,47 @@ while cam.isOpened():
     else:
         concentration_grader.add_body_distraction()
 
+    landmarks = get_face_landmarks_from_frame(frame)
+
+    # only process on frame which contains exactly 1 face
+    if not landmarks.any():
+        continue
+    concentration_grader.add_face()
+
     manual_rate_counter.check()
 
-    concentration_grader.add_frame()
-    # loop over the face detections
-    for face in faces:
-        concentration_grader.add_face()
-        # determine the facial landmarks for the face region, then
-        # convert the facial landmark (x, y)-coordinates to a NumPy
-        # array
-        shape = predictor(gray, face)
-        landmarks = face_utils.shape_to_np(shape)
+    # Reset the EAR threshold if the tailor-made normal EAR is ready.
+    # ratio_adjuster.read_sample(landmarks)
+    # num_of_samples, normal_ratio = ratio_adjuster.get_normal_ratio()
+    # if num_of_samples >= SAMPLE_THRESHOLD:
+    #     blink_detector.ratio_threshold = normal_ratio * 0.8
+    #     concentration_grader.set_ratio_threshold_of_blink_detector(normal_ratio * 0.8)
+    # print(blink_detector.ratio_threshold)
 
-        # Reset the EAR threshold if the tailor-made normal EAR is ready.
-        # ratio_adjuster.read_sample(landmarks)
-        # num_of_samples, normal_ratio = ratio_adjuster.get_normal_ratio()
-        # if num_of_samples >= SAMPLE_THRESHOLD:
-        #     blink_detector.ratio_threshold = normal_ratio * 0.8
-        #     concentration_grader.set_ratio_threshold_of_blink_detector(normal_ratio * 0.8)
-        # print(blink_detector.ratio_threshold)
+    # sometime the landmarks of face don't fit well when the slope of face
+    # exceeds 10 degress, so rotate the frame to keep one's face straight
+    angle_calculator.calculate(landmarks)
+    ratio: float
+    if abs(angle_calculator.angle()) > 10:
+        frame = ndimage.rotate(frame, angle_calculator.angle(), reshape=False)
+        landmarks = get_face_landmarks_from_frame(frame)
+        # might not able to detect a face after rotation
+        if not landmarks.any():
+            continue
+    angle_calculator.calculate(landmarks)
+    print(angle_calculator.angle())
 
-        concentration_grader.detect_blink(landmarks)
-        blink_detector.detect_blink(landmarks)
-        ratio: float = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
+    concentration_grader.detect_blink(landmarks)
+    blink_detector.detect_blink(landmarks)
+    ratio = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
 
-        frame = draw_landmarks_used_by_blink_detector(frame, landmarks)
-        # display the total number of blinks on the frame along with
-        # the computed eye aspect ratio for the frame
-        cv2.putText(frame, f"Blinks: {blink_count[0]}", (10, 30),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        cv2.putText(frame, f"EAR: {ratio:.2f}", (450, 30),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    frame = draw_landmarks_used_by_blink_detector(frame, landmarks)
+    # display the total number of blinks on the frame along with
+    # the computed eye aspect ratio for the frame
+    cv2.putText(frame, f"Blinks: {blink_count[0]}", (10, 30),
+        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    cv2.putText(frame, f"EAR: {ratio:.2f}", (450, 30),
+        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
     # show the frame
     cv2.imshow("Frame", frame)

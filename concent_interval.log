@@ -18,4 +18,25 @@ ConcentrationGrader configs:
  ratio thres  = 0.23
  consec frame = 2
  good range   = (15, 25)
+ConcentrationGrader configs:
+ ratio thres  = 0.23
+ consec frame = 2
+ good range   = (15, 25)
+
+ConcentrationGrader configs:
+ ratio thres  = 0.23
+ consec frame = 2
+ good range   = (15, 25)
+
+manual blink rate: 21.00/min
+
+good blink rate at 2021-11-25 22:34:54 ~ 2021-11-25 22:35:53, rate = 22
+body concentration is 0.65
+
+ConcentrationGrader configs:
+ ratio thres  = 0.23
+ consec frame = 2
+ good range   = (15, 25)
+
+manual blink rate: 4.83/min
 
