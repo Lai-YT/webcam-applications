@@ -2,431 +2,475 @@
 ---
 blink rate   = 5, (blink value = 10)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 6, (blink value = 11)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 7, (blink value = 12)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 8, (blink value = 13)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 9, (blink value = 14)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 10, (blink value = 15)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 11, (blink value = 16)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 12, (blink value = 17)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 13, (blink value = 18)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 14, (blink value = 19)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 15, (blink value = 20)
 body concent = 1.0, (body value = 10)
-Concentration grade: 8.33
+Concentration grade: 8.14
 ---
 blink rate   = 4, (blink value = 4)
 body concent = 1.0, (body value = 10)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 5, (blink value = 10)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 6, (blink value = 11)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 7, (blink value = 12)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 8, (blink value = 13)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 9, (blink value = 14)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 10, (blink value = 15)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 11, (blink value = 16)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 12, (blink value = 17)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 13, (blink value = 18)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 14, (blink value = 19)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 15, (blink value = 20)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 16, (blink value = 4)
 body concent = 1.0, (body value = 10)
-Concentration grade: 6.81
+Concentration grade: 7.0
 ---
 blink rate   = 4, (blink value = 4)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.73
+Concentration grade: 6.79
 ---
 blink rate   = 16, (blink value = 4)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.73
+Concentration grade: 6.79
 ---
 blink rate   = 3, (blink value = 3)
 body concent = 1.0, (body value = 10)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 5, (blink value = 10)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 6, (blink value = 11)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 7, (blink value = 12)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 8, (blink value = 13)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 9, (blink value = 14)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 10, (blink value = 15)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 11, (blink value = 16)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 12, (blink value = 17)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 13, (blink value = 18)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 14, (blink value = 19)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 15, (blink value = 20)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 17, (blink value = 3)
 body concent = 1.0, (body value = 10)
-Concentration grade: 6.19
+Concentration grade: 6.47
 ---
 blink rate   = 3, (blink value = 3)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.11
+Concentration grade: 6.24
 ---
 blink rate   = 4, (blink value = 4)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.11
+Concentration grade: 6.24
 ---
 blink rate   = 16, (blink value = 4)
 body concent = 0.8, (body value = 8)
-Concentration grade: 6.11
+Concentration grade: 6.24
 ---
 blink rate   = 17, (blink value = 3)
 body concent = 0.9, (body value = 9)
-Concentration grade: 6.11
+Concentration grade: 6.24
 ---
 blink rate   = 2, (blink value = 2)
 body concent = 1.0, (body value = 10)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 5, (blink value = 10)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 6, (blink value = 11)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 7, (blink value = 12)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 8, (blink value = 13)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 9, (blink value = 14)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 10, (blink value = 15)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 11, (blink value = 16)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 12, (blink value = 17)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 13, (blink value = 18)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 14, (blink value = 19)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 15, (blink value = 20)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.97
+Concentration grade: 6.21
 ---
 blink rate   = 18, (blink value = 2)
 body concent = 1.0, (body value = 10)
-Concentration grade: 5.97
----
-blink rate   = 2, (blink value = 2)
-body concent = 0.9, (body value = 9)
-Concentration grade: 5.9
----
-blink rate   = 4, (blink value = 4)
-body concent = 0.7, (body value = 7)
-Concentration grade: 5.9
----
-blink rate   = 16, (blink value = 4)
-body concent = 0.7, (body value = 7)
-Concentration grade: 5.9
----
-blink rate   = 18, (blink value = 2)
-body concent = 0.9, (body value = 9)
-Concentration grade: 5.9
----
-blink rate   = 3, (blink value = 3)
-body concent = 0.8, (body value = 8)
-Concentration grade: 5.88
----
-blink rate   = 17, (blink value = 3)
-body concent = 0.8, (body value = 8)
-Concentration grade: 5.88
+Concentration grade: 6.21
 ---
 blink rate   = 1, (blink value = 1)
 body concent = 1.0, (body value = 10)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 5, (blink value = 10)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 6, (blink value = 11)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 7, (blink value = 12)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 8, (blink value = 13)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 9, (blink value = 14)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 10, (blink value = 15)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 11, (blink value = 16)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 12, (blink value = 17)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 13, (blink value = 18)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 14, (blink value = 19)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 15, (blink value = 20)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 19, (blink value = 1)
 body concent = 1.0, (body value = 10)
-Concentration grade: 5.87
+Concentration grade: 6.1
 ---
 blink rate   = 5, (blink value = 10)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 6, (blink value = 11)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 7, (blink value = 12)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 8, (blink value = 13)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 9, (blink value = 14)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 10, (blink value = 15)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 11, (blink value = 16)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 12, (blink value = 17)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 13, (blink value = 18)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 14, (blink value = 19)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 15, (blink value = 20)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.85
+Concentration grade: 6.07
 ---
 blink rate   = 20, (blink value = 0)
 body concent = 1.0, (body value = 10)
-Concentration grade: 5.85
+Concentration grade: 6.07
+---
+blink rate   = 5, (blink value = 10)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 6, (blink value = 11)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 7, (blink value = 12)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 8, (blink value = 13)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 9, (blink value = 14)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 10, (blink value = 15)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 11, (blink value = 16)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 12, (blink value = 17)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 13, (blink value = 18)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 14, (blink value = 19)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 15, (blink value = 20)
+body concent = 0.4, (body value = 4)
+Concentration grade: 6.02
+---
+blink rate   = 2, (blink value = 2)
+body concent = 0.9, (body value = 9)
+Concentration grade: 6.0
+---
+blink rate   = 4, (blink value = 4)
+body concent = 0.7, (body value = 7)
+Concentration grade: 6.0
+---
+blink rate   = 16, (blink value = 4)
+body concent = 0.7, (body value = 7)
+Concentration grade: 6.0
+---
+blink rate   = 18, (blink value = 2)
+body concent = 0.9, (body value = 9)
+Concentration grade: 6.0
+---
+blink rate   = 3, (blink value = 3)
+body concent = 0.8, (body value = 8)
+Concentration grade: 5.93
+---
+blink rate   = 17, (blink value = 3)
+body concent = 0.8, (body value = 8)
+Concentration grade: 5.93
 ---
 blink rate   = 1, (blink value = 1)
 body concent = 0.9, (body value = 9)
-Concentration grade: 5.81
+Concentration grade: 5.9
 ---
 blink rate   = 4, (blink value = 4)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.81
+Concentration grade: 5.9
 ---
 blink rate   = 16, (blink value = 4)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.81
+Concentration grade: 5.9
 ---
 blink rate   = 19, (blink value = 1)
 body concent = 0.9, (body value = 9)
-Concentration grade: 5.81
+Concentration grade: 5.9
 ---
 blink rate   = 4, (blink value = 4)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.78
+Concentration grade: 5.87
 ---
 blink rate   = 5, (blink value = 10)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 6, (blink value = 11)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 7, (blink value = 12)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 8, (blink value = 13)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 9, (blink value = 14)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 10, (blink value = 15)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 11, (blink value = 16)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 12, (blink value = 17)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 13, (blink value = 18)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 14, (blink value = 19)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 15, (blink value = 20)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.78
+body concent = 0.3, (body value = 3)
+Concentration grade: 5.87
 ---
 blink rate   = 16, (blink value = 4)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.78
+Concentration grade: 5.87
 ---
 blink rate   = 20, (blink value = 0)
 body concent = 0.9, (body value = 9)
-Concentration grade: 5.78
+Concentration grade: 5.87
 ---
 blink rate   = 4, (blink value = 4)
 body concent = 0.4, (body value = 4)
-Concentration grade: 5.72
+Concentration grade: 5.81
 ---
 blink rate   = 16, (blink value = 4)
 body concent = 0.4, (body value = 4)
-Concentration grade: 5.72
+Concentration grade: 5.81
 ---
 blink rate   = 2, (blink value = 2)
 body concent = 0.8, (body value = 8)
@@ -444,101 +488,189 @@ blink rate   = 18, (blink value = 2)
 body concent = 0.8, (body value = 8)
 Concentration grade: 5.71
 ---
-blink rate   = 1, (blink value = 1)
-body concent = 0.8, (body value = 8)
-Concentration grade: 5.63
----
-blink rate   = 3, (blink value = 3)
-body concent = 0.6, (body value = 6)
-Concentration grade: 5.63
----
-blink rate   = 17, (blink value = 3)
-body concent = 0.6, (body value = 6)
-Concentration grade: 5.63
----
-blink rate   = 19, (blink value = 1)
-body concent = 0.8, (body value = 8)
-Concentration grade: 5.63
----
-blink rate   = 3, (blink value = 3)
-body concent = 0.5, (body value = 5)
-Concentration grade: 5.61
----
 blink rate   = 5, (blink value = 10)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 6, (blink value = 11)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 7, (blink value = 12)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 8, (blink value = 13)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 9, (blink value = 14)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 10, (blink value = 15)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 11, (blink value = 16)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 12, (blink value = 17)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 13, (blink value = 18)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 14, (blink value = 19)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 15, (blink value = 20)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.61
----
-blink rate   = 17, (blink value = 3)
-body concent = 0.5, (body value = 5)
-Concentration grade: 5.61
----
-blink rate   = 20, (blink value = 0)
-body concent = 0.8, (body value = 8)
-Concentration grade: 5.61
----
-blink rate   = 3, (blink value = 3)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.54
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.68
 ---
 blink rate   = 4, (blink value = 4)
 body concent = 0.3, (body value = 3)
-Concentration grade: 5.54
+Concentration grade: 5.65
 ---
 blink rate   = 16, (blink value = 4)
 body concent = 0.3, (body value = 3)
-Concentration grade: 5.54
+Concentration grade: 5.65
+---
+blink rate   = 1, (blink value = 1)
+body concent = 0.8, (body value = 8)
+Concentration grade: 5.62
+---
+blink rate   = 3, (blink value = 3)
+body concent = 0.6, (body value = 6)
+Concentration grade: 5.62
+---
+blink rate   = 17, (blink value = 3)
+body concent = 0.6, (body value = 6)
+Concentration grade: 5.62
+---
+blink rate   = 19, (blink value = 1)
+body concent = 0.8, (body value = 8)
+Concentration grade: 5.62
+---
+blink rate   = 3, (blink value = 3)
+body concent = 0.5, (body value = 5)
+Concentration grade: 5.6
+---
+blink rate   = 17, (blink value = 3)
+body concent = 0.5, (body value = 5)
+Concentration grade: 5.6
+---
+blink rate   = 20, (blink value = 0)
+body concent = 0.8, (body value = 8)
+Concentration grade: 5.6
+---
+blink rate   = 3, (blink value = 3)
+body concent = 0.4, (body value = 4)
+Concentration grade: 5.53
 ---
 blink rate   = 17, (blink value = 3)
 body concent = 0.4, (body value = 4)
-Concentration grade: 5.54
+Concentration grade: 5.53
 ---
-blink rate   = 2, (blink value = 2)
-body concent = 0.7, (body value = 7)
-Concentration grade: 5.38
+blink rate   = 5, (blink value = 10)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
 ---
-blink rate   = 18, (blink value = 2)
-body concent = 0.7, (body value = 7)
-Concentration grade: 5.38
+blink rate   = 6, (blink value = 11)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
+---
+blink rate   = 7, (blink value = 12)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
+---
+blink rate   = 8, (blink value = 13)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
+---
+blink rate   = 9, (blink value = 14)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
+---
+blink rate   = 10, (blink value = 15)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
+---
+blink rate   = 11, (blink value = 16)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
+---
+blink rate   = 12, (blink value = 17)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
+---
+blink rate   = 13, (blink value = 18)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
+---
+blink rate   = 14, (blink value = 19)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
+---
+blink rate   = 15, (blink value = 20)
+body concent = 0.1, (body value = 1)
+Concentration grade: 5.51
+---
+blink rate   = 5, (blink value = 10)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 6, (blink value = 11)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 7, (blink value = 12)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 8, (blink value = 13)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 9, (blink value = 14)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 10, (blink value = 15)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 11, (blink value = 16)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 12, (blink value = 17)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 13, (blink value = 18)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 14, (blink value = 19)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 15, (blink value = 20)
+body concent = 0.0, (body value = 0)
+Concentration grade: 5.44
+---
+blink rate   = 4, (blink value = 4)
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.43
+---
+blink rate   = 16, (blink value = 4)
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.43
 ---
 blink rate   = 3, (blink value = 3)
 body concent = 0.3, (body value = 3)
@@ -548,335 +680,203 @@ blink rate   = 17, (blink value = 3)
 body concent = 0.3, (body value = 3)
 Concentration grade: 5.34
 ---
+blink rate   = 2, (blink value = 2)
+body concent = 0.7, (body value = 7)
+Concentration grade: 5.31
+---
+blink rate   = 18, (blink value = 2)
+body concent = 0.7, (body value = 7)
+Concentration grade: 5.31
+---
 blink rate   = 1, (blink value = 1)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.33
+Concentration grade: 5.25
 ---
 blink rate   = 2, (blink value = 2)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.33
+Concentration grade: 5.25
 ---
 blink rate   = 18, (blink value = 2)
 body concent = 0.6, (body value = 6)
-Concentration grade: 5.33
+Concentration grade: 5.25
 ---
 blink rate   = 19, (blink value = 1)
 body concent = 0.7, (body value = 7)
-Concentration grade: 5.33
+Concentration grade: 5.25
 ---
 blink rate   = 2, (blink value = 2)
 body concent = 0.5, (body value = 5)
-Concentration grade: 5.32
----
-blink rate   = 5, (blink value = 10)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 6, (blink value = 11)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 7, (blink value = 12)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 8, (blink value = 13)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 9, (blink value = 14)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 10, (blink value = 15)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 11, (blink value = 16)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 12, (blink value = 17)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 13, (blink value = 18)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 14, (blink value = 19)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 15, (blink value = 20)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.32
----
-blink rate   = 18, (blink value = 2)
-body concent = 0.5, (body value = 5)
-Concentration grade: 5.32
----
-blink rate   = 20, (blink value = 0)
-body concent = 0.7, (body value = 7)
-Concentration grade: 5.32
----
-blink rate   = 2, (blink value = 2)
-body concent = 0.4, (body value = 4)
 Concentration grade: 5.24
 ---
 blink rate   = 4, (blink value = 4)
-body concent = 0.2, (body value = 2)
+body concent = 0.1, (body value = 1)
 Concentration grade: 5.24
 ---
 blink rate   = 16, (blink value = 4)
-body concent = 0.2, (body value = 2)
+body concent = 0.1, (body value = 1)
 Concentration grade: 5.24
 ---
 blink rate   = 18, (blink value = 2)
-body concent = 0.4, (body value = 4)
+body concent = 0.5, (body value = 5)
 Concentration grade: 5.24
 ---
-blink rate   = 1, (blink value = 1)
-body concent = 0.6, (body value = 6)
-Concentration grade: 5.1
----
-blink rate   = 19, (blink value = 1)
-body concent = 0.6, (body value = 6)
-Concentration grade: 5.1
----
-blink rate   = 1, (blink value = 1)
-body concent = 0.5, (body value = 5)
-Concentration grade: 5.09
----
-blink rate   = 5, (blink value = 10)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 6, (blink value = 11)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 7, (blink value = 12)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 8, (blink value = 13)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 9, (blink value = 14)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 10, (blink value = 15)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 11, (blink value = 16)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 12, (blink value = 17)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 13, (blink value = 18)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 14, (blink value = 19)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 15, (blink value = 20)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.09
----
-blink rate   = 19, (blink value = 1)
-body concent = 0.5, (body value = 5)
-Concentration grade: 5.09
----
 blink rate   = 20, (blink value = 0)
-body concent = 0.6, (body value = 6)
-Concentration grade: 5.09
----
-blink rate   = 1, (blink value = 1)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.0
----
-blink rate   = 2, (blink value = 2)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.0
----
-blink rate   = 3, (blink value = 3)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.0
----
-blink rate   = 4, (blink value = 4)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.0
----
-blink rate   = 5, (blink value = 10)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 6, (blink value = 11)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 7, (blink value = 12)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 8, (blink value = 13)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 9, (blink value = 14)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 10, (blink value = 15)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 11, (blink value = 16)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 12, (blink value = 17)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 13, (blink value = 18)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 14, (blink value = 19)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 15, (blink value = 20)
-body concent = 0.0, (body value = 0)
-Concentration grade: 5.0
----
-blink rate   = 16, (blink value = 4)
-body concent = 0.1, (body value = 1)
-Concentration grade: 5.0
----
-blink rate   = 17, (blink value = 3)
-body concent = 0.2, (body value = 2)
-Concentration grade: 5.0
----
-blink rate   = 18, (blink value = 2)
-body concent = 0.3, (body value = 3)
-Concentration grade: 5.0
----
-blink rate   = 19, (blink value = 1)
-body concent = 0.4, (body value = 4)
-Concentration grade: 5.0
----
-blink rate   = 20, (blink value = 0)
-body concent = 0.5, (body value = 5)
-Concentration grade: 5.0
+body concent = 0.7, (body value = 7)
+Concentration grade: 5.24
 ---
 blink rate   = 4, (blink value = 4)
 body concent = 0.0, (body value = 0)
-Concentration grade: 4.91
+Concentration grade: 5.16
 ---
 blink rate   = 16, (blink value = 4)
 body concent = 0.0, (body value = 0)
-Concentration grade: 4.91
+Concentration grade: 5.16
+---
+blink rate   = 2, (blink value = 2)
+body concent = 0.4, (body value = 4)
+Concentration grade: 5.15
+---
+blink rate   = 18, (blink value = 2)
+body concent = 0.4, (body value = 4)
+Concentration grade: 5.15
+---
+blink rate   = 3, (blink value = 3)
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.08
+---
+blink rate   = 17, (blink value = 3)
+body concent = 0.2, (body value = 2)
+Concentration grade: 5.08
+---
+blink rate   = 2, (blink value = 2)
+body concent = 0.3, (body value = 3)
+Concentration grade: 4.92
+---
+blink rate   = 18, (blink value = 2)
+body concent = 0.3, (body value = 3)
+Concentration grade: 4.92
+---
+blink rate   = 3, (blink value = 3)
+body concent = 0.1, (body value = 1)
+Concentration grade: 4.85
+---
+blink rate   = 17, (blink value = 3)
+body concent = 0.1, (body value = 1)
+Concentration grade: 4.85
+---
+blink rate   = 1, (blink value = 1)
+body concent = 0.5, (body value = 5)
+Concentration grade: 4.82
+---
+blink rate   = 1, (blink value = 1)
+body concent = 0.6, (body value = 6)
+Concentration grade: 4.82
+---
+blink rate   = 19, (blink value = 1)
+body concent = 0.5, (body value = 5)
+Concentration grade: 4.82
+---
+blink rate   = 19, (blink value = 1)
+body concent = 0.6, (body value = 6)
+Concentration grade: 4.82
+---
+blink rate   = 20, (blink value = 0)
+body concent = 0.6, (body value = 6)
+Concentration grade: 4.82
+---
+blink rate   = 3, (blink value = 3)
+body concent = 0.0, (body value = 0)
+Concentration grade: 4.77
+---
+blink rate   = 17, (blink value = 3)
+body concent = 0.0, (body value = 0)
+Concentration grade: 4.77
+---
+blink rate   = 1, (blink value = 1)
+body concent = 0.4, (body value = 4)
+Concentration grade: 4.72
+---
+blink rate   = 19, (blink value = 1)
+body concent = 0.4, (body value = 4)
+Concentration grade: 4.72
+---
+blink rate   = 2, (blink value = 2)
+body concent = 0.2, (body value = 2)
+Concentration grade: 4.58
+---
+blink rate   = 18, (blink value = 2)
+body concent = 0.2, (body value = 2)
+Concentration grade: 4.58
+---
+blink rate   = 1, (blink value = 1)
+body concent = 0.3, (body value = 3)
+Concentration grade: 4.47
+---
+blink rate   = 19, (blink value = 1)
+body concent = 0.3, (body value = 3)
+Concentration grade: 4.47
+---
+blink rate   = 2, (blink value = 2)
+body concent = 0.1, (body value = 1)
+Concentration grade: 4.38
+---
+blink rate   = 18, (blink value = 2)
+body concent = 0.1, (body value = 1)
+Concentration grade: 4.38
+---
+blink rate   = 20, (blink value = 0)
+body concent = 0.5, (body value = 5)
+Concentration grade: 4.33
+---
+blink rate   = 2, (blink value = 2)
+body concent = 0.0, (body value = 0)
+Concentration grade: 4.31
+---
+blink rate   = 18, (blink value = 2)
+body concent = 0.0, (body value = 0)
+Concentration grade: 4.31
 ---
 blink rate   = 20, (blink value = 0)
 body concent = 0.4, (body value = 4)
-Concentration grade: 4.91
+Concentration grade: 4.24
 ---
 blink rate   = 1, (blink value = 1)
-body concent = 0.3, (body value = 3)
-Concentration grade: 4.76
----
-blink rate   = 3, (blink value = 3)
-body concent = 0.1, (body value = 1)
-Concentration grade: 4.76
----
-blink rate   = 17, (blink value = 3)
-body concent = 0.1, (body value = 1)
-Concentration grade: 4.76
+body concent = 0.2, (body value = 2)
+Concentration grade: 4.16
 ---
 blink rate   = 19, (blink value = 1)
-body concent = 0.3, (body value = 3)
-Concentration grade: 4.76
----
-blink rate   = 3, (blink value = 3)
-body concent = 0.0, (body value = 0)
-Concentration grade: 4.68
----
-blink rate   = 17, (blink value = 3)
-body concent = 0.0, (body value = 0)
-Concentration grade: 4.68
+body concent = 0.2, (body value = 2)
+Concentration grade: 4.16
 ---
 blink rate   = 20, (blink value = 0)
 body concent = 0.3, (body value = 3)
-Concentration grade: 4.68
----
-blink rate   = 2, (blink value = 2)
-body concent = 0.2, (body value = 2)
-Concentration grade: 4.66
----
-blink rate   = 18, (blink value = 2)
-body concent = 0.2, (body value = 2)
-Concentration grade: 4.66
----
-blink rate   = 1, (blink value = 1)
-body concent = 0.2, (body value = 2)
-Concentration grade: 4.46
----
-blink rate   = 2, (blink value = 2)
-body concent = 0.1, (body value = 1)
-Concentration grade: 4.46
----
-blink rate   = 18, (blink value = 2)
-body concent = 0.1, (body value = 1)
-Concentration grade: 4.46
----
-blink rate   = 19, (blink value = 1)
-body concent = 0.2, (body value = 2)
-Concentration grade: 4.46
----
-blink rate   = 2, (blink value = 2)
-body concent = 0.0, (body value = 0)
-Concentration grade: 4.39
----
-blink rate   = 18, (blink value = 2)
-body concent = 0.0, (body value = 0)
-Concentration grade: 4.39
----
-blink rate   = 20, (blink value = 0)
-body concent = 0.2, (body value = 2)
-Concentration grade: 4.39
+Concentration grade: 4.0
 ---
 blink rate   = 1, (blink value = 1)
 body concent = 0.1, (body value = 1)
-Concentration grade: 4.28
+Concentration grade: 3.98
 ---
 blink rate   = 19, (blink value = 1)
 body concent = 0.1, (body value = 1)
-Concentration grade: 4.28
+Concentration grade: 3.98
 ---
 blink rate   = 1, (blink value = 1)
 body concent = 0.0, (body value = 0)
-Concentration grade: 4.22
+Concentration grade: 3.92
 ---
 blink rate   = 19, (blink value = 1)
 body concent = 0.0, (body value = 0)
-Concentration grade: 4.22
+Concentration grade: 3.92
+---
+blink rate   = 20, (blink value = 0)
+body concent = 0.2, (body value = 2)
+Concentration grade: 3.72
 ---
 blink rate   = 20, (blink value = 0)
 body concent = 0.1, (body value = 1)
-Concentration grade: 4.22
+Concentration grade: 3.55
 ---
 blink rate   = 20, (blink value = 0)
 body concent = 0.0, (body value = 0)
-Concentration grade: 4.15
+Concentration grade: 3.49
 ---

@@ -113,15 +113,14 @@ while cam.isOpened():
     # sometime the landmarks of face don't fit well when the slope of face
     # exceeds 10 degress, so rotate the frame to keep one's face straight
     angle_calculator.calculate(landmarks)
-
-    if angle_calculator.angle() is not None and abs(angle_calculator.angle()) > 10:
+    if angle_calculator.angle() is None:
+        continue
+    if abs(angle_calculator.angle()) > 10:  # type: ignore
         frame = ndimage.rotate(frame, angle_calculator.angle(), reshape=False)
         landmarks = get_face_landmarks_from_frame(frame)
         # might not able to detect a face after rotation
         if not landmarks.any():
             continue
-    if angle_calculator.angle() is None:
-        continue
 
     concentration_grader.detect_blink(landmarks)
     blink_detector.detect_blink(landmarks)
