@@ -22,7 +22,7 @@ from gui.popup_widget import TimeState
 
 
 # Module scope grader for all guards to share.
-CONCENT_GRADER_OF_GUARDS = ConcentrationGrader(0.23, 2, (10, 30))
+CONCENT_GRADER_OF_GUARDS = ConcentrationGrader(0.23, 2, (1, 20))
 
 def mark_face(
         canvas: ColorImage,

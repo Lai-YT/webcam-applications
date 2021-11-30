@@ -1,14 +1,25 @@
-# reference:
-#   eye aspect ratio (2016):
+# Reference:
+#   Adrian Rosebrock. Eye blink detection with OpenCV, Python, and dlib (2016)
 #   https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
 #
-#   blink rate (2017):
+#   Ali A Abusharha. Changes in blink rate and ocular symptoms during different reading tasks (2017)
 #   https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6118863/
-#   The mean ± standard deviation blink rate was 19.74 ± 9.12/min at baseline.
-#   A mean blink rate of up to 22 blinks/min has been reported under relaxed conditions.
-#   The blink rate decreased significantly under both reading conditions
-#   (to 11.35 ± 10.20 and 14.93 ± 10.90/min when reading from a book and a tablet, respectively).
-#   There was no significant difference in the blink rate over 15 min during either type of reading.
+#    Several studies have investigated the blink rate and the interval between
+#    blinks. It has been reported that the normal spontaneous blink rate is
+#    between 12 and 15/min[1]. Other studies showed that the interval between blinks
+#    ranges from 2.8 to 4 and from 2 to 10 s. A mean blink rate of up to 22 blinks/min
+#    has been reported under relaxed conditions.
+#
+#   [1] M J Doughty. Consideration of three types of spontaneous eyeblink
+#       activity in normal humans: during reading and video display terminal use,
+#       in primary gaze, and while in conversation (2010)
+#       https://pubmed.ncbi.nlm.nih.gov/11700965/#affiliation-1
+#        Spontaneous eyeblink rate, SEBR.
+#        Statistical analysis (with calculation of 95% confidence interval values)
+#        indicate that reading-SEBR should be between 1.4 and 14.4 eyeblinks/min,
+#        primary gaze-SEBR between 8.0 and 21.0 eyeblinks/min and conversational-SEBR
+#        between 10.5 and 32.5 eyeblinks/min for normal adults.
+
 
 import math
 import time
@@ -313,7 +324,7 @@ class GoodBlinkRateIntervalDetector(QObject):
                 The min and max boundary of the good blink rate (blinks per minute).
                 It's not about the average rate, so both are with type int.
                 15 ~ 25 in default. For a proper blink rate, one may refer to
-                https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6118863/
+                https://pubmed.ncbi.nlm.nih.gov/11700965/#affiliation-1
         """
         super().__init__()
         self._good_rate_range = good_rate_range

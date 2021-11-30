@@ -40,3 +40,24 @@ ConcentrationGrader configs:
 
 manual blink rate: 4.83/min
 
+ConcentrationGrader configs:
+ ratio thres  = 0.23
+ consec frame = 2
+ good range   = (15, 25)
+
+ConcentrationGrader configs:
+ ratio thres  = 0.23
+ consec frame = 2
+ good range   = (15, 25)
+
+ConcentrationGrader configs:
+ ratio thres  = 0.23
+ consec frame = 2
+ good range   = (10, 30)
+
+Creating converter from 3 to 5
+good blink rate at 2021-11-26 13:14:47 ~ 2021-11-26 13:15:46, rate = 14
+low face existence, not reliable
+body concentration is 1.00
+good concentration at 2021-11-26 13:14:47 ~ 2021-11-26 13:15:46
+

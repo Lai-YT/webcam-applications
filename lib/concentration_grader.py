@@ -44,7 +44,23 @@ class ConcentrationGrader(QObject):
             self,
             ratio_threshold: float = 0.24,
             consec_frame: int = 3,
-            good_rate_range: Tuple[int, int] = (10, 30)) -> None:
+            good_rate_range: Tuple[int, int] = (1, 20)) -> None:
+        """
+        Arguments:
+            ratio_threshold:
+                The eye aspect ratio to indicate blink. 0.24 in default.
+                It's passed to the underlaying AntiNoiseBlinkDetector.
+            consec_frame:
+                The number of consecutive frames the eye must be below the threshold
+                to indicate a blink. 3 in default.
+                It's passed to the underlaying AntiNoiseBlinkDetector.
+            good_rate_range:
+                The min and max boundary of the good blink rate (blinks per minute).
+                It's not about the average rate, so both are with type int.
+                1 ~ 20 in default. For a proper blink rate, one may refer to
+                https://pubmed.ncbi.nlm.nih.gov/11700965/#affiliation-1
+                It's passed to the underlaying GoodBlinkRateIntervalDetector.
+        """
         super().__init__()
         logging.info("ConcentrationGrader configs:")
         logging.info(f" ratio thres  = {ratio_threshold}")
