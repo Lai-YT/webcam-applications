@@ -75,7 +75,7 @@ grading_ctrl = ctrl.ControlSystem([rule1, rule2, rule3])
 grading = ctrl.ControlSystemSimulation(grading_ctrl)
 
 
-concent_grades: List[Tuple[float, str]] = []
+concent_grades: List[Tuple[float, List[str]]] = []
 for blink_rate in range(1, 21):
     for body_value in range(0, 11):
         data: List[str] = []

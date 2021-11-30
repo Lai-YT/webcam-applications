@@ -113,19 +113,18 @@ while cam.isOpened():
     # sometime the landmarks of face don't fit well when the slope of face
     # exceeds 10 degress, so rotate the frame to keep one's face straight
     angle_calculator.calculate(landmarks)
-    ratio: float
+    if angle_calculator.angle() is None:
+        continue
     if abs(angle_calculator.angle()) > 10:
         frame = ndimage.rotate(frame, angle_calculator.angle(), reshape=False)
         landmarks = get_face_landmarks_from_frame(frame)
         # might not able to detect a face after rotation
         if not landmarks.any():
             continue
-    angle_calculator.calculate(landmarks)
-    print(angle_calculator.angle())
 
     concentration_grader.detect_blink(landmarks)
     blink_detector.detect_blink(landmarks)
-    ratio = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
+    ratio: float = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
 
     frame = draw_landmarks_used_by_blink_detector(frame, landmarks)
     # display the total number of blinks on the frame along with
