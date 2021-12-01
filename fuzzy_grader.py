@@ -4,8 +4,8 @@ from skfuzzy import control as ctrl
 
 
 blink = ctrl.Antecedent(np.arange(0, 16), "blink")
-blink["good"] = fuzz.trapmf(blink.universe, [0, 5, 20, 20])
-blink["average"] = fuzz.trimf(blink.universe, [0, 0, 5])
+blink["good"] = fuzz.trapmf(blink.universe, [0, 0, 5, 10])
+blink["average"] = fuzz.trapmf(blink.universe, [5, 10, 20, 20])
 
 body = ctrl.Antecedent(np.arange(11), "body")
 body.automf(3)
@@ -29,12 +29,15 @@ def print_blink_member_func_value(blink_rate):
 
     if rate_abs <= 5:
         print("averge: 0, good: 1")
-    else:
+    elif rate_abs < 10:
         print(f"averge: {round((rate_abs - 5) * 0.2, 1)}, good: {round(1 - (rate_abs - 5) * 0.2, 1)}")
+    else:
+        print("averge: 1, good: 0")
+
 
 def print_body_member_func_value(body_concent):
     """Print the value of `poor`, `average`, and `good` section."""
-    if body_concent <= 5:
+    if body_concent < 5:
         print(f"poor: {round(1 - body_concent * 0.2, 1)}, average: {round(body_concent * 0.2, 1)}, good: 0")
     else:
         print(f"poor: 0, average: {round(1 - (body_concent - 5) * 0.2, 1)}, good: {round((body_concent - 5) * 0.2, 1)}")
@@ -42,12 +45,12 @@ def print_body_member_func_value(body_concent):
 if __name__ == "__main__":
 
     while True:
-        blink_rate = int(input("Enter blink rate (0 ~ 20): "))
+        blink_rate = int(input("Enter blink rate: "))
         print_blink_member_func_value(blink_rate)
         body_concent = int(input("Enter body concent (0 ~ 10): "))
         print_body_member_func_value(body_concent)
 
-        grading.input["blink"] = 10 - abs(blink_rate - 10)
+        grading.input["blink"] = abs(blink_rate - 10)
         grading.input["body"] = body_concent
         grading.compute()
 
