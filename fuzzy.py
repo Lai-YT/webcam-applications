@@ -8,45 +8,19 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
 
+# The membership value of blink rate (BR) is its absolute value of difference
+# between 10, the median of the good BR rate range (5, 15).
 blink = ctrl.Antecedent(np.arange(0, 16), "blink")
 # There exist no poor blink since they were filtered out by
 # ConcentrationGrader with GoodBlinkRateIntervalDetector.
-#
-# Goods:
-# We take only the blink rate (BR) between 1 and 20.
-# BR 5 ~ 15 are all considered as 1.0 good, which is achieved by a trapezoidal
-# membership. Directly maps them to the membership value (MV) 5 ~ 15.
-# Averages:
-# We have BR 10 be the center. Take the difference (DF) between center and those
-# not good, which are BR 1 ~ 4 and 16 ~ 20.
-# The possible values of DF are 6 ~ 10, 5 values in total. We map them to the
-# remaining MVs. The greater the DF is, the more average the BR is.
-# Shape them by a triangular membership function.
-
-blink["good"] = fuzz.trapmf(blink.universe, [0, 5, 20, 20])
-blink["average"] = fuzz.trimf(blink.universe, [0, 0, 5])
+blink["good"] = fuzz.trapmf(blink.universe, [0, 0, 5, 10])  # 1.0 good at 0 ~ 5
+blink["average"] = fuzz.trapmf(blink.universe, [5, 10, 20, 20])
 
 def map_blink_rate_to_membership_value(blink_rate: int) -> int:
-    """Returns the membership value of the blink rate.
+    """Returns the membership value of the blink rate."""
+    # 10 is the nedian of good BR interval.
+    return abs(blink_rate - 10)
 
-    Maps the blink rate between [1, 20] to the membership value [0, 15].
-    Arguments:
-        blink_rate: In the range [1, 20].
-    """
-    if blink_rate < 1 or blink_rate > 20:
-        raise ValueError("only blink rates between [1, 20] are in the fuzzy set")
-    # the crisp good region (MV 5 ~ 15)
-    if 5 <= blink_rate <= 15:
-        return blink_rate + 5
-    # the oblique fuzzy region (MV 0 ~ 4)
-    center: int = 10
-    # possible values: 6 ~ 10, map to 1 ~ 4
-    diff: int = abs(blink_rate - center)
-    # lower diff should map to greater value
-    return 10 - diff
-
-
-# In comparison with blink, body is a lot more simple.
 # The body concentration (BC) sent by the ConcentrationGrader is between 0 and 1,
 # maps them to the membership values (MV) through an easy function: MV = BC * 10
 # since skfuzzy does better on generating membership functions with non-floating
@@ -56,6 +30,10 @@ def map_blink_rate_to_membership_value(blink_rate: int) -> int:
 # function.
 body = ctrl.Antecedent(np.arange(11), "body")
 body.automf(3)
+
+def map_body_concent_to_membership_value(body_concent: float) -> float:
+    """Returns the membership value of the body concentration."""
+    return body_concent * 10
 
 
 grade = ctrl.Consequent(np.arange(11), "grade")
@@ -72,6 +50,13 @@ rule3 = ctrl.Rule(blink["good"] | body["good"], grade["high"])
 grading_ctrl = ctrl.ControlSystem([rule1, rule2, rule3])
 grading = ctrl.ControlSystemSimulation(grading_ctrl)
 
+def to_modified_grade(raw_grade: float) -> float:
+    """Normalizes the grade interval to [0, 1]."""
+    # Raw grade interval is (3.49, 8.14), we expand the grade interval to (0, 10)
+    # first, then normalize it.
+    modified_grade = 2.15 * (raw_grade - 3.49)
+    return modified_grade / 10
+
 
 def output_fuzzy_grades() -> None:
     concent_grades: List[Tuple[float, List[str]]] = []
@@ -86,7 +71,8 @@ def output_fuzzy_grades() -> None:
 
             grading.compute()
             concent_grade: float = round(grading.output["grade"], 2)
-            data.append(f"Concentration grade: {concent_grade}")
+            data.append(f"Concentration grade: {concent_grade} "
+                        + f"({to_modified_grade(concent_grade):.0%})")
             concent_grades.append((concent_grade, data))
 
 
@@ -99,7 +85,7 @@ def output_fuzzy_grades() -> None:
 
 
 if __name__ == "__main__":
-    if input("output fuzzy grades? (Y/N): ").lower() == "y":
+    if input("Output fuzzy grades? (Y/N): ").lower() == "y":
         output_fuzzy_grades()
 
     blink.view()
@@ -107,9 +93,10 @@ if __name__ == "__main__":
     grade.view()
     # go for a single graph check
     grading.input["blink"] = map_blink_rate_to_membership_value(int(input("blink rate: ")))
-    grading.input["body"] = float(input("body concent: ")) * 10
-    grading.compute()
-    print(f"grade: {grading.output['grade']:.2f}")
-    grade.view(sim=grading)
+    grading.input["body"] = map_body_concent_to_membership_value(float(input("body concent: ")))
 
-    input("press any key to exit")
+    grading.compute()
+    grade.view(sim=grading)
+    print(f"grade: {to_modified_grade(grading.output['grade']):.2f}")
+
+    input("(press any key to exit)")
