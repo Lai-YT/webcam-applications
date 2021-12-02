@@ -17,8 +17,8 @@ class DistanceCalculator:
     def __init__(self, landmarks: NDArray[(68, 2), Int[32]], camera_dist: float) -> None:
         """
         Arguments:
-            landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
-            camera_dist (float): Distance between face and camera when taking reference image
+            landmarks: (x, y) coordinates of the 68 face landmarks.
+            camera_dist: Distance between face and camera when taking reference image.
         """
         self._product: float = (self._get_face_width(landmarks) * camera_dist)
         self._cache: Optional[float] = None
@@ -27,7 +27,7 @@ class DistanceCalculator:
         """Returns the real life distance between face and camera.
 
         Arguments:
-            landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
+            landmarks: (x, y) coordinates of the 68 face landmarks.
         """
         distance = self._product / self._get_face_width(landmarks)
         self._cache = distance
@@ -41,7 +41,7 @@ class DistanceCalculator:
         """Returns the Euclidean distance between 2 side points of the zygomatic bone.
 
         Arguments:
-            landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
+            landmarks: (x, y) coordinates of the 68 face landmarks.
         """
         return math.dist(landmarks[1], landmarks[15])
 
@@ -51,9 +51,9 @@ def draw_landmarks_used_by_distance_calculator(canvas: ColorImage, landmarks: ND
     """Returns the canvas with 2 side points of the zygomatic bone connected by a transparent line.
 
     Arguments:
-        canvas (NDArray[(Any, Any, 3), UInt8]): The image to draw on, it'll be copied
-        landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
-        color (int, int, int): Color of the lines, magenta (255, 0, 255) in default
+        canvas: The image to draw on, it'll be copied.
+        landmarks: (x, y) coordinates of the 68 face landmarks.
+        color: Color of the lines, magenta (255, 0, 255) in default.
     """
     canvas_ = canvas.copy()
 

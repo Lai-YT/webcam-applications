@@ -58,6 +58,14 @@ def to_modified_grade(raw_grade: float) -> float:
     return modified_grade / 10
 
 
+def compute_grade(blink_rate: int, body_concent: float) -> float:
+    grading.input["blink"] = map_blink_rate_to_membership_value(blink_rate)
+    grading.input["body"] = map_body_concent_to_membership_value(body_concent)
+    grading.compute()
+
+    return to_modified_grade(grading.output["grade"])
+
+
 def output_fuzzy_grades() -> None:
     concent_grades: List[Tuple[float, List[str]]] = []
     for blink_rate in range(1, 21):
@@ -76,7 +84,7 @@ def output_fuzzy_grades() -> None:
             concent_grades.append((concent_grade, data))
 
 
-    with open("fuzzy_grades.txt", mode="w+") as f:
+    with open("../fuzzy_grades.txt", mode="w+") as f:
         f.write("***Data are sorted by concentration grade in descending order***\n---\n")
         concent_grades.sort(reverse=True, key=lambda e: e[0])
         for concent_grade, data in concent_grades:

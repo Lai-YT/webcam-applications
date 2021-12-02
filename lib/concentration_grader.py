@@ -6,6 +6,7 @@ from typing import Deque, Tuple
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
+import lib.fuzzy as fuzzy
 from lib.blink_detector import AntiNoiseBlinkDetector, GoodBlinkRateIntervalDetector
 
 
@@ -16,35 +17,60 @@ logging.basicConfig(
 )
 
 
-class FaceExistenceRateCounter:
+class FaceExistenceRateCounter(QObject):
     """Everytime a new frame is refreshed, there may exist a face or not. Count
     the existence within 1 minute and simply get the existence rate.
     """
-    def __init__(self) -> None:
+
+    s_low_existence_detected = pyqtSignal(int, int)
+
+    def __init__(self, low_existence: float = 0.66) -> None:
+        super().__init__()
+        self._low_existence = low_existence
         self._frame_times: Deque[int] = deque()
         self._face_times: Deque[int] = deque()
 
+    @property
+    def low_existence(self) -> float:
+        return self._low_existence
+
     def add_frame(self) -> None:
+        self._check_face_existence()
         self._frame_times.append(int(time.time()))
         keep_sliding_window_in_one_minute(self._frame_times)
 
     def add_face(self) -> None:
+        self._check_face_existence()
         self._face_times.append(int(time.time()))
         keep_sliding_window_in_one_minute(self._face_times)
+
+    def _check_face_existence(self) -> None:
+        """
+        Emits:
+            s_low_existence_detected
+        """
+        if (self._face_times
+                and self._face_times[-1] - self._face_times[0] > 60
+                and self.get_face_existence_rate() <= self._low_existence):
+            self.s_low_existence_detected.emit(self._face_times[0], self._face_times[-1])
+            self._face_times.clear()
 
     def get_face_existence_rate(self) -> float:
         return round(len(self._face_times) / len(self._frame_times), 2)
 
 
+# FIXME: Broken when low face existence: ZeroDivisionError occurs in get_body_concentration.
 class ConcentrationGrader(QObject):
 
-    s_concent_interval_refreshed = pyqtSignal(int, int)  # start time, end time
+    s_concent_interval_refreshed = pyqtSignal(int, int, float)  # start time, end time, grade
 
     def __init__(
             self,
             ratio_threshold: float = 0.24,
             consec_frame: int = 3,
-            good_rate_range: Tuple[int, int] = (1, 20)) -> None:
+            # 0 is to trigger grade computation on no face interval, the user may be writing.
+            good_rate_range: Tuple[int, int] = (0, 20),
+            low_existence: float = 0.66) -> None:
         """
         Arguments:
             ratio_threshold:
@@ -57,7 +83,7 @@ class ConcentrationGrader(QObject):
             good_rate_range:
                 The min and max boundary of the good blink rate (blinks per minute).
                 It's not about the average rate, so both are with type int.
-                1 ~ 20 in default. For a proper blink rate, one may refer to
+                0 ~ 20 in default. For a proper blink rate, one may refer to
                 https://pubmed.ncbi.nlm.nih.gov/11700965/#affiliation-1
                 It's passed to the underlaying GoodBlinkRateIntervalDetector.
         """
@@ -69,13 +95,14 @@ class ConcentrationGrader(QObject):
 
         self._body_concentration_times: Deque[int] = deque()
         self._body_distraction_times: Deque[int] = deque()
-
+        # TODO: BLink detection not accurate, lots of false blink.
         self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
         self._interval_detector = GoodBlinkRateIntervalDetector(good_rate_range)
-        self._face_existence_counter = FaceExistenceRateCounter()
+        self._face_existence_counter = FaceExistenceRateCounter(low_existence)
 
         self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
         self._interval_detector.s_good_interval_detected.connect(self.check_body_concentration)
+        self._face_existence_counter.s_low_existence_detected.connect(self.check_body_concentration)
 
     def get_ratio_threshold_of_blink_detector(self) -> float:
         """Returns the ratio threshold used to consider an EAR lower than it
@@ -107,32 +134,44 @@ class ConcentrationGrader(QObject):
         self._body_distraction_times.append(int(time.time()))
         keep_sliding_window_in_one_minute(self._body_distraction_times)
 
-    @pyqtSlot(int, int, int)
-    def check_body_concentration(self, start_time: int, end_time: int, blink_rate: int) -> None:
-        logging.info(f"good blink rate at {to_date_time(start_time)} ~ {to_date_time(end_time)}, rate = {blink_rate}")
-        face_existence_rate: float = self._face_existence_counter.get_face_existence_rate()
-        if face_existence_rate < 0.6:
-            logging.info("low face existence, not reliable")
+    def get_body_concentration(self, start_time: int, end_time: int) -> float:
+        """Returns the amount of body concentration over total count.
 
-        # get concentration
+        The result is rounded to two decimal places.
+        """
         concent_count: int = 0
         for concent_time in self._body_concentration_times:
             if concent_time < start_time or concent_time > end_time:
                 break
             concent_count += 1
 
-        # get concentration
         distract_count: int = 0
         for distract_time in self._body_distraction_times:
             if distract_time < start_time or distract_time > end_time:
                 break
             distract_count += 1
 
-        logging.info(f"body concentration is {concent_count / (concent_count + distract_count):.2f}")
-        # more than 66%
-        if concent_count > distract_count*2:
-            self.s_concent_interval_refreshed.emit(start_time, end_time)
-            logging.info(f"good concentration at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+        return round(concent_count / (concent_count + distract_count), 2)
+
+    @pyqtSlot(int, int)
+    @pyqtSlot(int, int, int)
+    def check_body_concentration(self, start_time: int, end_time: int, blink_rate: int = 0) -> None:
+        logging.info(f"{to_date_time(start_time)} ~ {to_date_time(end_time)}")
+        logging.info(f"blink rate = {blink_rate}")
+        body_concent: float = self.get_body_concentration(start_time, end_time)
+        logging.info(f"body concentration = {body_concent}")
+
+        face_existence_rate: float = self._face_existence_counter.get_face_existence_rate()
+        if face_existence_rate < self._face_existence_counter.low_existence:
+            logging.info("low face existence, check posture only")
+            if body_concent > 0.6:
+                self.s_concent_interval_refreshed.emit(start_time, end_time, body_concent)
+                logging.info(f"good concentration at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+        else:
+            grade: float = fuzzy.compute_grade(blink_rate, body_concent)
+            if grade >= 0.6:
+                self.s_concent_interval_refreshed.emit(start_time, end_time, grade)
+                logging.info(f"good concentration at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
         logging.info("")
 
 

@@ -46,7 +46,8 @@ class WindowController(QObject):
         self._app.s_posture_refreshed.connect(information.update_posture)
         self._app.s_time_refreshed.connect(information.update_time)
         self._app.s_brightness_refreshed.connect(information.update_brightness)
-        # self._app.s_grade_refreshed.connect(information.update_grade)
+        self._app.s_concent_interval_refreshed.connect(
+            lambda start_time, end_time, grade: information.update_grade(grade))
 
     def _connect_app_and_frame(self) -> None:
         frame = self._window.widgets["frame"]
