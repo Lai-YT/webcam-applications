@@ -22,7 +22,7 @@ class FaceExistenceRateCounter(QObject):
     the existence within 1 minute and simply get the existence rate.
     """
 
-    s_low_existence_detected = pyqtSignal(int, int)
+    s_low_existence_detected = pyqtSignal(int)
 
     def __init__(self, low_existence: float = 0.66) -> None:
         super().__init__()
@@ -39,7 +39,7 @@ class FaceExistenceRateCounter(QObject):
         time_stamp = int(time.time())
         self._frame_times.append(time_stamp)
         keep_sliding_window_in_one_minute(self._frame_times)
-        # But also the face time needs to be synced up,
+        # But also the face time needs to have the same window,
         # so we don't get the wrong value when get_face_existence_rate().
         while self._face_times and time_stamp - self._face_times[0] > 60:
             self._face_times.popleft()
@@ -65,14 +65,15 @@ class FaceExistenceRateCounter(QObject):
         if (self._frame_times
                 and self._frame_times[-1] - self._frame_times[0] > 60
                 and self.get_face_existence_rate() <= self._low_existence):
-            self.s_low_existence_detected.emit(self._frame_times[0], self._frame_times[-1])
+            self.s_low_existence_detected.emit(self._frame_times[0])
             self._frame_times.clear()
             self._face_times.clear()
 
-# FIXME: Broken when low face existence: ZeroDivisionError occurs in get_body_concentration_grade.
+# TODO: Clear the deque of frame, body and blink times only after the check_concentration() emits.
+# This is to make sure we don't miss any potential good concentration interval.
 class ConcentrationGrader(QObject):
 
-    s_concent_interval_refreshed = pyqtSignal(int, int, float)  # start time, end time, grade
+    s_concent_interval_refreshed = pyqtSignal(int, float)  # start time, grade
 
     def __init__(
             self,
@@ -105,7 +106,7 @@ class ConcentrationGrader(QObject):
 
         self._body_concentration_times: Deque[int] = deque()
         self._body_distraction_times: Deque[int] = deque()
-        # TODO: BLink detection not accurate, lots of false blink.
+        # TODO: Blink detection not accurate, lots of false blink.
         self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
         self._interval_detector = GoodBlinkRateIntervalDetector(good_rate_range)
         self._face_existence_counter = FaceExistenceRateCounter(low_existence)
@@ -132,6 +133,9 @@ class ConcentrationGrader(QObject):
 
     def add_frame(self) -> None:
         self._face_existence_counter.add_frame()
+        # Basicly, add_frame() is called every frame,
+        # so call method which should be called manually together.
+        self._interval_detector.check_blink_rate()
 
     def add_face(self) -> None:
         self._face_existence_counter.add_face()
@@ -144,44 +148,40 @@ class ConcentrationGrader(QObject):
         self._body_distraction_times.append(int(time.time()))
         keep_sliding_window_in_one_minute(self._body_distraction_times)
 
-    def get_body_concentration_grade(self, start_time: int, end_time: int) -> float:
+    def get_body_concentration_grade(self, start_time: int) -> float:
         """Returns the amount of body concentration over total count.
 
         The result is rounded to two decimal places.
         """
-        # Iterate through the entire deque causes more time;
-        # count all then remove out-of-ranges to provide slightly better efficiency.
-        concent_count: int = len(self._body_concentration_times)
-        for concent_time in self._body_concentration_times:
-            if concent_time > start_time:
-                break
-            concent_count -= 1
-        for concent_time in reversed(self._body_concentration_times):
-            if concent_time < end_time:
-                break
-            concent_count -= 1
+        end_time: int = start_time + 60
+        def count_time_in_interval(times: Deque[int]) -> int:
+            # Iterate through the entire deque causes more time;
+            # count all then remove out-of-ranges to provide slightly better efficiency.
+            count: int = len(times)
+            for t in times:
+                if t > start_time:
+                    break
+                    count -= 1
+            for t in reversed(times):
+                if t < end_time:
+                    break
+                    count -= 1
+            return count
 
-        distract_count: int = len(self._body_distraction_times)
-        for distract_time in self._body_distraction_times:
-            if distract_time > start_time:
-                break
-            distract_count -= 1
-        for distract_time in reversed(self._body_distraction_times):
-            if distract_time < end_time:
-                break
-            distract_count -= 1
+        concent_count: int = count_time_in_interval(self._body_concentration_times)
+        distract_count: int = count_time_in_interval(self._body_distraction_times)
 
         return round(concent_count / (concent_count + distract_count), 2)
 
+    @pyqtSlot(int)
     @pyqtSlot(int, int)
-    @pyqtSlot(int, int, int)
     def check_concentration(
             self,
             start_time: int,
-            end_time: int,
             blink_rate: Optional[int] = None) -> None:
-        logging.info(f"check at {to_date_time(start_time)} ~ {to_date_time(end_time)}, {blink_rate}")
-        body_concent: float = self.get_body_concentration_grade(start_time, end_time)
+        end_time: int = start_time + 60
+        logging.info(f"check at {to_date_time(start_time)} ~ {to_date_time(end_time)}", blink_rate)
+        body_concent: float = self.get_body_concentration_grade(start_time)
         logging.info(f"body concentration = {body_concent}")
 
         grade: float
@@ -193,7 +193,7 @@ class ConcentrationGrader(QObject):
             grade = fuzzy.compute_grade(blink_rate, body_concent)
 
         if grade >= 0.6:
-            self.s_concent_interval_refreshed.emit(start_time, end_time, grade)
+            self.s_concent_interval_refreshed.emit(start_time, grade)
             logging.info(f"good concentration: {grade}")
         else:
             logging.info(f"{grade}, not concentrating")

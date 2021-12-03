@@ -47,7 +47,7 @@ class WebcamApplication(QObject):
             Sends the new brightness value.
         s_concent_interval_refreshed:
             Emits everytime a new grade is published.
-            Sends the new concentration grade.
+            Sends start time of the interval and the grade.
         s_frame_refreshed:
             Emits every time a new frame is captured.
             Sends the new frame.
@@ -63,7 +63,7 @@ class WebcamApplication(QObject):
     s_time_refreshed = pyqtSignal(int, TimeState)
     s_posture_refreshed = pyqtSignal(PostureLabel, str)
     s_brightness_refreshed = pyqtSignal(int)
-    s_concent_interval_refreshed = pyqtSignal(int, int, float)
+    s_concent_interval_refreshed = pyqtSignal(int, float)
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 
