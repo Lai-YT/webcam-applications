@@ -161,11 +161,11 @@ class ConcentrationGrader(QObject):
             for t in times:
                 if t > start_time:
                     break
-                    count -= 1
+                count -= 1
             for t in reversed(times):
                 if t < end_time:
                     break
-                    count -= 1
+                count -= 1
             return count
 
         concent_count: int = count_time_in_interval(self._body_concentration_times)
