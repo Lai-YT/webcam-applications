@@ -275,12 +275,6 @@ class TimeGuard(QObject):
             # The time of the normal timer is to be shown.
             self._time_shower.update_time(timer.time())
             self.s_time_refreshed.emit(timer.time(), TimeState.WORK)
-            # Timer is paused if there's no face, which is considered to be a distraction.
-            # Not count during break time.
-            if timer.is_paused():
-                CONCENT_GRADER_OF_GUARDS.add_body_distraction()
-            else:
-                CONCENT_GRADER_OF_GUARDS.add_body_concentration()
         else:
             self._take_break()
 
