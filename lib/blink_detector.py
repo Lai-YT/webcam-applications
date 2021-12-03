@@ -33,6 +33,7 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from imutils import face_utils
 from nptyping import Int, NDArray
 
+import lib.sliding_window as sliding_window
 from lib.color import BGR, GREEN
 from lib.image_type import ColorImage
 
@@ -301,7 +302,7 @@ class AntiNoiseBlinkDetector(QObject):
             self._consec_count = 0
 
 
-class GoodBlinkRateIntervalDetector(QObject):
+class GoodBlinkRateIntervalDetector(sliding_window.SlidingWindowHandler):
     """Detects whether the blink rate is in the good rate range or not.
 
     The number of blinks per minute is the blink rate, which is an integer here
@@ -347,20 +348,15 @@ class GoodBlinkRateIntervalDetector(QObject):
         # The deque "blink times" always contains the blinks within this very minute.
         # When the time length invloved by current and the earliest time, that
         # means it's time to check whether this very minute is a good interval or not.
-        # If it is, emit the signal to tell there's a good interval and remove
-        # the blink records of that minute; if not, pop out the oldest blink
-        # record until the deque only contains blinks within one minute again.
+        # If it is, emit the signal to tell there's a good interval.
+        # Also, pop out the oldest blink record until the deque only contains
+        # blinks within one minute again.
         current_time = int(time.time())
         if self._blink_times and (current_time - self._blink_times[0]) > 60:
             blink_rate: int = len(self._blink_times)
             if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
                 self.s_good_interval_detected.emit(self._blink_times[0], blink_rate)
-                self._blink_times.clear()
-            else:
-                # can't be a good interval, forward the window
-                while (self._blink_times
-                        and (current_time - self._blink_times[0]) > 60):
-                    self._blink_times.popleft()
+            sliding_window.keep_sliding_window_in_one_minute(self._blink_times, current_time)
 
     def add_blink(self) -> None:
         """Adds a new time of blink and checks whether there's a good interval.
@@ -372,3 +368,6 @@ class GoodBlinkRateIntervalDetector(QObject):
         """
         self._blink_times.append(int(time.time()))
         self.check_blink_rate()
+
+    def clear_windows(self) -> None:
+        self._blink_times.clear()

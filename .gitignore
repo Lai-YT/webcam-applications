@@ -11,6 +11,7 @@ venv/
 *.mp4
 *.jpg
 *.png
+*.log
 
 # message
 !warning.jpg

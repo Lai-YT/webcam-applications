@@ -7,6 +7,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
 import lib.fuzzy as fuzzy
+import lib.sliding_window as sliding_window
 from lib.blink_detector import AntiNoiseBlinkDetector, GoodBlinkRateIntervalDetector
 
 
@@ -17,7 +18,7 @@ logging.basicConfig(
 )
 
 
-class FaceExistenceRateCounter(QObject):
+class FaceExistenceRateCounter(sliding_window.SlidingWindowHandler):
     """Everytime a new frame is refreshed, there may exist a face or not. Count
     the existence within 1 minute and simply get the existence rate.
     """
@@ -36,24 +37,27 @@ class FaceExistenceRateCounter(QObject):
 
     def add_frame(self) -> None:
         self._check_face_existence()
-        time_stamp = int(time.time())
-        self._frame_times.append(time_stamp)
-        keep_sliding_window_in_one_minute(self._frame_times)
+        current_time = int(time.time())
+        self._frame_times.append(current_time)
+        sliding_window.keep_sliding_window_in_one_minute(self._frame_times)
         # But also the face time needs to have the same window,
         # so we don't get the wrong value when get_face_existence_rate().
-        while self._face_times and time_stamp - self._face_times[0] > 60:
-            self._face_times.popleft()
+        sliding_window.keep_sliding_window_in_one_minute(self._face_times, current_time)
 
     def add_face(self) -> None:
         self._check_face_existence()
         time_stamp = int(time.time())
         self._face_times.append(time_stamp)
-        keep_sliding_window_in_one_minute(self._face_times)
+        sliding_window.keep_sliding_window_in_one_minute(self._face_times)
         # An add face should always be with an add frame,
         # so we don't need extra synchronization.
 
     def get_face_existence_rate(self) -> float:
         return round(len(self._face_times) / len(self._frame_times), 2)
+
+    def clear_windows(self) -> None:
+        self._frame_times.clear()
+        self._face_times.clear()
 
     def _check_face_existence(self) -> None:
         """
@@ -66,12 +70,9 @@ class FaceExistenceRateCounter(QObject):
                 and self._frame_times[-1] - self._frame_times[0] > 60
                 and self.get_face_existence_rate() <= self._low_existence):
             self.s_low_existence_detected.emit(self._frame_times[0])
-            self._frame_times.clear()
-            self._face_times.clear()
 
-# TODO: Clear the deque of frame, body and blink times only after the check_concentration() emits.
-# This is to make sure we don't miss any potential good concentration interval.
-class ConcentrationGrader(QObject):
+
+class ConcentrationGrader(sliding_window.SlidingWindowHandler):
 
     s_concent_interval_refreshed = pyqtSignal(int, float)  # start time, grade
 
@@ -114,6 +115,9 @@ class ConcentrationGrader(QObject):
         self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
         self._interval_detector.s_good_interval_detected.connect(self.check_concentration)
         self._face_existence_counter.s_low_existence_detected.connect(self.check_concentration)
+        # Clear the deque of frame, body and blink times only after the check_concentration() emits.
+        # This is to make sure we don't miss any potential good concentration interval.
+        self.s_concent_interval_refreshed.connect(self.clear_windows)
 
     def get_ratio_threshold_of_blink_detector(self) -> float:
         """Returns the ratio threshold used to consider an EAR lower than it
@@ -142,11 +146,11 @@ class ConcentrationGrader(QObject):
 
     def add_body_concentration(self) -> None:
         self._body_concentration_times.append(int(time.time()))
-        keep_sliding_window_in_one_minute(self._body_concentration_times)
+        sliding_window.keep_sliding_window_in_one_minute(self._body_concentration_times)
 
     def add_body_distraction(self) -> None:
         self._body_distraction_times.append(int(time.time()))
-        keep_sliding_window_in_one_minute(self._body_distraction_times)
+        sliding_window.keep_sliding_window_in_one_minute(self._body_distraction_times)
 
     def get_body_concentration_grade(self, start_time: int) -> float:
         """Returns the amount of body concentration over total count.
@@ -180,7 +184,7 @@ class ConcentrationGrader(QObject):
             start_time: int,
             blink_rate: Optional[int] = None) -> None:
         end_time: int = start_time + 60
-        logging.info(f"check at {to_date_time(start_time)} ~ {to_date_time(end_time)}", blink_rate)
+        logging.info(f"check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
         body_concent: float = self.get_body_concentration_grade(start_time)
         logging.info(f"body concentration = {body_concent}")
 
@@ -199,15 +203,12 @@ class ConcentrationGrader(QObject):
             logging.info(f"{grade}, not concentrating")
         logging.info("")  # separation
 
-
-def keep_sliding_window_in_one_minute(window: Deque[int]) -> None:
-    """Compares the earliest and latest time stamp in the window, keep them within a minute.
-
-    Arguments:
-        window: The time stamps. Should be sorted in ascending order with respect to time.
-    """
-    while window and window[-1] - window[0] > 60:
-        window.popleft()
+    @pyqtSlot()
+    def clear_windows(self) -> None:
+        self._body_distraction_times.clear()
+        self._body_concentration_times.clear()
+        self._interval_detector.clear_windows()
+        self._face_existence_counter.clear_windows()
 
 
 def to_date_time(epoch_time: int) -> str:
