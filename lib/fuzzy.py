@@ -51,11 +51,16 @@ grading_ctrl = ctrl.ControlSystem([rule1, rule2, rule3])
 grading = ctrl.ControlSystemSimulation(grading_ctrl)
 
 def to_modified_grade(raw_grade: float) -> float:
-    """Normalizes the grade interval to [0, 1]."""
+    """Normalizes the grade interval to [0, 1].
+
+    Modified grade is rounded to two decimal places.
+    Arguments:
+        raw_grade: The unmodified grade in [3.49, 8.14].
+    """
     # Raw grade interval is (3.49, 8.14), we expand the grade interval to (0, 10)
     # first, then normalize it.
     modified_grade = 2.15 * (raw_grade - 3.49)
-    return modified_grade / 10
+    return round(modified_grade / 10, 2)
 
 
 def compute_grade(blink_rate: int, body_concent: float) -> float:

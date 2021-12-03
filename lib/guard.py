@@ -159,6 +159,7 @@ class DistanceGuard(QObject):
         self.s_distance_refreshed.emit(distance, state)
 
         # The grading part.
+        # TODO: Should too far but not too close be considered as distraction?
         if distance < self._warn_dist:
             # Too close is considered to be a distraction.
             CONCENT_GRADER_OF_GUARDS.add_body_distraction()
