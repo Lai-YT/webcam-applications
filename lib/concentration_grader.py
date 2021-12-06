@@ -6,7 +6,7 @@ from typing import Deque, Optional, Tuple
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
-import lib.fuzzy as fuzzy
+import fuzzy.fuzzy as fuzzy
 import lib.sliding_window as sliding_window
 from lib.blink_detector import AntiNoiseBlinkDetector, GoodBlinkRateIntervalDetector
 

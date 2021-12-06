@@ -70,31 +70,27 @@ def compute_grade(blink_rate: int, body_concent: float) -> float:
 
     return to_modified_grade(grading.output["grade"])
 
-
 def output_fuzzy_grades() -> None:
-    concent_grades: List[Tuple[float, List[str]]] = []
+    # grade, blink rate, body concent
+    concent_grades: List[Tuple[float, int, float]] = []
     for blink_rate in range(1, 21):
         for body_value in range(0, 11):
-            data: List[str] = []
             blink_value: int = map_blink_rate_to_membership_value(blink_rate)
-            data.append(f"blink rate   = {blink_rate}, (blink value = {blink_value})")
             grading.input["blink"] = blink_value
-            data.append(f"body concent = {body_value/10}, (body value = {body_value})")
             grading.input["body"] = body_value
-
             grading.compute()
-            concent_grade: float = round(grading.output["grade"], 2)
-            data.append(f"Concentration grade: {concent_grade} "
-                        + f"({to_modified_grade(concent_grade):.0%})")
-            concent_grades.append((concent_grade, data))
+
+            concent_grades.append(
+                (to_modified_grade(grading.output["grade"]), blink_rate, body_value/10)
+            )
 
 
-    with open("../fuzzy_grades.txt", mode="w+") as f:
-        f.write("***Data are sorted by concentration grade in descending order***\n---\n")
-        concent_grades.sort(reverse=True, key=lambda e: e[0])
-        for concent_grade, data in concent_grades:
-            f.write("\n".join(data))
-            f.write("\n---\n")
+    with open("fuzzy_grades.txt", mode="w+") as f:
+        for grade, blink, body in concent_grades:
+            f.write(f"{blink}\n"
+                    + f"{body}\n"
+                    + f"{grade}\n"
+                    + "---\n")
 
 
 if __name__ == "__main__":
