@@ -11,13 +11,16 @@ if __name__ == "__main__":
 
     grades = parse.parse_grades("fuzzy_grades.txt")
 
-    titles = [[i/10] for i in range(11)]
-    titles.insert(0, [None] + [i for i in range(1, 21)])
+    titles = [
+        [None] + [i for i in range(22)],
+        *([i/10] for i in range(11))
+    ]
+
     for row in titles:
         sheet.append(row)
 
     for grade in grades:
-        row = chr(grade.blink + 65)
+        row = chr(grade.blink + 66)
         col = str(int(grade.body * 10 + 2))
         sheet[row + col] = grade.grade
 

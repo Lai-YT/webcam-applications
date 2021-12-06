@@ -8,18 +8,16 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
 
-# The membership value of blink rate (BR) is its absolute value of difference
-# between 10, the median of the good BR rate range (5, 15).
-blink = ctrl.Antecedent(np.arange(0, 16), "blink")
-# There exist no poor blink since they were filtered out by
-# ConcentrationGrader with GoodBlinkRateIntervalDetector.
-blink["good"] = fuzz.trapmf(blink.universe, [0, 0, 5, 10])  # 1.0 good at 0 ~ 5
-blink["average"] = fuzz.trapmf(blink.universe, [5, 10, 20, 20])
+blink = ctrl.Antecedent(np.arange(22), "blink")
+blink["good"] = fuzz.trapmf(blink.universe, [0, 0, 8, 15])
+blink["average"] = fuzz.trimf(blink.universe, [8, 15, 21])
+blink["poor"] = fuzz.trimf(blink.universe, [15, 21, 21])
+
 
 def map_blink_rate_to_membership_value(blink_rate: int) -> int:
     """Returns the membership value of the blink rate."""
-    # 10 is the nedian of good BR interval.
-    return abs(blink_rate - 10)
+    # there equivalent
+    return blink_rate
 
 # The body concentration (BC) sent by the ConcentrationGrader is between 0 and 1,
 # maps them to the membership values (MV) through an easy function: MV = BC * 10
@@ -43,8 +41,8 @@ grade["medium"] = fuzz.trimf(grade.universe, [0, 5, 8])
 grade["low"] = fuzz.trimf(grade.universe, [0, 0, 5])
 
 
-rule1 = ctrl.Rule(body["poor"], grade["low"])
-rule2 = ctrl.Rule(blink["average"] | body["average"], grade["medium"])
+rule1 = ctrl.Rule(body["poor"] | blink["poor"], grade["low"])
+rule2 = ctrl.Rule(blink["average"], grade["medium"])
 rule3 = ctrl.Rule(blink["good"] | body["good"], grade["high"])
 
 grading_ctrl = ctrl.ControlSystem([rule1, rule2, rule3])
@@ -57,9 +55,9 @@ def to_modified_grade(raw_grade: float) -> float:
     Arguments:
         raw_grade: The unmodified grade in [3.49, 8.14].
     """
-    # Raw grade interval is (3.49, 8.14), we expand the grade interval to (0, 10)
+    # Raw grade interval is (1.67, 8.14), we expand the grade interval to (0, 10)
     # first, then normalize it.
-    modified_grade = 2.15 * (raw_grade - 3.49)
+    modified_grade = 1.55 * (raw_grade - 1.67)
     return round(modified_grade / 10, 2)
 
 
@@ -73,7 +71,7 @@ def compute_grade(blink_rate: int, body_concent: float) -> float:
 def output_fuzzy_grades() -> None:
     # grade, blink rate, body concent
     concent_grades: List[Tuple[float, int, float]] = []
-    for blink_rate in range(1, 21):
+    for blink_rate in range(22):
         for body_value in range(0, 11):
             blink_value: int = map_blink_rate_to_membership_value(blink_rate)
             grading.input["blink"] = blink_value
@@ -106,6 +104,8 @@ if __name__ == "__main__":
 
     grading.compute()
     grade.view(sim=grading)
-    print(f"grade: {to_modified_grade(grading.output['grade']):.2f}")
+    raw_grade = round(grading.output["grade"], 2)
+    print(f"raw_grade: {raw_grade}")
+    print(f"grade: {to_modified_grade(raw_grade):.2f}")
 
     input("(press any key to exit)")

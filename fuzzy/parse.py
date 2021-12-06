@@ -16,7 +16,7 @@ def parse_grades(filename: str) -> List[Grade]:
     grades = []
     with open("fuzzy_grades.txt", mode="r") as f:
         data = [0, 0.0, 0.0]
-        type = [int, float, float]
+        types = [int, float, float]
         pos = 0
         for line in f:
             line = line.strip()
@@ -24,6 +24,6 @@ def parse_grades(filename: str) -> List[Grade]:
                 grades.append(Grade(data[BLINK], data[BODY], data[GRADE]))
                 pos = 0
                 continue
-            data[pos] = type[pos](line)
+            data[pos] = types[pos](line)
             pos += 1
     return grades
