@@ -13,8 +13,12 @@ def is_separator(line: str) -> bool:
     return line.startswith(SEPARATOR)
 
 def parse_grades(filename: str) -> List[Grade]:
+    """Parse lines in designated file into tuples of grades."""
+    # View a tuple as a grade and store all grades in a list.
     grades = []
-    with open("fuzzy_grades.txt", mode="r") as f:
+    with open(filename, mode="r") as f:
+        # Each tuple has three arguments: 
+        # blink rate(int), body concent(float), normalized grade(float).
         data = [0, 0.0, 0.0]
         types = [int, float, float]
         pos = 0

@@ -41,7 +41,7 @@ grade["medium"] = fuzz.trimf(grade.universe, [0, 5, 8])
 grade["low"] = fuzz.trimf(grade.universe, [0, 0, 5])
 
 
-rule1 = ctrl.Rule(body["poor"] | blink["poor"], grade["low"])
+rule1 = ctrl.Rule(blink["poor"] | body["poor"], grade["low"])
 rule2 = ctrl.Rule(blink["average"], grade["medium"])
 rule3 = ctrl.Rule(blink["good"] | body["good"], grade["high"])
 

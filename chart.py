@@ -1,7 +1,6 @@
 import copy
 import openpyxl
 
-import fuzzy.classes as classes
 import fuzzy.parse as parse
 
 
@@ -24,26 +23,29 @@ if __name__ == "__main__":
         col = str(int(grade.body * 10 + 2))
         sheet[row + col] = grade.grade
 
-
+    # Contour chart
     contour = openpyxl.chart.SurfaceChart()
-    data = openpyxl.chart.Reference(sheet, min_col=2, max_col=21, min_row=1, max_row=12)
+    data = openpyxl.chart.Reference(sheet, min_col=2, max_col=23, min_row=1, max_row=12)
     labels = openpyxl.chart.Reference(sheet, min_col=1, min_row=2, max_row=12)
     contour.add_data(data, titles_from_data=True)
     contour.set_categories(labels)
     contour.title = "Contour"
     sheet.add_chart(contour, "A15")
 
+    # 2D Wireframe chart
     wire_frame = copy.deepcopy(contour)
     wire_frame.wireframe = True
     wire_frame.title = "2D Wireframe"
     sheet.add_chart(wire_frame, "L15")
 
+    # Surface chart
     surface = openpyxl.chart.SurfaceChart3D()
     surface.add_data(data, titles_from_data=True)
     surface.set_categories(labels)
     surface.title = "Surface"
     sheet.add_chart(surface, "A31")
 
+    # 3D Wireframe chart
     wire_frame_3d = copy.deepcopy(surface)
     wire_frame_3d.wireframe = True
     wire_frame_3d.title = "3D Wireframe"
