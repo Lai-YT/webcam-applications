@@ -5,7 +5,7 @@ import fuzzy.grader as grader
 import fuzzy.parse as parse
 
 
-def output_fuzzy_grades() -> None:
+def output_grade_text() -> None:
     fuzzy_grader = grader.FuzzyGrader()
     # grade, blink rate, body concent
     concent_grades: List[Tuple[float, int, float]] = []
@@ -22,7 +22,7 @@ def output_fuzzy_grades() -> None:
                     + "---\n")
 
 
-def output_grade_charts() -> None:
+def output_grade_spreadsheet() -> None:
     workbook = openpyxl.Workbook()
     sheet = workbook.active
 
@@ -40,6 +40,13 @@ def output_grade_charts() -> None:
         row = chr(grade.blink + 66)
         col = str(int(grade.body * 10 + 2))
         sheet[row + col] = grade.grade
+
+    workbook.save(filename="fuzzy_grades.xlsx")
+
+
+def output_grade_chart() -> None:
+    workbook = openpyxl.load_workbook(filename="fuzzy_grades.xlsx")
+    sheet = workbook.active
 
     # Contour chart
     contour = openpyxl.chart.SurfaceChart()
@@ -69,10 +76,10 @@ def output_grade_charts() -> None:
     wire_frame_3d.title = "3D Wireframe"
     sheet.add_chart(wire_frame_3d, "L31")
 
-
     workbook.save(filename="fuzzy_grades.xlsx")
 
 
 if __name__ == "__main__":
-    output_fuzzy_grades()
-    output_grade_charts()
+    output_grade_text()
+    output_grade_spreadsheet()
+    output_grade_chart()
