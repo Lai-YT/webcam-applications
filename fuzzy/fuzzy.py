@@ -48,17 +48,17 @@ rule3 = ctrl.Rule(blink["good"] | body["good"], grade["high"])
 grading_ctrl = ctrl.ControlSystem([rule1, rule2, rule3])
 grading = ctrl.ControlSystemSimulation(grading_ctrl)
 
-def to_modified_grade(raw_grade: float) -> float:
+def to_normalized_grade(raw_grade: float) -> float:
     """Normalizes the grade interval to [0, 1].
 
-    Modified grade is rounded to two decimal places.
+    Normalized grade is rounded to two decimal places.
     Arguments:
-        raw_grade: The unmodified grade in [3.49, 8.14].
+        raw_grade: The unnormalized grade in [3.49, 8.14].
     """
     # Raw grade interval is (1.67, 8.14), we expand the grade interval to (0, 10)
     # first, then normalize it.
-    modified_grade = 1.55 * (raw_grade - 1.67)
-    return round(modified_grade / 10, 2)
+    normalized_grade = 1.55 * (raw_grade - 1.67)
+    return round(normalized_grade / 10, 2)
 
 
 def compute_grade(blink_rate: int, body_concent: float) -> float:
@@ -66,20 +66,20 @@ def compute_grade(blink_rate: int, body_concent: float) -> float:
     grading.input["body"] = map_body_concent_to_membership_value(body_concent)
     grading.compute()
 
-    return to_modified_grade(grading.output["grade"])
+    return to_normalized_grade(grading.output["grade"])
 
 def output_fuzzy_grades() -> None:
     # grade, blink rate, body concent
     concent_grades: List[Tuple[float, int, float]] = []
     for blink_rate in range(22):
-        for body_value in range(0, 11):
+        for body_value in range(11):
             blink_value: int = map_blink_rate_to_membership_value(blink_rate)
             grading.input["blink"] = blink_value
             grading.input["body"] = body_value
             grading.compute()
 
             concent_grades.append(
-                (to_modified_grade(grading.output["grade"]), blink_rate, body_value/10)
+                (to_normalized_grade(grading.output["grade"]), blink_rate, body_value/10)
             )
 
 
@@ -92,12 +92,13 @@ def output_fuzzy_grades() -> None:
 
 
 if __name__ == "__main__":
-    if input("Output fuzzy grades? (Y/N): ").lower() == "y":
-        output_fuzzy_grades()
+    # if input("Output fuzzy grades? (Y/N): ").lower() == "y":
+        # output_fuzzy_grades()
 
-    blink.view()
-    body.view()
-    grade.view()
+    # blink.view()
+    # body.view()
+    # grade.view()
+
     # go for a single graph check
     grading.input["blink"] = map_blink_rate_to_membership_value(int(input("blink rate: ")))
     grading.input["body"] = map_body_concent_to_membership_value(float(input("body concent: ")))
@@ -106,6 +107,6 @@ if __name__ == "__main__":
     grade.view(sim=grading)
     raw_grade = round(grading.output["grade"], 2)
     print(f"raw_grade: {raw_grade}")
-    print(f"grade: {to_modified_grade(raw_grade):.2f}")
+    print(f"grade: {to_normalized_grade(raw_grade):.2f}")
 
     input("(press any key to exit)")
