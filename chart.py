@@ -1,10 +1,28 @@
 import copy
 import openpyxl
 
+import fuzzy.grader as grader
 import fuzzy.parse as parse
 
 
-if __name__ == "__main__":
+def output_fuzzy_grades() -> None:
+    fuzzy_grader = grader.FuzzyGrader()
+    # grade, blink rate, body concent
+    concent_grades: List[Tuple[float, int, float]] = []
+    for blink_rate in range(22):
+        for body_concent in (round(0.1 * i, 1) for i in range(11)):
+            grade = fuzzy_grader.compute_grade(blink_rate, body_concent)
+            concent_grades.append((grade, blink_rate, body_concent))
+
+    with open("fuzzy_grades.txt", mode="w+") as f:
+        for grade, blink, body in concent_grades:
+            f.write(f"{blink}\n"
+                    + f"{body}\n"
+                    + f"{grade}\n"
+                    + "---\n")
+
+
+def output_grade_charts() -> None:
     workbook = openpyxl.Workbook()
     sheet = workbook.active
 
@@ -53,3 +71,8 @@ if __name__ == "__main__":
 
 
     workbook.save(filename="fuzzy_grades.xlsx")
+
+
+if __name__ == "__main__":
+    output_fuzzy_grades()
+    output_grade_charts()

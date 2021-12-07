@@ -6,8 +6,8 @@ from typing import Deque, Optional, Tuple
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
-import fuzzy.fuzzy as fuzzy
 import lib.sliding_window as sliding_window
+from fuzzy.grader import FuzzyGrader
 from lib.blink_detector import AntiNoiseBlinkDetector, GoodBlinkRateIntervalDetector
 
 
@@ -111,6 +111,7 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
         self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
         self._interval_detector = GoodBlinkRateIntervalDetector(good_rate_range)
         self._face_existence_counter = FaceExistenceRateCounter(low_existence)
+        self._fuzzy_grader = FuzzyGrader()
 
         self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
         self._interval_detector.s_good_interval_detected.connect(self.check_concentration)
@@ -194,10 +195,11 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
             grade = body_concent
         else:
             logging.info(f"blink rate = {blink_rate}")
-            grade = fuzzy.compute_grade(blink_rate, body_concent)
+            grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
 
         if grade >= 0.6:
             self.s_concent_interval_refreshed.emit(start_time, grade)
+            self.clear_windows()
             logging.info(f"good concentration: {grade}")
         else:
             logging.info(f"{grade}, not concentrating")
