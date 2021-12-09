@@ -14,6 +14,7 @@ class Timer:
 
     def start(self) -> None:
         """Start counting.
+
         No effects when the Timer is already started and not paused.
         """
         if self.is_paused():
@@ -24,6 +25,7 @@ class Timer:
 
     def pause(self) -> None:
         """Stop the time count.
+        
         No effects when the Timer is already paused.
         """
         if not self.is_paused():

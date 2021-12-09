@@ -21,11 +21,21 @@ logging.basicConfig(
 class FaceExistenceRateCounter(sliding_window.SlidingWindowHandler):
     """Everytime a new frame is refreshed, there may exist a face or not. Count
     the existence within 1 minute and simply get the existence rate.
+
+    Signals:
+        s_low_existence_detected:
+            Emits when face existence is low and sends the face existence ratio.
     """
 
     s_low_existence_detected = pyqtSignal(int)
 
     def __init__(self, low_existence: float = 0.66) -> None:
+        """
+        Arguments:
+            low_existence:
+                Ratio of face over frame lower then this indicates a low face
+                existence. 0.66 (2/3) in default.
+        """
         super().__init__()
         self._low_existence = low_existence
         self._frame_times: Deque[int] = deque()
@@ -33,36 +43,64 @@ class FaceExistenceRateCounter(sliding_window.SlidingWindowHandler):
 
     @property
     def low_existence(self) -> float:
+        """Returns the threshold rate of low face existence."""
         return self._low_existence
 
     def add_frame(self) -> None:
-        self._check_face_existence()
+        """Adds a frame count and detects whether face existence is low.
+
+        Emits:
+            s_low_existence_detected:
+                Emits when face existence is low and sends the face existence rate.
+        """
         current_time = int(time.time())
         self._frame_times.append(current_time)
+        self._check_face_existence()
+        # Keep window after checking, otherwise low face existence is never detected.
         sliding_window.keep_sliding_window_in_one_minute(self._frame_times)
         # But also the face time needs to have the same window,
         # so we don't get the wrong value when get_face_existence_rate().
         sliding_window.keep_sliding_window_in_one_minute(self._face_times, current_time)
 
     def add_face(self) -> None:
-        self._check_face_existence()
+        """Adds a face count and detects whether face existence is low.
+
+        Notice that this method should always be called with an add_frame().
+        Emits:
+            s_low_existence_detected:
+                Emits when face existence is low and sends the face existence rate.
+        """
         time_stamp = int(time.time())
         self._face_times.append(time_stamp)
+        self._check_face_existence()
         sliding_window.keep_sliding_window_in_one_minute(self._face_times)
         # An add face should always be with an add frame,
         # so we don't need extra synchronization.
 
     def get_face_existence_rate(self) -> float:
+        """Returns the face existence rate of the minute.
+
+        The rate is rounded to two decimal places.
+        """
         return round(len(self._face_times) / len(self._frame_times), 2)
 
     def clear_windows(self) -> None:
-        self._frame_times.clear()
+        """Clears the time of face and frames in the past 1 minute.
+
+        Call this method manually after a low face existing is detected so the
+        faces won't be counted twice and used in the next interval.
+        """
         self._face_times.clear()
+        self._frame_times.clear()
 
     def _check_face_existence(self) -> None:
-        """
+        """Checks whether the face existence is low.
+
+        Note that this method doesn't maintain the sliding window and is
+        automatically called by add_face() and add_frame().
         Emits:
-            s_low_existence_detected
+            s_low_existence_detected:
+                Emits when face existence is low and sends the face existence rate.
         """
         # Frame time is added every frame but face isn't,
         # so is used as the prerequisite for face existence check.

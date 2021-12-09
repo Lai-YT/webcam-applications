@@ -370,4 +370,9 @@ class GoodBlinkRateIntervalDetector(sliding_window.SlidingWindowHandler):
         self.check_blink_rate()
 
     def clear_windows(self) -> None:
+        """Clears the time of blinks in the past 1 minute.
+
+        Call this method manually after a good interval is detected so the blinks
+        won't be counted twice and used in the next interval.
+        """
         self._blink_times.clear()
