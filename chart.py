@@ -1,6 +1,6 @@
 import copy
 import openpyxl
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 
 import fuzzy.grader as grader
@@ -43,7 +43,7 @@ def output_grade_spreadsheet(text_file: str, spreadsheet_file: str) -> None:
 
     grades = parse.parse_grades(text_file)
 
-    titles: List[[Union[int, float, None]]] = [
+    titles: List[Union[int, float, None]] = [
         [None] + [i for i in range(22)],
         *([i/10] for i in range(11))
     ]

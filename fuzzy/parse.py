@@ -35,17 +35,21 @@ def parse_grades(filename: str) -> List[Grade]:
     grades: List[Grade] = []
     with open(filename, mode="r") as f:
         # blink rate (int), body concent (float), normalized grade (float)
-        data: List[Union[int, float]] = [0, 0.0, 0.0]
-        types: Callable[[str], Union[int, float]] = [int, float, float]
+        # They're first stored as str and converted to their corresponding
+        # type later.
+        data: List[str] = ["", "", ""]
+        types: List[Callable[[str], Union[int, float]]] = [int, float, float]
         # pos is to record the current parsing data
         pos: int = 0
         line: str
         for line in f:
             line = line.strip()
             if is_separator(line):
-                grades.append(Grade(data[BLINK], data[BODY], data[GRADE]))
+                grades.append(Grade(types[BLINK](data[BLINK]),
+                                    types[BODY](data[BODY]),
+                                    types[GRADE](data[GRADE])))
                 pos = 0
                 continue
-            data[pos] = types[pos](line)
+            data[pos] = line
             pos += 1
     return grades
