@@ -1,6 +1,6 @@
 import copy
 import openpyxl
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 
 import fuzzy.grader as grader
