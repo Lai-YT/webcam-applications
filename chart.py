@@ -43,17 +43,18 @@ def output_grade_spreadsheet(text_file: str, spreadsheet_file: str) -> None:
 
     grades = parse.parse_grades(text_file)
 
-    titles: List[List[Union[int, float, None]]] = [
-        [None] + [i for i in range(22)],
+    titles: List[List[Union[int, float]]] = [
+        # the first 0 is just a filler
+        [0] + [i for i in range(22)],
     ]
     for i in range(11):
         titles.append([i/10])
 
-    for row in titles:
-        sheet.append(row)
+    for title in titles:
+        sheet.append(title)
 
     for grade in grades:
-        row: str = chr(grade.blink + 66)
+        row = chr(grade.blink + 66)
         col = str(int(grade.body * 10 + 2))
         sheet[row + col] = grade.grade
 
