@@ -43,14 +43,13 @@ def output_grade_spreadsheet(text_file: str, spreadsheet_file: str) -> None:
 
     grades = parse.parse_grades(text_file)
 
-    titles: List[List[Union[int, float]]] = [
-        # the first 0 is just a filler
-        [0] + [i for i in range(22)],
+    # the first 0 is just a filler, also not part of the title of body
+    title_of_blink: List[int] = [0] + [i for i in range(22)]
+    titles_of_body: List[List[float]] = [
+        [i/10] for i in range(11)
     ]
-    for i in range(11):
-        titles.append([i/10])
-
-    for title in titles:
+    sheet.append(title_of_blink)
+    for title in titles_of_body:
         sheet.append(title)
 
     for grade in grades:
