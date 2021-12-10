@@ -1,4 +1,4 @@
-from typing import Callable, List, Union
+from typing import List
 
 from fuzzy.classes import Grade
 
@@ -38,16 +38,15 @@ def parse_grades(filename: str) -> List[Grade]:
         # They're first stored as str and converted to their corresponding
         # type later.
         data: List[str] = ["", "", ""]
-        types: List[Callable[[str], Union[int, float]]] = [int, float, float]
         # pos is to record the current parsing data
         pos: int = 0
         line: str
         for line in f:
             line = line.strip()
             if is_separator(line):
-                grades.append(Grade(types[BLINK](data[BLINK]),
-                                    types[BODY](data[BODY]),
-                                    types[GRADE](data[GRADE])))
+                grades.append(Grade(int(data[BLINK]),
+                                    float(data[BODY]),
+                                    float(data[GRADE])))
                 pos = 0
                 continue
             data[pos] = line
