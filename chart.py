@@ -14,7 +14,7 @@ def get_test_grades() -> List[Grade]:
     and body concentration value (0 ~ 1, step size = 0.1).
     """
     fuzzy_grader = grader.FuzzyGrader()
-    concent_grades: List[grade] = []
+    concent_grades: List[Grade] = []
     for blink_rate in range(22):
         for body_concent in (round(0.1 * i, 1) for i in range(11)):
             grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent)

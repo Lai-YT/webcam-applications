@@ -24,7 +24,8 @@ def read_grades_from_json(filename: str) -> List[Grade]:
     """
     def to_grade_object(raw_grade: Dict[str, Union[int ,float]]) -> Grade:
         """Converts the dict of blink, body and grade in to Grade object."""
-        return Grade(**raw_grade)
+        return Grade(**raw_grade)  # type: ignore
+        # type ignored since mypy fails on such infer types
 
     with open(filename, mode="r", encoding="utf-8") as f:
         grades: List[Grade] = json.load(f, object_hook=to_grade_object)
