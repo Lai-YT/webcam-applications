@@ -4,44 +4,33 @@ from typing import List, Optional, Tuple
 
 
 import fuzzy.grader as grader
-import fuzzy.parse as parse
+from fuzzy.classes import Grade
 
 
-def output_grade_text(filename: str) -> None:
-    """Outputs the data texts of grade in to file.
+def get_test_grades() -> List[Grade]:
+    """Returns the result of grade tests.
 
     Grades are computed with combinations of blink rate (0 ~ 21, step size = 1)
     and body concentration value (0 ~ 1, step size = 0.1).
-    Arguments:
-        filename: The file to output the grades to. It's opened with "w+" mode.
     """
     fuzzy_grader = grader.FuzzyGrader()
-    # grade, blink rate, body concent
-    concent_grades: List[Tuple[float, int, float]] = []
+    concent_grades: List[grade] = []
     for blink_rate in range(22):
         for body_concent in (round(0.1 * i, 1) for i in range(11)):
             grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent)
-            concent_grades.append((grade, blink_rate, body_concent))
-
-    with open(filename, mode="w+") as f:
-        for grade, blink, body in concent_grades:
-            f.write(f"{blink}\n"
-                    + f"{body}\n"
-                    + f"{grade}\n"
-                    + "---\n")
+            concent_grades.append(Grade(blink=blink_rate, body=body_concent, grade=grade))
+    return concent_grades
 
 
-def output_grade_spreadsheet(text_file: str, spreadsheet_file: str) -> None:
-    """Outputs the data texts into the spreadsheet.
+def save_grades_to_spreadsheet(filename: str, grades: List[Grade]) -> None:
+    """Saves the grades to the spreadsheet with titles.
 
     Arguments:
-        text_file: The file which contains the data text.
-        spreadsheet_file: The file to output the spreadsheet to.
+        filename: The spreadsheet to save grades.
+        grades: The grades to save.
     """
     workbook = openpyxl.Workbook()
     sheet = workbook.active
-
-    grades = parse.parse_grades(text_file)
 
     # the first 0 is just a filler, also not part of the title of body
     title_of_blink: List[int] = [0] + [i for i in range(22)]
@@ -57,24 +46,16 @@ def output_grade_spreadsheet(text_file: str, spreadsheet_file: str) -> None:
         col = str(int(grade.body * 10 + 2))
         sheet[row + col] = grade.grade
 
-    workbook.save(filename=spreadsheet_file)
+    workbook.save(filename=filename)
 
 
-def output_grade_chart(
-        spreadsheet_file: str,
-        chart_file: Optional[str] = None) -> None:
-    """Outputs the charts of the data held by spreadsheet.
+def draw_chart_of_grades_on_spreadsheet(filename: str) -> None:
+    """Draws the chart of grades read from the spreadsheet and save back to it.
 
     Arguments:
-        spreadsheet_file: The spreadsheet to read the data from.
-        chart_file:
-            The file to output the charts to. The charts are output to the
-            spreadsheet_file if chart_file isn't given.
+        filename: The spreadsheet which contains the grades.
     """
-    if chart_file is None:
-        chart_file = spreadsheet_file
-
-    workbook = openpyxl.load_workbook(filename=spreadsheet_file)
+    workbook = openpyxl.load_workbook(filename=filename)
     sheet = workbook.active
 
     # Contour chart
@@ -105,10 +86,22 @@ def output_grade_chart(
     wire_frame_3d.title = "3D Wireframe"
     sheet.add_chart(wire_frame_3d, "L31")
 
-    workbook.save(filename=chart_file)
+    workbook.save(filename=filename)
 
 
 if __name__ == "__main__":
-    output_grade_text("fuzzy_grades.txt")
-    output_grade_spreadsheet("fuzzy_grades.txt", "fuzzy_grades.xlsx")
-    output_grade_chart("fuzzy_grades.xlsx")
+    spreadsheet: str = "fuzzy_grades.xlsx"
+
+    grades: List[Grade] = get_test_grades()
+    save_grades_to_spreadsheet(spreadsheet, grades)
+    draw_chart_of_grades_on_spreadsheet(spreadsheet)
+
+    # the following is to demo the parsing with json
+    import fuzzy.parse as parse
+
+    json_file: str = "fuzzy_grades.json"
+
+    parse.save_grades_to_json(json_file, grades)
+    parsed_grades: List[Grade] = parse.read_grades_from_json(json_file)
+    # test correctness
+    assert parsed_grades == grades

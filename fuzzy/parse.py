@@ -1,54 +1,31 @@
-from typing import List
+import json
+from typing import Dict, List, Union
 
 from fuzzy.classes import Grade
 
 
-SEPARATOR: str = "---"
-
-def is_separator(line: str) -> bool:
-    return line.startswith(SEPARATOR)
-
-
-# index mapping
-BLINK: int = 0
-BODY: int = 1
-GRADE: int = 2
-
-def parse_grades(filename: str) -> List[Grade]:
-    """Parse lines in designated file into list of Grades.
+def save_grades_to_json(filename: str, grades: List[Grade]) -> None:
+    """Converts the grades into the format of json and saves them.
 
     Arguments:
-        filename:
-            The file which contains lines of grade. The first line should be
-            blink rate, second be body concentration, third be the grade and
-            ends with the separator "---"; which is the following format:
-                11    <- 1st blink rate
-                0.8   <- 1st body concent.
-                0.65  <- 1st grade
-                ---   <- 1st separator
-                11    <- 2nd blink rate
-                0.9   <- 2nd body concent.
-                0.7   <- 2nd grade
-                ---   <- 2nd separator
-            The file is opened in "r" mode.
+        filename: The json file to save the grades.
+        grades: The grades to save.
     """
-    grades: List[Grade] = []
-    with open(filename, mode="r") as f:
-        # blink rate (int), body concent (float), normalized grade (float)
-        # They're first stored as str and converted to their corresponding
-        # type later.
-        data: List[str] = ["", "", ""]
-        # pos is to record the current parsing data
-        pos: int = 0
-        line: str
-        for line in f:
-            line = line.strip()
-            if is_separator(line):
-                grades.append(Grade(int(data[BLINK]),
-                                    float(data[BODY]),
-                                    float(data[GRADE])))
-                pos = 0
-                continue
-            data[pos] = line
-            pos += 1
+    with open(filename, mode="w+", encoding="utf-8") as f:
+        # saves the dict of each grade
+        json.dump([grade.__dict__ for grade in grades], f, indent=2)
+
+
+def read_grades_from_json(filename: str) -> List[Grade]:
+    """Returns the grades read from the json file.
+
+    Arguments:
+        filename: The json file which contains the grades.
+    """
+    def to_grade_object(raw_grade: Dict[str, Union[int ,float]]) -> Grade:
+        """Converts the dict of blink, body and grade in to Grade object."""
+        return Grade(**raw_grade)
+
+    with open(filename, mode="r", encoding="utf-8") as f:
+        grades: List[Grade] = json.load(f, object_hook=to_grade_object)
     return grades

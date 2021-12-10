@@ -20,7 +20,11 @@ class FuzzyGrader:
         rules: List[ctrl.Rule] = self._create_fuzzy_rules()
         self._grader = ctrl.ControlSystemSimulation(ctrl.ControlSystem(rules))
 
-    def compute_grade(self, blink_rate: int, body_concent: float, *, normalized=True) -> float:
+    def compute_grade(
+            self,
+            blink_rate: int,
+            body_concent: float,
+            *, normalized: bool = True) -> float:
         """Computes the grade base on fuzzy logics.
 
         The grade is rounded to two decimal places.
@@ -39,8 +43,8 @@ class FuzzyGrader:
         return round(grade, 2)
 
     def view(self) -> None:
-        """Plots the membership function of blink rate, blink concentration value
-        and unnormalized grade.
+        """Plots the membership function of blink rate, blink concentration
+        value and unnormalized grade.
         """
         self._blink.view()
         self._body.view()
