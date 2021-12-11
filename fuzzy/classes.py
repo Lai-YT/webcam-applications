@@ -27,4 +27,4 @@ class GoodInterval:
         grade
     """
     start: int
-    grade: Grade
+    grade: float

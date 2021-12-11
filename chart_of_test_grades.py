@@ -42,7 +42,8 @@ def save_grades_to_spreadsheet(filename: str, grades: List[Grade]) -> None:
         sheet.append(title)
 
     for grade in grades:
-        row = chr(grade.blink + 66)
+        # blink won't be None in the test grades
+        row = chr(grade.blink + 66)  # type: ignore
         col = str(int(grade.body * 10 + 2))
         sheet[row + col] = grade.grade
 
