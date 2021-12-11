@@ -90,7 +90,7 @@ def draw_chart_of_grades_on_spreadsheet(filename: str) -> None:
 
 
 if __name__ == "__main__":
-    spreadsheet: str = "fuzzy_grades.xlsx"
+    spreadsheet: str = "test_grades.xlsx"
 
     grades: List[Grade] = get_test_grades()
     save_grades_to_spreadsheet(spreadsheet, grades)
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     # the following is to demo the parsing with json
     import fuzzy.parse as parse
 
-    json_file: str = "fuzzy_grades.json"
+    json_file: str = "test_grades.json"
 
     parse.save_grades_to_json(json_file, grades)
     parsed_grades: List[Grade] = parse.read_grades_from_json(json_file)

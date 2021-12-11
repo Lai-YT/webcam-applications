@@ -11,10 +11,10 @@ from nptyping import Int, NDArray
 from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
 from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from lib.guard import DistanceGuard, PostureGuard, TimeGuard, mark_face
-from lib.timer import Timer
 from lib.train import ModelPath, ModelTrainer
 from lib.image_type import ColorImage
 from lib.path import to_abs_path
+from util.timer import Timer
 
 # This is the Model part, it knows nothing about View.
 # One can pass options and parameters through View and Controller

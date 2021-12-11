@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from collections import deque
@@ -6,17 +7,18 @@ from typing import Deque, Optional, Tuple
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
+import fuzzy.parse as parse
 import lib.sliding_window as sliding_window
+import util.logger as logger
+from fuzzy.classes import GoodInterval, Grade
 from fuzzy.grader import FuzzyGrader
 from lib.blink_detector import AntiNoiseBlinkDetector, GoodBlinkRateIntervalDetector
+from lib.path import to_abs_path
 
 
-logging.basicConfig(
-    format="%(message)s",
-    filename="concent_interval.log",
-    level=logging.DEBUG,
-)
-
+interval_logger: logging.Logger = logger.setup_logger("interval_logger",
+                                                      to_abs_path("..\concent_interval.log"),
+                                                      logging.DEBUG)
 
 class FaceExistenceRateCounter(sliding_window.SlidingWindowHandler):
     """Everytime a new frame is refreshed, there may exist a face or not. Count
@@ -138,10 +140,10 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
                 It's passed to the underlaying GoodBlinkRateIntervalDetector.
         """
         super().__init__()
-        logging.info("ConcentrationGrader configs:")
-        logging.info(f" ratio thres  = {ratio_threshold}")
-        logging.info(f" consec frame = {consec_frame}")
-        logging.info(f" good range   = {good_rate_range}\n")
+        interval_logger.info("ConcentrationGrader configs:")
+        interval_logger.info(f" ratio thres  = {ratio_threshold}")
+        interval_logger.info(f" consec frame = {consec_frame}")
+        interval_logger.info(f" good range   = {good_rate_range}\n")
 
         self._body_concentration_times: Deque[int] = deque()
         self._body_distraction_times: Deque[int] = deque()
@@ -150,6 +152,9 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
         self._interval_detector = GoodBlinkRateIntervalDetector(good_rate_range)
         self._face_existence_counter = FaceExistenceRateCounter(low_existence)
         self._fuzzy_grader = FuzzyGrader()
+
+        self._json_file: str = to_abs_path("..\good_intervals.json")
+        parse.init_json(self._json_file)
 
         self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
         self._interval_detector.s_good_interval_detected.connect(self.check_concentration)
@@ -223,25 +228,26 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
             start_time: int,
             blink_rate: Optional[int] = None) -> None:
         end_time: int = start_time + 60
-        logging.info(f"check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+        interval_logger.info(f"check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
         body_concent: float = self.get_body_concentration_grade(start_time)
-        logging.info(f"body concentration = {body_concent}")
+        interval_logger.info(f"body concentration = {body_concent}")
 
         grade: float
         if blink_rate is None:
-            logging.info("low face existence, check body only:")
+            interval_logger.info("low face existence, check body only:")
             grade = body_concent
         else:
-            logging.info(f"blink rate = {blink_rate}")
+            interval_logger.info(f"blink rate = {blink_rate}")
             grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
 
         if grade >= 0.6:
             self.s_concent_interval_refreshed.emit(start_time, grade)
             self.clear_windows()
-            logging.info(f"good concentration: {grade}")
+            interval_logger.info(f"good concentration: {grade}")
+            parse.append_to_json(self._json_file, GoodInterval(start=start_time, grade=grade).__dict__)
         else:
-            logging.info(f"{grade}, not concentrating")
-        logging.info("")  # separation
+            interval_logger.info(f"{grade}, not concentrating")
+        interval_logger.info("")  # separation
 
     @pyqtSlot()
     def clear_windows(self) -> None:

@@ -18,10 +18,10 @@ from lib.distance_calculator import (DistanceCalculator,
 from lib.guard import (CONCENT_GRADER_OF_GUARDS, DistanceGuard, DistanceState,
                        PostureGuard, TimeGuard, mark_face)
 from lib.image_convert import ndarray_to_qimage
-from lib.timer import Timer
 from lib.train import ModelPath, ModelTrainer, PostureLabel
 from lib.image_type import ColorImage
 from lib.path import to_abs_path
+from util.timer import Timer
 
 
 class WebcamApplication(QObject):

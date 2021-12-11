@@ -8,6 +8,8 @@ from nptyping import Float, Int, NDArray
 from playsound import playsound
 from tensorflow.python.keras.engine.sequential import Sequential
 
+from gui.popup_shower import TimeShower
+from gui.popup_widget import TimeState
 from lib.angle_calculator import AngleCalculator
 from lib.color import GREEN, MAGENTA, RED
 from lib.concentration_grader import ConcentrationGrader
@@ -15,10 +17,8 @@ from lib.cv_font import FONT_0
 from lib.distance_calculator import DistanceCalculator
 from lib.image_type import ColorImage, GrayImage
 from lib.path import to_abs_path
-from lib.timer import Timer, min_to_sec
 from lib.train import ModelTrainer, PostureLabel
-from gui.popup_shower import TimeShower
-from gui.popup_widget import TimeState
+from util.timer import Timer, min_to_sec
 
 
 # Module scope grader for all guards to share.
