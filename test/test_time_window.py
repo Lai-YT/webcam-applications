@@ -33,10 +33,10 @@ class TimeWindowTestCase(unittest.TestCase):
             self.assertLessEqual(abs(self.time_window.back - times[-1]), 1)
 
     def test_empty_error(self) -> None:
-        with self.assertRaises(IndexError):
-            self.time_window.front
-        with self.assertRaises(IndexError):
-            self.time_window.back
+        with self.assertRaises(IndexError, msg="the window is empty"):
+            f = self.time_window.front
+        with self.assertRaises(IndexError, msg="the window is empty"):
+            b = self.time_window.back
 
     def test_clear(self) -> None:
         for _ in range(4):
