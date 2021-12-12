@@ -51,7 +51,8 @@ def save_grades_to_spreadsheet(filename: str, grades: List[Grade]) -> None:
 
 
 def draw_chart_of_grades_on_spreadsheet(filename: str) -> None:
-    """Draws the chart of grades read from the spreadsheet and save back to it.
+    """Draws the surface chart of grades read from the spreadsheet and save it
+    back to the spreadsheet.
 
     Arguments:
         filename: The spreadsheet which contains the grades.
