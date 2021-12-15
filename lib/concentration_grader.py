@@ -247,7 +247,6 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
 
         if grade >= 0.6:
             self.s_concent_interval_refreshed.emit(start_time, grade)
-            self.clear_windows()
             interval_logger.info(f"good concentration: {grade}")
             parse.append_to_json(
                 self._json_file,
