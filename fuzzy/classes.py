@@ -18,13 +18,15 @@ class Grade:
 
 
 @dataclass
-class GoodInterval:
-    """This data class stores the start time (epoch) and grade of a good
-    concentration interval.
+class Interval:
+    """This data class stores the start time, end time (epoch) and grade of an
+    interval.
 
     Data:
         start
+        end
         grade
     """
     start: int
+    end: int
     grade: float

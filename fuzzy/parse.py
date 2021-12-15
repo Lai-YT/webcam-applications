@@ -1,7 +1,7 @@
 import json
 from typing import Dict, List, Union
 
-from fuzzy.classes import GoodInterval, Grade
+from fuzzy.classes import Grade, Interval
 
 
 def save_grades_to_json(filename: str, grades: List[Grade]) -> None:
@@ -32,19 +32,19 @@ def read_grades_from_json(filename: str) -> List[Grade]:
     return grades
 
 
-def read_intervals_from_json(filename: str) -> List[GoodInterval]:
+def read_intervals_from_json(filename: str) -> List[Interval]:
     """Returns the intervals read from the json file.
 
     Arguments:
         filename: The json file which contains the intervals.
     """
-    def to_good_interval_object(raw_interval: Dict[str, Union[int ,float]]) -> GoodInterval:
-        """Converts the dict of start and grade in to GoodInterval object."""
-        return GoodInterval(**raw_interval)  # type: ignore
+    def to_good_interval_object(raw_interval: Dict[str, Union[int ,float]]) -> Interval:
+        """Converts the dict of start and grade in to Interval object."""
+        return Interval(**raw_interval)  # type: ignore
         # type ignored since mypy fails on such infer types
 
     with open(filename, mode="r", encoding="utf-8") as f:
-        intervals: List[GoodInterval] = json.load(f, object_hook=to_good_interval_object)
+        intervals: List[Interval] = json.load(f, object_hook=to_good_interval_object)
     return intervals
 
 

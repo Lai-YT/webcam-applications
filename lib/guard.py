@@ -179,6 +179,7 @@ class DistanceGuard(QObject):
         cv2.putText(canvas, text, (10, 30), FONT_0, 0.9, MAGENTA, 2)
 
 
+# FIXME: Negative time occurs under unknown condition
 class TimeGuard(QObject):
     """TimeGuard checks whether the time held by a Timer exceeds time limit
     and interacts with a TimeShower to show the corresponding TimerWidget.

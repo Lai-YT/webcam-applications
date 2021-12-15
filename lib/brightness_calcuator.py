@@ -93,9 +93,9 @@ class BrightnessCalculator:
         weighted_value_diff: float = new_weighted_value - self._pre_weighted_value
 
         # Add value difference effect as offset on current brightness value.
-        # Higher the brightness if the surrounding light is bright to keep the screen clear
-        # and lower the brightness if the display on the screen is light colored
-        # to reduce contrast of light.
+        # Higher the brightness if the surrounding light is bright to keep the
+        # screen clear and lower the brightness if the display on the screen is
+        # light colored to reduce contrast of light.
         if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
             self._brightness_value += base_value_diff + weighted_value_diff * 0.25
         elif mode is BrightnessMode.COLOR_SYSTEM:

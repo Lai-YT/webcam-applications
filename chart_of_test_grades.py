@@ -67,26 +67,30 @@ def draw_chart_of_grades_on_spreadsheet(filename: str) -> None:
     contour.add_data(data, titles_from_data=True)
     contour.set_categories(labels)
     contour.title = "Contour"
+    contour.height = 15
+    contour.width = 25
     sheet.add_chart(contour, "A15")
 
     # 2D Wireframe chart
     wire_frame = copy.deepcopy(contour)
     wire_frame.wireframe = True
     wire_frame.title = "2D Wireframe"
-    sheet.add_chart(wire_frame, "L15")
+    sheet.add_chart(wire_frame, "R15")
 
     # Surface chart
     surface = openpyxl.chart.SurfaceChart3D()
     surface.add_data(data, titles_from_data=True)
     surface.set_categories(labels)
     surface.title = "Surface"
-    sheet.add_chart(surface, "A31")
+    surface.height = 15
+    surface.width = 25
+    sheet.add_chart(surface, "A45")
 
     # 3D Wireframe chart
     wire_frame_3d = copy.deepcopy(surface)
     wire_frame_3d.wireframe = True
     wire_frame_3d.title = "3D Wireframe"
-    sheet.add_chart(wire_frame_3d, "L31")
+    sheet.add_chart(wire_frame_3d, "R45")
 
     workbook.save(filename=filename)
 

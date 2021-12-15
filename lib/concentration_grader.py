@@ -1,16 +1,20 @@
 import json
 import logging
+import math
 import time
 from collections import deque
-from typing import Deque, Optional, Tuple
+from typing import Deque, List, Optional, Tuple
 
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
 import fuzzy.parse as parse
 import lib.sliding_window as sliding_window
 import util.logger as logger
-from fuzzy.classes import GoodInterval, Grade
+from fuzzy.classes import Grade, Interval
 from fuzzy.grader import FuzzyGrader
 from lib.blink_detector import AntiNoiseBlinkDetector, GoodBlinkRateIntervalDetector
 from lib.path import to_abs_path
@@ -218,7 +222,8 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
 
         concent_count: int = count_time_in_interval(self._body_concentration_times)
         distract_count: int = count_time_in_interval(self._body_distraction_times)
-
+        # FIXME: ZeroDivisionError occurs after an undesired double check of a same interval
+        # Maybe there's a time before windows are cleared but after the first check.
         return round(concent_count / (concent_count + distract_count), 2)
 
     @pyqtSlot(int)
@@ -244,7 +249,10 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
             self.s_concent_interval_refreshed.emit(start_time, grade)
             self.clear_windows()
             interval_logger.info(f"good concentration: {grade}")
-            parse.append_to_json(self._json_file, GoodInterval(start=start_time, grade=grade).__dict__)
+            parse.append_to_json(
+                self._json_file,
+                Interval(start=start_time, end=end_time, grade=grade).__dict__
+            )
         else:
             interval_logger.info(f"{grade}, not concentrating")
         interval_logger.info("")  # separation
@@ -255,6 +263,33 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
         self._body_concentration_times.clear()
         self._interval_detector.clear_windows()
         self._face_existence_counter.clear_windows()
+
+
+def save_chart_of_intervals(filename: str, intervals: List[Interval]) -> None:
+    if not intervals:
+        raise ValueError("intervals can't be empty")
+
+    start_times: List[float] = []
+    interval_lengths: List[float] = []
+    grades: List[float] = []
+
+    init_time: int = intervals[0].start
+    for interval in intervals:
+        start_times.append((interval.start - init_time) / 60)
+        interval_lengths.append((interval.end - interval.start) / 60)
+        grades.append(interval.grade)
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    ax.bar(start_times, grades, width=interval_lengths, align="edge")
+    ax.set_xticks(range(math.ceil(start_times[-1]) + 2))
+    ax.set_yticks(np.arange(0, 1.2, 0.2))
+    ax.set_yticks(np.arange(0.1, 1.0, 0.2), minor=True)
+    ax.set_ylim(0, 1.1)
+    ax.set_ylabel("grade")
+    ax.set_xlabel("time (min)")
+    ax.set_title(f"Concentration grades from {to_date_time(init_time)}")
+    fig.savefig(filename)
 
 
 def to_date_time(epoch_time: int) -> str:
