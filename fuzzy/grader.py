@@ -61,7 +61,10 @@ class FuzzyGrader:
         # so we simply use .automf(3) to generate equally-divided triangular membership
         # function.
         self._body = ctrl.Antecedent(np.arange(11), "body")
-        self._body.automf(3)
+        # self._body.automf(3)
+        self._body["good"] = fuzz.trimf(self._body.universe, [6, 10, 10])
+        self._body["average"] = fuzz.trimf(self._body.universe, [0, 6, 10])
+        self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 6])
 
     def _create_membership_func_of_grade(self) -> None:
         self._grade = ctrl.Consequent(np.arange(11), "grade")
@@ -74,7 +77,7 @@ class FuzzyGrader:
         """Returns the fuzzy rule that control the grade."""
         rule1 = ctrl.Rule(self._blink["poor"] | self._body["poor"], self._grade["low"])
         rule2 = ctrl.Rule(self._blink["average"] | self._body["average"], self._grade["medium"])
-        rule3 = ctrl.Rule(self._blink["good"] | self._body["good"], self._grade["high"])
+        rule3 = ctrl.Rule(self._blink["good"] & self._body["good"], self._grade["high"])
         return [rule1, rule2, rule3]
 
     @staticmethod

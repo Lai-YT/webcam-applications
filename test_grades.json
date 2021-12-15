@@ -2,52 +2,52 @@
   {
     "blink": 0,
     "body": 0.0,
-    "grade": 0.59
+    "grade": -0.0
   },
   {
     "blink": 0,
     "body": 0.1,
-    "grade": 0.6
+    "grade": 0.13
   },
   {
     "blink": 0,
     "body": 0.2,
-    "grade": 0.62
+    "grade": 0.23
   },
   {
     "blink": 0,
     "body": 0.3,
-    "grade": 0.65
+    "grade": 0.31
   },
   {
     "blink": 0,
     "body": 0.4,
-    "grade": 0.67
+    "grade": 0.36
   },
   {
     "blink": 0,
     "body": 0.5,
-    "grade": 0.68
+    "grade": 0.4
   },
   {
     "blink": 0,
     "body": 0.6,
-    "grade": 0.69
+    "grade": 0.41
   },
   {
     "blink": 0,
     "body": 0.7,
-    "grade": 0.7
+    "grade": 0.51
   },
   {
     "blink": 0,
     "body": 0.8,
-    "grade": 0.74
+    "grade": 0.61
   },
   {
     "blink": 0,
     "body": 0.9,
-    "grade": 0.83
+    "grade": 0.76
   },
   {
     "blink": 0,
@@ -57,52 +57,52 @@
   {
     "blink": 1,
     "body": 0.0,
-    "grade": 0.59
+    "grade": -0.0
   },
   {
     "blink": 1,
     "body": 0.1,
-    "grade": 0.6
+    "grade": 0.13
   },
   {
     "blink": 1,
     "body": 0.2,
-    "grade": 0.62
+    "grade": 0.23
   },
   {
     "blink": 1,
     "body": 0.3,
-    "grade": 0.65
+    "grade": 0.31
   },
   {
     "blink": 1,
     "body": 0.4,
-    "grade": 0.67
+    "grade": 0.36
   },
   {
     "blink": 1,
     "body": 0.5,
-    "grade": 0.68
+    "grade": 0.4
   },
   {
     "blink": 1,
     "body": 0.6,
-    "grade": 0.69
+    "grade": 0.41
   },
   {
     "blink": 1,
     "body": 0.7,
-    "grade": 0.7
+    "grade": 0.51
   },
   {
     "blink": 1,
     "body": 0.8,
-    "grade": 0.74
+    "grade": 0.61
   },
   {
     "blink": 1,
     "body": 0.9,
-    "grade": 0.83
+    "grade": 0.76
   },
   {
     "blink": 1,
@@ -112,52 +112,52 @@
   {
     "blink": 2,
     "body": 0.0,
-    "grade": 0.59
+    "grade": -0.0
   },
   {
     "blink": 2,
     "body": 0.1,
-    "grade": 0.6
+    "grade": 0.13
   },
   {
     "blink": 2,
     "body": 0.2,
-    "grade": 0.62
+    "grade": 0.23
   },
   {
     "blink": 2,
     "body": 0.3,
-    "grade": 0.65
+    "grade": 0.31
   },
   {
     "blink": 2,
     "body": 0.4,
-    "grade": 0.67
+    "grade": 0.36
   },
   {
     "blink": 2,
     "body": 0.5,
-    "grade": 0.68
+    "grade": 0.4
   },
   {
     "blink": 2,
     "body": 0.6,
-    "grade": 0.69
+    "grade": 0.41
   },
   {
     "blink": 2,
     "body": 0.7,
-    "grade": 0.7
+    "grade": 0.51
   },
   {
     "blink": 2,
     "body": 0.8,
-    "grade": 0.74
+    "grade": 0.61
   },
   {
     "blink": 2,
     "body": 0.9,
-    "grade": 0.83
+    "grade": 0.76
   },
   {
     "blink": 2,
@@ -167,52 +167,52 @@
   {
     "blink": 3,
     "body": 0.0,
-    "grade": 0.59
+    "grade": -0.0
   },
   {
     "blink": 3,
     "body": 0.1,
-    "grade": 0.6
+    "grade": 0.13
   },
   {
     "blink": 3,
     "body": 0.2,
-    "grade": 0.62
+    "grade": 0.23
   },
   {
     "blink": 3,
     "body": 0.3,
-    "grade": 0.65
+    "grade": 0.31
   },
   {
     "blink": 3,
     "body": 0.4,
-    "grade": 0.67
+    "grade": 0.36
   },
   {
     "blink": 3,
     "body": 0.5,
-    "grade": 0.68
+    "grade": 0.4
   },
   {
     "blink": 3,
     "body": 0.6,
-    "grade": 0.69
+    "grade": 0.41
   },
   {
     "blink": 3,
     "body": 0.7,
-    "grade": 0.7
+    "grade": 0.51
   },
   {
     "blink": 3,
     "body": 0.8,
-    "grade": 0.74
+    "grade": 0.61
   },
   {
     "blink": 3,
     "body": 0.9,
-    "grade": 0.83
+    "grade": 0.76
   },
   {
     "blink": 3,
@@ -222,52 +222,52 @@
   {
     "blink": 4,
     "body": 0.0,
-    "grade": 0.59
+    "grade": -0.0
   },
   {
     "blink": 4,
     "body": 0.1,
-    "grade": 0.6
+    "grade": 0.13
   },
   {
     "blink": 4,
     "body": 0.2,
-    "grade": 0.62
+    "grade": 0.23
   },
   {
     "blink": 4,
     "body": 0.3,
-    "grade": 0.65
+    "grade": 0.31
   },
   {
     "blink": 4,
     "body": 0.4,
-    "grade": 0.67
+    "grade": 0.36
   },
   {
     "blink": 4,
     "body": 0.5,
-    "grade": 0.68
+    "grade": 0.4
   },
   {
     "blink": 4,
     "body": 0.6,
-    "grade": 0.69
+    "grade": 0.41
   },
   {
     "blink": 4,
     "body": 0.7,
-    "grade": 0.7
+    "grade": 0.51
   },
   {
     "blink": 4,
     "body": 0.8,
-    "grade": 0.74
+    "grade": 0.61
   },
   {
     "blink": 4,
     "body": 0.9,
-    "grade": 0.83
+    "grade": 0.76
   },
   {
     "blink": 4,
@@ -277,52 +277,52 @@
   {
     "blink": 5,
     "body": 0.0,
-    "grade": 0.59
+    "grade": -0.0
   },
   {
     "blink": 5,
     "body": 0.1,
-    "grade": 0.6
+    "grade": 0.13
   },
   {
     "blink": 5,
     "body": 0.2,
-    "grade": 0.62
+    "grade": 0.23
   },
   {
     "blink": 5,
     "body": 0.3,
-    "grade": 0.65
+    "grade": 0.31
   },
   {
     "blink": 5,
     "body": 0.4,
-    "grade": 0.67
+    "grade": 0.36
   },
   {
     "blink": 5,
     "body": 0.5,
-    "grade": 0.68
+    "grade": 0.4
   },
   {
     "blink": 5,
     "body": 0.6,
-    "grade": 0.69
+    "grade": 0.41
   },
   {
     "blink": 5,
     "body": 0.7,
-    "grade": 0.7
+    "grade": 0.51
   },
   {
     "blink": 5,
     "body": 0.8,
-    "grade": 0.74
+    "grade": 0.61
   },
   {
     "blink": 5,
     "body": 0.9,
-    "grade": 0.83
+    "grade": 0.76
   },
   {
     "blink": 5,
@@ -332,52 +332,52 @@
   {
     "blink": 6,
     "body": 0.0,
-    "grade": 0.59
+    "grade": -0.0
   },
   {
     "blink": 6,
     "body": 0.1,
-    "grade": 0.6
+    "grade": 0.13
   },
   {
     "blink": 6,
     "body": 0.2,
-    "grade": 0.62
+    "grade": 0.23
   },
   {
     "blink": 6,
     "body": 0.3,
-    "grade": 0.65
+    "grade": 0.31
   },
   {
     "blink": 6,
     "body": 0.4,
-    "grade": 0.67
+    "grade": 0.36
   },
   {
     "blink": 6,
     "body": 0.5,
-    "grade": 0.68
+    "grade": 0.4
   },
   {
     "blink": 6,
     "body": 0.6,
-    "grade": 0.69
+    "grade": 0.41
   },
   {
     "blink": 6,
     "body": 0.7,
-    "grade": 0.7
+    "grade": 0.51
   },
   {
     "blink": 6,
     "body": 0.8,
-    "grade": 0.74
+    "grade": 0.61
   },
   {
     "blink": 6,
     "body": 0.9,
-    "grade": 0.83
+    "grade": 0.76
   },
   {
     "blink": 6,
@@ -387,52 +387,52 @@
   {
     "blink": 7,
     "body": 0.0,
-    "grade": 0.59
+    "grade": -0.0
   },
   {
     "blink": 7,
     "body": 0.1,
-    "grade": 0.6
+    "grade": 0.13
   },
   {
     "blink": 7,
     "body": 0.2,
-    "grade": 0.62
+    "grade": 0.23
   },
   {
     "blink": 7,
     "body": 0.3,
-    "grade": 0.65
+    "grade": 0.31
   },
   {
     "blink": 7,
     "body": 0.4,
-    "grade": 0.67
+    "grade": 0.36
   },
   {
     "blink": 7,
     "body": 0.5,
-    "grade": 0.68
+    "grade": 0.4
   },
   {
     "blink": 7,
     "body": 0.6,
-    "grade": 0.69
+    "grade": 0.41
   },
   {
     "blink": 7,
     "body": 0.7,
-    "grade": 0.7
+    "grade": 0.51
   },
   {
     "blink": 7,
     "body": 0.8,
-    "grade": 0.74
+    "grade": 0.61
   },
   {
     "blink": 7,
     "body": 0.9,
-    "grade": 0.83
+    "grade": 0.76
   },
   {
     "blink": 7,
@@ -442,52 +442,52 @@
   {
     "blink": 8,
     "body": 0.0,
-    "grade": 0.59
+    "grade": -0.0
   },
   {
     "blink": 8,
     "body": 0.1,
-    "grade": 0.6
+    "grade": 0.13
   },
   {
     "blink": 8,
     "body": 0.2,
-    "grade": 0.62
+    "grade": 0.23
   },
   {
     "blink": 8,
     "body": 0.3,
-    "grade": 0.65
+    "grade": 0.31
   },
   {
     "blink": 8,
     "body": 0.4,
-    "grade": 0.67
+    "grade": 0.36
   },
   {
     "blink": 8,
     "body": 0.5,
-    "grade": 0.68
+    "grade": 0.4
   },
   {
     "blink": 8,
     "body": 0.6,
-    "grade": 0.69
+    "grade": 0.41
   },
   {
     "blink": 8,
     "body": 0.7,
-    "grade": 0.7
+    "grade": 0.51
   },
   {
     "blink": 8,
     "body": 0.8,
-    "grade": 0.74
+    "grade": 0.61
   },
   {
     "blink": 8,
     "body": 0.9,
-    "grade": 0.83
+    "grade": 0.76
   },
   {
     "blink": 8,
@@ -497,332 +497,332 @@
   {
     "blink": 9,
     "body": 0.0,
-    "grade": 0.55
+    "grade": 0.11
   },
   {
     "blink": 9,
     "body": 0.1,
-    "grade": 0.57
+    "grade": 0.13
   },
   {
     "blink": 9,
     "body": 0.2,
-    "grade": 0.6
+    "grade": 0.23
   },
   {
     "blink": 9,
     "body": 0.3,
-    "grade": 0.63
+    "grade": 0.31
   },
   {
     "blink": 9,
     "body": 0.4,
-    "grade": 0.65
+    "grade": 0.36
   },
   {
     "blink": 9,
     "body": 0.5,
-    "grade": 0.66
+    "grade": 0.4
   },
   {
     "blink": 9,
     "body": 0.6,
-    "grade": 0.67
+    "grade": 0.41
   },
   {
     "blink": 9,
     "body": 0.7,
-    "grade": 0.68
+    "grade": 0.51
   },
   {
     "blink": 9,
     "body": 0.8,
-    "grade": 0.72
+    "grade": 0.61
   },
   {
     "blink": 9,
     "body": 0.9,
-    "grade": 0.8
+    "grade": 0.76
   },
   {
     "blink": 9,
     "body": 1.0,
-    "grade": 0.86
+    "grade": 0.84
   },
   {
     "blink": 10,
     "body": 0.0,
-    "grade": 0.52
+    "grade": 0.18
   },
   {
     "blink": 10,
     "body": 0.1,
-    "grade": 0.53
+    "grade": 0.19
   },
   {
     "blink": 10,
     "body": 0.2,
-    "grade": 0.56
+    "grade": 0.23
   },
   {
     "blink": 10,
     "body": 0.3,
-    "grade": 0.6
+    "grade": 0.31
   },
   {
     "blink": 10,
     "body": 0.4,
-    "grade": 0.63
+    "grade": 0.36
   },
   {
     "blink": 10,
     "body": 0.5,
-    "grade": 0.64
+    "grade": 0.4
   },
   {
     "blink": 10,
     "body": 0.6,
-    "grade": 0.64
+    "grade": 0.41
   },
   {
     "blink": 10,
     "body": 0.7,
-    "grade": 0.65
+    "grade": 0.51
   },
   {
     "blink": 10,
     "body": 0.8,
-    "grade": 0.69
+    "grade": 0.61
   },
   {
     "blink": 10,
     "body": 0.9,
-    "grade": 0.75
+    "grade": 0.73
   },
   {
     "blink": 10,
     "body": 1.0,
-    "grade": 0.78
+    "grade": 0.73
   },
   {
     "blink": 11,
     "body": 0.0,
-    "grade": 0.47
+    "grade": 0.23
   },
   {
     "blink": 11,
     "body": 0.1,
-    "grade": 0.48
+    "grade": 0.23
   },
   {
     "blink": 11,
     "body": 0.2,
-    "grade": 0.52
+    "grade": 0.26
   },
   {
     "blink": 11,
     "body": 0.3,
-    "grade": 0.56
+    "grade": 0.31
   },
   {
     "blink": 11,
     "body": 0.4,
-    "grade": 0.59
+    "grade": 0.36
   },
   {
     "blink": 11,
     "body": 0.5,
-    "grade": 0.6
+    "grade": 0.4
   },
   {
     "blink": 11,
     "body": 0.6,
-    "grade": 0.6
+    "grade": 0.41
   },
   {
     "blink": 11,
     "body": 0.7,
-    "grade": 0.62
+    "grade": 0.51
   },
   {
     "blink": 11,
     "body": 0.8,
-    "grade": 0.65
+    "grade": 0.61
   },
   {
     "blink": 11,
     "body": 0.9,
-    "grade": 0.7
+    "grade": 0.65
   },
   {
     "blink": 11,
     "body": 1.0,
-    "grade": 0.74
+    "grade": 0.65
   },
   {
     "blink": 12,
     "body": 0.0,
-    "grade": 0.42
+    "grade": 0.25
   },
   {
     "blink": 12,
     "body": 0.1,
-    "grade": 0.43
+    "grade": 0.26
   },
   {
     "blink": 12,
     "body": 0.2,
-    "grade": 0.46
+    "grade": 0.28
   },
   {
     "blink": 12,
     "body": 0.3,
+    "grade": 0.31
+  },
+  {
+    "blink": 12,
+    "body": 0.4,
+    "grade": 0.36
+  },
+  {
+    "blink": 12,
+    "body": 0.5,
+    "grade": 0.4
+  },
+  {
+    "blink": 12,
+    "body": 0.6,
+    "grade": 0.41
+  },
+  {
+    "blink": 12,
+    "body": 0.7,
     "grade": 0.51
   },
   {
     "blink": 12,
-    "body": 0.4,
-    "grade": 0.55
-  },
-  {
-    "blink": 12,
-    "body": 0.5,
-    "grade": 0.56
-  },
-  {
-    "blink": 12,
-    "body": 0.6,
-    "grade": 0.56
-  },
-  {
-    "blink": 12,
-    "body": 0.7,
-    "grade": 0.57
-  },
-  {
-    "blink": 12,
     "body": 0.8,
-    "grade": 0.63
+    "grade": 0.58
   },
   {
     "blink": 12,
     "body": 0.9,
-    "grade": 0.67
+    "grade": 0.58
   },
   {
     "blink": 12,
     "body": 1.0,
-    "grade": 0.71
+    "grade": 0.58
   },
   {
     "blink": 13,
     "body": 0.0,
-    "grade": 0.37
+    "grade": 0.27
   },
   {
     "blink": 13,
     "body": 0.1,
-    "grade": 0.38
+    "grade": 0.28
   },
   {
     "blink": 13,
     "body": 0.2,
-    "grade": 0.41
+    "grade": 0.29
   },
   {
     "blink": 13,
     "body": 0.3,
-    "grade": 0.46
+    "grade": 0.33
   },
   {
     "blink": 13,
     "body": 0.4,
-    "grade": 0.5
+    "grade": 0.36
   },
   {
     "blink": 13,
     "body": 0.5,
-    "grade": 0.52
+    "grade": 0.4
   },
   {
     "blink": 13,
     "body": 0.6,
-    "grade": 0.52
+    "grade": 0.41
   },
   {
     "blink": 13,
     "body": 0.7,
-    "grade": 0.56
+    "grade": 0.51
   },
   {
     "blink": 13,
     "body": 0.8,
-    "grade": 0.62
+    "grade": 0.52
   },
   {
     "blink": 13,
     "body": 0.9,
-    "grade": 0.66
+    "grade": 0.52
   },
   {
     "blink": 13,
     "body": 1.0,
-    "grade": 0.69
+    "grade": 0.52
   },
   {
     "blink": 14,
     "body": 0.0,
-    "grade": 0.33
+    "grade": 0.28
   },
   {
     "blink": 14,
     "body": 0.1,
+    "grade": 0.29
+  },
+  {
+    "blink": 14,
+    "body": 0.2,
+    "grade": 0.3
+  },
+  {
+    "blink": 14,
+    "body": 0.3,
     "grade": 0.34
   },
   {
     "blink": 14,
-    "body": 0.2,
+    "body": 0.4,
     "grade": 0.37
   },
   {
     "blink": 14,
-    "body": 0.3,
+    "body": 0.5,
+    "grade": 0.4
+  },
+  {
+    "blink": 14,
+    "body": 0.6,
     "grade": 0.41
   },
   {
     "blink": 14,
-    "body": 0.4,
-    "grade": 0.45
-  },
-  {
-    "blink": 14,
-    "body": 0.5,
+    "body": 0.7,
     "grade": 0.47
   },
   {
     "blink": 14,
-    "body": 0.6,
-    "grade": 0.49
-  },
-  {
-    "blink": 14,
-    "body": 0.7,
-    "grade": 0.55
-  },
-  {
-    "blink": 14,
     "body": 0.8,
-    "grade": 0.61
+    "grade": 0.47
   },
   {
     "blink": 14,
     "body": 0.9,
-    "grade": 0.65
+    "grade": 0.47
   },
   {
     "blink": 14,
     "body": 1.0,
-    "grade": 0.68
+    "grade": 0.47
   },
   {
     "blink": 15,
@@ -836,73 +836,73 @@
   },
   {
     "blink": 15,
-    "body": 0.2,
-    "grade": 0.32
-  },
-  {
-    "blink": 15,
-    "body": 0.3,
-    "grade": 0.36
-  },
-  {
-    "blink": 15,
-    "body": 0.4,
-    "grade": 0.4
-  },
-  {
-    "blink": 15,
-    "body": 0.5,
-    "grade": 0.41
-  },
-  {
-    "blink": 15,
-    "body": 0.6,
-    "grade": 0.49
-  },
-  {
-    "blink": 15,
-    "body": 0.7,
-    "grade": 0.55
-  },
-  {
-    "blink": 15,
-    "body": 0.8,
-    "grade": 0.61
-  },
-  {
-    "blink": 15,
-    "body": 0.9,
-    "grade": 0.65
-  },
-  {
-    "blink": 15,
-    "body": 1.0,
-    "grade": 0.68
-  },
-  {
-    "blink": 16,
-    "body": 0.0,
-    "grade": 0.28
-  },
-  {
-    "blink": 16,
-    "body": 0.1,
-    "grade": 0.29
-  },
-  {
-    "blink": 16,
     "body": 0.2,
     "grade": 0.31
   },
   {
+    "blink": 15,
+    "body": 0.3,
+    "grade": 0.34
+  },
+  {
+    "blink": 15,
+    "body": 0.4,
+    "grade": 0.37
+  },
+  {
+    "blink": 15,
+    "body": 0.5,
+    "grade": 0.4
+  },
+  {
+    "blink": 15,
+    "body": 0.6,
+    "grade": 0.41
+  },
+  {
+    "blink": 15,
+    "body": 0.7,
+    "grade": 0.41
+  },
+  {
+    "blink": 15,
+    "body": 0.8,
+    "grade": 0.41
+  },
+  {
+    "blink": 15,
+    "body": 0.9,
+    "grade": 0.41
+  },
+  {
+    "blink": 15,
+    "body": 1.0,
+    "grade": 0.41
+  },
+  {
+    "blink": 16,
+    "body": 0.0,
+    "grade": 0.28
+  },
+  {
+    "blink": 16,
+    "body": 0.1,
+    "grade": 0.28
+  },
+  {
+    "blink": 16,
+    "body": 0.2,
+    "grade": 0.3
+  },
+  {
     "blink": 16,
     "body": 0.3,
-    "grade": 0.36
+    "grade": 0.34
   },
   {
     "blink": 16,
     "body": 0.4,
-    "grade": 0.39
+    "grade": 0.37
   },
   {
     "blink": 16,
@@ -912,27 +912,27 @@
   {
     "blink": 16,
     "body": 0.6,
-    "grade": 0.48
+    "grade": 0.4
   },
   {
     "blink": 16,
     "body": 0.7,
-    "grade": 0.54
+    "grade": 0.4
   },
   {
     "blink": 16,
     "body": 0.8,
-    "grade": 0.6
+    "grade": 0.4
   },
   {
     "blink": 16,
     "body": 0.9,
-    "grade": 0.64
+    "grade": 0.4
   },
   {
     "blink": 16,
     "body": 1.0,
-    "grade": 0.67
+    "grade": 0.4
   },
   {
     "blink": 17,
@@ -947,17 +947,17 @@
   {
     "blink": 17,
     "body": 0.2,
-    "grade": 0.3
+    "grade": 0.29
   },
   {
     "blink": 17,
     "body": 0.3,
-    "grade": 0.35
+    "grade": 0.32
   },
   {
     "blink": 17,
     "body": 0.4,
-    "grade": 0.37
+    "grade": 0.36
   },
   {
     "blink": 17,
@@ -967,27 +967,27 @@
   {
     "blink": 17,
     "body": 0.6,
-    "grade": 0.45
+    "grade": 0.37
   },
   {
     "blink": 17,
     "body": 0.7,
-    "grade": 0.52
+    "grade": 0.37
   },
   {
     "blink": 17,
     "body": 0.8,
-    "grade": 0.58
+    "grade": 0.36
   },
   {
     "blink": 17,
     "body": 0.9,
-    "grade": 0.62
+    "grade": 0.36
   },
   {
     "blink": 17,
     "body": 1.0,
-    "grade": 0.66
+    "grade": 0.36
   },
   {
     "blink": 18,
@@ -1002,17 +1002,17 @@
   {
     "blink": 18,
     "body": 0.2,
-    "grade": 0.28
+    "grade": 0.27
   },
   {
     "blink": 18,
     "body": 0.3,
-    "grade": 0.32
+    "grade": 0.31
   },
   {
     "blink": 18,
     "body": 0.4,
-    "grade": 0.33
+    "grade": 0.32
   },
   {
     "blink": 18,
@@ -1022,27 +1022,27 @@
   {
     "blink": 18,
     "body": 0.6,
-    "grade": 0.41
+    "grade": 0.34
   },
   {
     "blink": 18,
     "body": 0.7,
-    "grade": 0.48
+    "grade": 0.33
   },
   {
     "blink": 18,
     "body": 0.8,
-    "grade": 0.55
+    "grade": 0.31
   },
   {
     "blink": 18,
     "body": 0.9,
-    "grade": 0.6
+    "grade": 0.31
   },
   {
     "blink": 18,
     "body": 1.0,
-    "grade": 0.64
+    "grade": 0.31
   },
   {
     "blink": 19,
@@ -1057,47 +1057,47 @@
   {
     "blink": 19,
     "body": 0.2,
-    "grade": 0.25
+    "grade": 0.23
   },
   {
     "blink": 19,
     "body": 0.3,
-    "grade": 0.28
+    "grade": 0.27
   },
   {
     "blink": 19,
     "body": 0.4,
-    "grade": 0.3
+    "grade": 0.29
   },
   {
     "blink": 19,
     "body": 0.5,
-    "grade": 0.31
+    "grade": 0.3
   },
   {
     "blink": 19,
     "body": 0.6,
-    "grade": 0.38
+    "grade": 0.31
   },
   {
     "blink": 19,
     "body": 0.7,
-    "grade": 0.44
+    "grade": 0.3
   },
   {
     "blink": 19,
     "body": 0.8,
-    "grade": 0.51
+    "grade": 0.27
   },
   {
     "blink": 19,
     "body": 0.9,
-    "grade": 0.57
+    "grade": 0.23
   },
   {
     "blink": 19,
     "body": 1.0,
-    "grade": 0.61
+    "grade": 0.23
   },
   {
     "blink": 20,
@@ -1107,52 +1107,52 @@
   {
     "blink": 20,
     "body": 0.1,
-    "grade": 0.15
+    "grade": 0.13
   },
   {
     "blink": 20,
     "body": 0.2,
-    "grade": 0.23
+    "grade": 0.21
   },
   {
     "blink": 20,
     "body": 0.3,
-    "grade": 0.26
+    "grade": 0.25
   },
   {
     "blink": 20,
     "body": 0.4,
-    "grade": 0.28
+    "grade": 0.27
   },
   {
     "blink": 20,
     "body": 0.5,
-    "grade": 0.29
+    "grade": 0.28
   },
   {
     "blink": 20,
     "body": 0.6,
-    "grade": 0.36
+    "grade": 0.29
   },
   {
     "blink": 20,
     "body": 0.7,
-    "grade": 0.42
+    "grade": 0.28
   },
   {
     "blink": 20,
     "body": 0.8,
-    "grade": 0.49
+    "grade": 0.25
   },
   {
     "blink": 20,
     "body": 0.9,
-    "grade": 0.55
+    "grade": 0.17
   },
   {
     "blink": 20,
     "body": 1.0,
-    "grade": 0.59
+    "grade": 0.13
   },
   {
     "blink": 21,
@@ -1162,22 +1162,22 @@
   {
     "blink": 21,
     "body": 0.1,
-    "grade": 0.14
+    "grade": 0.12
   },
   {
     "blink": 21,
     "body": 0.2,
-    "grade": 0.22
+    "grade": 0.2
   },
   {
     "blink": 21,
     "body": 0.3,
-    "grade": 0.26
+    "grade": 0.24
   },
   {
     "blink": 21,
     "body": 0.4,
-    "grade": 0.28
+    "grade": 0.26
   },
   {
     "blink": 21,
@@ -1187,26 +1187,26 @@
   {
     "blink": 21,
     "body": 0.6,
-    "grade": 0.35
+    "grade": 0.28
   },
   {
     "blink": 21,
     "body": 0.7,
-    "grade": 0.41
+    "grade": 0.27
   },
   {
     "blink": 21,
     "body": 0.8,
-    "grade": 0.48
+    "grade": 0.24
   },
   {
     "blink": 21,
     "body": 0.9,
-    "grade": 0.54
+    "grade": 0.16
   },
   {
     "blink": 21,
     "body": 1.0,
-    "grade": 0.59
+    "grade": -0.0
   }
 ]
