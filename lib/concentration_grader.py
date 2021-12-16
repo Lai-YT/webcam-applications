@@ -2,8 +2,7 @@ import json
 import logging
 import math
 import time
-from collections import deque
-from typing import Deque, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,19 +11,19 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
 import fuzzy.parse as parse
-import lib.sliding_window as sliding_window
 import util.logger as logger
 from fuzzy.classes import Grade, Interval
 from fuzzy.grader import FuzzyGrader
 from lib.blink_detector import AntiNoiseBlinkDetector, GoodBlinkRateIntervalDetector
 from lib.path import to_abs_path
+from lib.sliding_window import SlidingWindowHandler, TimeWindow
 
 
 interval_logger: logging.Logger = logger.setup_logger("interval_logger",
                                                       to_abs_path("..\concent_interval.log"),
                                                       logging.DEBUG)
 
-class FaceExistenceRateCounter(sliding_window.SlidingWindowHandler):
+class FaceExistenceRateCounter(SlidingWindowHandler):
     """Everytime a new frame is refreshed, there may exist a face or not. Count
     the existence within 1 minute and simply get the existence rate.
 
@@ -44,8 +43,10 @@ class FaceExistenceRateCounter(sliding_window.SlidingWindowHandler):
         """
         super().__init__()
         self._low_existence = low_existence
-        self._frame_times: Deque[int] = deque()
-        self._face_times: Deque[int] = deque()
+        self._frame_times = TimeWindow(60)
+        self._frame_times.set_time_catch_callback(self._check_face_existence)
+        self._face_times = TimeWindow(60)
+        self._face_times.set_time_catch_callback(self._check_face_existence)
 
     @property
     def low_existence(self) -> float:
@@ -59,14 +60,10 @@ class FaceExistenceRateCounter(sliding_window.SlidingWindowHandler):
             s_low_existence_detected:
                 Emits when face existence is low and sends the face existence rate.
         """
-        current_time = int(time.time())
-        self._frame_times.append(current_time)
-        self._check_face_existence()
-        # Keep window after checking, otherwise low face existence is never detected.
-        sliding_window.keep_sliding_window_in_one_minute(self._frame_times)
+        self._frame_times.append_time()
         # But also the face time needs to have the same window,
         # so we don't get the wrong value when get_face_existence_rate().
-        sliding_window.keep_sliding_window_in_one_minute(self._face_times, current_time)
+        self._face_times.catch_up_time(manual=True)
 
     def add_face(self) -> None:
         """Adds a face count and detects whether face existence is low.
@@ -76,10 +73,7 @@ class FaceExistenceRateCounter(sliding_window.SlidingWindowHandler):
             s_low_existence_detected:
                 Emits when face existence is low and sends the face existence rate.
         """
-        time_stamp = int(time.time())
-        self._face_times.append(time_stamp)
-        self._check_face_existence()
-        sliding_window.keep_sliding_window_in_one_minute(self._face_times)
+        self._face_times.append_time()
         # An add face should always be with an add frame,
         # so we don't need extra synchronization.
 
@@ -116,7 +110,7 @@ class FaceExistenceRateCounter(sliding_window.SlidingWindowHandler):
             self.s_low_existence_detected.emit(self._frame_times[0])
 
 
-class ConcentrationGrader(sliding_window.SlidingWindowHandler):
+class ConcentrationGrader(SlidingWindowHandler):
 
     s_concent_interval_refreshed = pyqtSignal(int, float)  # start time, grade
 
@@ -125,7 +119,7 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
             ratio_threshold: float = 0.24,
             consec_frame: int = 3,
             # 0 is to trigger grade computation on no face interval, the user may be writing.
-            good_rate_range: Tuple[int, int] = (0, 20),
+            good_rate_range: Tuple[int, int] = (0, 21),
             low_existence: float = 0.66) -> None:
         """
         Arguments:
@@ -139,7 +133,7 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
             good_rate_range:
                 The min and max boundary of the good blink rate (blinks per minute).
                 It's not about the average rate, so both are with type int.
-                0 ~ 20 in default. For a proper blink rate, one may refer to
+                0 ~ 21 in default. For a proper blink rate, one may refer to
                 https://pubmed.ncbi.nlm.nih.gov/11700965/#affiliation-1
                 It's passed to the underlaying GoodBlinkRateIntervalDetector.
         """
@@ -149,8 +143,8 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
         interval_logger.info(f" consec frame = {consec_frame}")
         interval_logger.info(f" good range   = {good_rate_range}\n")
 
-        self._body_concentration_times: Deque[int] = deque()
-        self._body_distraction_times: Deque[int] = deque()
+        self._body_concentration_times = TimeWindow(60)
+        self._body_distraction_times = TimeWindow(60)
         # TODO: Blink detection not accurate, lots of false blink.
         self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
         self._interval_detector = GoodBlinkRateIntervalDetector(good_rate_range)
@@ -163,7 +157,8 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
         self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
         self._interval_detector.s_good_interval_detected.connect(self.check_concentration)
         self._face_existence_counter.s_low_existence_detected.connect(self.check_concentration)
-        # Clear the deque of frame, body and blink times only after the check_concentration() emits.
+        # Clear the window of frame, body and blink times only after the
+        # check_concentration() emits.
         # This is to make sure we don't miss any potential good concentration interval.
         self.s_concent_interval_refreshed.connect(self.clear_windows)
 
@@ -193,12 +188,10 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
         self._face_existence_counter.add_face()
 
     def add_body_concentration(self) -> None:
-        self._body_concentration_times.append(int(time.time()))
-        sliding_window.keep_sliding_window_in_one_minute(self._body_concentration_times)
+        self._body_concentration_times.append_time()
 
     def add_body_distraction(self) -> None:
-        self._body_distraction_times.append(int(time.time()))
-        sliding_window.keep_sliding_window_in_one_minute(self._body_distraction_times)
+        self._body_distraction_times.append_time()
 
     def get_body_concentration_grade(self, start_time: int) -> float:
         """Returns the amount of body concentration over total count.
@@ -206,8 +199,8 @@ class ConcentrationGrader(sliding_window.SlidingWindowHandler):
         The result is rounded to two decimal places.
         """
         end_time: int = start_time + 60
-        def count_time_in_interval(times: Deque[int]) -> int:
-            # Iterate through the entire deque causes more time;
+        def count_time_in_interval(times: TimeWindow) -> int:
+            # Iterate through the entire window causes more time;
             # count all then remove out-of-ranges to provide slightly better efficiency.
             count: int = len(times)
             for t in times:

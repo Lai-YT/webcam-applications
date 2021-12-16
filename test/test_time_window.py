@@ -17,9 +17,10 @@ class TimeWindowTestCase(unittest.TestCase):
             self.time_window.append_time()
             times.append(int(time.time()))
             time.sleep(1)
-        self.assertLessEqual(abs(self.time_window.front - times[0]), 1)
-        self.assertLessEqual(abs(self.time_window.back - times[-1]), 1)
+
         self.assertEqual(len(self.time_window), len(times))
+        for t, ans_t in zip(times, self.time_window):
+            self.assertLessEqual(abs(t - ans_t), 1)
 
     def test_append_time_exceed(self) -> None:
         times = []
@@ -29,14 +30,17 @@ class TimeWindowTestCase(unittest.TestCase):
             time.sleep(25)
             if len(times) > 3:
                 times.pop(0)
-            self.assertLessEqual(abs(self.time_window.front - times[0]), 1)
-            self.assertLessEqual(abs(self.time_window.back - times[-1]), 1)
+            for t, ans_t in zip(times, self.time_window):
+                self.assertLessEqual(abs(t - ans_t), 1)
 
-    def test_empty_error(self) -> None:
-        with self.assertRaises(IndexError, msg="the window is empty"):
-            f = self.time_window.front
-        with self.assertRaises(IndexError, msg="the window is empty"):
-            b = self.time_window.back
+    def test_time_catch_callback(self) -> None:
+        length_count = 0
+        self.time_window.set_time_catch_callback(
+            lambda: self.assertEqual(len(self.time_window), length_count)
+        )
+        while length_count != 5:
+            length_count += 1
+            self.time_window.append_time()
 
     def test_clear(self) -> None:
         for _ in range(4):

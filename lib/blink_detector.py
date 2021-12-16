@@ -24,18 +24,17 @@
 import math
 import time
 import statistics
-from collections import deque
 from enum import Enum, auto
-from typing import Deque, List, Tuple
+from typing import List, Tuple
 
 import cv2
 from PyQt5.QtCore import QObject, pyqtSignal
 from imutils import face_utils
 from nptyping import Int, NDArray
 
-import lib.sliding_window as sliding_window
 from lib.color import BGR, GREEN
 from lib.image_type import ColorImage
+from lib.sliding_window import SlidingWindowHandler, TimeWindow
 
 
 class EyeSide(Enum):
@@ -302,7 +301,7 @@ class AntiNoiseBlinkDetector(QObject):
             self._consec_count = 0
 
 
-class GoodBlinkRateIntervalDetector(sliding_window.SlidingWindowHandler):
+class GoodBlinkRateIntervalDetector(SlidingWindowHandler):
     """Detects whether the blink rate is in the good rate range or not.
 
     The number of blinks per minute is the blink rate, which is an integer here
@@ -332,10 +331,12 @@ class GoodBlinkRateIntervalDetector(sliding_window.SlidingWindowHandler):
         # Time record of blinks.
         # The length of it also indicates how many blinks there are within the
         # time between index 0 and -1.
-        self._blink_times: Deque[int] = deque()
+        self._blink_times = TimeWindow(60)
+        self._blink_times.set_time_catch_callback(self._check_blink_rate)
 
     def check_blink_rate(self) -> None:
-        """Checks whether there's a good interval.
+        """Checks whether there's a good interval and catch up with the current
+        time.
 
         Call this method manually to have the detector follow the current time.
         Emits:
@@ -343,20 +344,27 @@ class GoodBlinkRateIntervalDetector(sliding_window.SlidingWindowHandler):
                 Emits when there's a good interval.
                 Sends the start time and the blink rate.
         """
+        self._blink_times.catch_up_time(manual=True)
+
+    def _check_blink_rate(self) -> None:
+        """
+        Emits:
+            s_good_interval_detected:
+                Emits when there's a good interval.
+                Sends the start time and the blink rate.
+        """
         # This is a sliding window algorithm.
         #
-        # The deque "blink times" always contains the blinks within this very minute.
-        # When the time length invloved by current and the earliest time, that
-        # means it's time to check whether this very minute is a good interval or not.
-        # If it is, emit the signal to tell there's a good interval.
-        # Also, pop out the oldest blink record until the deque only contains
-        # blinks within one minute again.
+        # The time window always contains the blinks within this very minute.
+        # When the time length invloved by current and the earliest time exceeds
+        # a minute, that means it's time to check whether this very minute is a
+        # good interval or not. If it is, emit the signal to tell there's a good
+        # interval.
         current_time = int(time.time())
         if self._blink_times and (current_time - self._blink_times[0]) > 60:
             blink_rate: int = len(self._blink_times)
             if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
                 self.s_good_interval_detected.emit(self._blink_times[0], blink_rate)
-            sliding_window.keep_sliding_window_in_one_minute(self._blink_times, current_time)
 
     def add_blink(self) -> None:
         """Adds a new time of blink and checks whether there's a good interval.
@@ -366,7 +374,7 @@ class GoodBlinkRateIntervalDetector(sliding_window.SlidingWindowHandler):
                 Emits when there's a good interval.
                 Sends the start time and the blink rate.
         """
-        self._blink_times.append(int(time.time()))
+        self._blink_times.append_time()
         self.check_blink_rate()
 
     def clear_windows(self) -> None:

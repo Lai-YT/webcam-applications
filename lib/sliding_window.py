@@ -1,7 +1,7 @@
 import time
 from abc import ABC, abstractmethod
 from collections import deque
-from typing import Deque, Optional
+from typing import Any, Callable, Deque, Optional
 
 
 from PyQt5.QtCore import QObject
@@ -14,39 +14,56 @@ class SlidingWindowHandler(QObject):
         pass
 
 
-# TODO: TimeWindow and DoubleTimeWindow not ready yet
-class TimeWindow:
-    def __init__(self, time_length: int = 60) -> None:
-        self._window: Deque[int] = deque()
-        self._time_length = time_length
+class TimeWindow(deque):
+    def __init__(self, width: int = 60) -> None:
+        """
+        Arguments:
+            width:
+                The width of the time window, in seconds, 60 in default.
+                Pops out from the earliest when time exceeds.
+        """
+        super().__init__()
+        self._width = width
+
+    def set_time_catch_callback(self, time_catch_callback: Callable[[], Any]) -> None:
+        """
+        Arguments:
+            time_catch_callback: Called before the window catches up the time.
+        """
+        self._time_catch_callback = time_catch_callback
 
     def append_time(self) -> None:
-        self._window.append(int(time.time()))
-        while self._window and self._window[-1] - self._window[0] > self._time_length:
-            self._window.popleft()
+        """Appends the current time to the window and catches up the time."""
+        super().append(int(time.time()))
+        self.catch_up_time()
 
-    def clear(self) -> None:
-        self._window.clear()
+    def catch_up_time(self, *, manual: bool = False) -> None:
+        """Calls the time_catch_callback if it's set, then pop out the oldest
+        time record until the window catches up with the time (doesn't exceed
+        the width).
 
-    @property
-    def front(self) -> int:
-        if not self._window:
-            raise IndexError("the window is empty")
-        return self._window[0]
+        This method does nothing if the window is empty.
 
-    @property
-    def back(self) -> int:
-        if not self._window:
-            raise IndexError("the window is empty")
-        return self._window[-1]
+        Arguments:
+            manual:
+                If manual is True, the time to catch up with is the current time,
+                otherwise with the latest time in the window. False in default.
+        """
+        if not super().__len__():
+            return
 
-    def __str__(self) -> str:
-        return "TimeWindow" + self._window.__str__().lstrip("deque")
+        if hasattr(self, "_time_catch_callback"):
+            self._time_catch_callback()
+        # the time to catch up with
+        time_ = super().__getitem__(-1)
+        if manual:
+            time_ = int(time.time())
+        # catch up
+        while (super().__len__()
+                and time_ - super().__getitem__(0) > self._width):
+            super().popleft()
 
-    def __len__(self) -> int:
-        return self._window.__len__()
-
-
+# TODO: DoubleTimeWindow not ready yet
 class DoubleTimeWindow:
     """Instead of simply maintain a window, this object also keeps the previous
     window, so is named double time.
@@ -69,18 +86,3 @@ class DoubleTimeWindow:
     def clear(self) -> None:
         self._window.clear()
         self._pre_window.clear()
-
-
-def keep_sliding_window_in_one_minute(window: Deque[int], reference_time: Optional[int] = None) -> None:
-    """Compares reference time and the earliest time stamp in the window, keep them within a minute.
-
-    Arguments:
-        window: The time stamps. Should be sorted in ascending order with respect to time.
-        reference_time:
-            The time to compare with. If is not provided, the latest time stamp
-            in the window is use.
-    """
-    if reference_time is None:
-        reference_time = window[-1]
-    while window and reference_time - window[0] > 60:
-        window.popleft()
