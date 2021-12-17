@@ -14,16 +14,18 @@ class SlidingWindowHandler(QObject):
         pass
 
 
-class TimeWindow(deque):
-    def __init__(self, width: int = 60) -> None:
+class TimeWindow:
+    def __init__(self, time_width: int = 60) -> None:
         """
         Arguments:
-            width:
-                The width of the time window, in seconds, 60 in default.
-                Pops out from the earliest when time exceeds.
+            time_width:
+                The time width of a window is it's
+                    latest time - the earliest time.
+                This is the max width of the window, in seconds, 60 in default.
+                Times are poped out from the earliest when exceeds.
         """
-        super().__init__()
-        self._width = width
+        self._window: Deque[int] = deque()
+        self._time_width = time_width
 
     def set_time_catch_callback(self, time_catch_callback: Callable[[], Any]) -> None:
         """
@@ -34,13 +36,13 @@ class TimeWindow(deque):
 
     def append_time(self) -> None:
         """Appends the current time to the window and catches up the time."""
-        super().append(int(time.time()))
+        self._window.append(int(time.time()))
         self.catch_up_time()
 
     def catch_up_time(self, *, manual: bool = False) -> None:
         """Calls the time_catch_callback if it's set, then pop out the oldest
         time record until the window catches up with the time (doesn't exceed
-        the width).
+        the time_width).
 
         This method does nothing if the window is empty.
 
@@ -49,19 +51,36 @@ class TimeWindow(deque):
                 If manual is True, the time to catch up with is the current time,
                 otherwise with the latest time in the window. False in default.
         """
-        if not super().__len__():
+        if not self._window:
             return
 
         if hasattr(self, "_time_catch_callback"):
             self._time_catch_callback()
         # the time to catch up with
-        time_ = super().__getitem__(-1)
+        time_ = self._window[-1]
         if manual:
             time_ = int(time.time())
         # catch up
-        while (super().__len__()
-                and time_ - super().__getitem__(0) > self._width):
-            super().popleft()
+        while self._window and time_ - self._window[0] > self._time_width:
+            self._window.popleft()
+
+    def clear(self) -> None:
+        """Removes all times from the window."""
+        self._window.clear()
+
+    def __getitem__(self, index: int) -> int:
+        """Returns the index-th earliest time in the window.
+
+        Notice that the earliest time is with index 0.
+        """
+        return self._window[index]
+
+    def __len__(self) -> int:
+        """Returns how many time records there are in the window."""
+        return len(self._window)
+
+    def __str__(self) -> int:
+        return "TimeWindow" + str(self._window).lstrip("deque")
 
 # TODO: DoubleTimeWindow not ready yet
 class DoubleTimeWindow:
