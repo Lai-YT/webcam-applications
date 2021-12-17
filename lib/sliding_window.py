@@ -1,7 +1,7 @@
 import time
 from abc import ABC, abstractmethod
 from collections import deque
-from typing import Any, Callable, Deque, Optional
+from typing import Any, Callable, Deque, Iterator, Optional
 
 
 from PyQt5.QtCore import QObject
@@ -75,11 +75,14 @@ class TimeWindow:
         """
         return self._window[index]
 
+    def __iter__(self) -> Iterator[int]:
+        return iter(self._window)
+
     def __len__(self) -> int:
         """Returns how many time records there are in the window."""
         return len(self._window)
 
-    def __str__(self) -> int:
+    def __str__(self) -> str:
         return "TimeWindow" + str(self._window).lstrip("deque")
 
 # TODO: DoubleTimeWindow not ready yet
