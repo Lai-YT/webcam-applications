@@ -10,7 +10,7 @@ from PyQt5.QtCore import QObject
 class SlidingWindowHandler(QObject):
     """The user may decide when to clear the windows for a new start."""
     @abstractmethod
-    def clear_windows(self) -> None:
+    def clear_windows(self, level: IntervalLevel) -> None:
         pass
 
 

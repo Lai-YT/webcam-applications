@@ -3,7 +3,7 @@ import json
 import logging
 import math
 import time
-from typing import List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -211,7 +211,7 @@ class ConcentrationGrader(SlidingWindowHandler):
         The result is rounded to two decimal places.
         """
         def count_time_in_interval(times: DoubleTimeWindow) -> int:
-            window = times
+            window: Iterable[int] = times
             if level is IntervalLevel.BAD:
                 window = times.previous
             # Iterate through the entire window causes more time;
