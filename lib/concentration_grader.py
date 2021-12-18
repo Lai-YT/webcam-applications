@@ -3,7 +3,7 @@ import json
 import logging
 import math
 import time
-from typing import Iterable, List, Optional, Tuple
+from typing import Deque, List, Optional, Tuple, Union
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,14 +18,14 @@ from fuzzy.grader import FuzzyGrader
 from lib.blink_detector import (AntiNoiseBlinkDetector, BlinkRateIntervalDetector,
                                 GoodBlinkRateIntervalDetector, IntervalLevel)
 from lib.path import to_abs_path
-from lib.sliding_window import DoubleTimeWindow, SlidingWindowHandler, TimeWindow
+from lib.sliding_window import DoubleTimeWindow, TimeWindow
 
 
 interval_logger: logging.Logger = logger.setup_logger("interval_logger",
                                                       to_abs_path("..\concent_interval.log"),
                                                       logging.DEBUG)
 
-class FaceExistenceRateCounter(SlidingWindowHandler):
+class FaceExistenceRateCounter(QObject):
     """Everytime a new frame is refreshed, there may exist a face or not. Count
     the existence within 1 minute and simply get the existence rate.
 
@@ -112,7 +112,7 @@ class FaceExistenceRateCounter(SlidingWindowHandler):
             self.s_low_existence_detected.emit(self._frame_times[0])
 
 
-class ConcentrationGrader(SlidingWindowHandler):
+class ConcentrationGrader(QObject):
 
     s_concent_interval_refreshed = pyqtSignal(IntervalLevel, int, int, float)  # start, end, grade
 
@@ -211,7 +211,7 @@ class ConcentrationGrader(SlidingWindowHandler):
         The result is rounded to two decimal places.
         """
         def count_time_in_interval(times: DoubleTimeWindow) -> int:
-            window: Iterable[int] = times
+            window: Union[DoubleTimeWindow, Deque[int]] = times
             if level is IntervalLevel.BAD:
                 window = times.previous
             # Iterate through the entire window causes more time;

@@ -34,7 +34,7 @@ from nptyping import Int, NDArray
 
 from lib.color import BGR, GREEN
 from lib.image_type import ColorImage
-from lib.sliding_window import DoubleTimeWindow, SlidingWindowHandler, TimeWindow
+from lib.sliding_window import DoubleTimeWindow, TimeWindow
 
 
 class EyeSide(Enum):
@@ -301,7 +301,7 @@ class AntiNoiseBlinkDetector(QObject):
             self._consec_count = 0
 
 
-class GoodBlinkRateIntervalDetector(SlidingWindowHandler):
+class GoodBlinkRateIntervalDetector(QObject):
     """Detects whether the blink rate is in the good rate range or not.
 
     The number of blinks per minute is the blink rate, which is an integer here
@@ -390,7 +390,7 @@ class IntervalLevel(Enum):
     BAD = auto()
     GOOD = auto()
 
-class BlinkRateIntervalDetector(SlidingWindowHandler):
+class BlinkRateIntervalDetector(QObject):
     """Detects whether the blink rate is in the good rate range or not.
 
     The number of blinks per minute is the blink rate, which is an integer here
