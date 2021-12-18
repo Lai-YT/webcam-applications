@@ -75,6 +75,9 @@ class TimeWindow:
     def __iter__(self) -> Iterator[int]:
         return iter(self._window)
 
+    def __reversed__(self) -> Iterator[int]:
+        return reversed(self._window)
+
     def __len__(self) -> int:
         """Returns how many time records there are in the window."""
         return len(self._window)
@@ -147,13 +150,16 @@ class DoubleTimeWindow:
     def __iter__(self) -> Iterator[int]:
         return iter(self._window)
 
+    def __reversed__(self) -> Iterator[int]:
+        return reversed(self._window)
+
     def __str__(self) -> str:
         return ("DoubleTimeWindow{previous"
                 + str(self._pre_window).lstrip("deque") + ", "
                 + str(self._window).lstrip("deque")
                 + "}")
 
-    def clear(self, *, pre_only: bool = False) -> None:
-        if not pre_only:
+    def clear(self, *, prev_only: bool = False) -> None:
+        if not prev_only:
             self._window.clear()
         self._pre_window.clear()

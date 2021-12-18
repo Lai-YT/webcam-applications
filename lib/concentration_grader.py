@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 import math
@@ -14,9 +15,10 @@ import fuzzy.parse as parse
 import util.logger as logger
 from fuzzy.classes import Grade, Interval
 from fuzzy.grader import FuzzyGrader
-from lib.blink_detector import AntiNoiseBlinkDetector, GoodBlinkRateIntervalDetector
+from lib.blink_detector import (AntiNoiseBlinkDetector, BlinkRateIntervalDetector,
+                                GoodBlinkRateIntervalDetector, IntervalLevel)
 from lib.path import to_abs_path
-from lib.sliding_window import SlidingWindowHandler, TimeWindow
+from lib.sliding_window import DoubleTimeWindow, SlidingWindowHandler, TimeWindow
 
 
 interval_logger: logging.Logger = logger.setup_logger("interval_logger",
@@ -112,7 +114,7 @@ class FaceExistenceRateCounter(SlidingWindowHandler):
 
 class ConcentrationGrader(SlidingWindowHandler):
 
-    s_concent_interval_refreshed = pyqtSignal(int, float)  # start time, grade
+    s_concent_interval_refreshed = pyqtSignal(IntervalLevel, int, int, float)  # start, end, grade
 
     def __init__(
             self,
@@ -136,6 +138,7 @@ class ConcentrationGrader(SlidingWindowHandler):
                 0 ~ 21 in default. For a proper blink rate, one may refer to
                 https://pubmed.ncbi.nlm.nih.gov/11700965/#affiliation-1
                 It's passed to the underlaying GoodBlinkRateIntervalDetector.
+            low_existence:
         """
         super().__init__()
         interval_logger.info("ConcentrationGrader configs:")
@@ -143,35 +146,39 @@ class ConcentrationGrader(SlidingWindowHandler):
         interval_logger.info(f" consec frame = {consec_frame}")
         interval_logger.info(f" good range   = {good_rate_range}\n")
 
-        self._body_concentration_times = TimeWindow(60)
-        self._body_distraction_times = TimeWindow(60)
+        self._body_concentration_times = DoubleTimeWindow(60)
+        self._body_distraction_times = DoubleTimeWindow(60)
         # TODO: Blink detection not accurate, lots of false blink.
         self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
-        self._interval_detector = GoodBlinkRateIntervalDetector(good_rate_range)
-        self._face_existence_counter = FaceExistenceRateCounter(low_existence)
+        self._interval_detector = BlinkRateIntervalDetector(good_rate_range)
+        # self._face_existence_counter = FaceExistenceRateCounter(low_existence)
         self._fuzzy_grader = FuzzyGrader()
 
         self._json_file: str = to_abs_path("..\good_intervals.json")
         parse.init_json(self._json_file)
 
         self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
-        self._interval_detector.s_good_interval_detected.connect(self.check_concentration)
-        self._face_existence_counter.s_low_existence_detected.connect(self.check_concentration)
+        self._interval_detector.s_good_interval_detected.connect(
+            functools.partial(self.check_concentration, IntervalLevel.GOOD))
+        self._interval_detector.s_bad_interval_detected.connect(
+            functools.partial(self.check_concentration, IntervalLevel.BAD))
+        # self._face_existence_counter.s_low_existence_detected.connect(self.check_concentration)
         # Clear the window of frame, body and blink times only after the
         # check_concentration() emits.
         # This is to make sure we don't miss any potential good concentration interval.
         self.s_concent_interval_refreshed.connect(self.clear_windows)
 
-    def get_ratio_threshold_of_blink_detector(self) -> float:
+    def get_ratio_threshold(self) -> float:
         """Returns the ratio threshold used to consider an EAR lower than it
         to be a blink with noise."""
         return self._blink_detector.ratio_threshold
 
-    def set_ratio_threshold_of_blink_detector(self, threshold: float) -> None:
+    def set_ratio_threshold(self, threshold: float) -> None:
         """
         Arguments:
             threshold:
-                An eye aspect ratio lower than this is considered to be a blink with noise.
+                An eye aspect ratio lower than this is considered to be a blink
+                with noise.
         """
         self._blink_detector.ratio_threshold = threshold
 
@@ -179,13 +186,14 @@ class ConcentrationGrader(SlidingWindowHandler):
         self._blink_detector.detect_blink(landmarks)
 
     def add_frame(self) -> None:
-        self._face_existence_counter.add_frame()
+        # self._face_existence_counter.add_frame()
         # Basicly, add_frame() is called every frame,
         # so call method which should be called manually together.
         self._interval_detector.check_blink_rate()
 
     def add_face(self) -> None:
-        self._face_existence_counter.add_face()
+        # self._face_existence_counter.add_face()
+        pass
 
     def add_body_concentration(self) -> None:
         self._body_concentration_times.append_time()
@@ -193,21 +201,27 @@ class ConcentrationGrader(SlidingWindowHandler):
     def add_body_distraction(self) -> None:
         self._body_distraction_times.append_time()
 
-    def get_body_concentration_grade(self, start_time: int) -> float:
+    def get_body_concentration_grade(
+            self,
+            level: IntervalLevel,
+            start_time: int,
+            end_time: int) -> float:
         """Returns the amount of body concentration over total count.
 
         The result is rounded to two decimal places.
         """
-        end_time: int = start_time + 60
-        def count_time_in_interval(times: TimeWindow) -> int:
+        def count_time_in_interval(times: DoubleTimeWindow) -> int:
+            window = times
+            if level is IntervalLevel.BAD:
+                window = times.previous
             # Iterate through the entire window causes more time;
             # count all then remove out-of-ranges to provide slightly better efficiency.
-            count: int = len(times)
-            for t in times:
+            count: int = len(window)
+            for t in window:
                 if t > start_time:
                     break
                 count -= 1
-            for t in reversed(times):
+            for t in reversed(window):
                 if t < end_time:
                     break
                 count -= 1
@@ -219,15 +233,16 @@ class ConcentrationGrader(SlidingWindowHandler):
         # Maybe there's a time before windows are cleared but after the first check.
         return round(concent_count / (concent_count + distract_count), 2)
 
-    @pyqtSlot(int)
     @pyqtSlot(int, int)
+    @pyqtSlot(int, int, int)
     def check_concentration(
             self,
+            level: IntervalLevel,
             start_time: int,
+            end_time: int,
             blink_rate: Optional[int] = None) -> None:
-        end_time: int = start_time + 60
         interval_logger.info(f"check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
-        body_concent: float = self.get_body_concentration_grade(start_time)
+        body_concent: float = self.get_body_concentration_grade(level, start_time, end_time)
         interval_logger.info(f"body concentration = {body_concent}")
 
         grade: float
@@ -238,8 +253,15 @@ class ConcentrationGrader(SlidingWindowHandler):
             interval_logger.info(f"blink rate = {blink_rate}")
             grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
 
-        if grade >= 0.6:
-            self.s_concent_interval_refreshed.emit(start_time, grade)
+        if level is IntervalLevel.BAD:
+            self.s_concent_interval_refreshed.emit(level, start_time, end_time, grade)
+            interval_logger.info(f"bad concentration: {grade}")
+            parse.append_to_json(
+                self._json_file,
+                Interval(start=start_time, end=end_time, grade=grade).__dict__
+            )
+        elif grade >= 0.6:
+            self.s_concent_interval_refreshed.emit(level, start_time, end_time, grade)
             interval_logger.info(f"good concentration: {grade}")
             parse.append_to_json(
                 self._json_file,
@@ -249,12 +271,15 @@ class ConcentrationGrader(SlidingWindowHandler):
             interval_logger.info(f"{grade}, not concentrating")
         interval_logger.info("")  # separation
 
-    @pyqtSlot()
-    def clear_windows(self) -> None:
-        self._body_distraction_times.clear()
-        self._body_concentration_times.clear()
-        self._interval_detector.clear_windows()
-        self._face_existence_counter.clear_windows()
+    @pyqtSlot(IntervalLevel)
+    def clear_windows(self, level: IntervalLevel) -> None:
+        prev_only: bool = False
+        if level is IntervalLevel.BAD:
+            prev_only = True
+        self._body_distraction_times.clear(prev_only=prev_only)
+        self._body_concentration_times.clear(prev_only=prev_only)
+        self._interval_detector.clear_windows(level)
+        # self._face_existence_counter.clear_windows()
 
 
 def save_chart_of_intervals(filename: str, intervals: List[Interval]) -> None:
@@ -278,6 +303,7 @@ def save_chart_of_intervals(filename: str, intervals: List[Interval]) -> None:
     ax.set_yticks(np.arange(0, 1.2, 0.2))
     ax.set_yticks(np.arange(0.1, 1.0, 0.2), minor=True)
     ax.set_ylim(0, 1.1)
+    ax.axhline(y=0.6, linestyle="dashed", color="black")
     ax.set_ylabel("grade")
     ax.set_xlabel("time (min)")
     ax.set_title(f"Concentration grades from {to_date_time(init_time)}")

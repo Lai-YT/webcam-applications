@@ -34,7 +34,7 @@ from nptyping import Int, NDArray
 
 from lib.color import BGR, GREEN
 from lib.image_type import ColorImage
-from lib.sliding_window import SlidingWindowHandler, TimeWindow
+from lib.sliding_window import DoubleTimeWindow, SlidingWindowHandler, TimeWindow
 
 
 class EyeSide(Enum):
@@ -384,3 +384,108 @@ class GoodBlinkRateIntervalDetector(SlidingWindowHandler):
         won't be counted twice and used in the next interval.
         """
         self._blink_times.clear()
+
+
+class IntervalLevel(Enum):
+    BAD = auto()
+    GOOD = auto()
+
+class BlinkRateIntervalDetector(SlidingWindowHandler):
+    """Detects whether the blink rate is in the good rate range or not.
+
+    The number of blinks per minute is the blink rate, which is an integer here
+    since it counts but does not take the average.
+
+    Signals:
+        s_good_interval_detected:
+            Emits when a good blink rate is detected.
+            It sends the first time (FT) of the blinks in that minute as the
+            start time, FT+60 as the end time and the blink rate of that minute.
+        s_bad_interval_detected:
+            Emit when an interval is longer than 30 seconds but not good.
+            It sends the start time, end time and blink count of that interval.
+    """
+
+    s_good_interval_detected = pyqtSignal(int, int, int)  # start time, rate
+    s_bad_interval_detected = pyqtSignal(int, int, int)  # start, end, rate
+
+    def __init__(self, good_rate_range: Tuple[int, int] = (15, 25)) -> None:
+        """
+        Arguments:
+            good_rate_range:
+                The min and max boundary of the good blink rate (blinks per minute).
+                It's not about the average rate, so both are with type int.
+                15 ~ 25 in default. For a proper blink rate, one may refer to
+                https://pubmed.ncbi.nlm.nih.gov/11700965/#affiliation-1
+        """
+        super().__init__()
+        self._good_rate_range = good_rate_range
+        # Time record of blinks.
+        # We use it length as the blink count.
+        self._blink_times = DoubleTimeWindow(60)
+        self._blink_times.set_time_catch_callback(self._check_blink_rate)
+
+    def check_blink_rate(self) -> None:
+        """Checks whether there's a good interval and catch up with the current
+        time.
+
+        Call this method manually to have the detector follow the current time.
+        Emits:
+            s_good_interval_detected:
+                Emits when there's a good interval.
+                Sends the start time and the blink rate.
+        """
+        self._blink_times.catch_up_time(manual=True)
+
+    def _check_blink_rate(self) -> None:
+        """
+        Emits:
+            s_good_interval_detected:
+                Emits when there's a good interval.
+                Sends the start time and the blink rate.
+            s_bad_interval_detected:
+                Emits when there's a bad interval.
+                Sends the start time, end time and the blink count.
+        """
+        current_time = int(time.time())
+        if self._blink_times and (current_time - self._blink_times[0]) > 60:
+            blink_rate: int = len(self._blink_times)
+            if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
+                # Emit bad part first since its earlier on time.
+                if (self._blink_times.previous
+                        and self._blink_times[0] - self._blink_times.previous[0] >= 30):
+                    self.s_bad_interval_detected.emit(
+                        self._blink_times.previous[0],
+                        self._blink_times[0],
+                        len(self._blink_times.previous)
+                    )
+                self.s_good_interval_detected.emit(
+                    self._blink_times[0],
+                    self._blink_times[0] + 60,
+                    blink_rate
+                )
+        elif (self._blink_times.previous
+                and self._blink_times
+                and self._blink_times[0] - self._blink_times.previous[0] >= 60):
+            self.s_bad_interval_detected.emit(
+                self._blink_times.previous[0],
+                self._blink_times[0],
+                len(self._blink_times.previous)
+            )
+
+    def add_blink(self) -> None:
+        """Adds a new time of blink and checks whether there's a good interval.
+
+        Emits:
+            s_good_interval_detected:
+                Emits when there's a good interval.
+                Sends the start time and the blink rate.
+        """
+        self._blink_times.append_time()
+        self.check_blink_rate()
+
+    def clear_windows(self, level: IntervalLevel) -> None:
+        prev_only: bool = False
+        if level is IntervalLevel.BAD:
+            prev_only = True
+        self._blink_times.clear(prev_only=prev_only)

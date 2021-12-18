@@ -105,7 +105,7 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
             self.time_window.append_time()
             time.sleep(5)
 
-        self.time_window.clear(pre_only=True)
+        self.time_window.clear(prev_only=True)
         self.assertEqual(len(self.time_window), 13)
         self.assertEqual(len(self.time_window.previous), 0)
 

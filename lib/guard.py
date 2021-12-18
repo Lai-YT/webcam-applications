@@ -22,7 +22,7 @@ from util.timer import Timer, min_to_sec
 
 
 # Module scope grader for all guards to share.
-CONCENT_GRADER_OF_GUARDS = ConcentrationGrader(0.23, 3, (0, 20))
+CONCENT_GRADER_OF_GUARDS = ConcentrationGrader(0.23, 3, (0, 21))
 
 def mark_face(
         canvas: ColorImage,
