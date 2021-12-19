@@ -59,10 +59,10 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
                          "DoubleTimeWindow{previous([]), ([])}")
 
     def test_len(self) -> None:
-        for i in range(15):
+        for i in range(16):
             self.time_window.append_time()
             time.sleep(4.5)
-        self.assertEqual(len(self.time_window), 13)
+        self.assertEqual(len(self.time_window), 14)
         self.assertEqual(len(self.time_window.previous), 2)
 
     def test_append_time_not_exceed(self) -> None:
@@ -80,11 +80,11 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
     def test_append_time_exceed(self) -> None:
         times = []
         sep_pos = 0
-        for _ in range(15):
+        for _ in range(16):
             self.time_window.append_time()
             times.append(int(time.time()))
             time.sleep(4.5)
-            if len(times) - sep_pos > 13:
+            if len(times) - sep_pos > 14:
                 sep_pos += 1
             for t, ans_t in zip(times[sep_pos:], self.time_window):
                 self.assertLessEqual(abs(t - ans_t), 1)
@@ -101,12 +101,12 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
             self.time_window.append_time()
 
     def test_clear_individual(self) -> None:
-        for _ in range(15):
+        for _ in range(16):
             self.time_window.append_time()
             time.sleep(4.5)
 
         self.time_window.clear(WindowType.PREVIOUS)
-        self.assertEqual(len(self.time_window), 13)
+        self.assertEqual(len(self.time_window), 14)
         self.assertEqual(len(self.time_window.previous), 0)
 
         self.time_window.clear(WindowType.CURRENT)
@@ -115,7 +115,7 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
         self.assertEqual(len(self.time_window.previous), 0)
 
     def test_clear_both(self) -> None:
-        for _ in range(15):
+        for _ in range(16):
             self.time_window.append_time()
             time.sleep(4.5)
 
