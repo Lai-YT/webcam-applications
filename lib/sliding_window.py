@@ -1,5 +1,6 @@
 import time
 from collections import deque
+from enum import Enum, auto
 from typing import Any, Callable, Deque, Iterator, Optional
 
 
@@ -19,7 +20,7 @@ class TimeWindow:
     def set_time_catch_callback(self, time_catch_callback: Callable[[], Any]) -> None:
         """
         Arguments:
-            time_catch_callback: Called before the window catches up the time.
+            time_catch_callback: Called after the window catches up the time.
         """
         self._time_catch_callback = time_catch_callback
 
@@ -29,18 +30,15 @@ class TimeWindow:
         self.catch_up_time()
 
     def catch_up_time(self, *, manual: bool = False) -> None:
-        """Calls the time_catch_callback if it's set, then pops out the oldest
-        time record until the window catches up with the time (doesn't exceed
-        the time_width).
+        """Pops out the earliest time record until the window catches up with the
+        time (doesn't exceed the time_width), then calls the time_catch_callback
+        if it's set.
 
         Arguments:
             manual:
                 If manual is True, the time to catch up with is the current time,
                 otherwise with the latest time in the window. False in default.
         """
-        if hasattr(self, "_time_catch_callback"):
-            self._time_catch_callback()
-
         if self._window:
             # the time to catch up with
             time_ = self._window[-1]
@@ -49,6 +47,9 @@ class TimeWindow:
             # catch up
             while self._window and time_ - self._window[0] > self._time_width:
                 self._window.popleft()
+
+        if hasattr(self, "_time_catch_callback"):
+            self._time_catch_callback()
 
     def clear(self) -> None:
         """Removes all times from the window."""
@@ -74,7 +75,11 @@ class TimeWindow:
     def __str__(self) -> str:
         return "TimeWindow" + str(self._window).lstrip("deque")
 
-# TODO: DoubleTimeWindow not ready yet
+
+class WindowType(Enum):
+    CURRENT = auto()
+    PREVIOUS = auto()
+
 class DoubleTimeWindow:
     """Instead of simply maintain a window, this object also keeps the previous
     window, so is named double time.
@@ -94,23 +99,20 @@ class DoubleTimeWindow:
     def set_time_catch_callback(self, time_catch_callback: Callable[[], Any]) -> None:
         """
         Arguments:
-            time_catch_callback: Called before the window catches up the time.
+            time_catch_callback: Called after the window catches up the time.
         """
         self._time_catch_callback = time_catch_callback
 
     def catch_up_time(self, *, manual: bool = False) -> None:
-        """Calls the time_catch_callback if it's set, then pops out the oldest
-        time record until the window catches up with the time (doesn't exceed
-        the time_width).
+        """Pops out the earliest time record until the window catches up with the
+        time (doesn't exceed the time_width), then calls the time_catch_callback
+        if it's set.
 
         Arguments:
             manual:
                 If manual is True, the time to catch up with is the current time,
                 otherwise with the latest time in the window. False in default.
         """
-        if hasattr(self, "_time_catch_callback"):
-            self._time_catch_callback()
-
         if self._window:
             # the time to catch up with
             time_ = self._window[-1]
@@ -126,9 +128,18 @@ class DoubleTimeWindow:
             while self._pre_window and time_ - self._pre_window[0] > self._time_width:
                 self._pre_window.popleft()
 
+        if hasattr(self, "_time_catch_callback"):
+            self._time_catch_callback()
+
     @property
     def previous(self) -> Deque[int]:
         return self._pre_window
+
+    def clear(self, *args: WindowType) -> None:
+        if WindowType.PREVIOUS in args:
+            self._pre_window.clear()
+        if WindowType.CURRENT in args:
+            self._window.clear()
 
     def __len__(self) -> int:
         return len(self._window)
@@ -147,8 +158,3 @@ class DoubleTimeWindow:
                 + str(self._pre_window).lstrip("deque") + ", "
                 + str(self._window).lstrip("deque")
                 + "}")
-
-    def clear(self, *, prev_only: bool = False) -> None:
-        if not prev_only:
-            self._window.clear()
-        self._pre_window.clear()

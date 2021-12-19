@@ -1,4 +1,5 @@
 import functools
+import inspect
 import json
 import logging
 import math
@@ -16,9 +17,9 @@ import util.logger as logger
 from fuzzy.classes import Grade, Interval
 from fuzzy.grader import FuzzyGrader
 from lib.blink_detector import (AntiNoiseBlinkDetector, BlinkRateIntervalDetector,
-                                GoodBlinkRateIntervalDetector, IntervalLevel)
+                                IntervalLevel)
 from lib.path import to_abs_path
-from lib.sliding_window import DoubleTimeWindow, TimeWindow
+from lib.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
 
 
 interval_logger: logging.Logger = logger.setup_logger("interval_logger",
@@ -31,10 +32,10 @@ class FaceExistenceRateCounter(QObject):
 
     Signals:
         s_low_existence_detected:
-            Emits when face existence is low and sends the face existence ratio.
+            Emits when face existence is low and sends start and end time.
     """
 
-    s_low_existence_detected = pyqtSignal(int)
+    s_low_existence_detected = pyqtSignal(int, int)
 
     def __init__(self, low_existence: float = 0.66) -> None:
         """
@@ -45,10 +46,10 @@ class FaceExistenceRateCounter(QObject):
         """
         super().__init__()
         self._low_existence = low_existence
+        self._face_times = TimeWindow(60)
+        # it's enough to only set callback on frame
         self._frame_times = TimeWindow(60)
         self._frame_times.set_time_catch_callback(self._check_face_existence)
-        self._face_times = TimeWindow(60)
-        self._face_times.set_time_catch_callback(self._check_face_existence)
 
     @property
     def low_existence(self) -> float:
@@ -64,7 +65,7 @@ class FaceExistenceRateCounter(QObject):
         """
         self._frame_times.append_time()
         # But also the face time needs to have the same window,
-        # so we don't get the wrong value when get_face_existence_rate().
+        # so we don't get the wrong value when _get_face_existence_rate().
         self._face_times.catch_up_time(manual=True)
 
     def add_face(self) -> None:
@@ -78,13 +79,6 @@ class FaceExistenceRateCounter(QObject):
         self._face_times.append_time()
         # An add face should always be with an add frame,
         # so we don't need extra synchronization.
-
-    def get_face_existence_rate(self) -> float:
-        """Returns the face existence rate of the minute.
-
-        The rate is rounded to two decimal places.
-        """
-        return round(len(self._face_times) / len(self._frame_times), 2)
 
     def clear_windows(self) -> None:
         """Clears the time of face and frames in the past 1 minute.
@@ -102,14 +96,25 @@ class FaceExistenceRateCounter(QObject):
         automatically called by add_face() and add_frame().
         Emits:
             s_low_existence_detected:
-                Emits when face existence is low and sends the face existence rate.
+                Emits when face existence is low and sends the start and end time.
         """
+        current_time = int(time.time())
         # Frame time is added every frame but face isn't,
         # so is used as the prerequisite for face existence check.
         if (self._frame_times
-                and self._frame_times[-1] - self._frame_times[0] > 60
-                and self.get_face_existence_rate() <= self._low_existence):
-            self.s_low_existence_detected.emit(self._frame_times[0])
+                and current_time - self._frame_times[0] >= 60
+                and self._get_face_existence_rate() <= self._low_existence):
+            self.s_low_existence_detected.emit(self._frame_times[0],
+                                               self._frame_times[0] + 60)
+
+    def _get_face_existence_rate(self) -> float:
+        """Returns the face existence rate of the minute.
+
+        The rate is rounded to two decimal places.
+        Notice that this method doesn't check the time and width of both
+        windows. ZeroDivisionError may occur when called right after a clear.
+        """
+        return round(len(self._face_times) / len(self._frame_times), 2)
 
 
 class ConcentrationGrader(QObject):
@@ -137,7 +142,7 @@ class ConcentrationGrader(QObject):
                 It's not about the average rate, so both are with type int.
                 0 ~ 21 in default. For a proper blink rate, one may refer to
                 https://pubmed.ncbi.nlm.nih.gov/11700965/#affiliation-1
-                It's passed to the underlaying GoodBlinkRateIntervalDetector.
+                It's passed to the underlaying BlinkRateIntervalDetector.
             low_existence:
         """
         super().__init__()
@@ -151,22 +156,18 @@ class ConcentrationGrader(QObject):
         # TODO: Blink detection not accurate, lots of false blink.
         self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
         self._interval_detector = BlinkRateIntervalDetector(good_rate_range)
-        # self._face_existence_counter = FaceExistenceRateCounter(low_existence)
+        self._face_existence_counter = FaceExistenceRateCounter(low_existence)
         self._fuzzy_grader = FuzzyGrader()
 
-        self._json_file: str = to_abs_path("..\good_intervals.json")
+        self._json_file: str = to_abs_path("..\intervals.json")
         parse.init_json(self._json_file)
 
         self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
-        self._interval_detector.s_good_interval_detected.connect(
-            functools.partial(self.check_concentration, IntervalLevel.GOOD))
-        self._interval_detector.s_bad_interval_detected.connect(
-            functools.partial(self.check_concentration, IntervalLevel.BAD))
-        # self._face_existence_counter.s_low_existence_detected.connect(self.check_concentration)
-        # Clear the window of frame, body and blink times only after the
-        # check_concentration() emits.
-        # This is to make sure we don't miss any potential good concentration interval.
-        self.s_concent_interval_refreshed.connect(self.clear_windows)
+        self._interval_detector.s_interval_detected.connect(self.check_normal_concentration)
+        self._face_existence_counter.s_low_existence_detected.connect(self.check_low_face_concentration)
+        # The refreshment of frame check is fast, clear it immediately to avoid
+        # crash due to double check and ZeroDivisionError.
+        self._face_existence_counter.s_low_existence_detected.connect(self._face_existence_counter.clear_windows)
 
     def get_ratio_threshold(self) -> float:
         """Returns the ratio threshold used to consider an EAR lower than it
@@ -186,14 +187,13 @@ class ConcentrationGrader(QObject):
         self._blink_detector.detect_blink(landmarks)
 
     def add_frame(self) -> None:
-        # self._face_existence_counter.add_frame()
+        self._face_existence_counter.add_frame()
         # Basicly, add_frame() is called every frame,
         # so call method which should be called manually together.
         self._interval_detector.check_blink_rate()
 
     def add_face(self) -> None:
-        # self._face_existence_counter.add_face()
-        pass
+        self._face_existence_counter.add_face()
 
     def add_body_concentration(self) -> None:
         self._body_concentration_times.append_time()
@@ -203,7 +203,7 @@ class ConcentrationGrader(QObject):
 
     def get_body_concentration_grade(
             self,
-            level: IntervalLevel,
+            type: WindowType,
             start_time: int,
             end_time: int) -> float:
         """Returns the amount of body concentration over total count.
@@ -212,7 +212,7 @@ class ConcentrationGrader(QObject):
         """
         def count_time_in_interval(times: DoubleTimeWindow) -> int:
             window: Union[DoubleTimeWindow, Deque[int]] = times
-            if level is IntervalLevel.BAD:
+            if type is WindowType.PREVIOUS:
                 window = times.previous
             # Iterate through the entire window causes more time;
             # count all then remove out-of-ranges to provide slightly better efficiency.
@@ -229,57 +229,79 @@ class ConcentrationGrader(QObject):
 
         concent_count: int = count_time_in_interval(self._body_concentration_times)
         distract_count: int = count_time_in_interval(self._body_distraction_times)
-        # FIXME: ZeroDivisionError occurs after an undesired double check of a same interval
-        # Maybe there's a time before windows are cleared but after the first check.
         return round(concent_count / (concent_count + distract_count), 2)
 
-    @pyqtSlot(int, int)
-    @pyqtSlot(int, int, int)
-    def check_concentration(
+    @pyqtSlot(WindowType, int, int, int)
+    def check_normal_concentration(
             self,
-            level: IntervalLevel,
+            type: WindowType,
             start_time: int,
             end_time: int,
-            blink_rate: Optional[int] = None) -> None:
-        interval_logger.info(f"check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
-        body_concent: float = self.get_body_concentration_grade(level, start_time, end_time)
+            blink_rate: int) -> None:
+        interval_logger.info(f"Check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+
+        body_concent: float = self.get_body_concentration_grade(type, start_time, end_time)
         interval_logger.info(f"body concentration = {body_concent}")
+        interval_logger.info(f"blink rate = {blink_rate}")
 
-        grade: float
-        if blink_rate is None:
-            interval_logger.info("low face existence, check body only:")
-            grade = body_concent
-        else:
-            interval_logger.info(f"blink rate = {blink_rate}")
-            grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
-
-        if level is IntervalLevel.BAD:
-            self.s_concent_interval_refreshed.emit(level, start_time, end_time, grade)
+        grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
+        if type is WindowType.PREVIOUS:
+            # A grading from the previous can only be bad, since they didn't
+            # pass when they were current.
+            self.s_concent_interval_refreshed.emit(IntervalLevel.BAD, start_time,
+                                                   end_time, grade)
+            parse.append_to_json(
+                self._json_file,
+                Interval(start=start_time, end=end_time, grade=grade).__dict__
+            )
+            self.clear_windows(WindowType.PREVIOUS)
             interval_logger.info(f"bad concentration: {grade}")
-            parse.append_to_json(
-                self._json_file,
-                Interval(start=start_time, end=end_time, grade=grade).__dict__
-            )
         elif grade >= 0.6:
-            self.s_concent_interval_refreshed.emit(level, start_time, end_time, grade)
-            interval_logger.info(f"good concentration: {grade}")
+            self.s_concent_interval_refreshed.emit(IntervalLevel.GOOD, start_time,
+                                                   end_time, grade)
             parse.append_to_json(
                 self._json_file,
                 Interval(start=start_time, end=end_time, grade=grade).__dict__
             )
+            # The grading of previous should precede current, so after the
+            # grading of current, we should and must clear previous also.
+            self.clear_windows(WindowType.PREVIOUS, WindowType.CURRENT)
+            interval_logger.info(f"good concentration: {grade}")
         else:
             interval_logger.info(f"{grade}, not concentrating")
         interval_logger.info("")  # separation
 
-    @pyqtSlot(IntervalLevel)
-    def clear_windows(self, level: IntervalLevel) -> None:
-        prev_only: bool = False
-        if level is IntervalLevel.BAD:
-            prev_only = True
-        self._body_distraction_times.clear(prev_only=prev_only)
-        self._body_concentration_times.clear(prev_only=prev_only)
-        self._interval_detector.clear_windows(level)
-        # self._face_existence_counter.clear_windows()
+    @pyqtSlot(int, int)
+    def check_low_face_concentration(self, start_time: int, end_time: int) -> None:
+        # The refreshment of frame check is fast, clear it immediately to avoid
+        # crash due to double check and ZeroDivisionError.
+        self._face_existence_counter.clear_windows()
+
+        interval_logger.info(f"Check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+        interval_logger.info("low face existence, check body only:")
+
+        # low face existence check is always on the current window
+        body_concent: float = self.get_body_concentration_grade(
+            WindowType.CURRENT, start_time, end_time)
+        grade: float = body_concent
+
+        level = IntervalLevel.GOOD if grade >= 0.6 else IntervalLevel.BAD
+        self.s_concent_interval_refreshed.emit(level, start_time, end_time, grade)
+        parse.append_to_json(
+            self._json_file,
+            Interval(start=start_time, end=end_time, grade=grade).__dict__
+        )
+        self.clear_windows(WindowType.CURRENT)
+
+        interval_logger.info(f"concentration: {grade}\n")
+
+    def clear_windows(self, *args: WindowType) -> None:
+        self._body_distraction_times.clear(*args)
+        self._body_concentration_times.clear(*args)
+        self._interval_detector.clear_windows(*args)
+
+        if WindowType.CURRENT in args:
+            self._face_existence_counter.clear_windows()
 
 
 def save_chart_of_intervals(filename: str, intervals: List[Interval]) -> None:
