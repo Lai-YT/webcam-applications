@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from lib.sliding_window import DoubleTimeWindow, TimeWindow
+from lib.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
 
 
 class TimeWindowTestCase(unittest.TestCase):
@@ -61,7 +61,7 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
     def test_len(self) -> None:
         for i in range(15):
             self.time_window.append_time()
-            time.sleep(5)
+            time.sleep(4.5)
         self.assertEqual(len(self.time_window), 13)
         self.assertEqual(len(self.time_window.previous), 2)
 
@@ -83,7 +83,7 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
         for _ in range(15):
             self.time_window.append_time()
             times.append(int(time.time()))
-            time.sleep(5)
+            time.sleep(4.5)
             if len(times) - sep_pos > 13:
                 sep_pos += 1
             for t, ans_t in zip(times[sep_pos:], self.time_window):
@@ -100,16 +100,26 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
             length_count += 1
             self.time_window.append_time()
 
-    def test_clear(self) -> None:
+    def test_clear_individual(self) -> None:
         for _ in range(15):
             self.time_window.append_time()
-            time.sleep(5)
+            time.sleep(4.5)
 
-        self.time_window.clear(prev_only=True)
+        self.time_window.clear(WindowType.PREVIOUS)
         self.assertEqual(len(self.time_window), 13)
         self.assertEqual(len(self.time_window.previous), 0)
 
+        self.time_window.clear(WindowType.CURRENT)
         self.time_window.clear()
+        self.assertEqual(len(self.time_window), 0)
+        self.assertEqual(len(self.time_window.previous), 0)
+
+    def test_clear_both(self) -> None:
+        for _ in range(15):
+            self.time_window.append_time()
+            time.sleep(4.5)
+
+        self.time_window.clear(WindowType.CURRENT, WindowType.PREVIOUS)
         self.assertEqual(len(self.time_window), 0)
         self.assertEqual(len(self.time_window.previous), 0)
 
