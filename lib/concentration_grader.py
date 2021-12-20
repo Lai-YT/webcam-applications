@@ -320,7 +320,7 @@ def save_chart_of_intervals(filename: str, intervals: List[Interval]) -> None:
 
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    ax.bar(start_times, grades, width=interval_lengths, align="edge")
+    rects = ax.bar(start_times, grades, width=interval_lengths, align="edge")
     ax.set_xticks(range(math.ceil(start_times[-1]) + 2))
     ax.set_yticks(np.arange(0, 1.2, 0.2))
     ax.set_yticks(np.arange(0.1, 1.0, 0.2), minor=True)
@@ -329,6 +329,8 @@ def save_chart_of_intervals(filename: str, intervals: List[Interval]) -> None:
     ax.set_ylabel("grade")
     ax.set_xlabel("time (min)")
     ax.set_title(f"Concentration grades from {to_date_time(init_time)}")
+    ax.bar_label(rects, padding=3)
+    
     fig.savefig(filename)
 
 

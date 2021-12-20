@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import cv2
 import dlib
@@ -84,9 +84,9 @@ class WebcamApplication(QObject):
         self._f_ready: bool = False
 
         self._webcam = cv2.VideoCapture(0)
-        self._create_concentration_grader()
         self._create_face_detectors()
         self._create_brightness_controller()
+        self._create_concentration_grader()
         self._create_guards()
 
     def set_distance_measure(
