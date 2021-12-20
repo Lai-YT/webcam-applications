@@ -1,7 +1,42 @@
 import json
+import math
 from typing import Dict, List, Union
 
-from fuzzy.classes import Grade, Interval
+import numpy as np
+import matplotlib.pyplot as plt
+
+from concentration.fuzzy.classes import Grade, Interval
+from util.time import to_date_time
+
+
+def save_chart_of_intervals(filename: str, intervals: List[Interval]) -> None:
+    if not intervals:
+        raise ValueError("intervals can't be empty")
+
+    start_times: List[float] = []
+    interval_lengths: List[float] = []
+    grades: List[float] = []
+
+    init_time: int = intervals[0].start
+    for interval in intervals:
+        start_times.append((interval.start - init_time) / 60)
+        interval_lengths.append((interval.end - interval.start) / 60)
+        grades.append(interval.grade)
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    rects = ax.bar(start_times, grades, width=interval_lengths, align="edge")
+    ax.set_xticks(range(math.ceil(start_times[-1]) + 2))
+    ax.set_yticks(np.arange(0, 1.2, 0.2))
+    ax.set_yticks(np.arange(0.1, 1.0, 0.2), minor=True)
+    ax.set_ylim(0, 1.1)
+    ax.axhline(y=0.6, linestyle="dashed", color="black")
+    ax.set_ylabel("grade")
+    ax.set_xlabel("time (min)")
+    ax.set_title(f"Concentration grades from {to_date_time(init_time)}")
+    ax.bar_label(rects, padding=3)
+
+    fig.savefig(filename)
 
 
 def save_grades_to_json(filename: str, grades: List[Grade]) -> None:

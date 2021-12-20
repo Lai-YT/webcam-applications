@@ -2,9 +2,9 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
+from app.webcam_application_ import WebcamApplication
 from intergrated_gui.window_controller import WindowController
 from intergrated_gui.window import Window
-from lib.app_ import WebcamApplication
 
 
 app = QApplication([])

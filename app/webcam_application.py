@@ -8,9 +8,9 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
+from app.webcam_application_ import mark_face
 from distance.calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from distance.guard import DistanceGuard
-from lib.app_ import mark_face
 from posture.calculator import (AngleCalculator, PosturePredictor,
                                 draw_landmarks_used_by_angle_calculator)
 from posture.guard import PostureGuard

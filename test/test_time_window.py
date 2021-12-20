@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from lib.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
+from util.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
 
 
 class TimeWindowTestCase(unittest.TestCase):

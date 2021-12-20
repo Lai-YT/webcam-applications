@@ -5,9 +5,9 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from nptyping import Float, Int, NDArray
 from playsound import playsound
 
+from concentration.grader import ConcentrationGrader
 from posture.calculator import AngleCalculator, PosturePredictor
 from posture.train import PostureLabel
-from lib.concentration_grader import ConcentrationGrader
 from util.color import GREEN, RED
 from util.cv_font import FONT_0
 from util.image_type import ColorImage

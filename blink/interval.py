@@ -4,7 +4,7 @@ from typing import Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from lib.sliding_window import DoubleTimeWindow, WindowType
+from util.sliding_window import DoubleTimeWindow, WindowType
 
 
 class IntervalLevel(Enum):

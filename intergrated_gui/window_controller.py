@@ -4,10 +4,10 @@ from typing import Dict, Tuple
 
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
+from app.webcam_application_ import WebcamApplication
 from gui.task_worker import TaskWorker
 from intergrated_gui.panel_controller import PanelController
 from intergrated_gui.window import Window
-from lib.app_ import WebcamApplication
 
 # Path of the config file.
 CONFIG = os.path.join(os.path.abspath(os.path.dirname(__file__)), "gui_state.ini")

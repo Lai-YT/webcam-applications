@@ -4,9 +4,9 @@ from configparser import ConfigParser
 from PyQt5.QtCore import QCoreApplication, QEvent, QObject, Qt, pyqtSlot
 from PyQt5.QtGui import QKeyEvent
 
+from app.webcam_application_ import WebcamApplication
 from brightness.calcuator import BrightnessMode
 from intergrated_gui.panel_widget import AngleTolerance, PanelWidget
-from lib.app_ import WebcamApplication
 from posture.train import ModelPath
 
 

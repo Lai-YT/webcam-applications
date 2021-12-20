@@ -2,9 +2,8 @@ import copy
 import openpyxl
 from typing import List
 
-
-import fuzzy.grader as grader
-from fuzzy.classes import Grade
+import concentration.fuzzy.grader as grader
+from concentration.fuzzy.classes import Grade
 
 
 def get_test_grades() -> List[Grade]:
@@ -103,7 +102,7 @@ if __name__ == "__main__":
     draw_chart_of_grades_on_spreadsheet(spreadsheet)
 
     # the following is to demo the parsing with json
-    import fuzzy.parse as parse
+    import concentration.fuzzy.parse as parse
 
     json_file: str = "test_grades.json"
 

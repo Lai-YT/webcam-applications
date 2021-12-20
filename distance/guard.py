@@ -6,8 +6,8 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from nptyping import Int, NDArray
 from playsound import playsound
 
+from concentration.grader import ConcentrationGrader
 from distance.calculator import DistanceCalculator
-from lib.concentration_grader import ConcentrationGrader
 from util.color import MAGENTA, RED
 from util.cv_font import FONT_0
 from util.image_type import ColorImage

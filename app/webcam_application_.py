@@ -11,11 +11,11 @@ from nptyping import Int, NDArray
 from blink.interval import IntervalLevel
 from brightness.calcuator import BrightnessMode
 from brightness.controller import BrightnessController
+from concentration.grader import ConcentrationGrader
 from distance.calculator import (DistanceCalculator,
                                  draw_landmarks_used_by_distance_calculator)
 from distance.guard import DistanceGuard, DistanceState
 from gui.popup_widget import TimeState
-from lib.concentration_grader import ConcentrationGrader
 from posture.calculator import (AngleCalculator, PosturePredictor,
                                 draw_landmarks_used_by_angle_calculator)
 from posture.guard import PostureGuard

@@ -1,25 +1,19 @@
-import functools
-import inspect
-import json
 import logging
-import math
 import time
 from typing import Deque, List, Optional, Tuple, Union
 
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
-import fuzzy.parse as parse
+import concentration.fuzzy.parse as parse
 import util.logger as logger
 from blink.detector import AntiNoiseBlinkDetector
 from blink.interval import BlinkRateIntervalDetector, IntervalLevel
-from fuzzy.classes import Grade, Interval
-from fuzzy.grader import FuzzyGrader
-from lib.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
+from concentration.fuzzy.classes import Grade, Interval
+from concentration.fuzzy.grader import FuzzyGrader
 from util.path import to_abs_path
+from util.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
+from util.time import to_date_time
 
 
 interval_logger: logging.Logger = logger.setup_logger("interval_logger",
@@ -302,37 +296,3 @@ class ConcentrationGrader(QObject):
 
         if WindowType.CURRENT in args:
             self._face_existence_counter.clear_windows()
-
-
-def save_chart_of_intervals(filename: str, intervals: List[Interval]) -> None:
-    if not intervals:
-        raise ValueError("intervals can't be empty")
-
-    start_times: List[float] = []
-    interval_lengths: List[float] = []
-    grades: List[float] = []
-
-    init_time: int = intervals[0].start
-    for interval in intervals:
-        start_times.append((interval.start - init_time) / 60)
-        interval_lengths.append((interval.end - interval.start) / 60)
-        grades.append(interval.grade)
-
-    fig, ax = plt.subplots(figsize=(12, 6))
-
-    rects = ax.bar(start_times, grades, width=interval_lengths, align="edge")
-    ax.set_xticks(range(math.ceil(start_times[-1]) + 2))
-    ax.set_yticks(np.arange(0, 1.2, 0.2))
-    ax.set_yticks(np.arange(0.1, 1.0, 0.2), minor=True)
-    ax.set_ylim(0, 1.1)
-    ax.axhline(y=0.6, linestyle="dashed", color="black")
-    ax.set_ylabel("grade")
-    ax.set_xlabel("time (min)")
-    ax.set_title(f"Concentration grades from {to_date_time(init_time)}")
-    ax.bar_label(rects, padding=3)
-    
-    fig.savefig(filename)
-
-
-def to_date_time(epoch_time: int) -> str:
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch_time))

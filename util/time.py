@@ -25,7 +25,7 @@ class Timer:
 
     def pause(self) -> None:
         """Stop the time count.
-        
+
         No effects when the Timer is already paused.
         """
         if not self.is_paused():
@@ -58,3 +58,7 @@ class Timer:
 def min_to_sec(time_in_min: int) -> int:
     """Simple minute to second conversion method without any check."""
     return time_in_min * 60
+
+
+def to_date_time(epoch_time: int) -> str:
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch_time))
