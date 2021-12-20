@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
 import dlib
@@ -8,21 +8,24 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
+from blink.interval import IntervalLevel
+from brightness.calcuator import BrightnessMode
+from brightness.controller import BrightnessController
+from distance.calculator import (DistanceCalculator,
+                                 draw_landmarks_used_by_distance_calculator)
+from distance.guard import DistanceGuard, DistanceState
 from gui.popup_widget import TimeState
-from lib.angle_calculator import (AngleCalculator,
-                                  draw_landmarks_used_by_angle_calculator)
-from lib.blink_detector import IntervalLevel
-from lib.brightness_calcuator import BrightnessMode
-from lib.brightness_controller import BrightnessController
-from lib.distance_calculator import (DistanceCalculator,
-                                     draw_landmarks_used_by_distance_calculator)
-from lib.guard import (CONCENT_GRADER_OF_GUARDS, DistanceGuard, DistanceState,
-                       PostureGuard, TimeGuard, mark_face)
-from lib.image_convert import ndarray_to_qimage
-from lib.train import ModelPath, ModelTrainer, PostureLabel
-from lib.image_type import ColorImage
-from lib.path import to_abs_path
-from util.timer import Timer
+from lib.concentration_grader import ConcentrationGrader
+from posture.calculator import (AngleCalculator, PosturePredictor,
+                                draw_landmarks_used_by_angle_calculator)
+from posture.guard import PostureGuard
+from posture.train import ModelPath, ModelTrainer, PostureLabel
+from time_.guard import TimeGuard
+from util.color import GREEN, MAGENTA
+from util.image_convert import ndarray_to_qimage
+from util.image_type import ColorImage
+from util.path import to_abs_path
+from util.time import Timer
 
 
 class WebcamApplication(QObject):
@@ -81,10 +84,10 @@ class WebcamApplication(QObject):
         self._f_ready: bool = False
 
         self._webcam = cv2.VideoCapture(0)
+        self._create_concentration_grader()
         self._create_face_detectors()
         self._create_brightness_controller()
         self._create_guards()
-        self._connect_concentration_grader()
 
     def set_distance_measure(
             self, *,
@@ -93,7 +96,7 @@ class WebcamApplication(QObject):
             warn_dist: Optional[float] = None,
             warning_enabled: Optional[bool] = None) -> None:
         if camera_dist is not None:
-            self._distance_guard.set_distance_calculator(DistanceCalculator(self._landmarks, camera_dist))
+            self._distance_guard.set_calculator(DistanceCalculator(self._landmarks, camera_dist))
         if warn_dist is not None:
             self._distance_guard.set_warn_dist(warn_dist)
         if warning_enabled is not None:
@@ -131,7 +134,8 @@ class WebcamApplication(QObject):
             warn_angle: Optional[float] = None,
             warning_enabled: Optional[bool] = None) -> None:
         if model_path is not None:
-            self._posture_guard.set_model(ModelTrainer.load_model(model_path))
+            self._posture_guard.set_predictor(
+                PosturePredictor(ModelTrainer.load_model(model_path)))
         if warn_angle is not None:
             self._posture_guard.set_warn_angle(warn_angle)
         if warning_enabled is not None:
@@ -218,10 +222,10 @@ class WebcamApplication(QObject):
                 self._brightness_controller.optimize_brightness()
 
             # Do concentration gradings!
-            CONCENT_GRADER_OF_GUARDS.add_frame()
+            self._concentration_grader.add_frame()
             if landmarks.any():
-                CONCENT_GRADER_OF_GUARDS.add_face()
-                CONCENT_GRADER_OF_GUARDS.detect_blink(landmarks)
+                self._concentration_grader.add_face()
+                self._concentration_grader.detect_blink(landmarks)
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
             cv2.waitKey(refresh)
@@ -258,14 +262,16 @@ class WebcamApplication(QObject):
     def _create_face_detectors(self) -> None:
         """Creates face detector and shape predictor."""
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
-        self._shape_predictor = dlib.shape_predictor(to_abs_path("trained_models/shape_predictor_68_face_landmarks.dat"))
+        self._shape_predictor = dlib.shape_predictor(
+            to_abs_path("posture/trained_models/shape_predictor_68_face_landmarks.dat"))
 
     def _create_brightness_controller(self) -> None:
         """Creates brightness calculator and connects its signals."""
         self._brightness_controller = BrightnessController()
         # Init controller mode to MANUAL.
         self._brightness_controller.set_mode(BrightnessMode.MANUAL)
-        self._brightness_controller.s_brightness_refreshed.connect(self.s_brightness_refreshed)
+        self._brightness_controller.s_brightness_refreshed.connect(
+            self.s_brightness_refreshed)
         # This dict records whether the modes have been enabled.
         # So when both modes are True, we know a BOTH mode should be set.
         self._brightness_modes_enabled: Dict[BrightnessMode, bool] = {
@@ -276,23 +282,43 @@ class WebcamApplication(QObject):
     def _create_guards(self) -> None:
         """Creates guards used in WebcamApplication and connects their signals."""
         # Creates the DistanceCalculator with reference image.
-        ref_img: ColorImage = cv2.imread(to_abs_path("../img/ref_img.jpg"))
+        ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
         faces: dlib.rectangles = self._face_detector(ref_img)
         if len(faces) != 1:
             # must have exactly one face in the reference image
             raise ValueError("should have exactly 1 face in the reference image")
         self._landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
-        self._distance_guard = DistanceGuard()
+        self._distance_guard = DistanceGuard(grader=self._concentration_grader)
         self._distance_guard.s_distance_refreshed.connect(self.s_distance_refreshed)
 
         self._angle_calculator = AngleCalculator()
-        self._posture_guard = PostureGuard(angle_calculator=self._angle_calculator)
+        self._posture_guard = PostureGuard(calculator=self._angle_calculator,
+                                           grader=self._concentration_grader)
         self._posture_guard.s_posture_refreshed.connect(self.s_posture_refreshed)
 
         self._time_guard = TimeGuard()
         self._time_guard.s_time_refreshed.connect(self.s_time_refreshed)
         self.s_stopped.connect(self._time_guard.close_timer_widget)
 
-    def _connect_concentration_grader(self) -> None:
-        """Connects signals of the ConcentrationGrader used by guards."""
-        CONCENT_GRADER_OF_GUARDS.s_concent_interval_refreshed.connect(self.s_concent_interval_refreshed)
+    def _create_concentration_grader(self) -> None:
+        """Create ConcentrationGrader shared by guards."""
+        self._concentration_grader = ConcentrationGrader()
+        self._concentration_grader.s_concent_interval_refreshed.connect(
+            self.s_concent_interval_refreshed)
+
+
+def mark_face(
+        canvas: ColorImage,
+        face: Tuple[int, int, int, int],
+        landmarks: NDArray[(68, 2), Int[32]]) -> None:
+    """Modifies the canvas with face area framed up and landmarks dotted.
+
+    Arguments:
+        canvas: The image to mark face on.
+        face: Upper-left x, y coordinates of face and it's width, height.
+        landmarks: (x, y) coordinates of the 68 face landmarks.
+    """
+    fx, fy, fw, fh = face
+    cv2.rectangle(canvas, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
+    for lx, ly in landmarks:
+        cv2.circle(canvas, (lx, ly), 1, GREEN, -1)

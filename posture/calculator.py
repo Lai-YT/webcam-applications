@@ -1,12 +1,15 @@
+import numpy as np
 import math
 import warnings
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import cv2
-from nptyping import Int, NDArray
+from nptyping import Float, Int, NDArray
+from tensorflow.python.keras.engine.sequential import Sequential
 
-from lib.color import BGR, GREEN
-from lib.image_type import ColorImage
+from posture.train import ModelTrainer, PostureLabel
+from util.color import BGR, GREEN
+from util.image_type import ColorImage, GrayImage
 
 
 class AngleCalculator:
@@ -89,3 +92,34 @@ def draw_landmarks_used_by_angle_calculator(canvas: ColorImage, landmarks: NDArr
     # make lines transparent
     canvas_ = cv2.addWeighted(canvas_, 0.4, canvas, 0.6, 0)
     return canvas_
+
+
+class PosturePredictor:
+    def __init__(self, model: Sequential) -> None:
+        self._model = model
+
+    def predict(self, frame: ColorImage) -> Tuple[PostureLabel, Float[32]]:
+        """Returns the posture label and confidence of this predict.
+
+        Arguments:
+            frame: The image contains posture to be predicted.
+        """
+        im: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        im = cv2.resize(im, ModelTrainer.IMAGE_DIMENSIONS)
+        im = im / 255  # Normalize the image
+        im = im.reshape(1, *ModelTrainer.IMAGE_DIMENSIONS, 1)
+
+        # 1 cuz only 1 predict result; 2 cuz there are 2 PostureLabels.
+        # e.g, [[8.3688545e-05 9.9991632e-01]]
+        predictions: NDArray[(1, 2), Float[32]] = self._model.predict(im)
+        # Gets the index which has the greatest confidence value.
+        class_pred: Int[64] = np.argmax(predictions)
+        # Gets the confidence value.
+        conf: Float[32] = predictions[0][class_pred]
+
+        posture: PostureLabel = PostureLabel.GOOD
+        if class_pred == PostureLabel.GOOD.value:
+            posture = PostureLabel.SLUMP
+
+        return posture, conf

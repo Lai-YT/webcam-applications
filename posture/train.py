@@ -6,17 +6,17 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import cv2
-import numpy
+import numpy as np
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from nptyping import Float, Int, NDArray, UInt8
 from sklearn.utils import class_weight
 from tensorflow.keras import layers, models
 from tensorflow.python.keras.engine.sequential import Sequential
 
-from lib.color import RED
-from lib.cv_font import FONT_3
-from lib.image_type import ColorImage, GrayImage
-from lib.path import to_abs_path
+from util.color import RED
+from util.cv_font import FONT_3
+from util.image_type import ColorImage, GrayImage
+from util.path import to_abs_path
 
 
 class PostureLabel(Enum):
@@ -29,15 +29,15 @@ class PostureLabel(Enum):
 
 class ModelPath(Enum):
     """Kinds of models with their value as the path of itself."""
-    DEFAULT: str = to_abs_path("trained_models/default_model.h5")
-    CUSTOM:  str = to_abs_path("trained_models/custom_model.h5")
+    DEFAULT: str = to_abs_path("posture/trained_models/default_model.h5")
+    CUSTOM:  str = to_abs_path("posture/trained_models/custom_model.h5")
 
 
 class ModelTrainer(QObject):
     """ModelTrainer provides methods of capturing sampling images and training
     models.
     """
-    SAMPLE_DIR: str = to_abs_path("train_sample")
+    SAMPLE_DIR: str = to_abs_path("posture/train_sample")
     IMAGE_DIMENSIONS: Tuple[int, int] = (224, 224)
 
     s_train_finished = pyqtSignal()  # Emit when the train_model() is finished (or failed).
@@ -128,8 +128,8 @@ class ModelTrainer(QObject):
             return
 
         # numpy array with GrayImages
-        images: NDArray[(Any, Any, Any), UInt8] = numpy.array(train_images)
-        labels: NDArray[(Any,), Int[32]] = numpy.array(train_labels)
+        images: NDArray[(Any, Any, Any), UInt8] = np.array(train_images)
+        labels: NDArray[(Any,), Int[32]] = np.array(train_labels)
         images = images / 255  # Normalize image
         images = images.reshape(len(images), *ModelTrainer.IMAGE_DIMENSIONS, 1)
 

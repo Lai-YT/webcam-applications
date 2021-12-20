@@ -4,10 +4,10 @@ from typing import Dict
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QFormLayout, QFrame, QWidget
 
+from distance.guard import DistanceState
 from gui.popup_widget import TimeState
 from intergrated_gui.component import Label
-from lib.guard import DistanceState
-from lib.train import PostureLabel
+from posture.train import PostureLabel
 
 
 class TextColor(Enum):

@@ -4,8 +4,8 @@ from typing import Optional
 import cv2
 from nptyping import Int, NDArray
 
-from lib.color import BGR, MAGENTA
-from lib.image_type import ColorImage
+from util.color import BGR, MAGENTA
+from util.image_type import ColorImage
 
 
 class DistanceCalculator:

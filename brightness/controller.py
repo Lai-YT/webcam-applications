@@ -5,9 +5,9 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QPixmap, QScreen
 from PyQt5.QtWidgets import QApplication
 
-from lib.brightness_calcuator import BrightnessCalculator, BrightnessMode
-from lib.image_convert import qpixmap_to_ndarray
-from lib.image_type import ColorImage
+from brightness.calcuator import BrightnessCalculator, BrightnessMode
+from util.image_convert import qpixmap_to_ndarray
+from util.image_type import ColorImage
 
 
 class BrightnessController(QObject):

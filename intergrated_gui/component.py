@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5 import QtWidgets
 
-from lib.train import PostureLabel
+from posture.train import PostureLabel
 
 
 class ActionButton(QtWidgets.QPushButton):

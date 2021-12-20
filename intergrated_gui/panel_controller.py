@@ -4,10 +4,10 @@ from configparser import ConfigParser
 from PyQt5.QtCore import QCoreApplication, QEvent, QObject, Qt, pyqtSlot
 from PyQt5.QtGui import QKeyEvent
 
+from brightness.calcuator import BrightnessMode
 from intergrated_gui.panel_widget import AngleTolerance, PanelWidget
 from lib.app_ import WebcamApplication
-from lib.brightness_calcuator import BrightnessMode
-from lib.train import ModelPath
+from posture.train import ModelPath
 
 
 class PanelController(QObject):

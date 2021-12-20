@@ -8,13 +8,17 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
-from lib.angle_calculator import AngleCalculator, draw_landmarks_used_by_angle_calculator
-from lib.distance_calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
-from lib.guard import DistanceGuard, PostureGuard, TimeGuard, mark_face
-from lib.train import ModelPath, ModelTrainer
-from lib.image_type import ColorImage
-from lib.path import to_abs_path
-from util.timer import Timer
+from distance.calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
+from distance.guard import DistanceGuard
+from lib.app_ import mark_face
+from posture.calculator import (AngleCalculator, PosturePredictor,
+                                draw_landmarks_used_by_angle_calculator)
+from posture.guard import PostureGuard
+from posture.train import ModelPath, ModelTrainer
+from time_.guard import TimeGuard
+from util.image_type import ColorImage
+from util.path import to_abs_path
+from util.time import Timer
 
 # This is the Model part, it knows nothing about View.
 # One can pass options and parameters through View and Controller
@@ -132,11 +136,12 @@ class WebcamApplication(QObject):
     def _create_face_detectors(self) -> None:
         """Creates face detector and shape predictor for further use."""
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
-        self._shape_predictor = dlib.shape_predictor(to_abs_path("trained_models/shape_predictor_68_face_landmarks.dat"))
+        self._shape_predictor = dlib.shape_predictor(
+            to_abs_path("posture/trained_models/shape_predictor_68_face_landmarks.dat"))
 
     def _create_distance_guard(self, distance: float, warn_dist: float) -> None:
         # Creates the DistanceCalculator with reference image.
-        ref_img: ColorImage = cv2.imread(to_abs_path("../img/ref_img.jpg"))
+        ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
         faces: dlib.rectangles = self._face_detector(ref_img)
         if len(faces) != 1:
             # must have exactly one face in the reference image
@@ -147,7 +152,10 @@ class WebcamApplication(QObject):
 
     def _create_posture_guard(self, model_path: ModelPath, warn_angle: float) -> None:
         self._posture_guard = PostureGuard(
-            ModelTrainer.load_model(model_path), AngleCalculator(), warn_angle)
+            PosturePredictor(ModelTrainer.load_model(model_path)),
+            AngleCalculator(),
+            warn_angle
+        )
 
     def _create_time_guard(self, time_limit: int, break_time: int) -> None:
         self._time_guard = TimeGuard(time_limit, break_time)

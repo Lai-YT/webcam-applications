@@ -7,7 +7,7 @@ from PyQt5.QtCore import QObject, QThread, pyqtSlot
 from gui.page_controller import OptionController, SettingController, ModelController
 from gui.task_worker import TaskWorker
 from intergrated_gui.component import FailMessageBox
-from lib.train import ModelPath
+from posture.train import ModelPath
 
 
 #               Controller hierarchy:

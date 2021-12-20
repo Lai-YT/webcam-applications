@@ -7,7 +7,7 @@ from PyQt5.QtGui import QDoubleValidator, QIntValidator
 
 from gui.task_worker import TaskWorker
 from intergrated_gui.component import CaptureMessageBox, FailMessageBox, ProgressDialog
-from lib.train import ModelTrainer, PostureLabel
+from posture.train import ModelTrainer, PostureLabel
 
 
 class PageController(QObject):

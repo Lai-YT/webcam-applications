@@ -1,7 +1,7 @@
 import numpy as np
 from PyQt5.QtGui import QImage, QPixmap
 
-from lib.image_type import ColorImage
+from util.image_type import ColorImage
 
 
 def qpixmap_to_ndarray(image: QPixmap) -> ColorImage:

@@ -14,16 +14,16 @@ from nptyping import Int, NDArray
 
 import fuzzy.parse as parse
 import util.logger as logger
+from blink.detector import AntiNoiseBlinkDetector
+from blink.interval import BlinkRateIntervalDetector, IntervalLevel
 from fuzzy.classes import Grade, Interval
 from fuzzy.grader import FuzzyGrader
-from lib.blink_detector import (AntiNoiseBlinkDetector, BlinkRateIntervalDetector,
-                                IntervalLevel)
-from lib.path import to_abs_path
 from lib.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
+from util.path import to_abs_path
 
 
 interval_logger: logging.Logger = logger.setup_logger("interval_logger",
-                                                      to_abs_path("..\concent_interval.log"),
+                                                      to_abs_path("concent_interval.log"),
                                                       logging.DEBUG)
 
 class FaceExistenceRateCounter(QObject):
@@ -159,7 +159,7 @@ class ConcentrationGrader(QObject):
         self._face_existence_counter = FaceExistenceRateCounter(low_existence)
         self._fuzzy_grader = FuzzyGrader()
 
-        self._json_file: str = to_abs_path("..\intervals.json")
+        self._json_file: str = to_abs_path("intervals.json")
         parse.init_json(self._json_file)
 
         self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)

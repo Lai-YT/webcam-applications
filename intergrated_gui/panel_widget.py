@@ -4,9 +4,9 @@ from typing import Dict
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QFormLayout, QGridLayout, QGroupBox, QVBoxLayout, QWidget
 
+from brightness.calcuator import BrightnessMode
 from intergrated_gui.component import (CheckableGroupBox, HorizontalSlider, Label,
                                        LineEdit, OptionCheckBox, OptionRadioButton)
-from lib.brightness_calcuator import BrightnessMode
 
 
 class PanelWidget(QWidget):

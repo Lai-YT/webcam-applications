@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import cv2
 
-from lib.image_type import ColorImage
+from util.image_type import ColorImage
 
 
 class BrightnessMode(Enum):
