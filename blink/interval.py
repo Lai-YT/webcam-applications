@@ -1,10 +1,10 @@
-import time
 from enum import Enum, auto
 from typing import Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from util.sliding_window import DoubleTimeWindow, WindowType
+from util.time import get_current_time
 
 
 class IntervalLevel(Enum):
@@ -67,8 +67,8 @@ class BlinkRateIntervalDetector(QObject):
         Emits:
             s_interval_detected:
         """
-        current_time = int(time.time())
-        if self._blink_times and (current_time - self._blink_times[0]) >= 60:
+        curr_time: int = get_current_time()
+        if self._blink_times and (curr_time - self._blink_times[0]) >= 60:
             blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
             if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
                 # Emit previous part first since its earlier on time.
@@ -83,11 +83,10 @@ class BlinkRateIntervalDetector(QObject):
                                               self._blink_times[0] + 60,
                                               blink_rate)
         elif (self._blink_times.previous
-                and self._blink_times
-                and self._blink_times[0] - self._blink_times.previous[0] >= 60):
+                and (curr_time - 60) - self._blink_times.previous[0] >= 60):
             self.s_interval_detected.emit(WindowType.PREVIOUS,
                                           self._blink_times.previous[0],
-                                          self._blink_times[0],
+                                          curr_time - 60,
                                           self._get_blink_rate(WindowType.PREVIOUS))
 
     def _get_blink_rate(self, type: WindowType) -> int:

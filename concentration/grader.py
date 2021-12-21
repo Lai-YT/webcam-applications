@@ -1,5 +1,4 @@
 import logging
-import time
 from typing import Deque, List, Optional, Tuple, Union
 
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
@@ -13,7 +12,7 @@ from concentration.fuzzy.classes import Grade, Interval
 from concentration.fuzzy.grader import FuzzyGrader
 from util.path import to_abs_path
 from util.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
-from util.time import to_date_time
+from util.time import get_current_time, to_date_time
 
 
 interval_logger: logging.Logger = logger.setup_logger("interval_logger",
@@ -92,11 +91,10 @@ class FaceExistenceRateCounter(QObject):
             s_low_existence_detected:
                 Emits when face existence is low and sends the start and end time.
         """
-        current_time = int(time.time())
         # Frame time is added every frame but face isn't,
         # so is used as the prerequisite for face existence check.
         if (self._frame_times
-                and current_time - self._frame_times[0] >= 60
+                and get_current_time() - self._frame_times[0] >= 60
                 and self._get_face_existence_rate() <= self._low_existence):
             self.s_low_existence_detected.emit(self._frame_times[0],
                                                self._frame_times[0] + 60)
@@ -238,16 +236,17 @@ class ConcentrationGrader(QObject):
         interval_logger.info(f"body concentration = {body_concent}")
         interval_logger.info(f"blink rate = {blink_rate}")
 
-        grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
+        grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
         if type is WindowType.PREVIOUS:
+            grade = self._fuzzy_grader.compute_grade(
+                blink_rate*60 / (end_time-start_time), body_concent)
             # A grading from the previous can only be bad, since they didn't
             # pass when they were current.
             self.s_concent_interval_refreshed.emit(IntervalLevel.BAD, start_time,
                                                    end_time, grade)
             parse.append_to_json(
                 self._json_file,
-                Interval(start=start_time, end=end_time, grade=grade).__dict__
-            )
+                Interval(start=start_time, end=end_time, grade=grade).__dict__)
             self.clear_windows(WindowType.PREVIOUS)
             interval_logger.info(f"bad concentration: {grade}")
         elif grade >= 0.6:
@@ -255,8 +254,7 @@ class ConcentrationGrader(QObject):
                                                    end_time, grade)
             parse.append_to_json(
                 self._json_file,
-                Interval(start=start_time, end=end_time, grade=grade).__dict__
-            )
+                Interval(start=start_time, end=end_time, grade=grade).__dict__)
             # The grading of previous should precede current, so after the
             # grading of current, we should and must clear previous also.
             self.clear_windows(WindowType.PREVIOUS, WindowType.CURRENT)

@@ -18,10 +18,10 @@ class Timer:
         No effects when the Timer is already started and not paused.
         """
         if self.is_paused():
-            self._pause_duration += self._get_time() - self._pause_start
+            self._pause_duration += get_current_time() - self._pause_start
             self._pause_start = 0
         elif self._start == 0:
-            self._start = self._get_time()
+            self._start = get_current_time()
 
     def pause(self) -> None:
         """Stop the time count.
@@ -29,7 +29,7 @@ class Timer:
         No effects when the Timer is already paused.
         """
         if not self.is_paused():
-            self._pause_start = self._get_time()
+            self._pause_start = get_current_time()
 
     def reset(self) -> None:
         """Reset the Timer."""
@@ -44,15 +44,18 @@ class Timer:
             return 0
         if self.is_paused():
             return self._pause_start - self._start - self._pause_duration
-        return self._get_time() - self._start - self._pause_duration
+        return get_current_time() - self._start - self._pause_duration
 
     def is_paused(self) -> bool:
         """Returns True if the Timer is paused, otherwise False."""
         return self._pause_start != 0
 
-    @staticmethod
-    def _get_time() -> int:
-        return int(time.time())
+
+def get_current_time() -> int:
+    """Returns the time in seconds since the epoch with the precision up to
+    1 second.
+    """
+    return int(time.time())
 
 
 def min_to_sec(time_in_min: int) -> int:

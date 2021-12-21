@@ -154,8 +154,7 @@ class WebcamApplication(QObject):
         self._posture_guard = PostureGuard(
             PosturePredictor(ModelTrainer.load_model(model_path)),
             AngleCalculator(),
-            warn_angle
-        )
+            warn_angle)
 
     def _create_time_guard(self, time_limit: int, break_time: int) -> None:
         self._time_guard = TimeGuard(time_limit, break_time)
