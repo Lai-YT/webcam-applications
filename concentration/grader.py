@@ -161,6 +161,9 @@ class ConcentrationGrader(QObject):
         # crash due to double check and ZeroDivisionError.
         self._face_existence_counter.s_low_existence_detected.connect(self._face_existence_counter.clear_windows)
 
+        # the start and end time of the interval being checked
+        self._in_check: Tuple[bool, int, int] = (False, 0, 0)
+
     def get_ratio_threshold(self) -> float:
         """Returns the ratio threshold used to consider an EAR lower than it
         to be a blink with noise."""
@@ -230,6 +233,11 @@ class ConcentrationGrader(QObject):
             start_time: int,
             end_time: int,
             blink_rate: int) -> None:
+        if self._in_check[0] and (start_time, end_time) == self._in_check[1:]:
+            interval_logger.info(f"conflict at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+            return
+        self._in_check = (True, start_time, end_time)
+
         interval_logger.info(f"Check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
 
         body_concent: float = self.get_body_concentration_grade(type, start_time, end_time)
@@ -262,12 +270,14 @@ class ConcentrationGrader(QObject):
         else:
             interval_logger.info(f"{grade}, not concentrating")
         interval_logger.info("")  # separation
+        self._in_check = (False, 0, 0)
 
     @pyqtSlot(int, int)
     def check_low_face_concentration(self, start_time: int, end_time: int) -> None:
-        # The refreshment of frame check is fast, clear it immediately to avoid
-        # crash due to double check and ZeroDivisionError.
-        self._face_existence_counter.clear_windows()
+        if self._in_check[0] and (start_time, end_time) == self._in_check[1:]:
+            interval_logger.info(f"conflict at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+            return
+        self._in_check = (True, start_time, end_time)
 
         interval_logger.info(f"Check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
         interval_logger.info("low face existence, check body only:")
@@ -286,6 +296,7 @@ class ConcentrationGrader(QObject):
         self.clear_windows(WindowType.CURRENT)
 
         interval_logger.info(f"concentration: {grade}\n")
+        self._in_check = (False, 0, 0)
 
     def clear_windows(self, *args: WindowType) -> None:
         self._body_distraction_times.clear(*args)

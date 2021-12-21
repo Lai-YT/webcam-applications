@@ -54,6 +54,7 @@ class BlinkRateIntervalDetector(QObject):
         time.
 
         Call this method manually to have the detector follow the current time.
+
         Emits:
             s_interval_detected:
         """
@@ -72,21 +73,25 @@ class BlinkRateIntervalDetector(QObject):
             blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
             if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
                 # Emit previous part first since its earlier on time.
-                if (self._blink_times.previous
-                        and self._blink_times[0] - self._blink_times.previous[0] >= 30):
-                    self.s_interval_detected.emit(WindowType.PREVIOUS,
-                                                  self._blink_times.previous[0],
-                                                  self._blink_times[0],
-                                                  self._get_blink_rate(WindowType.PREVIOUS))
+                self._check_blink_rate_of_previous_window(self._blink_times[0], 30)
                 self.s_interval_detected.emit(WindowType.CURRENT,
                                               self._blink_times[0],
                                               self._blink_times[0] + 60,
                                               blink_rate)
-        elif (self._blink_times.previous
-                and (curr_time - 60) - self._blink_times.previous[0] >= 60):
+        else:
+            self._check_blink_rate_of_previous_window(curr_time - 60, 60)
+
+    def _check_blink_rate_of_previous_window(self, end: int, width: int) -> None:
+        """
+        Start time is the earliest blink time in the window.
+
+        Emits:
+            s_interval_detected:
+        """
+        if self._blink_times.previous and end - self._blink_times.previous[0] >= width:
             self.s_interval_detected.emit(WindowType.PREVIOUS,
                                           self._blink_times.previous[0],
-                                          curr_time - 60,
+                                          end,
                                           self._get_blink_rate(WindowType.PREVIOUS))
 
     def _get_blink_rate(self, type: WindowType) -> int:
