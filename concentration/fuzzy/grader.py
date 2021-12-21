@@ -39,7 +39,7 @@ class FuzzyGrader:
 
         grade: float = self._grader.output["grade"]
         if normalized:
-            grade = FuzzyGrader._to_normalized_grade(grade)
+            grade = FuzzyGrader._to_modified_grade(grade)
         return round(grade, 2)
 
     def view(self) -> None:
@@ -57,14 +57,10 @@ class FuzzyGrader:
         self._blink["poor"] = fuzz.trimf(self._blink.universe, [15, 21, 21])
 
     def _create_membership_func_of_body(self) -> None:
-        # The greater the values is, the better the grade of body concentration is,
-        # so we simply use .automf(3) to generate equally-divided triangular membership
-        # function.
+        # The greater the values is, the better the grade of body concentration is.
         self._body = ctrl.Antecedent(np.arange(11), "body")
-        # self._body.automf(3)
-        self._body["good"] = fuzz.trimf(self._body.universe, [6, 10, 10])
-        self._body["average"] = fuzz.trimf(self._body.universe, [0, 6, 10])
-        self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 6])
+        self._body["good"] = fuzz.trimf(self._body.universe, [0, 10, 10])
+        self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 10])
 
     def _create_membership_func_of_grade(self) -> None:
         self._grade = ctrl.Consequent(np.arange(11), "grade")
@@ -76,7 +72,7 @@ class FuzzyGrader:
     def _create_fuzzy_rules(self) -> List[ctrl.Rule]:
         """Returns the fuzzy rule that control the grade."""
         rule1 = ctrl.Rule(self._blink["poor"] | self._body["poor"], self._grade["low"])
-        rule2 = ctrl.Rule(self._blink["average"] | self._body["average"], self._grade["medium"])
+        rule2 = ctrl.Rule(self._blink["good"] | self._body["good"], self._grade["medium"])
         rule3 = ctrl.Rule(self._blink["good"] & self._body["good"], self._grade["high"])
         return [rule1, rule2, rule3]
 
@@ -104,17 +100,22 @@ class FuzzyGrader:
         return body_concent * 10
 
     @staticmethod
-    def _to_normalized_grade(raw_grade: float) -> float:
-        """Normalizes the grade interval to [0, 1].
+    def _to_modified_grade(raw_grade: float) -> float:
+        """Normalizes the grade interval to [0, 1] and do linear modification
+           to fine-tune the grade distribution.
 
-        Normalized grade is rounded to two decimal places.
+        Modified grade is rounded to two decimal places.
         Arguments:
-            raw_grade: The unnormalized grade in [1.67, 8.14].
+            raw_grade: The unnormalized grade in [2, 6].
         """
-        # Raw grade interval is (1.67, 8.14), we expand the grade interval to (0, 10)
-        # first, then normalize it.
-        normalized_grade = 1.55 * (raw_grade - 1.67)
-        return round(normalized_grade / 10, 2)
+        normalized_grade = (raw_grade - 2) / 4
+
+        if normalized_grade > 0.75:
+            modified_grade = 0.6 + (normalized_grade - 0.75) * (0.4 / 0.25)
+        else:
+            modified_grade = normalized_grade * (0.6 / 0.75)
+
+        return round(modified_grade / 10, 2)
 
 
 if __name__ == "__main__":
