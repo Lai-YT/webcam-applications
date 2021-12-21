@@ -64,10 +64,10 @@ class FuzzyGrader:
 
     def _create_membership_func_of_grade(self) -> None:
         self._grade = ctrl.Consequent(np.arange(11), "grade")
-        # a trapezoidal part is used to slightly pull up the intermediate group
-        self._grade["high"] = fuzz.trapmf(self._grade.universe, [5, 8, 10, 10])
-        self._grade["medium"] = fuzz.trimf(self._grade.universe, [0, 5, 8])
-        self._grade["low"] = fuzz.trimf(self._grade.universe, [0, 0, 5])
+
+        self._grade["high"] = fuzz.trimf(self._grade.universe, [6, 10, 10])
+        self._grade["medium"] = fuzz.trimf(self._grade.universe, [0, 6, 10])
+        self._grade["low"] = fuzz.trimf(self._grade.universe, [0, 0, 6])
 
     def _create_fuzzy_rules(self) -> List[ctrl.Rule]:
         """Returns the fuzzy rule that control the grade."""
@@ -115,7 +115,7 @@ class FuzzyGrader:
         else:
             modified_grade = normalized_grade * (0.6 / 0.75)
 
-        return round(modified_grade / 10, 2)
+        return round(modified_grade, 2)
 
 
 if __name__ == "__main__":
