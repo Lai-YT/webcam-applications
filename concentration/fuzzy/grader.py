@@ -42,13 +42,16 @@ class FuzzyGrader:
             grade = FuzzyGrader._to_modified_grade(grade)
         return round(grade, 2)
 
-    def view(self) -> None:
+    def view_membership_func(self) -> None:
         """Plots the membership function of blink rate, blink concentration
         value and unnormalized grade.
         """
         self._blink.view()
         self._body.view()
         self._grade.view()
+
+    def view_grading_result(self) -> None:
+        self._grade.view(sim=self._grader)
 
     def _create_membership_func_of_blink(self) -> None:
         self._blink = ctrl.Antecedent(np.arange(22), "blink")
@@ -62,8 +65,20 @@ class FuzzyGrader:
         self._body["good"] = fuzz.trimf(self._body.universe, [0, 10, 10])
         self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 10])
 
-    def _create_membership_func_of_grade(self) -> None:
+    def _create_membership_func_of_grade(self, defuzzify_method: str = "centroid") -> None:
+        """
+        Arguments:
+            defuzzify_method:
+                Controls which defuzzification method will be used.
+                There are 5 methods to choose
+                    centroid (default): centroid of area
+                    bisector: bisector of area
+                    mom: mean of maximum
+                    som: min of maximum
+                    lom: max of maximum
+        """
         self._grade = ctrl.Consequent(np.arange(11), "grade")
+        self._grade.defuzzify_method = defuzzify_method
 
         self._grade["high"] = fuzz.trimf(self._grade.universe, [6, 10, 10])
         self._grade["medium"] = fuzz.trimf(self._grade.universe, [0, 6, 10])
@@ -120,7 +135,7 @@ class FuzzyGrader:
 
 if __name__ == "__main__":
     fuzzy_grader = FuzzyGrader()
-    fuzzy_grader.view()
+    fuzzy_grader.view_membership_func()
     # go for a single graph check
     blink_rate = int(input("blink rate: "))
     body_concent = float(input("body concent: "))
@@ -130,6 +145,6 @@ if __name__ == "__main__":
     print(f"raw: {raw_grade}")
     print(f"grade: {norm_grade}")
 
-    # grade.view(sim=grading)
+    fuzzy_grader.view_grading_result()
 
     input("(press any key to exit)")
