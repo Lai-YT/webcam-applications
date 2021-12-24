@@ -3,6 +3,7 @@ from typing import Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from util.path import to_abs_path
 from util.sliding_window import DoubleTimeWindow, WindowType
 from util.time import get_current_time, to_date_time
 
@@ -63,6 +64,15 @@ class BlinkRateIntervalDetector(QObject):
 
     def clear_windows(self, *args: WindowType) -> None:
         self._blink_times.clear(*args)
+        # They are placed here since the interval detector itself know nothing
+        # about other grading components, such as FaceExistenceRateCounter.
+        #
+        # Check previous first since when they are both passed,
+        # current takes the lead.
+        if WindowType.PREVIOUS in args:
+            self._last_interval_end = get_current_time() - 60
+        if WindowType.CURRENT in args:
+            self._last_interval_end = get_current_time()
 
     def _check_blink_rate(self) -> None:
         """
@@ -80,7 +90,6 @@ class BlinkRateIntervalDetector(QObject):
                 self.s_interval_detected.emit(WindowType.CURRENT,
                                               self._blink_times[0], curr_time,
                                               blink_rate)
-                self._last_interval_end = curr_time
         # The current window hasn't form a good intervals yet, make each 60
         # seconds of the previous a interval.
         else:
@@ -97,7 +106,6 @@ class BlinkRateIntervalDetector(QObject):
             self.s_interval_detected.emit(WindowType.PREVIOUS,
                                           self._last_interval_end, end,
                                           self._get_blink_rate(WindowType.PREVIOUS))
-            self._last_interval_end = end
 
     def _get_blink_rate(self, type: WindowType) -> int:
         """Returns the blink rate of the corresponding window.
