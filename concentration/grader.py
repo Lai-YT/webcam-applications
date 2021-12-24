@@ -117,8 +117,7 @@ class ConcentrationGrader(QObject):
             self,
             ratio_threshold: float = 0.24,
             consec_frame: int = 3,
-            # 0 is to trigger grade computation on no face interval, the user may be writing.
-            good_rate_range: Tuple[int, int] = (0, 21),
+            good_rate_range: Tuple[int, int] = (1, 21),
             low_existence: float = 0.66) -> None:
         """
         Arguments:
@@ -132,7 +131,7 @@ class ConcentrationGrader(QObject):
             good_rate_range:
                 The min and max boundary of the good blink rate (blinks per minute).
                 It's not about the average rate, so both are with type int.
-                0 ~ 21 in default. For a proper blink rate, one may refer to
+                1 ~ 21 in default. For a proper blink rate, one may refer to
                 https://pubmed.ncbi.nlm.nih.gov/11700965/#affiliation-1
                 It's passed to the underlaying BlinkRateIntervalDetector.
             low_existence:
@@ -161,8 +160,7 @@ class ConcentrationGrader(QObject):
         # crash due to double check and ZeroDivisionError.
         self._face_existence_counter.s_low_existence_detected.connect(self._face_existence_counter.clear_windows)
 
-        # the start and end time of the interval being checked
-        self._in_check: Tuple[bool, int, int] = (False, 0, 0)
+        self._check_guard = DuplicateCheckGuard()
 
     def get_ratio_threshold(self) -> float:
         """Returns the ratio threshold used to consider an EAR lower than it
@@ -226,6 +224,7 @@ class ConcentrationGrader(QObject):
         distract_count: int = count_time_in_interval(self._body_distraction_times)
         return round(concent_count / (concent_count + distract_count), 2)
 
+
     @pyqtSlot(WindowType, int, int, int)
     def check_normal_concentration(
             self,
@@ -233,51 +232,62 @@ class ConcentrationGrader(QObject):
             start_time: int,
             end_time: int,
             blink_rate: int) -> None:
-        if self._in_check[0] and (start_time, end_time) == self._in_check[1:]:
+        if self._check_guard.is_blocked((start_time, end_time)):
             interval_logger.info(f"conflict at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
             return
-        self._in_check = (True, start_time, end_time)
+        self._check_guard.block((start_time, end_time))
+        interval_logger.info("in check at normal")
 
         interval_logger.info(f"Check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+        try:
+            body_concent: float = self.get_body_concentration_grade(type, start_time, end_time)
+            interval_logger.info(f"body concentration = {body_concent}")
+            interval_logger.info(f"blink rate = {blink_rate}")
 
-        body_concent: float = self.get_body_concentration_grade(type, start_time, end_time)
-        interval_logger.info(f"body concentration = {body_concent}")
-        interval_logger.info(f"blink rate = {blink_rate}")
-
-        grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
-        if type is WindowType.PREVIOUS:
-            grade = self._fuzzy_grader.compute_grade(
-                blink_rate*60 / (end_time-start_time), body_concent)
-            # A grading from the previous can only be bad, since they didn't
-            # pass when they were current.
-            self.s_concent_interval_refreshed.emit(IntervalLevel.BAD, start_time,
-                                                   end_time, grade)
-            parse.append_to_json(
-                self._json_file,
-                Interval(start=start_time, end=end_time, grade=grade).__dict__)
-            self.clear_windows(WindowType.PREVIOUS)
-            interval_logger.info(f"bad concentration: {grade}")
-        elif grade >= 0.6:
-            self.s_concent_interval_refreshed.emit(IntervalLevel.GOOD, start_time,
-                                                   end_time, grade)
-            parse.append_to_json(
-                self._json_file,
-                Interval(start=start_time, end=end_time, grade=grade).__dict__)
-            # The grading of previous should precede current, so after the
-            # grading of current, we should and must clear previous also.
-            self.clear_windows(WindowType.PREVIOUS, WindowType.CURRENT)
-            interval_logger.info(f"good concentration: {grade}")
-        else:
-            interval_logger.info(f"{grade}, not concentrating")
-        interval_logger.info("")  # separation
-        self._in_check = (False, 0, 0)
+            grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
+            if type is WindowType.PREVIOUS:
+                grade = self._fuzzy_grader.compute_grade(
+                    (blink_rate * 60) / (end_time - start_time), body_concent)
+                # A grading from the previous can only be bad, since they didn't
+                # pass when they were current.
+                self.s_concent_interval_refreshed.emit(
+                    IntervalLevel.BAD, start_time, end_time, grade)
+                parse.append_to_json(
+                    self._json_file,
+                    Interval(start=start_time, end=end_time, grade=grade).__dict__)
+                self.clear_windows(WindowType.PREVIOUS)
+                interval_logger.info(f"bad concentration: {grade}")
+            elif grade >= 0.6:
+                self.s_concent_interval_refreshed.emit(
+                    IntervalLevel.GOOD, start_time, end_time, grade)
+                parse.append_to_json(
+                    self._json_file,
+                    Interval(start=start_time, end=end_time, grade=grade).__dict__)
+                # The grading of previous should precede current, so after the
+                # grading of current, we should and must clear previous also.
+                self.clear_windows(WindowType.PREVIOUS, WindowType.CURRENT)
+                interval_logger.info(f"good concentration: {grade}")
+            else:
+                interval_logger.info(f"{grade}, not concentrating")
+        except ZeroDivisionError:
+            interval_logger.info(f"broken at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+            print(f"broken at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+        finally:
+            self._check_guard.release()
+            interval_logger.info(f"leave check of normal {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+            interval_logger.info("")  # separation
 
     @pyqtSlot(int, int)
     def check_low_face_concentration(self, start_time: int, end_time: int) -> None:
-        if self._in_check[0] and (start_time, end_time) == self._in_check[1:]:
+        """
+        Note that no matter good or bad, the low face interval is always graded
+        currently.
+        """
+        if self._check_guard.is_blocked((start_time, end_time)):
             interval_logger.info(f"conflict at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
             return
-        self._in_check = (True, start_time, end_time)
+        self._check_guard.block((start_time, end_time))
+        interval_logger.info("in check at low face")
 
         interval_logger.info(f"Check at {to_date_time(start_time)} ~ {to_date_time(end_time)}")
         interval_logger.info("low face existence, check body only:")
@@ -295,8 +305,10 @@ class ConcentrationGrader(QObject):
         )
         self.clear_windows(WindowType.CURRENT)
 
-        interval_logger.info(f"concentration: {grade}\n")
-        self._in_check = (False, 0, 0)
+        interval_logger.info(f"concentration: {grade}")
+        self._check_guard.release()
+        interval_logger.info(f"leave check of low face {to_date_time(start_time)} ~ {to_date_time(end_time)}")
+        interval_logger.info("")  # separation
 
     def clear_windows(self, *args: WindowType) -> None:
         self._body_distraction_times.clear(*args)
@@ -305,3 +317,37 @@ class ConcentrationGrader(QObject):
 
         if WindowType.CURRENT in args:
             self._face_existence_counter.clear_windows()
+
+
+class DuplicateCheckGuard:
+    def __init__(self) -> None:
+        self._block: bool = False
+        self._interval_to_block: Tuple[int, int] = (0, 0)
+
+    def block(self, interval: Tuple[int, int]) -> None:
+        """Blocks the designated interval, which means one will get a True when
+        calling an is_blocked() on a intervals that overlaps.
+        """
+        self._block = True
+        self._interval_to_block = interval
+
+    def release(self) -> None:
+        """Releases the guard so no interval is blocked."""
+        self._block = False
+
+    def is_blocked(self, interval: Tuple[int, int]) -> bool:
+        """Returns whether the interval overlaps with the interval to block."""
+        return self._block and is_overlapped(interval, self._interval_to_block)
+
+
+
+def is_overlapped(interval_1: Tuple[int, int], interval_2: Tuple[int, int]) -> bool:
+    """Returns True if the intervals overlapped with each other.
+
+    Both ends of the intervals are considered to be opened.
+
+    Arguments:
+        interval_1, interval_2: The 2 intervals to check overlapping on.
+    """
+    return ((interval_1[0] >= interval_2[0] and not interval_1[0] >= interval_2[1])
+            or (interval_1[1] <= interval_2[1] and not interval_1[1] <= interval_2[0]))
