@@ -3,9 +3,8 @@ from typing import Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from util.path import to_abs_path
 from util.sliding_window import DoubleTimeWindow, WindowType
-from util.time import get_current_time, to_date_time
+from util.time import get_current_time
 
 
 class IntervalLevel(Enum):
