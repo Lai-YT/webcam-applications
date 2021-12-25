@@ -288,15 +288,15 @@ class WebcamApplication(QObject):
             # must have exactly one face in the reference image
             raise ValueError("should have exactly 1 face in the reference image")
         self._landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
-        self._distance_guard = DistanceGuard(grader=self._concentration_grader)
+        self._distance_guard: DistanceGuard = DistanceGuard(grader=self._concentration_grader)
         self._distance_guard.s_distance_refreshed.connect(self.s_distance_refreshed)
 
         self._angle_calculator = AngleCalculator()
-        self._posture_guard = PostureGuard(calculator=self._angle_calculator,
+        self._posture_guard: PostureGuard = PostureGuard(calculator=self._angle_calculator,
                                            grader=self._concentration_grader)
         self._posture_guard.s_posture_refreshed.connect(self.s_posture_refreshed)
 
-        self._time_guard = TimeGuard()
+        self._time_guard: TimeGuard = TimeGuard()
         self._time_guard.s_time_refreshed.connect(self.s_time_refreshed)
         self.s_stopped.connect(self._time_guard.close_timer_widget)
 

@@ -23,7 +23,7 @@ class BlinkRateIntervalDetector(QObject):
     Signals:
         s_interval_detected:
     """
-
+    # TODO: I suggest that the signature use IntervalLevel instead of WindowType
     s_interval_detected = pyqtSignal(WindowType, int, int, int)  # start, end, rate
 
     def __init__(self, good_rate_range: Tuple[int, int] = (15, 25)) -> None:
@@ -39,6 +39,7 @@ class BlinkRateIntervalDetector(QObject):
         self._good_rate_range = good_rate_range
         self._blink_times = DoubleTimeWindow(60)
         self._blink_times.set_time_catch_callback(self._check_blink_rate)
+        self._last_interval_end: int = get_current_time()
 
     def add_blink(self) -> None:
         """Adds a new time of blink and checks whether there's a good interval.
@@ -62,6 +63,15 @@ class BlinkRateIntervalDetector(QObject):
 
     def clear_windows(self, *args: WindowType) -> None:
         self._blink_times.clear(*args)
+        # They are placed here since the interval detector itself know nothing
+        # about other grading components, such as FaceExistenceRateCounter.
+        #
+        # Check previous first since when they are both passed,
+        # current takes the lead.
+        if WindowType.PREVIOUS in args:
+            self._last_interval_end = get_current_time() - 60
+        if WindowType.CURRENT in args:
+            self._last_interval_end = get_current_time()
 
     def _check_blink_rate(self) -> None:
         """
@@ -69,29 +79,31 @@ class BlinkRateIntervalDetector(QObject):
             s_interval_detected:
         """
         curr_time: int = get_current_time()
+        # When the current window forms a good interval, we should also send the
+        # previous if it's long enough.
         if self._blink_times and (curr_time - self._blink_times[0]) >= 60:
             blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
             if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
                 # Emit previous part first since its earlier on time.
                 self._check_blink_rate_of_previous_window(self._blink_times[0], 30)
                 self.s_interval_detected.emit(WindowType.CURRENT,
-                                              self._blink_times[0],
-                                              self._blink_times[0] + 60,
+                                              self._blink_times[0], curr_time,
                                               blink_rate)
+        # The current window hasn't form a good intervals yet, make each 60
+        # seconds of the previous a interval.
         else:
             self._check_blink_rate_of_previous_window(curr_time - 60, 60)
 
     def _check_blink_rate_of_previous_window(self, end: int, width: int) -> None:
         """
-        Start time is the earliest blink time in the window.
+        Start time is the end time of the last interval.
 
         Emits:
             s_interval_detected:
         """
-        if self._blink_times.previous and end - self._blink_times.previous[0] >= width:
+        if end - self._last_interval_end >= width:
             self.s_interval_detected.emit(WindowType.PREVIOUS,
-                                          self._blink_times.previous[0],
-                                          end,
+                                          self._last_interval_end, end,
                                           self._get_blink_rate(WindowType.PREVIOUS))
 
     def _get_blink_rate(self, type: WindowType) -> int:
