@@ -120,7 +120,9 @@ class ConcentrationGrader(QObject):
         grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
         if type is WindowType.PREVIOUS:
             grade = self._fuzzy_grader.compute_grade(
-                (blink_rate * 60) / (end_time - start_time), body_concent)
+                # argument 1 of compute_grade has type int
+                # TODO: An average-based blink rate might be floating-point number
+                int((blink_rate * 60) / (end_time - start_time)), body_concent)
             # A grading from the previous can only be bad, since they didn't
             # pass when they were current.
             self.s_concent_interval_refreshed.emit(
