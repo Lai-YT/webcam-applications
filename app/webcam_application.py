@@ -8,7 +8,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
-from app.webcam_application_ import mark_face
+from app.webcam_application_ import has_face, mark_face
 from distance.calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from distance.guard import DistanceGuard
 from posture.calculator import (AngleCalculator, PosturePredictor,
@@ -91,7 +91,7 @@ class WebcamApplication(QObject):
             landmarks: NDArray[(68, 2), Int[32]] = self._get_landmarks(canvas, frame)
             # Do applications!
             if self._distance_measure:
-                if landmarks.any():
+                if has_face(landmarks):
                     self._distance_guard.warn_if_too_close(canvas, landmarks)
             if self._posture_detect:
                 self._posture_guard.check_posture(canvas, frame, landmarks)
@@ -99,7 +99,7 @@ class WebcamApplication(QObject):
             if self._focus_time:
                 # If the landmarks of face are clear, ths user is considered not focusing
                 # on the screen, so the timer is paused.
-                if not landmarks.any():
+                if not has_face(landmarks):
                     self._timer.pause()
                 else:
                     self._timer.start()
