@@ -13,7 +13,7 @@ from util.task_worker import TaskWorker
 CONFIG = os.path.join(os.path.abspath(os.path.dirname(__file__)), "gui_state.ini")
 
 class WindowController(QObject):
-    def __init__(self, window: Window, app: WebcamApplication):
+    def __init__(self, window: Window, app: WebcamApplication) -> None:
         super().__init__()
 
         self._window = window
