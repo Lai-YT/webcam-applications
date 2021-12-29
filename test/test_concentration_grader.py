@@ -17,7 +17,9 @@ class ConcentrationGraderTestCase(unittest.TestCase):
         self.timer = Timer()
 
     def test_racing_between_low_face_and_blink(self) -> None:
-        """Even though the blink is add first, low face existence check should
+        """Test whether low existence is checked first.
+
+        Even though the blink is add first, low face existence check should
         prior to the normal one; otherwise you'll have the interval good due to
         the normal fuzzy grade.
 
@@ -33,7 +35,7 @@ class ConcentrationGraderTestCase(unittest.TestCase):
         Notice that this test may be false-positive since the emission order
         various and is uncontrollable.
         """
-        delays = [7 for i in range(1, 9)]  # The delay between blinks in a minute.
+        delays = [7 for i in range(9)]  # The delay between blinks in a minute.
         def single_test_cycle(min_no: int) -> None:
             """This is a single minute test of the racing scenario, have it
             called in subTests to reduce the false-positive condition.
@@ -66,15 +68,17 @@ class ConcentrationGraderTestCase(unittest.TestCase):
             interval = intervals[min_no - 1]
             self.assertEqual(interval.end - interval.start, 60)
             self.assertAlmostEqual(interval.grade, 0.67, places=2,
-                                   msg="A low face interval should use the grade of body.")
+                                   msg="Should use the grade of body in a low face interval.")
 
         for min_no in range(1, 4):
             with self.subTest(min_no=min_no):
                 single_test_cycle(min_no)
 
-    def test_look_back_grading(self) -> None:
-        """The look back mechanism should fill the bad interval which is wider
-        then 30 seconds "right before" the good 60 seconds interval.
+    def test_grading_continuity_of_previous(self) -> None:
+        """The grading on previous should be right after the next interval.
+
+        The look-up mechanism should fill the bad interval "right before" the
+        good 60 seconds interval.
 
         Scenario:
         The 1st minute with
@@ -91,13 +95,10 @@ class ConcentrationGraderTestCase(unittest.TestCase):
         So we'll have the
             1st 35s: 0.47 (blink 5 extend to 8, body 0),
             2nd 60s: 0.61 (blink 9, body 0.45).
-            The last 26s provides no interval.
+            The last 25s provides no interval.
         """
         delays = [7 for i in range(18)]
         for t, delay in enumerate(delays):
-            # Notice that even though the blink is add first,
-            # low face existence check should prior to the normal one.
-            # If not, you'll have the 1st min good due to the normal fuzzy grade.
             self.grader._blink_detector.s_blinked.emit()
 
             self.timer.start()
@@ -128,11 +129,26 @@ class ConcentrationGraderTestCase(unittest.TestCase):
         self.assertAlmostEqual(first_interval.grade, 0.47, places=2)
         # We want the intervals to be concatenated.
         self.assertEqual(second_interval.start, first_interval.end,
-                         msg="The intervals should be concatenated.")
+                         msg="The intervals should be continuous.")
 
         self.assertEqual(second_interval.end - second_interval.start, 60)
         self.assertAlmostEqual(second_interval.grade, 0.61, places=2)
 
+    def test_grading_interval_width_of_previous(self) -> None:
+        """The grading on previous should be as long as possible.
+
+        Grading of the previous window should also be blocked when the
+        "likely" good interval nearby isn't a truly good interval;
+        seeking for a 60 seconds interval if possible.
+
+        Scenario:
+        A leading 30 seconds with
+            blink: 1    per 6 secs,
+            body:  0    instantaneously,
+            face:  1    instantaneously,
+        """
+        pass
+        
     # def test_two_min_low_face(self) -> None:
     #     """
     #     Scenario:
