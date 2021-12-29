@@ -16,6 +16,7 @@ class TimeWindow:
                     latest time - the earliest time.
                 This is the max width of the window, in seconds, 60 in default.
                 Times are poped out from the earliest when exceeds.
+
                 Notice that the interval is closed, 60 is allowed to keep in a
                 window with time width 60.
         """

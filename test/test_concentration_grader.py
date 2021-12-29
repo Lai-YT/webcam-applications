@@ -1,6 +1,5 @@
 import unittest
 
-
 from concentration.fuzzy.parse import read_intervals_from_json
 from concentration.grader import ConcentrationGrader
 from util.path import to_abs_path
@@ -18,49 +17,72 @@ class ConcentrationGraderTestCase(unittest.TestCase):
         self.timer = Timer()
 
     def test_racing_between_low_face_and_blink(self) -> None:
-        """
-        Even though the blink is add first, low face existence check should
+        """Even though the blink is add first, low face existence check should
         prior to the normal one; otherwise you'll have the interval good due to
         the normal fuzzy grade.
 
-        Notice that this test may be false-positive.
+        Scenario:
+        A single minute with
+            blink: 1     per 7 secs,
+            body:  0.67  instantaneously,
+            face:  0     instantaneously.
+
+        Expected Result:
+        A 60 seconds interval with grade 0.67, which is the grade of body.
+
+        Notice that this test may be false-positive since the emission order
+        various and is uncontrollable.
         """
-        delays = [7 for i in range(9)]
-        # The outer loop goes for blinks, inner for face and body.
-        for t, delay in enumerate(delays):
-            # No matter which one (face and interval) emits first, the low
-            # face should be accepted as the grade.
-            self.grader._blink_detector.s_blinked.emit()
+        delays = [7 for i in range(1, 9)]  # The delay between blinks in a minute.
+        def single_test_cycle(min_no: int) -> None:
+            """This is a single minute test of the racing scenario, have it
+            called in subTests to reduce the false-positive condition.
 
-            i = 0
-            self.timer.start()
-            while self.timer.time() < delay:
-                self.grader.add_frame()
-                if i % 3:
-                    self.grader.add_body_concentration()
-                else:
-                    self.grader.add_body_distraction()
-                i = (i + 1) % 3
-            self.timer.reset()
+            Arguments:
+                min_no: The current number of the single test cycle.
+            """
+            # The outer loop goes for blinks, inner for face and body.
+            for t, delay in enumerate(delays):
+                # No matter which one (face and interval) emits first, the low
+                # face should be accepted as the grade.
+                self.grader._blink_detector.s_blinked.emit()
 
-            self.grader._interval_detector.check_blink_rate()
-        # The grade should be 0.67, not 0.83.
-        intervals = read_intervals_from_json(self.JSON_FILE)
-        self.assertEqual(len(intervals), 1)
+                i = 0
+                self.timer.start()
+                while self.timer.time() < delay:
+                    self.grader.add_frame()
+                    if i % 3:
+                        self.grader.add_body_concentration()
+                    else:
+                        self.grader.add_body_distraction()
+                    i = (i + 1) % 3
+                self.timer.reset()
 
-        interval = intervals[0]
-        self.assertEqual(interval.end - interval.start, 60)
-        self.assertAlmostEqual(interval.grade, 0.67, places=2)
+                self.grader._interval_detector.check_blink_rate()
+            # The grade should be 0.67, not 0.83.
+            intervals = read_intervals_from_json(self.JSON_FILE)
+            self.assertEqual(len(intervals), min_no)
+
+            interval = intervals[min_no - 1]
+            self.assertEqual(interval.end - interval.start, 60)
+            self.assertAlmostEqual(interval.grade, 0.67, places=2,
+                                   msg="A low face interval should use the grade of body.")
+
+        for min_no in range(1, 4):
+            with self.subTest(min_no=min_no):
+                single_test_cycle(min_no)
 
     def test_look_back_grading(self) -> None:
-        """
+        """The look back mechanism should fill the bad interval which is wider
+        then 30 seconds "right before" the good 60 seconds interval.
+
         Scenario:
-        The 1st minute is with
+        The 1st minute with
             blink: 1     per 7 secs,
             body:  0     instantaneously,
-            face:  1     instantaneously.
-        To provide low grade.
-        The 2nd minute comes with
+            face:  1     instantaneously,
+        to provide low grade.
+        The 2nd minute with
             blink: 1     per 7 secs,
             body:  0.8   instantaneously,
             face:  1     instantaneously.
@@ -105,7 +127,8 @@ class ConcentrationGraderTestCase(unittest.TestCase):
         self.assertEqual(first_interval.end - first_interval.start, 35)
         self.assertAlmostEqual(first_interval.grade, 0.47, places=2)
         # We want the intervals to be concatenated.
-        self.assertEqual(second_interval.start, first_interval.end)
+        self.assertEqual(second_interval.start, first_interval.end,
+                         msg="The intervals should be concatenated.")
 
         self.assertEqual(second_interval.end - second_interval.start, 60)
         self.assertAlmostEqual(second_interval.grade, 0.61, places=2)

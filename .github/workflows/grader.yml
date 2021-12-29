@@ -1,10 +1,10 @@
-name: Concentration Grader Test
+name: Unittest of concentration grader
 
 on: [push]
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.8
@@ -14,7 +14,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install wheel
         pip install -r requirements.txt
-    - name: Run the unittest of concentration grader
+    - name: Run unittest of concentration grader
       run: |
-        python -m unittest test.test_concentration_grader
+        python -m unittest -v test.test_concentration_grader

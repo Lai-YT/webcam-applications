@@ -48,7 +48,6 @@ class BlinkRateIntervalDetector(QObject):
             s_interval_detected:
         """
         self._blink_times.append_time()
-        self.check_blink_rate()
 
     def check_blink_rate(self) -> None:
         """Checks whether there's a good interval and catch up with the current
@@ -81,7 +80,7 @@ class BlinkRateIntervalDetector(QObject):
         curr_time: int = get_current_time()
         # When the current window forms a good interval, we should also send the
         # previous if it's long enough.
-        if self._blink_times and (curr_time - self._blink_times[0]) >= 60:
+        if self._blink_times and (curr_time - self._blink_times[0]) == 60:
             blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
             if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
                 # Emit previous part first since its earlier on time.
