@@ -25,7 +25,7 @@ class ConcentrationGraderTestCase(unittest.TestCase):
 
         Scenario:
         A single minute with
-            blink: 9     1 per 7 secs, from 0,
+            blink: 1     per 7 secs,
             body:  0.67  instantaneously,
             face:  0     instantaneously.
 

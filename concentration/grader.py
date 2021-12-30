@@ -7,8 +7,9 @@ from nptyping import Int, NDArray
 import concentration.fuzzy.parse as parse
 import util.logger as logger
 from blink.detector import AntiNoiseBlinkDetector
-from blink.interval import BlinkRateIntervalDetector, IntervalLevel
+from blink.interval import BlinkRateIntervalDetector
 from concentration.counter import BodyConcentrationCounter, FaceExistenceRateCounter
+from concentration.interval import IntervalType
 from concentration.fuzzy.classes import Grade, Interval
 from concentration.fuzzy.grader import FuzzyGrader
 from util.path import to_abs_path
@@ -22,7 +23,7 @@ interval_logger: logging.Logger = logger.setup_logger("interval_logger",
 
 class ConcentrationGrader(QObject):
 
-    s_concent_interval_refreshed = pyqtSignal(IntervalLevel, int, int, float)  # start, end, grade
+    s_concent_interval_refreshed = pyqtSignal(int, int, float)  # start, end, grade
 
     def __init__(
             self,
@@ -104,7 +105,7 @@ class ConcentrationGrader(QObject):
 
     def check_normal_concentration(
             self,
-            type: WindowType,
+            type: IntervalType,
             start_time: int,
             end_time: int,
             blink_rate: int) -> None:
@@ -118,28 +119,27 @@ class ConcentrationGrader(QObject):
         interval_logger.info(f"body concentration = {body_concent}")
 
         grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
-        if type is WindowType.PREVIOUS:
+        if type is IntervalType.LOOK_BACK:
             grade = self._fuzzy_grader.compute_grade(
                 # argument 1 of compute_grade has type int
                 # TODO: An average-based blink rate might be floating-point number
                 int((blink_rate * 60) / (end_time - start_time)), body_concent)
             # A grading from the previous can only be bad, since they didn't
             # pass when they were current.
-            self.s_concent_interval_refreshed.emit(
-                IntervalLevel.BAD, start_time, end_time, grade)
+            self.s_concent_interval_refreshed.emit(start_time, end_time, grade)
             parse.append_to_json(
                 self._json_file,
                 Interval(start=start_time, end=end_time, grade=grade).__dict__)
             self.clear_windows(WindowType.PREVIOUS)
             interval_logger.info(f"bad concentration: {grade}")
         elif grade >= 0.6:
-            self.s_concent_interval_refreshed.emit(
-                IntervalLevel.GOOD, start_time, end_time, grade)
+            self.s_concent_interval_refreshed.emit(start_time, end_time, grade)
             parse.append_to_json(
                 self._json_file,
                 Interval(start=start_time, end=end_time, grade=grade).__dict__)
-            # The grading of previous should precede current, so after the
-            # grading of current, we should and must clear previous also.
+            # The grading of previous should precede current, not graded only if
+            # the previous window isn't wide enough. So after the grading of current,
+            # we should and must clear previous also.
             self.clear_windows(WindowType.PREVIOUS, WindowType.CURRENT)
             interval_logger.info(f"good concentration: {grade}")
         else:
@@ -164,8 +164,7 @@ class ConcentrationGrader(QObject):
             WindowType.CURRENT, start_time, end_time)
         grade: float = body_concent
 
-        level = IntervalLevel.GOOD if grade >= 0.6 else IntervalLevel.BAD
-        self.s_concent_interval_refreshed.emit(level, start_time, end_time, grade)
+        self.s_concent_interval_refreshed.emit(start_time, end_time, grade)
         parse.append_to_json(
             self._json_file,
             Interval(start=start_time, end=end_time, grade=grade).__dict__

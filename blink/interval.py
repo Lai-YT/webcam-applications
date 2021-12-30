@@ -1,15 +1,10 @@
-from enum import Enum, auto
 from typing import Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from concentration.interval import IntervalType
 from util.sliding_window import DoubleTimeWindow, WindowType
 from util.time import get_current_time
-
-
-class IntervalLevel(Enum):
-    BAD = auto()
-    GOOD = auto()
 
 
 class BlinkRateIntervalDetector(QObject):
@@ -23,8 +18,7 @@ class BlinkRateIntervalDetector(QObject):
     Signals:
         s_interval_detected:
     """
-    # TODO: I suggest that the signature use IntervalLevel instead of WindowType
-    s_interval_detected = pyqtSignal(WindowType, int, int, int)  # start, end, rate
+    s_interval_detected = pyqtSignal(IntervalType, int, int, int)  # start, end, rate
 
     def __init__(self, good_rate_range: Tuple[int, int] = (15, 25)) -> None:
         """
@@ -78,18 +72,18 @@ class BlinkRateIntervalDetector(QObject):
             s_interval_detected:
         """
         curr_time: int = get_current_time()
-        # When the current window forms a good interval, we should also send the
-        # previous if it's long enough.
+        # When the current window forms a good interval, we should also look
+        # back if it's long enough.
         if self._blink_times and (curr_time - self._blink_times[0]) >= 60:
             blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
             if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
                 # Emit previous part first since its earlier on time.
                 self._check_blink_rate_of_previous_window(self._blink_times[0], 30)
-                self.s_interval_detected.emit(WindowType.CURRENT,
+                self.s_interval_detected.emit(IntervalType.REAL_TIME,
                                               self._blink_times[0], curr_time,
                                               blink_rate)
         # The current window hasn't form a good intervals yet, make each 60
-        # seconds of the previous a interval.
+        # seconds of the previous a look back interval.
         else:
             self._check_blink_rate_of_previous_window(curr_time - 60, 60)
 
@@ -101,7 +95,7 @@ class BlinkRateIntervalDetector(QObject):
             s_interval_detected:
         """
         if end - self._last_interval_end >= width:
-            self.s_interval_detected.emit(WindowType.PREVIOUS,
+            self.s_interval_detected.emit(IntervalType.LOOK_BACK,
                                           self._last_interval_end, end,
                                           self._get_blink_rate(WindowType.PREVIOUS))
 
