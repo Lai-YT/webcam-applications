@@ -1,7 +1,10 @@
+import functools
 import logging
+import time
+from queue import PriorityQueue
 from typing import Tuple
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from nptyping import Int, NDArray
 
 import concentration.fuzzy.parse as parse
@@ -17,6 +20,7 @@ from concentration.fuzzy.classes import Grade, Interval
 from concentration.fuzzy.grader import FuzzyGrader
 from util.path import to_abs_path
 from util.sliding_window import WindowType
+from util.task_worker import TaskWorker
 from util.time import to_date_time
 
 
@@ -69,9 +73,25 @@ class ConcentrationGrader(QObject):
         self._json_file: str = to_abs_path("intervals.json")
         parse.init_json(self._json_file)
 
+        self._queue = PriorityQueue()
         self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
-        self._interval_detector.s_interval_detected.connect(self.check_normal_concentration)
-        self._face_existence_counter.s_low_existence_detected.connect(self.check_low_face_concentration)
+        self._interval_detector.s_interval_detected.connect(self.put_interval_to_grade_in_queue)
+        self._face_existence_counter.s_low_existence_detected.connect(
+            functools.partial(self.put_interval_to_grade_in_queue, IntervalType.LOW_FACE))
+        self._start_grading_thread()
+
+    def _start_grading_thread(self) -> None:
+        self._worker = TaskWorker(self._grade_intervals)
+        self._thread = QThread()
+        self._worker.moveToThread(self._thread)
+        # Worker starts running after the thread is started.
+        self._thread.started.connect(self._worker.run)
+        # TODO: Provide signal to tell that the grading app. is over.
+        # connect(self._thread.quit)
+        # connect(self._worker.deleteLater)
+        # self._thread.finished.connect(self._thread.deleteLater)
+
+        self._thread.start()
 
     def get_ratio_threshold(self) -> float:
         """Returns the ratio threshold used to consider an EAR lower than it
@@ -105,12 +125,36 @@ class ConcentrationGrader(QObject):
     def add_body_distraction(self) -> None:
         self._body_concent_counter.add_distraction()
 
-    def check_normal_concentration(
+    def put_interval_to_grade_in_queue(
+            self,
+            type: IntervalType,
+            start_time: int,
+            end_time: int,
+            *args) -> None:
+        """
+        The priority queue first checks the type,
+        the type with higher priority should be graded first;
+        if two intervals has the same type, the one that starts first
+        is graded first.
+        """
+        self._queue.put((type, (start_time, end_time), *args))
+
+    def _grade_intervals(self) -> None:
+        while True:
+            type, interval, *args = self._queue.get()
+            if type is IntervalType.LOW_FACE:
+                self._do_low_face_grading(*interval)
+            else:
+                self._do_normal_grading(type, *interval, *args)
+            self._queue.task_done()
+
+    def _do_normal_grading(
             self,
             type: IntervalType,
             start_time: int,
             end_time: int,
             blink_rate: int) -> None:
+        """Performs grading on real time and look back intervals."""
         interval_logger.info("in check at normal")
 
         interval_logger.info(f"Check at {to_date_time(start_time)} ~ "
@@ -155,7 +199,7 @@ class ConcentrationGrader(QObject):
                              f"{to_date_time(end_time)}")
         interval_logger.info("")  # separation
 
-    def check_low_face_concentration(self, start_time: int, end_time: int) -> None:
+    def _do_low_face_grading(self, start_time: int, end_time: int) -> None:
         """
         Note that no matter good or bad, the low face interval is always graded
         currently.
