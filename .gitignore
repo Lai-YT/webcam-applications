@@ -31,3 +31,7 @@ venv/
 train_sample/
 train/
 *.h5
+
+# image_filter
+!dark_room.jpg
+!dark_room_with_lightspot.jpg
