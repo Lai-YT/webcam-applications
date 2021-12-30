@@ -7,8 +7,11 @@ from nptyping import Int, NDArray
 import concentration.fuzzy.parse as parse
 import util.logger as logger
 from blink.detector import AntiNoiseBlinkDetector
-from blink.interval import BlinkRateIntervalDetector
-from concentration.counter import BodyConcentrationCounter, FaceExistenceRateCounter
+from concentration.criterion import (
+    BlinkRateIntervalDetector,
+    BodyConcentrationCounter,
+    FaceExistenceRateCounter
+)
 from concentration.interval import IntervalType
 from concentration.fuzzy.classes import Grade, Interval
 from concentration.fuzzy.grader import FuzzyGrader
@@ -17,9 +20,8 @@ from util.sliding_window import WindowType
 from util.time import to_date_time
 
 
-interval_logger: logging.Logger = logger.setup_logger("interval_logger",
-                                                      to_abs_path("concent_interval.log"),
-                                                      logging.DEBUG)
+interval_logger: logging.Logger = logger.setup_logger(
+    "interval_logger", to_abs_path("concent_interval.log"), logging.DEBUG)
 
 class ConcentrationGrader(QObject):
 
@@ -39,8 +41,8 @@ class ConcentrationGrader(QObject):
             ratio_threshold:
                 The eye aspect ratio to indicate blink. 0.24 in default.
             consec_frame:
-                The number of consecutive frames the eye must be below the threshold
-                to indicate a blink. 3 in default.
+                The number of consecutive frames the eye must be below the
+                threshold to indicate a blink. 3 in default.
             good_rate_range:
                 The min and max boundary of the good blink rate (blinks per minute).
                 It's not about the average rate, so both are with type int.
@@ -114,8 +116,13 @@ class ConcentrationGrader(QObject):
         interval_logger.info(f"Check at {to_date_time(start_time)} ~ "
                              f"{to_date_time(end_time)}")
         interval_logger.info(f"blink rate = {blink_rate}")
+
+        window_type = WindowType.CURRENT
+        if type is IntervalType.LOOK_BACK:
+            window_type = WindowType.PREVIOUS
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
-            type, start_time, end_time)
+            window_type, start_time, end_time)
+
         interval_logger.info(f"body concentration = {body_concent}")
 
         grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
