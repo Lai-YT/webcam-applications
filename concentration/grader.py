@@ -1,4 +1,5 @@
 import functools
+import time
 import logging
 from queue import PriorityQueue
 from typing import Tuple
@@ -20,7 +21,7 @@ from concentration.fuzzy.grader import FuzzyGrader
 from util.path import to_abs_path
 from util.sliding_window import WindowType
 from util.task_worker import TaskWorker
-from util.time import to_date_time
+from util.time import get_current_time, to_date_time
 
 
 interval_logger: logging.Logger = logger.setup_logger(
@@ -57,10 +58,7 @@ class ConcentrationGrader(QObject):
                 existence. 0.66 (2/3) in default.
         """
         super().__init__()
-        interval_logger.info("ConcentrationGrader configs:")
-        interval_logger.info(f" ratio thres  = {ratio_threshold}")
-        interval_logger.info(f" consec frame = {consec_frame}")
-        interval_logger.info(f" good range   = {good_rate_range}\n")
+        interval_logger.info(f"Grader starts at {to_date_time(get_current_time())}")
 
         self._interval_detector = BlinkRateIntervalDetector(good_rate_range)
         self._interval_detector.s_interval_detected.connect(self.put_interval_to_grade_in_queue)
@@ -149,14 +147,27 @@ class ConcentrationGrader(QObject):
         """An infinite loop that dispatches the intervals to their
         corresponding grading method.
         """
+        def wait(ref: int, delay: int) -> None:
+            time_to_wait: int = delay - (get_current_time() - ref)
+            if time_to_wait > 0:
+                time.sleep(time_to_wait)
         while True:
+            interval, type, *args = self._queue.get()
+            # We just want to get the interval, but not to grade.
+            # So put it back and wait.
+            self._queue.put((interval, type, *args))
+            # wait
+            delay: int = 2
+            if type is IntervalType.LOOK_BACK:
+                delay += 60
+            wait(interval[1], delay)
+            # dispatch
             interval, type, *args = self._queue.get()
             if not self._is_graded_interval(interval):
                 if type is IntervalType.LOW_FACE:
                     self._do_low_face_grading(*interval)
                 else:
                     self._do_normal_grading(type, *interval, *args)
-            self._queue.task_done()
 
     def _is_graded_interval(self, interval: Tuple[int, int]) -> bool:
         """Returns whether the interval starts before the last end time.
@@ -173,18 +184,16 @@ class ConcentrationGrader(QObject):
             end_time: int,
             blink_rate: int) -> None:
         """Performs grading on real time and look back intervals."""
-        interval_logger.info("in check at normal")
-
-        interval_logger.info(f"Check at {to_date_time(start_time)} ~ "
+        interval_logger.info(f"Normal check at {to_date_time(start_time)} ~ "
                              f"{to_date_time(end_time)}")
         interval_logger.info(f"blink rate = {blink_rate}")
 
         window_type = WindowType.CURRENT
         if type is IntervalType.LOOK_BACK:
             window_type = WindowType.PREVIOUS
+
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
             window_type, start_time, end_time)
-
         interval_logger.info(f"body concentration = {body_concent}")
 
         grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
@@ -224,16 +233,15 @@ class ConcentrationGrader(QObject):
         Note that no matter good or bad, the low face interval is always graded
         currently.
         """
-        interval_logger.info("in check at low face")
-
-        interval_logger.info(f"Check at {to_date_time(start_time)} ~ "
+        interval_logger.info(f"Low face check at {to_date_time(start_time)} ~ "
                              f"{to_date_time(end_time)}")
-        interval_logger.info("low face existence, check body only:")
 
         # low face existence check is always on the current window
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
             WindowType.CURRENT, start_time, end_time)
+        interval_logger.info(f"body concentration = {body_concent}")
         grade: float = body_concent
+
         self._last_end_time = end_time
         self.s_concent_interval_refreshed.emit(start_time, end_time, grade)
         parse.append_to_json(
