@@ -236,9 +236,11 @@ class BodyConcentrationCounter:
             """To avoid un-fully mathced windows between grading components,
             trimmed off the outsides.
             """
-            window: Union[DoubleTimeWindow, Deque[int]] = times
+            window: List[int]
             if type is WindowType.PREVIOUS:
-                window = times.previous
+                window = list(times.previous)
+            else:
+                window = list(times)
             # Iterate through the entire window causes more time;
             # count all then remove out-of-ranges to provide slightly better efficiency.
             count: int = len(window)
