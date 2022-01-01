@@ -4,13 +4,13 @@ from typing import Tuple
 from PyQt5.QtCore import QObject, pyqtSignal
 from nptyping import Int, NDArray
 
-import fuzzy.parse as parse
+import concentration.fuzzy.parse as parse
 import util.logger as logger
 from blink.detector import AntiNoiseBlinkDetector
 from blink.interval import BlinkRateIntervalDetector, IntervalLevel
-from counter import BodyConcentrationCounter, FaceExistenceRateCounter
-from fuzzy.classes import Interval
-from fuzzy.grader import FuzzyGrader
+from concentration.counter import BodyConcentrationCounter, FaceExistenceRateCounter
+from concentration.fuzzy.classes import Interval
+from concentration.fuzzy.grader import FuzzyGrader
 from util.path import to_abs_path
 from util.sliding_window import WindowType
 from util.time import to_date_time
