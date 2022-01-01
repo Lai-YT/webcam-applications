@@ -134,7 +134,7 @@ class ConcentrationGraderTestCase(unittest.TestCase):
 
         self.assertEqual(second_interval.end - second_interval.start, 60)
         # The body value varies about 0.01, which makes the grade also vary.
-        self.assertTrue(abs(interval.grade - 0.61) <= 0.1)
+        self.assertTrue(abs(second_interval.grade - 0.61) <= 0.1)
 
     def test_grading_interval_width_of_previous(self) -> None:
         """The grading on previous should be as long as possible.
