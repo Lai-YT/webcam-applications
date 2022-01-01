@@ -1,4 +1,4 @@
-from typing import Deque, Tuple, Union
+from typing import List, Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
@@ -236,13 +236,16 @@ class BodyConcentrationCounter:
             """To avoid un-fully mathced windows between grading components,
             trimmed off the outsides.
             """
+            # Convert the window to list so won't be mutated by other threads
+            # while iterating.
             window: List[int]
             if type is WindowType.PREVIOUS:
                 window = list(times.previous)
             else:
                 window = list(times)
             # Iterate through the entire window causes more time;
-            # count all then remove out-of-ranges to provide slightly better efficiency.
+            # count all then remove out-of-ranges to provide slightly better
+            # efficiency.
             count: int = len(window)
             for t in window:
                 if t > start_time:
@@ -253,7 +256,6 @@ class BodyConcentrationCounter:
                     break
                 count -= 1
             return count
-
         concent_count: int = count_time_in_interval(self._concentration_times)
         distract_count: int = count_time_in_interval(self._distraction_times)
         return round(concent_count / (concent_count + distract_count), 2)

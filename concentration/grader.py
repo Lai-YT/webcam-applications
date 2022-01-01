@@ -1,6 +1,5 @@
 import functools
 import logging
-import threading
 from queue import PriorityQueue
 from typing import Tuple
 
@@ -84,8 +83,6 @@ class ConcentrationGrader(QObject):
         # The elements has the form:
         #   start and end of interval, type of interval, other information
         self._queue: PriorityQueue = PriorityQueue()
-        # lock is to make sure the windows aren't mutated while grading
-        self._lock: threading.Lock = threading.Lock()
         # record the progress of grading time so we don't grade twice
         self._last_end_time: int = 0
         self._start_grading_thread()
@@ -161,7 +158,7 @@ class ConcentrationGrader(QObject):
                     self._do_normal_grading(type, *interval, *args)
             self._queue.task_done()
 
-    def _is_graded_interval(self, interval: Tuple[int, int]) -> None:
+    def _is_graded_interval(self, interval: Tuple[int, int]) -> bool:
         """Returns whether the interval starts before the last end time.
 
         Arguments:
@@ -185,9 +182,8 @@ class ConcentrationGrader(QObject):
         window_type = WindowType.CURRENT
         if type is IntervalType.LOOK_BACK:
             window_type = WindowType.PREVIOUS
-        with self._lock:
-            body_concent: float = self._body_concent_counter.get_concentration_ratio(
-                window_type, start_time, end_time)
+        body_concent: float = self._body_concent_counter.get_concentration_ratio(
+            window_type, start_time, end_time)
 
         interval_logger.info(f"body concentration = {body_concent}")
 
@@ -234,10 +230,9 @@ class ConcentrationGrader(QObject):
                              f"{to_date_time(end_time)}")
         interval_logger.info("low face existence, check body only:")
 
-        with self._lock:
-            # low face existence check is always on the current window
-            body_concent: float = self._body_concent_counter.get_concentration_ratio(
-                WindowType.CURRENT, start_time, end_time)
+        # low face existence check is always on the current window
+        body_concent: float = self._body_concent_counter.get_concentration_ratio(
+            WindowType.CURRENT, start_time, end_time)
         grade: float = body_concent
         self._last_end_time = end_time
         self.s_concent_interval_refreshed.emit(start_time, end_time, grade)
