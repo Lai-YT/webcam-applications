@@ -1,6 +1,7 @@
 # type: ignore
 # The purpose is to disable strict optional checking.
 
+import time
 import unittest
 
 from concentration.fuzzy.parse import read_intervals_from_json
@@ -28,7 +29,7 @@ class ConcentrationGraderTestCase(unittest.TestCase):
 
         Scenario:
         A single minute with
-            blink: 1     per 7 secs,
+            blink: 1     per 6.1 secs (make sure there's enough time to grade),
             body:  0.67  instantaneously,
             face:  0     instantaneously.
 
@@ -38,7 +39,7 @@ class ConcentrationGraderTestCase(unittest.TestCase):
         Notice that this test may be false-positive since the emission order
         various and is uncontrollable.
         """
-        delays = [7 for i in range(9)]  # The delay between blinks in a minute.
+        delays = [6.1 for i in range(10)]  # The delay between blinks in a minute.
         def single_test_cycle(min_no: int) -> None:
             """This is a single minute test of the racing scenario, have it
             called in subTests to reduce the false-positive condition.
@@ -75,7 +76,7 @@ class ConcentrationGraderTestCase(unittest.TestCase):
             self.assertLessEqual(abs(interval.grade - 0.67), 0.01,
                                  msg="Should use the grade of body in a low face interval.")
 
-        for min_no in range(1, 6):
+        for min_no in range(1, 11):
             with self.subTest(min_no=min_no):
                 single_test_cycle(min_no)
 

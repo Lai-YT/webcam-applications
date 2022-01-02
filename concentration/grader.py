@@ -80,6 +80,8 @@ class ConcentrationGrader(QObject):
         # A queue that stores the intervals to grade.
         # The elements has the form:
         #   start and end of interval, type of interval, other information
+        # The consumption speed of queue is often slower than production speed,
+        # giving the maxsize so the producers (criteria) has to wait.
         self._queue: PriorityQueue = PriorityQueue(maxsize=5)
         # record the progress of grading time so we don't grade twice
         self._last_end_time: int = 0
@@ -158,7 +160,6 @@ class ConcentrationGrader(QObject):
             self._queue.put((interval, type, *args))
             # Wait until the intervals of the same types are put into the queue,
             # so can be gotten with respect to their priority.
-            # FIXME: Delay produces gap between intervals
             delay: int = 2
             if type is IntervalType.LOOK_BACK:
                 delay += 60
@@ -220,6 +221,7 @@ class ConcentrationGrader(QObject):
                 int((blink_rate*60) / (interval.end-interval.start)), body_concent)
             # A look back can go after real time, but we should backward the time.
             self._last_end_time = max(interval.end, self._last_end_time)
+            self._interval_detector.sync_last_end_up(self._last_end_time)
 
             self.s_concent_interval_refreshed.emit(interval)
             parse.append_to_json(self._json_file, interval.__dict__)
@@ -231,6 +233,7 @@ class ConcentrationGrader(QObject):
             grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
             if grade >= 0.6:
                 self._last_end_time = interval.end
+                self._interval_detector.sync_last_end_up(self._last_end_time)
                 interval.grade = grade
                 self.s_concent_interval_refreshed.emit(interval)
                 parse.append_to_json(self._json_file, interval.__dict__)
@@ -257,6 +260,7 @@ class ConcentrationGrader(QObject):
         interval.grade = body_concent
 
         self._last_end_time = interval.end
+        self._interval_detector.sync_last_end_up(self._last_end_time)
         self.s_concent_interval_refreshed.emit(interval)
         parse.append_to_json(self._json_file, interval.__dict__)
         self._clear_windows(WindowType.CURRENT)

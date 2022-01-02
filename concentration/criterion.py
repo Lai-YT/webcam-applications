@@ -148,16 +148,14 @@ class BlinkRateIntervalDetector(QObject):
 
     def clear_windows(self, *args: WindowType) -> None:
         self._blink_times.clear(*args)
-        # They are placed here since the interval detector itself know nothing
-        # about other grading components, such as FaceExistenceRateCounter.
-        #
-        # Check previous first since when they are both passed,
-        # current takes the lead.
-        if WindowType.PREVIOUS in args:
-            # A look back can go after real time, but we should backward the time.
-            self._last_end_time = max(get_current_time() - 60, self._last_end_time)
-        if WindowType.CURRENT in args:
-            self._last_end_time = get_current_time()
+
+    def sync_last_end_up(self, last_end_time: int) -> None:
+        """The grader that uses the interval detector should sync the last end
+        time up when an interval is graded.
+        """
+        if last_end_time < self._last_end_time:
+            raise ValueError("time shouldn't go backward")
+        self._last_end_time = last_end_time
 
     def _check_blink_rate(self) -> None:
         """
