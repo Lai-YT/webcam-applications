@@ -63,7 +63,7 @@ class ConcentrationGrader(QObject):
         self._interval_detector = BlinkRateIntervalDetector(good_rate_range)
         self._interval_detector.s_interval_detected.connect(self.put_interval_to_grade_in_queue)
 
-        # TODO: Blink detection not accurate, lots of false blink.
+        # FIXME: Blink detection not accurate, lots of false blink.
         self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
         self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
 
@@ -158,7 +158,7 @@ class ConcentrationGrader(QObject):
             self._queue.put((interval, type, *args))
             # Wait until the intervals of the same types are put into the queue,
             # so can be gotten with respect to their priority.
-            # TODO: Delay produces gap between intervals
+            # FIXME: Delay produces gap between intervals
             delay: int = 2
             if type is IntervalType.LOOK_BACK:
                 delay += 60
@@ -199,7 +199,7 @@ class ConcentrationGrader(QObject):
 
         if type is IntervalType.LOOK_BACK:
             interval.grade = self._fuzzy_grader.compute_grade(
-                # TODO: An average-based blink rate might be floating-point number
+                # FIXME: An average-based blink rate might be floating-point number
                 # But argument 1 of compute_grade has type int.
                 int((blink_rate*60) / (interval.end-interval.start)), body_concent)
             self._last_end_time = interval.end
