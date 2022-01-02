@@ -4,7 +4,7 @@
 import logging
 
 
-formatter = logging.Formatter("%(message)s")
+formatter = logging.Formatter("%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
 def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger:
     """Returns a new logger.

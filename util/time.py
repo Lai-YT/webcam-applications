@@ -64,4 +64,4 @@ def min_to_sec(time_in_min: int) -> int:
 
 
 def to_date_time(epoch_time: int) -> str:
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch_time))
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(epoch_time))

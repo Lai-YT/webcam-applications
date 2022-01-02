@@ -7,6 +7,6 @@ class IntervalType(IntEnum):
     Value indicates the priority,
     the lower the value is, the higher the priority is.
     """
-    LOOK_BACK = 10
-    LOW_FACE  = 20
-    REAL_TIME = 30
+    LOW_FACE  = 10
+    REAL_TIME = 20
+    LOOK_BACK = 30

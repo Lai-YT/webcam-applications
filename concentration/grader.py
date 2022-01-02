@@ -69,7 +69,7 @@ class ConcentrationGrader(QObject):
 
         self._face_existence_counter = FaceExistenceRateCounter(low_existence)
         self._face_existence_counter.s_low_existence_detected.connect(
-            functools.partial(self.put_interval_to_grade_in_queue, IntervalType.LOW_FACE))
+            functools.partial(self.put_interval_to_grade_in_queue, type=IntervalType.LOW_FACE))
 
         self._body_concent_counter = BodyConcentrationCounter()
         self._fuzzy_grader = FuzzyGrader()
@@ -80,7 +80,7 @@ class ConcentrationGrader(QObject):
         # A queue that stores the intervals to grade.
         # The elements has the form:
         #   start and end of interval, type of interval, other information
-        self._queue: PriorityQueue = PriorityQueue()
+        self._queue: PriorityQueue = PriorityQueue(maxsize=5)
         # record the progress of grading time so we don't grade twice
         self._last_end_time: int = 0
         self._start_grading_thread()
@@ -119,8 +119,8 @@ class ConcentrationGrader(QObject):
 
     def put_interval_to_grade_in_queue(
             self,
-            type: IntervalType,
             interval: Interval,
+            type: IntervalType,
             *args) -> None:
         """
         The one that starts first should be graded first, if the time are the
@@ -168,8 +168,24 @@ class ConcentrationGrader(QObject):
             if not self._is_graded_interval(interval):
                 if type is IntervalType.LOW_FACE:
                     self._do_low_face_grading(interval)
-                else:
-                    self._do_normal_grading(type, interval, *args)
+                elif type is IntervalType.REAL_TIME:
+                    self._do_normal_grading(interval, type, *args)
+                elif type is IntervalType.LOOK_BACK:
+                    # A look back interval within 60 seconds is followed by a
+                    # "likely" good interval. We grade the look back only if the
+                    # following interval is a "truly" good interval.
+                    if interval.end - interval.start < 60:
+                        # Grade the following real time or low face interval first.
+                        fol_int, fol_type, *fol_args = self._queue.get()
+                        while fol_type is IntervalType.LOOK_BACK:
+                            fol_int, fol_type, *fol_args = self._queue.get()
+                        self._do_normal_grading(fol_int, fol_type, *fol_args)
+                        # The last end is updated, which mean it's a "truly"
+                        # good interval, so we can now look back.
+                        if self._last_end_time >= interval.end:
+                            self._do_normal_grading(interval, type, *args)
+                    else:
+                        self._do_normal_grading(interval, type, *args)
 
     def _is_graded_interval(self, interval: Interval) -> bool:
         """Returns whether the interval starts before the last end time.
@@ -181,8 +197,8 @@ class ConcentrationGrader(QObject):
 
     def _do_normal_grading(
             self,
-            type: IntervalType,
             interval: Interval,
+            type: IntervalType,
             blink_rate: int) -> None:
         """Performs grading on real time and look back intervals."""
         interval_logger.info(f"Normal check at {to_date_time(interval.start)} ~ "
@@ -202,7 +218,8 @@ class ConcentrationGrader(QObject):
                 # FIXME: An average-based blink rate might be floating-point number
                 # But argument 1 of compute_grade has type int.
                 int((blink_rate*60) / (interval.end-interval.start)), body_concent)
-            self._last_end_time = interval.end
+            # A look back can go after real time, but we should backward the time.
+            self._last_end_time = max(interval.end, self._last_end_time)
 
             self.s_concent_interval_refreshed.emit(interval)
             parse.append_to_json(self._json_file, interval.__dict__)
@@ -217,10 +234,7 @@ class ConcentrationGrader(QObject):
                 interval.grade = grade
                 self.s_concent_interval_refreshed.emit(interval)
                 parse.append_to_json(self._json_file, interval.__dict__)
-                # The grading of previous should precede current, not graded only if
-                # the previous window isn't wide enough. So after the grading of current,
-                # we should and must clear previous also.
-                self._clear_windows(WindowType.PREVIOUS, WindowType.CURRENT)
+                self._clear_windows(WindowType.CURRENT)
                 interval_logger.info(f"good concentration: {interval.grade}")
             else:
                 interval_logger.info(f"{grade}, not concentrating")

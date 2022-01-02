@@ -1,3 +1,6 @@
+# type: ignore
+# The purpose is to disable strict optional checking.
+
 import unittest
 
 from concentration.fuzzy.parse import read_intervals_from_json
@@ -72,7 +75,7 @@ class ConcentrationGraderTestCase(unittest.TestCase):
             self.assertLessEqual(abs(interval.grade - 0.67), 0.01,
                                  msg="Should use the grade of body in a low face interval.")
 
-        for min_no in range(1, 11):
+        for min_no in range(1, 6):
             with self.subTest(min_no=min_no):
                 single_test_cycle(min_no)
 
