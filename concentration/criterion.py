@@ -2,6 +2,7 @@ from typing import List, Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from concentration.fuzzy.classes import Interval
 from concentration.interval import IntervalType
 from util.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
 from util.time import get_current_time
@@ -16,7 +17,7 @@ class FaceExistenceRateCounter(QObject):
             Emits when face existence is low and sends start and end time.
     """
 
-    s_low_existence_detected = pyqtSignal(int, int)
+    s_low_existence_detected = pyqtSignal(Interval)
 
     def __init__(self, low_existence: float = 0.66) -> None:
         """
@@ -84,8 +85,8 @@ class FaceExistenceRateCounter(QObject):
         if (self._frame_times
                 and get_current_time() - self._frame_times[0] >= 60
                 and self._get_face_existence_rate() <= self._low_existence):
-            self.s_low_existence_detected.emit(self._frame_times[0],
-                                               self._frame_times[0] + 60)
+            self.s_low_existence_detected.emit(
+                Interval(self._frame_times[0], self._frame_times[0] + 60))
 
     def _get_face_existence_rate(self) -> float:
         """Returns the face existence rate of the minute.
@@ -109,7 +110,7 @@ class BlinkRateIntervalDetector(QObject):
     Signals:
         s_interval_detected:
     """
-    s_interval_detected = pyqtSignal(IntervalType, int, int, int)  # start, end, rate
+    s_interval_detected = pyqtSignal(IntervalType, Interval, int)  # rate
 
     def __init__(self, good_rate_range: Tuple[int, int] = (15, 25)) -> None:
         """
@@ -171,7 +172,7 @@ class BlinkRateIntervalDetector(QObject):
                 # Emit previous part first since its earlier on time.
                 self._check_blink_rate_of_previous_window(self._blink_times[0], 30)
                 self.s_interval_detected.emit(IntervalType.REAL_TIME,
-                                              self._blink_times[0], curr_time,
+                                              Interval(self._blink_times[0], curr_time),
                                               blink_rate)
         # The current window hasn't form a good intervals yet, make each 60
         # seconds of the previous a look back interval.
@@ -187,7 +188,7 @@ class BlinkRateIntervalDetector(QObject):
         """
         if end - self._last_interval_end >= width:
             self.s_interval_detected.emit(IntervalType.LOOK_BACK,
-                                          self._last_interval_end, end,
+                                          Interval(self._last_interval_end, end),
                                           self._get_blink_rate(WindowType.PREVIOUS))
 
     def _get_blink_rate(self, type: WindowType) -> int:
@@ -220,17 +221,15 @@ class BodyConcentrationCounter:
     def get_concentration_ratio(
             self,
             type: WindowType,
-            start_time: int,
-            end_time: int) -> float:
-        """Returns the amount of body concentration in range
-        [start_time, end_time], those outsides are trimmed off.
+            interval: Interval) -> float:
+        """Returns the amount of body concentration in the interval, those
+        outsides are trimmed off.
 
         The result is rounded to two decimal places.
 
         Arguments:
             type: The window to get concentration from.
-            start_time: The start time of the wanted interval.
-            end_time: The end time of the wanted interval.
+            interval: The interval dataclass which contains start and end time.
         """
         def count_time_in_interval(times: DoubleTimeWindow) -> int:
             """To avoid un-fully mathced windows between grading components,
@@ -248,11 +247,11 @@ class BodyConcentrationCounter:
             # efficiency.
             count: int = len(window)
             for t in window:
-                if t > start_time:
+                if t > interval.start:
                     break
                 count -= 1
             for t in reversed(window):
-                if t < end_time:
+                if t < interval.end:
                     break
                 count -= 1
             return count

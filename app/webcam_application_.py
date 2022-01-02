@@ -10,6 +10,7 @@ from nptyping import Int, NDArray
 
 from brightness.calcuator import BrightnessMode
 from brightness.controller import BrightnessController
+from concentration.fuzzy.classes import Interval
 from concentration.grader import ConcentrationGrader
 from distance.calculator import (DistanceCalculator,
                                  draw_landmarks_used_by_distance_calculator)
@@ -50,7 +51,8 @@ class WebcamApplication(QObject):
             Sends the new brightness value.
         s_concent_interval_refreshed:
             Emits everytime a new grade is published.
-            Sends the level of that interval and the start time, end time and grade.
+            Sends the interval dataclass which contains the start time,
+            end time and grade.
         s_frame_refreshed:
             Emits every time a new frame is captured.
             Sends the new frame.
@@ -66,7 +68,7 @@ class WebcamApplication(QObject):
     s_time_refreshed = pyqtSignal(int, TimeState)
     s_posture_refreshed = pyqtSignal(PostureLabel, str)
     s_brightness_refreshed = pyqtSignal(int)
-    s_concent_interval_refreshed = pyqtSignal(int, int, float)
+    s_concent_interval_refreshed = pyqtSignal(Interval)
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 
