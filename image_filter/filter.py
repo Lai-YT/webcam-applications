@@ -3,6 +3,8 @@ from enum import Enum, auto
 import cv2
 import matplotlib.pyplot as plt
 
+from image_filter.mask import get_brightness
+
 
 class FilterMode(Enum):
     MEAN = auto()
@@ -17,25 +19,12 @@ def filter_image(img, mode: FilterMode):
     img_copy = img
 
     if mode is FilterMode.MEAN:
-        filtered_image = cv2.blur(img_copy, (35, 35))
+        filtered_image = cv2.blur(img_copy, (75, 75))
     elif mode is FilterMode.GAUSSIAN:
         filtered_image = cv2.GaussianBlur(img_copy, (35, 35), 0)
     elif mode is FilterMode.BILATERAL:
         filtered_image = cv2.bilateralFilter(img_copy, d=0, sigmaColor=100, sigmaSpace=15)
     return [img, filtered_image]
-
-
-def get_brightness(image):
-    """Returns the mean of brightness of an image.
-
-    Arguments:
-        image: The image to perform brightness calculation on.
-    """
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    # Value is as known as brightness.
-    hue, saturation, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
-    return int(100 * value.mean() / 255)
-
 
 def plot_image(images):
     """Plot images before and after filtered."""
