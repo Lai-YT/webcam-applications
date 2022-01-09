@@ -15,10 +15,10 @@ def plot(image):
 
 if __name__ == "__main__":
 
-    # ref_img = cv2.cvtColor(cv2.imread(to_abs_path("image_filter/img/ref_img.jpg")), cv2.COLOR_BGR2RGB)
-    # image_1 = cv2.cvtColor(cv2.imread(to_abs_path("image_filter/img/dark_room.jpg")), cv2.COLOR_BGR2RGB)
-    image_2 = cv2.cvtColor(cv2.imread(to_abs_path("image_filter/img/dark_room_with_lightspot.jpg")), cv2.COLOR_BGR2RGB)
-    # image_3 = cv2.cvtColor(cv2.imread(to_abs_path("image_filter/img/dark_room_with_lightspot1.jpg")), cv2.COLOR_BGR2RGB)
+    ref_img = cv2.imread(to_abs_path("image_filter/img/ref_img.jpg"))
+    # image_1 = cv2.imread(to_abs_path("image_filter/img/dark_room.jpg"))
+    # image_2 = cv2.imread(to_abs_path("image_filter/img/dark_room_with_lightspot.jpg"))
+    # image_3 = cv2.imread(to_abs_path("image_filter/img/dark_room_with_lightspot1.jpg"))
 
-    frame = detect_and_mark_face(image_2)
+    frame = detect_and_mark_face(ref_img)
     plot(frame)
