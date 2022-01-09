@@ -35,7 +35,7 @@ class ImageFilter():
 
         self._faces: dlib.rectangles = face_detector(self._image)
 
-    def _mask_face_area(self, fx: int, fy: int, fw: int, fh: int) -> None:
+    def _mask_face_area(self) -> None:
         # doesn't handle multiple faces
         if len(self._faces) == 1:
             fx, fy, fw, fh = face_utils.rect_to_bb(self._faces[0])
