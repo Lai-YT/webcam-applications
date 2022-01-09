@@ -146,8 +146,13 @@ class BlinkRateIntervalDetector(QObject):
         """
         self._blink_times.catch_up_time(manual=True)
 
-    def clear_windows(self, *args: WindowType) -> None:
-        self._blink_times.clear(*args)
+    def clear_windows(self, window_type: WindowType) -> None:
+        """Clears the corresponding windows.
+
+        Arguments:
+            window_type: The type of window to be cleared.
+        """
+        self._blink_times.clear(window_type)
 
     def sync_last_end_up(self, last_end_time: int) -> None:
         """The grader that uses the interval detector should sync the last end
@@ -244,24 +249,24 @@ class BodyConcentrationCounter:
             # count all then remove out-of-ranges to provide slightly better
             # efficiency.
             count: int = len(window)
-            for t in window:
-                if t > interval.start:
-                    break
-                count -= 1
-            for t in reversed(window):
-                if t < interval.end:
-                    break
-                count -= 1
+            # for t in window:
+            #     if t >= interval.start:
+            #         break
+            #     count -= 1
+            # for t in reversed(window):
+            #     if t <= interval.end:
+            #         break
+            #     count -= 1
             return count
         concent_count: int = count_time_in_interval(self._concentration_times)
         distract_count: int = count_time_in_interval(self._distraction_times)
         return round(concent_count / (concent_count + distract_count), 2)
 
-    def clear_windows(self, *args: WindowType) -> None:
+    def clear_windows(self, window_type: WindowType) -> None:
         """Clears the corresponding windows.
 
         Arguments:
-            args: Various amount of window types.
+            window_type: The type of window to be cleared.
         """
-        self._distraction_times.clear(*args)
-        self._concentration_times.clear(*args)
+        self._distraction_times.clear(window_type)
+        self._concentration_times.clear(window_type)

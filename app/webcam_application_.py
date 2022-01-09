@@ -223,9 +223,9 @@ class WebcamApplication(QObject):
                 self._brightness_controller.optimize_brightness()
 
             # Do concentration gradings!
-            self._concentration_grader.add_frame()
+            # self._concentration_grader.add_frame()
             if has_face(landmarks):
-                self._concentration_grader.add_face()
+                # self._concentration_grader.add_face()
                 self._concentration_grader.detect_blink(landmarks)
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
