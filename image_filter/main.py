@@ -11,5 +11,6 @@ if __name__ == "__main__":
     image_1 = cv2.imread(dir + "/img/dark_room.jpg")
     image_2 = cv2.imread(dir + "/img/dark_room_with_lightspot.jpg")
 
-    ImageFilter.refresh_image(ref_img)
-    ImageFilter.plot_image()
+    image_filter = ImageFilter()
+    image_filter.refresh_image(ref_img)
+    image_filter.plot_image()
