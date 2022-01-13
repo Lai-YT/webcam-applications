@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sized, Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
@@ -248,8 +248,17 @@ class BodyConcentrationCounter:
             type: The window to get concentration from.
             interval: The interval dataclass which contains start and end time.
         """
-        concent_count:  int = len(self._concentration_times)
-        distract_count: int = len(self._distraction_times)
+        def count_time_in_interval(times: DoubleTimeWindow) -> int:
+            # Assumes that the interval is synced up properly, so the count is
+            # simply the length of the corresponding window.
+            window: Sized
+            if type is WindowType.PREVIOUS:
+                window = times.previous
+            else:
+                window = times
+            return len(window)
+        concent_count: int = count_time_in_interval(self._concentration_times)
+        distract_count: int = count_time_in_interval(self._distraction_times)
         return round(concent_count / (concent_count + distract_count), 2)
 
     def clear_windows(self, window_type: WindowType) -> None:
