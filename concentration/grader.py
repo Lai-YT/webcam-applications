@@ -159,9 +159,11 @@ class ConcentrationGrader(QObject):
                             self._interval_detector.get_extrude_interval())
                         if (extrude_interval is not None
                                 and not self._is_graded_interval(extrude_interval[0])):
-                            self._perform_grading(extrude_interval)
-                        else:
+                            self._perform_grading(*extrude_interval)
+                        if (extrude_interval is not None
+                                and self._is_graded_interval(extrude_interval[0])):
                             self._grade_logger.info(str(extrude_interval))
+                            self._grade_logger.info(str(self._last_end_time))
                         self._last_end_time = interval.end
                         self._interval_detector.sync_last_end_up(self._last_end_time)
 
@@ -227,7 +229,6 @@ class ConcentrationGrader(QObject):
 
         grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
         if grade >= 0.6:
-            self._last_end_time = interval.end
             interval.grade = grade
             self.s_concent_interval_refreshed.emit(interval)
             self._clear_windows(window_type)
