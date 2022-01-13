@@ -24,6 +24,11 @@ from util.time import ONE_MIN, get_current_time, to_date_time
 
 
 class ConcentrationGrader(QObject):
+    """While grading, there are 3 criteria that we take into account:
+    - Blink rate
+    - Body concentration, which is the posture
+    - Face existence, whether the user is in front of the screen
+    """
 
     s_concent_interval_refreshed = pyqtSignal(Interval)
 
@@ -54,21 +59,31 @@ class ConcentrationGrader(QObject):
                 existence. 0.66 (2/3) in default.
         """
         super().__init__()
+        # Loggings for flow tracing.
         self._grade_logger: logging.Logger = setup_logger(
             "grade_logger", to_abs_path("grades.log"), logging.DEBUG)
         self._grade_logger.info(f"Grader starts at {to_date_time(get_current_time())}\n")
 
+        # FIXME: Blink detection not accurate, lots of false blink.
+        self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
+
         self._interval_detector = BlinkRateIntervalDetector(good_rate_range)
-        self._interval_detector.s_interval_detected.connect(self.push_interval_to_grade_in_heap)
+        self._interval_detector.s_interval_detected.connect(
+            self._push_interval_to_grade_in_heap)
+        self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
+
+        # Since the append of blinks is sparse, we need a timer to periodically
+        # sync its windows up.
         self._interval_timer = QTimer(self)
         self._interval_timer.timeout.connect(self._interval_detector.check_blink_rate)
         self._interval_timer.start(1_000)  # 1s
 
-        # FIXME: Blink detection not accurate, lots of false blink.
-        self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
-        self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
-
         self._body_concent_counter = BodyConcentrationCounter()
+
+        self._face_existence_counter = FaceExistenceRateCounter(low_existence)
+        self._face_existence_counter.s_low_existence_detected.connect(
+            functools.partial(self._push_interval_to_grade_in_heap, type=IntervalType.LOW_FACE))
+
         self._fuzzy_grader = FuzzyGrader()
 
         self._json_file: str = to_abs_path("intervals.json")
@@ -85,7 +100,7 @@ class ConcentrationGrader(QObject):
         self._curr_heap = MinHeap()
         self._look_backs = MinHeap()
 
-        # record the progress of grading time so we don't grade twice
+        # Record the progress of grading time so we don't grade twice.
         self._last_end_time: int = 0
 
         self._process_timer = QTimer(self)
@@ -111,6 +126,12 @@ class ConcentrationGrader(QObject):
     def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         self._blink_detector.detect_blink(landmarks)
 
+    def add_frame(self) -> None:
+        self._face_existence_counter.add_frame()
+
+    def add_face(self) -> None:
+        self._face_existence_counter.add_face()
+
     def add_body_concentration(self) -> None:
         self._body_concent_counter.add_concentration()
 
@@ -119,7 +140,7 @@ class ConcentrationGrader(QObject):
 
     @pyqtSlot(Interval, IntervalType)
     @pyqtSlot(Interval, IntervalType, int)
-    def push_interval_to_grade_in_heap(
+    def _push_interval_to_grade_in_heap(
             self,
             interval: Interval,
             type: IntervalType,
@@ -136,36 +157,35 @@ class ConcentrationGrader(QObject):
 
     def _grade_intervals(self) -> None:
         """Dispatches the intervals to their corresponding grading method."""
-        record: bool
         # First, grade the LOOK_BACKs.
         while self._look_backs:
             interval, type, blink_rate = self._look_backs.pop()
             if not self._is_graded_interval(interval):
-                record = self._perform_grading(interval, type, blink_rate)
-                if record:
+                recorded = self._perform_face_existing_grading(interval, type, blink_rate)
+                if recorded:
                     self._last_end_time = interval.end
                     self._interval_detector.sync_last_end_up(self._last_end_time)
-        # Second, grade the REAL_TIMEs. Additionally grade EXTRUSIONs if existed.
+        # Second, grade the REAL_TIME and LOW_FACEs.
+        # Additionally grade EXTRUSIONs if existed.
         while self._curr_heap:
             interval, type, blink_rate = self._curr_heap.pop()
             if not self._is_graded_interval(interval):
                 if type is IntervalType.LOW_FACE:
-                    # LOW_FACEs aren't under consideration yet.
-                    pass
-                if type is IntervalType.REAL_TIME:
-                    record = self._perform_grading(interval, type, blink_rate)
-                    if record:
-                        extrude_interval: Optional[Tuple[Interval, IntervalType, int]] = (
-                            self._interval_detector.get_extrude_interval())
-                        if (extrude_interval is not None
-                                and not self._is_graded_interval(extrude_interval[0])):
-                            self._perform_grading(*extrude_interval)
-                        if (extrude_interval is not None
-                                and self._is_graded_interval(extrude_interval[0])):
-                            self._grade_logger.info(str(extrude_interval))
-                            self._grade_logger.info(str(self._last_end_time))
-                        self._last_end_time = interval.end
-                        self._interval_detector.sync_last_end_up(self._last_end_time)
+                    recorded = self._perform_low_face_grading(interval)
+                else:
+                    recorded = self._perform_face_existing_grading(interval, type, blink_rate)
+                if recorded:
+                    extrude_interval: Optional[Tuple[Interval, IntervalType, int]] = (
+                        self._interval_detector.get_extrude_interval())
+                    if (extrude_interval is not None
+                            and not self._is_graded_interval(extrude_interval[0])):
+                        self._perform_face_existing_grading(*extrude_interval)
+                    if (extrude_interval is not None
+                            and self._is_graded_interval(extrude_interval[0])):
+                        self._grade_logger.info(str(extrude_interval))
+                        self._grade_logger.info(str(self._last_end_time))
+                    self._last_end_time = interval.end
+                    self._interval_detector.sync_last_end_up(self._last_end_time)
 
     def _is_graded_interval(self, interval: Interval) -> bool:
         """Returns whether the interval starts before the last end time.
@@ -175,12 +195,12 @@ class ConcentrationGrader(QObject):
         """
         return interval.start < self._last_end_time
 
-    def _perform_grading(
+    def _perform_face_existing_grading(
             self,
             interval: Interval,
             type: IntervalType,
             blink_rate: int) -> bool:
-        """Performs grading on real time and look back intervals and records it
+        """Performs grading on the face existing interval and records it
         if the grade is high enough.
 
         Arguments:
@@ -189,11 +209,11 @@ class ConcentrationGrader(QObject):
             blink_rate: The blink rate in that interval.
 
         Returns:
-            True if the grading result is record, otherwise False.
+            True if the grading result is recorded, otherwise False.
 
         Emits:
             s_concent_interval_refreshed:
-                Emits if the the grading result is record and sends the grade.
+                Emits if the the grading result is recorded and sends the grade.
         """
         self._grade_logger.info(f"Normal check at {to_date_time(interval.start)} ~ "
                              f"{to_date_time(interval.end)}")
@@ -207,6 +227,7 @@ class ConcentrationGrader(QObject):
             window_type, interval)
         self._grade_logger.info(f"body concentration = {body_concent}")
 
+        # LOOK_BACK and EXTRUSIONs are always graded and record.
         if type is IntervalType.LOOK_BACK:
             interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
             self.s_concent_interval_refreshed.emit(interval)
@@ -238,6 +259,38 @@ class ConcentrationGrader(QObject):
             self._grade_logger.info(f"{grade}, not concentrating")
             return False
 
+    def _perform_low_face_grading(self, interval: Interval) -> bool:
+        """Performs grading on the low face existence interval and records it
+        if the grade is high enough.
+
+        Arguments:
+            interval: The interval dataclass which contains start and end time.
+
+        Returns:
+            True if the grading result is recorded, otherwise False.
+
+            Note that this method always records the result and returns True.
+
+        Emits:
+            s_concent_interval_refreshed:
+                Emits if the the grading result is recorded and sends the grade.
+        """
+        self._grade_logger.info(f"Low face check at {to_date_time(interval.start)} ~ "
+                                f"{to_date_time(interval.end)}")
+
+        # low face existence check is always on the current window
+        body_concent: float = self._body_concent_counter.get_concentration_ratio(
+            WindowType.CURRENT, interval)
+        self._grade_logger.info(f"body concentration = {body_concent}")
+
+        interval.grade = body_concent
+        self.s_concent_interval_refreshed.emit(interval)
+        self._clear_windows(WindowType.CURRENT)
+
+        review = "good" if interval.grade >= 0.6 else "bad"
+        self._grade_logger.info(review + f" concentration: {interval.grade}")
+        return True
+
     def _clear_windows(self, window_type: WindowType) -> None:
         """Clears the corresponding window of all grading components.
 
@@ -246,3 +299,5 @@ class ConcentrationGrader(QObject):
         """
         self._body_concent_counter.clear_windows(window_type)
         self._interval_detector.clear_windows(window_type)
+        if window_type is WindowType.CURRENT:
+            self._face_existence_counter.clear_windows()

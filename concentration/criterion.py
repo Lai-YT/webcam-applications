@@ -11,6 +11,10 @@ from util.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
 from util.time import HALF_MIN, ONE_MIN, get_current_time, to_date_time
 
 
+interval_logger: logging.Logger = setup_logger(
+    "interval_logger", to_abs_path("intervals.log"), logging.DEBUG)
+
+
 class FaceExistenceRateCounter(QObject):
     """Everytime a new frame is refreshed, there may exist a face or not. Count
     the existence within 1 minute and simply get the existence rate.
@@ -36,10 +40,10 @@ class FaceExistenceRateCounter(QObject):
         self._frame_times = TimeWindow(ONE_MIN)
         self._frame_times.set_time_catch_callback(self._check_face_existence)
 
-    @property
-    def low_existence(self) -> float:
-        """Returns the threshold rate of low face existence."""
-        return self._low_existence
+        self.s_low_existence_detected.connect(self._log_intervals)
+
+    def _log_intervals(self, interval: Interval) -> None:
+        interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, {str(IntervalType.LOW_FACE)}")
 
     def add_frame(self) -> None:
         """Adds a frame count and detects whether face existence is low.
@@ -129,12 +133,10 @@ class BlinkRateIntervalDetector(QObject):
         self._blink_times.set_time_catch_callback(self._check_blink_rate)
         self._last_end_time: int = get_current_time()
 
-        self._interval_logger: logging.Logger = setup_logger(
-            "interval_logger", to_abs_path("intervals.log"), logging.DEBUG)
         self.s_interval_detected.connect(self._log_intervals)
 
     def _log_intervals(self, interval: Interval, type: IntervalType, rate: int) -> None:
-        self._interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, {str(type)}")
+        interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, {str(type)}")
 
     def add_blink(self) -> None:
         """Adds a new time of blink and checks whether there's a good interval.
