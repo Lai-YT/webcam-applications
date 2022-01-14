@@ -146,6 +146,7 @@ class ConcentrationGrader(QObject):
         The one that starts first should be graded first. If the time are the
         same, type with higher priority is graded first.
         """
+        heap: MinHeap
         if type is IntervalType.LOOK_BACK:
             heap = self._look_backs
         else:
@@ -154,9 +155,6 @@ class ConcentrationGrader(QObject):
 
     def _grade_intervals(self) -> None:
         """Dispatches the intervals to their corresponding grading method."""
-        interval: Interval
-        type: IntervalType
-        blink_rate: Optional[int]
         # First, grade the LOOK_BACKs.
         while self._look_backs:
             interval, type, blink_rate = self._look_backs.pop()
