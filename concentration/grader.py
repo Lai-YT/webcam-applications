@@ -94,8 +94,8 @@ class ConcentrationGrader(QObject):
         # Min heaps that store the intervals to grade.
         # The curr heap has the REAL_TIME and LOW_FACEs, which are in the current
         # windows; the prev heap has the LOOK_BACKs, which are in the previous.
-        self._curr_heap  = MinHeap[Tuple[Interval, IntervalType, int]]()
-        self._look_backs = MinHeap[Tuple[Interval, IntervalType, Optional[int]]]()
+        self._curr_heap  = MinHeap[Tuple[Interval, IntervalType, Optional[int]]]()
+        self._look_backs = MinHeap[Tuple[Interval, IntervalType, int]]()
 
         # Record the progress of grading time so we don't grade twice.
         self._last_end_time: int = 0

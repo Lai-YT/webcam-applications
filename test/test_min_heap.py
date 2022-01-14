@@ -5,7 +5,7 @@ from util.heap import MinHeap
 
 class MinHeapTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.min_heap = MinHeap()
+        self.min_heap = MinHeap[int]()
 
     def test_min_always_top(self) -> None:
         for i in range(100_000, -1, -1):
