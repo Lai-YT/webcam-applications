@@ -1,10 +1,10 @@
 import heapq
-from typing import List, Optional, TypeVar
+from typing import Generic, List, Optional, TypeVar
 
 
 T = TypeVar("T")
 
-class MinHeap:
+class MinHeap(Generic[T]):
     def __init__(self, list: Optional[List[T]] = None) -> None:
         if not list:
             list = []

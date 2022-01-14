@@ -92,13 +92,10 @@ class ConcentrationGrader(QObject):
             lambda interval: parse.append_to_json(self._json_file, interval.__dict__))
 
         # Min heaps that store the intervals to grade.
-        # The elements has the form:
-        #   Interval(start and end time), type of interval, other information
-        #
         # The curr heap has the REAL_TIME and LOW_FACEs, which are in the current
         # windows; the prev heap has the LOOK_BACKs, which are in the previous.
-        self._curr_heap = MinHeap()
-        self._look_backs = MinHeap()
+        self._curr_heap  = MinHeap[Tuple[Interval, IntervalType, int]]()
+        self._look_backs = MinHeap[Tuple[Interval, IntervalType, Optional[int]]]()
 
         # Record the progress of grading time so we don't grade twice.
         self._last_end_time: int = 0
@@ -157,6 +154,9 @@ class ConcentrationGrader(QObject):
 
     def _grade_intervals(self) -> None:
         """Dispatches the intervals to their corresponding grading method."""
+        interval: Interval
+        type: IntervalType
+        blink_rate: Optional[int]
         # First, grade the LOOK_BACKs.
         while self._look_backs:
             interval, type, blink_rate = self._look_backs.pop()
