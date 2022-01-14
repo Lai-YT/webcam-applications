@@ -166,7 +166,10 @@ class ConcentrationGrader(QObject):
         # Second, grade the REAL_TIME and LOW_FACEs.
         # Additionally grade EXTRUSIONs if existed.
         while self._curr_heap:
-            interval, type, blink_rate = self._curr_heap.pop()
+            interval, type, blink_rate = self._curr_heap.pop()  # type: ignore
+            # Error because of the following reason:
+            # Variable reuse within one function body. Mypy really prefers that you don't do that.
+            # I decide to ignore and keep clean.
             if not self._is_graded_interval(interval):
                 if type is IntervalType.LOW_FACE:
                     recorded = self._perform_low_face_grading(interval)
