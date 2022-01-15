@@ -1,11 +1,18 @@
-from typing import List, Tuple
+import logging
+from typing import List, Optional, Sized, Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from concentration.fuzzy.classes import Interval
 from concentration.interval import IntervalType
+from util.logger import setup_logger
+from util.path import to_abs_path
 from util.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
-from util.time import get_current_time
+from util.time import HALF_MIN, ONE_MIN, get_current_time, to_date_time
+
+
+interval_logger: logging.Logger = setup_logger(
+    "interval_logger", to_abs_path("intervals.log"), logging.DEBUG)
 
 
 class FaceExistenceRateCounter(QObject):
@@ -14,9 +21,8 @@ class FaceExistenceRateCounter(QObject):
 
     Signals:
         s_low_existence_detected:
-            Emits when face existence is low and sends start and end time.
+            Emits when face existence is low and sends its interval.
     """
-
     s_low_existence_detected = pyqtSignal(Interval)
 
     def __init__(self, low_existence: float = 0.66) -> None:
@@ -28,15 +34,12 @@ class FaceExistenceRateCounter(QObject):
         """
         super().__init__()
         self._low_existence = low_existence
-        self._face_times = TimeWindow(60)
+        self._face_times = TimeWindow(ONE_MIN)
         # it's enough to only set callback on frame
-        self._frame_times = TimeWindow(60)
+        self._frame_times = TimeWindow(ONE_MIN)
         self._frame_times.set_time_catch_callback(self._check_face_existence)
 
-    @property
-    def low_existence(self) -> float:
-        """Returns the threshold rate of low face existence."""
-        return self._low_existence
+        self.s_low_existence_detected.connect(self._log_intervals)
 
     def add_frame(self) -> None:
         """Adds a frame count and detects whether face existence is low.
@@ -83,10 +86,10 @@ class FaceExistenceRateCounter(QObject):
         # Frame time is added every frame but face isn't,
         # so is used as the prerequisite for face existence check.
         if (self._frame_times
-                and get_current_time() - self._frame_times[0] >= 60
+                and get_current_time() - self._frame_times[0] >= ONE_MIN
                 and self._get_face_existence_rate() <= self._low_existence):
             self.s_low_existence_detected.emit(
-                Interval(self._frame_times[0], self._frame_times[0] + 60))
+                Interval(self._frame_times[0], self._frame_times[0] + ONE_MIN))
 
     def _get_face_existence_rate(self) -> float:
         """Returns the face existence rate of the minute.
@@ -98,11 +101,14 @@ class FaceExistenceRateCounter(QObject):
         """
         return round(len(self._face_times) / len(self._frame_times), 2)
 
+    def _log_intervals(self, interval: Interval) -> None:
+        interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, "
+                             f"{str(IntervalType.LOW_FACE)}")
+
 
 class BlinkRateIntervalDetector(QObject):
     """Splits the times into intervals using the technique of sliding window.
-    Detects whether each interval forms a good interval or not; if not, make it
-    a bad interval.
+    Detects whether an interval forms a good interval or not by blink rate.
 
     The number of blinks per minute is the blink rate, which is an integer here
     since it counts but does not take the average.
@@ -123,9 +129,11 @@ class BlinkRateIntervalDetector(QObject):
         """
         super().__init__()
         self._good_rate_range = good_rate_range
-        self._blink_times = DoubleTimeWindow(60)
+        self._blink_times = DoubleTimeWindow(ONE_MIN)
         self._blink_times.set_time_catch_callback(self._check_blink_rate)
         self._last_end_time: int = get_current_time()
+
+        self.s_interval_detected.connect(self._log_intervals)
 
     def add_blink(self) -> None:
         """Adds a new time of blink and checks whether there's a good interval.
@@ -146,8 +154,28 @@ class BlinkRateIntervalDetector(QObject):
         """
         self._blink_times.catch_up_time(manual=True)
 
-    def clear_windows(self, *args: WindowType) -> None:
-        self._blink_times.clear(*args)
+    def get_extrude_interval(self) -> Optional[Tuple[Interval, IntervalType, int]]:
+        one_min_before: int = get_current_time() - ONE_MIN
+        # "== ONE_MIN" should be caught as LOOK_BACK
+        if HALF_MIN <= (one_min_before - self._last_end_time) < ONE_MIN:
+            extrude_interval = (
+                Interval(self._last_end_time, one_min_before),
+                IntervalType.EXTRUSION,
+                self._get_blink_rate(WindowType.PREVIOUS))
+
+            # logging...
+            self._log_intervals(*extrude_interval)
+
+            return extrude_interval
+        return None
+
+    def clear_windows(self, window_type: WindowType) -> None:
+        """Clears the corresponding windows.
+
+        Arguments:
+            window_type: The type of window to be cleared.
+        """
+        self._blink_times.clear(window_type)
 
     def sync_last_end_up(self, last_end_time: int) -> None:
         """The grader that uses the interval detector should sync the last end
@@ -158,34 +186,26 @@ class BlinkRateIntervalDetector(QObject):
         self._last_end_time = last_end_time
 
     def _check_blink_rate(self) -> None:
-        """
-        Emits:
-            s_interval_detected:
-        """
-        curr_time: int = get_current_time()
-        # When the current window forms a good interval, we should also look
-        # back if it's long enough.
-        if curr_time - self._last_end_time >= 60:
-            blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
-            if self._good_rate_range[0] <= blink_rate <= self._good_rate_range[1]:
-                # Emit previous part first since its earlier on time.
-                self._check_blink_rate_of_previous_window(curr_time - 60, 30)
-                self.s_interval_detected.emit(Interval(curr_time - 60, curr_time),
-                                              IntervalType.REAL_TIME, blink_rate)
-        # The current window hasn't form a good intervals yet, make each 60
-        # seconds of the previous a look back interval.
-        else:
-            self._check_blink_rate_of_previous_window(curr_time - 60, 60)
+        """Checks whether the current window forms a good blink rate interval
+        or the previous window needs a look back.
 
-    def _check_blink_rate_of_previous_window(self, end: int, width: int) -> None:
-        """
-        Start time is the end time of the last interval.
+        Types of REAL_TIME and LOOK_BACK are emitted initiatively during
+        the check while EXTRUSION needs a grader to request.
 
         Emits:
             s_interval_detected:
         """
-        if end - self._last_end_time >= width:
-            self.s_interval_detected.emit(Interval(self._last_end_time, end),
+        now_time: int = get_current_time()
+        one_min_before: int = now_time - ONE_MIN
+
+        curr_blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
+        if (now_time - self._last_end_time >= ONE_MIN
+                and self._good_rate_range[0] <= curr_blink_rate <= self._good_rate_range[1]):
+            self.s_interval_detected.emit(Interval(one_min_before, now_time),
+                                          IntervalType.REAL_TIME, curr_blink_rate)
+        # Make each 60 seconds of the previous a look back interval.
+        if one_min_before - self._last_end_time >= ONE_MIN:
+            self.s_interval_detected.emit(Interval(self._last_end_time, one_min_before),
                                           IntervalType.LOOK_BACK,
                                           self._get_blink_rate(WindowType.PREVIOUS))
 
@@ -204,11 +224,19 @@ class BlinkRateIntervalDetector(QObject):
             blink_rate = len(self._blink_times.previous)
         return blink_rate
 
+    def _log_intervals(self, interval: Interval, type: IntervalType, rate: int) -> None:
+        interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, "
+                             f"{str(type)}")
+
 
 class BodyConcentrationCounter:
+    """Counts the body concentrations so that the grader can take as an
+    criterion, but does not request a grading process, which means the
+    BodyConcentrationCounter gives information passively.
+    """
     def __init__(self) -> None:
-        self._concentration_times = DoubleTimeWindow(60)
-        self._distraction_times = DoubleTimeWindow(60)
+        self._concentration_times = DoubleTimeWindow(ONE_MIN)
+        self._distraction_times = DoubleTimeWindow(ONE_MIN)
 
     def add_concentration(self) -> None:
         self._concentration_times.append_time()
@@ -220,8 +248,7 @@ class BodyConcentrationCounter:
             self,
             type: WindowType,
             interval: Interval) -> float:
-        """Returns the amount of body concentration in the interval, those
-        outsides are trimmed off.
+        """Returns the amount of body concentration in the interval.
 
         The result is rounded to two decimal places.
 
@@ -230,38 +257,23 @@ class BodyConcentrationCounter:
             interval: The interval dataclass which contains start and end time.
         """
         def count_time_in_interval(times: DoubleTimeWindow) -> int:
-            """To avoid un-fully mathced windows between grading components,
-            trimmed off the outsides.
-            """
-            # Convert the window to list so won't be mutated by other threads
-            # while iterating.
-            window: List[int]
+            # Assumes that the interval is synced up properly, so the count is
+            # simply the length of the corresponding window.
+            window: Sized
             if type is WindowType.PREVIOUS:
-                window = list(times.previous)
+                window = times.previous
             else:
-                window = list(times)
-            # Iterate through the entire window causes more time;
-            # count all then remove out-of-ranges to provide slightly better
-            # efficiency.
-            count: int = len(window)
-            for t in window:
-                if t > interval.start:
-                    break
-                count -= 1
-            for t in reversed(window):
-                if t < interval.end:
-                    break
-                count -= 1
-            return count
+                window = times
+            return len(window)
         concent_count: int = count_time_in_interval(self._concentration_times)
         distract_count: int = count_time_in_interval(self._distraction_times)
         return round(concent_count / (concent_count + distract_count), 2)
 
-    def clear_windows(self, *args: WindowType) -> None:
+    def clear_windows(self, window_type: WindowType) -> None:
         """Clears the corresponding windows.
 
         Arguments:
-            args: Various amount of window types.
+            window_type: The type of window to be cleared.
         """
-        self._distraction_times.clear(*args)
-        self._concentration_times.clear(*args)
+        self._distraction_times.clear(window_type)
+        self._concentration_times.clear(window_type)

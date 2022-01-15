@@ -1,6 +1,11 @@
 import time
 
 
+# often-used define constants
+ONE_MIN  = 60
+HALF_MIN = 30
+
+
 class Timer:
     """
     This class makes the measurement of running time easy.

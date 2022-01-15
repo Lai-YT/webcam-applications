@@ -22,7 +22,7 @@ class FuzzyGrader:
 
     def compute_grade(
             self,
-            blink_rate: int,
+            blink_rate: float,
             body_concent: float,
             *, normalized: bool = True) -> float:
         """Computes the grade base on fuzzy logics.
@@ -92,7 +92,7 @@ class FuzzyGrader:
         return [rule1, rule2, rule3]
 
     @staticmethod
-    def _map_blink_rate_to_membership_value(blink_rate: int) -> int:
+    def _map_blink_rate_to_membership_value(blink_rate: float) -> float:
         """Returns the membership value of the blink rate.
 
         Arguments:
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     fuzzy_grader = FuzzyGrader()
     fuzzy_grader.view_membership_func()
     # go for a single graph check
-    blink_rate = int(input("blink rate: "))
+    blink_rate = float(input("blink rate: "))
     body_concent = float(input("body concent: "))
     raw_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent,
                                                   normalized=False)

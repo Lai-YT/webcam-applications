@@ -1,4 +1,4 @@
-name: Unittest of concentration grader
+name: Unittests
 
 on: [push]
 
@@ -16,6 +16,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install wheel
         pip install -r requirements.txt
-    - name: Run unittest of concentration grader
+    - name: Run unittests
       run: |
-        python -m unittest -v test.test_concentration_grader
+        python -m unittest discover test -p "test_*.py" -v

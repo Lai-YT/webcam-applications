@@ -111,7 +111,7 @@ class DoubleTimeWindow:
                 times to the previous window from the earliest; as for the
                 previous window, the earliest times are poped and removed.
                 Notice that the interval is closed.
-                i.g., A DoubleTimeWindow with time_width=60 knows the latest 120
+                e.g., A DoubleTimeWindow with time_width=60 knows the latest 120
                 seconds, but one may operate separatly on the 0 ~ 60 and 61 ~ 120
                 part.
         """
