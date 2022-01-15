@@ -76,7 +76,7 @@ class ConcentrationGrader(QObject):
         # sync its windows up.
         self._interval_timer = QTimer(self)
         self._interval_timer.timeout.connect(self._interval_detector.check_blink_rate)
-        self._interval_timer.start(1_000)  # 1s
+        self._interval_timer.start(1_000)
 
         self._body_concent_counter = BodyConcentrationCounter()
 
@@ -86,6 +86,7 @@ class ConcentrationGrader(QObject):
 
         self._fuzzy_grader = FuzzyGrader()
 
+        # method to record grades
         self._json_file: str = to_abs_path("intervals.json")
         parse.init_json(self._json_file)
         self.s_concent_interval_refreshed.connect(
@@ -141,6 +142,7 @@ class ConcentrationGrader(QObject):
             self,
             interval: Interval,
             type: IntervalType,
+            # LOW_FACE doesn't has BR
             blink_rate: Optional[int] = None) -> None:
         """
         The one that starts first should be graded first. If the time are the
@@ -181,10 +183,12 @@ class ConcentrationGrader(QObject):
                     if (extrude_interval is not None
                             and not self._is_graded_interval(extrude_interval[0])):
                         self._perform_face_existing_grading(*extrude_interval)
+                    # unexpected situation, logging...
                     if (extrude_interval is not None
                             and self._is_graded_interval(extrude_interval[0])):
                         self._grade_logger.info(str(extrude_interval))
                         self._grade_logger.info(str(self._last_end_time))
+
                     self._last_end_time = interval.end
                     self._interval_detector.sync_last_end_up(self._last_end_time)
 
@@ -204,6 +208,8 @@ class ConcentrationGrader(QObject):
         """Performs grading on the face existing interval and records it
         if the grade is high enough.
 
+        Notice that this method doesn't update the last end time.
+
         Arguments:
             interval: The interval dataclass which contains start and end time.
             type: The type of such interval.
@@ -217,7 +223,7 @@ class ConcentrationGrader(QObject):
                 Emits if the the grading result is recorded and sends the grade.
         """
         self._grade_logger.info(f"Normal check at {to_date_time(interval.start)} ~ "
-                             f"{to_date_time(interval.end)}")
+                                f"{to_date_time(interval.end)}")
         self._grade_logger.info(f"blink rate = {blink_rate}")
 
         window_type = WindowType.CURRENT
@@ -239,16 +245,14 @@ class ConcentrationGrader(QObject):
             return True
         elif type is IntervalType.EXTRUSION:
             interval.grade = self._fuzzy_grader.compute_grade(
-                # FIXME: An average-based blink rate might be floating-point number
-                # But argument 1 of compute_grade has type int.
-                int((blink_rate*ONE_MIN) / (interval.end-interval.start)), body_concent)
+                (blink_rate*ONE_MIN) / (interval.end-interval.start), body_concent)
             self.s_concent_interval_refreshed.emit(interval)
             self._clear_windows(window_type)
             # A grading on look back can only be bad, since they didn't
             # pass when they were real time.
             self._grade_logger.info(f"bad concentration: {interval.grade}")
             return True
-
+        # REAL_TIMEs
         grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
         if grade >= 0.6:
             interval.grade = grade
@@ -263,6 +267,8 @@ class ConcentrationGrader(QObject):
     def _perform_low_face_grading(self, interval: Interval) -> bool:
         """Performs grading on the low face existence interval and records it
         if the grade is high enough.
+
+        Notice that this method doesn't update the last end time.
 
         Arguments:
             interval: The interval dataclass which contains start and end time.
@@ -283,7 +289,7 @@ class ConcentrationGrader(QObject):
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
             WindowType.CURRENT, interval)
         self._grade_logger.info(f"body concentration = {body_concent}")
-
+        # Directly take the body concentration as the final grade.
         interval.grade = body_concent
         self.s_concent_interval_refreshed.emit(interval)
         self._clear_windows(WindowType.CURRENT)
