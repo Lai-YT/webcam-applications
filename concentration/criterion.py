@@ -108,7 +108,7 @@ class FaceExistenceRateCounter(QObject):
 
 class BlinkRateIntervalDetector(QObject):
     """Splits the times into intervals using the technique of sliding window.
-    Detects whether each interval forms a good interval or not by blink rate.
+    Detects whether an interval forms a good interval or not by blink rate.
 
     The number of blinks per minute is the blink rate, which is an integer here
     since it counts but does not take the average.
@@ -158,14 +158,15 @@ class BlinkRateIntervalDetector(QObject):
         one_min_before: int = get_current_time() - ONE_MIN
         # "== ONE_MIN" should be caught as LOOK_BACK
         if HALF_MIN <= (one_min_before - self._last_end_time) < ONE_MIN:
-            # logging...
-            self._log_intervals(Interval(self._last_end_time, one_min_before),
-                                IntervalType.EXTRUSION,
-                                self._get_blink_rate(WindowType.PREVIOUS))
+            extrude_interval = (
+                Interval(self._last_end_time, one_min_before),
+                IntervalType.EXTRUSION,
+                self._get_blink_rate(WindowType.PREVIOUS))
 
-            return (Interval(self._last_end_time, one_min_before),
-                    IntervalType.EXTRUSION,
-                    self._get_blink_rate(WindowType.PREVIOUS))
+            # logging...
+            self._log_intervals(*extrude_interval)
+
+            return extrude_interval
         return None
 
     def clear_windows(self, window_type: WindowType) -> None:
@@ -188,7 +189,7 @@ class BlinkRateIntervalDetector(QObject):
         """Checks whether the current window forms a good blink rate interval
         or the previous window needs a look back.
 
-        Types of REAL_TIME and LOOK_BACK are emitted iinitiatively during
+        Types of REAL_TIME and LOOK_BACK are emitted initiatively during
         the check while EXTRUSION needs a grader to request.
 
         Emits:

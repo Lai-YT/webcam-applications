@@ -11,7 +11,7 @@ class IntervalType(IntEnum):
     LOW_FACE  = 10
     # current window interval by good blink rate
     REAL_TIME = 20
-    # previous window interval by a successive REAL_TIME
+    # previous window interval by a successive record on current window
     EXTRUSION = 30
     # previous window interval by a full window
     LOOK_BACK = 40
