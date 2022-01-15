@@ -28,8 +28,11 @@ class ConcentrationGrader(QObject):
     - Blink rate
     - Body concentration, which is the posture
     - Face existence, whether the user is in front of the screen
-    """
 
+    Signals:
+        s_concent_interval_refreshed:
+            Emits when an interval is recorded and sends that interval.
+    """
     s_concent_interval_refreshed = pyqtSignal(Interval)
 
     def __init__(

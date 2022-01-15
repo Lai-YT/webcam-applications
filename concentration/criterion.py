@@ -21,9 +21,8 @@ class FaceExistenceRateCounter(QObject):
 
     Signals:
         s_low_existence_detected:
-            Emits when face existence is low and sends start and end time.
+            Emits when face existence is low and sends its interval.
     """
-
     s_low_existence_detected = pyqtSignal(Interval)
 
     def __init__(self, low_existence: float = 0.66) -> None:
@@ -41,9 +40,6 @@ class FaceExistenceRateCounter(QObject):
         self._frame_times.set_time_catch_callback(self._check_face_existence)
 
         self.s_low_existence_detected.connect(self._log_intervals)
-
-    def _log_intervals(self, interval: Interval) -> None:
-        interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, {str(IntervalType.LOW_FACE)}")
 
     def add_frame(self) -> None:
         """Adds a frame count and detects whether face existence is low.
@@ -105,6 +101,10 @@ class FaceExistenceRateCounter(QObject):
         """
         return round(len(self._face_times) / len(self._frame_times), 2)
 
+    def _log_intervals(self, interval: Interval) -> None:
+        interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, "
+                             f"{str(IntervalType.LOW_FACE)}")
+
 
 class BlinkRateIntervalDetector(QObject):
     """Splits the times into intervals using the technique of sliding window.
@@ -134,9 +134,6 @@ class BlinkRateIntervalDetector(QObject):
         self._last_end_time: int = get_current_time()
 
         self.s_interval_detected.connect(self._log_intervals)
-
-    def _log_intervals(self, interval: Interval, type: IntervalType, rate: int) -> None:
-        interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, {str(type)}")
 
     def add_blink(self) -> None:
         """Adds a new time of blink and checks whether there's a good interval.
@@ -226,8 +223,16 @@ class BlinkRateIntervalDetector(QObject):
             blink_rate = len(self._blink_times.previous)
         return blink_rate
 
+    def _log_intervals(self, interval: Interval, type: IntervalType, rate: int) -> None:
+        interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, "
+                             f"{str(type)}")
+
 
 class BodyConcentrationCounter:
+    """Counts the body concentrations so that the grader can take as an
+    criterion, but does not request a grading process, which means the
+    BodyConcentrationCounter gives information passively.
+    """
     def __init__(self) -> None:
         self._concentration_times = DoubleTimeWindow(ONE_MIN)
         self._distraction_times = DoubleTimeWindow(ONE_MIN)
