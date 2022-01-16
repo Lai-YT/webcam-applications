@@ -41,7 +41,7 @@ class ConcentrationGrader(QObject):
             ratio_threshold: float = 0.24,
             # Passed to the underlaying AntiNoiseBlinkDetector.
             consec_frame: int = 3,
-            good_rate_range: Tuple[int, int] = (0, 21),
+            good_rate_range: Tuple[int, int] = (1, 21),
             # Passed to the underlaying FaceExistenceRateCounter.
             low_existence: float = 0.66) -> None:
         """
