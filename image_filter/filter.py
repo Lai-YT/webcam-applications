@@ -1,4 +1,5 @@
 import sys
+from typing import Optional
 
 import cv2
 import dlib
@@ -22,9 +23,9 @@ class ImageFilter:
     _face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
 
     def __init__(self) -> None:
-        self._image = None
-        self._faces = None
-        self._brightness = 0
+        self._image: Optional[ColorImage] = None
+        self._faces: Optional[dlib.rectangles] = None
+        self._brightness: float = 0
 
     def refresh_image(self, image: ColorImage) -> None:
         """Refreshes the image in the filter and starts the process of filtering."""
@@ -43,7 +44,7 @@ class ImageFilter:
 
     def _detect_face(self) -> None:
         """Detects face in a image and stores data of the face."""
-        self._faces: dlib.rectangles = self._face_detector(self._image)
+        self._faces = self._face_detector(self._image)
 
     def _get_brightness(self) -> None:
         """Returns the filtered mean of brightness of an image."""
@@ -62,6 +63,8 @@ class ImageFilter:
         # Note: The size of the mask should be the same as a single channel of
         # an image, passing the size of self._image leads to size error because
         # its size is three times larger than the "value" channel of hsv.
+        if self._faces is None:
+            raise ValueError("please refresh the image first")
         if len(self._faces) != 1:
             raise ValueError("multiple faces aren't allowed")
 
