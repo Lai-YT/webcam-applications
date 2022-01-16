@@ -1,6 +1,6 @@
 import json
 import math
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,7 +15,7 @@ def save_chart_of_intervals(filename: str, intervals: List[Interval]) -> None:
 
     start_times: List[float] = []
     interval_lengths: List[float] = []
-    grades: List[float] = []
+    grades: List[Optional[float]] = []
 
     init_time: int = intervals[0].start
     for interval in intervals:
@@ -57,8 +57,8 @@ def read_grades_from_json(filename: str) -> List[Grade]:
     Arguments:
         filename: The json file which contains the grades.
     """
-    def to_grade_object(raw_grade: Dict[str, Union[int ,float]]) -> Grade:
-        """Converts the dict of blink, body and grade in to Grade object."""
+    def to_grade_object(raw_grade: Dict[str, Union[int, float]]) -> Grade:
+        """Converts the dict of blink, body and grade into Grade object."""
         return Grade(**raw_grade)  # type: ignore
         # type ignored since mypy fails on such infer types
 
@@ -73,8 +73,8 @@ def read_intervals_from_json(filename: str) -> List[Interval]:
     Arguments:
         filename: The json file which contains the intervals.
     """
-    def to_good_interval_object(raw_interval: Dict[str, Union[int ,float]]) -> Interval:
-        """Converts the dict of start and grade in to Interval object."""
+    def to_good_interval_object(raw_interval: Dict[str, Union[int, float]]) -> Interval:
+        """Converts the dict of start and grade into Interval object."""
         return Interval(**raw_interval)  # type: ignore
         # type ignored since mypy fails on such infer types
 

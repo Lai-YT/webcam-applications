@@ -56,12 +56,15 @@ class TailorMadeNormalEyeAspectRatioMaker:
             temp_ratio:
                 Used before the normal EAR is determined. Prevents from getting
                 an unreliable normal EAR due to low number of samples.
-            number_threshold: Higher number of samples than this is considered to be reliable.
+                Should be in range [0.15, 0.5].
+            number_threshold:
+                Higher number of samples than this is considered to be reliable.
         """
         if temp_ratio < 0.15 or temp_ratio > 0.5:
             raise ValueError("normal eye aspect ratio should >= 0.15 and <= 0.5")
         if number_threshold < 100:
-            raise ValueError("number of samples under 100 makes the normal eye aspect ratio susceptible to extreme values")
+            raise ValueError("number of samples under 100 makes the normal eye"
+                             "aspect ratio susceptible to extreme values")
 
         self._temp_ratio = temp_ratio
         self._number_threshold = number_threshold

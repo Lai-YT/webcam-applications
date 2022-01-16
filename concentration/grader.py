@@ -1,28 +1,41 @@
+import functools
+import time
 import logging
-from typing import Tuple
+from typing import Optional, Tuple
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, QTimer, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
 import concentration.fuzzy.parse as parse
-import util.logger as logger
 from blink.detector import AntiNoiseBlinkDetector
-from blink.interval import BlinkRateIntervalDetector, IntervalLevel
-from concentration.counter import BodyConcentrationCounter, FaceExistenceRateCounter
+
+from concentration.criterion import (
+    BlinkRateIntervalDetector,
+    BodyConcentrationCounter,
+    FaceExistenceRateCounter
+)
+
 from concentration.fuzzy.classes import Interval
 from concentration.fuzzy.grader import FuzzyGrader
+from concentration.interval import IntervalType
+from util.heap import MinHeap
+from util.logger import setup_logger
 from util.path import to_abs_path
 from util.sliding_window import WindowType
-from util.time import to_date_time
+from util.time import ONE_MIN, get_current_time, to_date_time
 
-
-interval_logger: logging.Logger = logger.setup_logger("interval_logger",
-                                                      to_abs_path("concent_interval.log"),
-                                                      logging.DEBUG)
 
 class ConcentrationGrader(QObject):
+    """While grading, there are 3 criteria that we take into account:
+    - Blink rate
+    - Body concentration, which is the posture
+    - Face existence, whether the user is in front of the screen
 
-    s_concent_interval_refreshed = pyqtSignal(IntervalLevel, int, int, float)  # start, end, grade
+    Signals:
+        s_concent_interval_refreshed:
+            Emits when an interval is recorded and sends that interval.
+    """
+    s_concent_interval_refreshed = pyqtSignal(Interval)
 
     def __init__(
             self,
@@ -38,8 +51,8 @@ class ConcentrationGrader(QObject):
             ratio_threshold:
                 The eye aspect ratio to indicate blink. 0.24 in default.
             consec_frame:
-                The number of consecutive frames the eye must be below the threshold
-                to indicate a blink. 3 in default.
+                The number of consecutive frames the eye must be below the
+                threshold to indicate a blink. 3 in default.
             good_rate_range:
                 The min and max boundary of the good blink rate (blinks per minute).
                 It's not about the average rate, so both are with type int.
@@ -51,31 +64,60 @@ class ConcentrationGrader(QObject):
                 existence. 0.66 (2/3) in default.
         """
         super().__init__()
-        interval_logger.info("ConcentrationGrader configs:")
-        interval_logger.info(f" ratio thres  = {ratio_threshold}")
-        interval_logger.info(f" consec frame = {consec_frame}")
-        interval_logger.info(f" good range   = {good_rate_range}\n")
+        # Loggings for flow tracing.
+        self._grade_logger: logging.Logger = setup_logger(
+            "grade_logger", to_abs_path("grades.log"), logging.DEBUG)
+        self._grade_logger.info(f"Grader starts at {to_date_time(get_current_time())}\n")
 
-        # TODO: Blink detection not accurate, lots of false blink.
+        # FIXME: Blink detection not accurate, lots of false blink.
         self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
+
         self._interval_detector = BlinkRateIntervalDetector(good_rate_range)
-        self._face_existence_counter = FaceExistenceRateCounter(low_existence)
+        self._interval_detector.s_interval_detected.connect(
+            self._push_interval_to_grade_in_heap)
+        self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
+
+        # Since the append of blinks is sparse, we need a timer to periodically
+        # sync its windows up.
+        self._interval_timer = QTimer(self)
+        self._interval_timer.timeout.connect(self._interval_detector.check_blink_rate)
+        self._interval_timer.start(1_000)
+
         self._body_concent_counter = BodyConcentrationCounter()
+
+        self._face_existence_counter = FaceExistenceRateCounter(low_existence)
+        self._face_existence_counter.s_low_existence_detected.connect(
+            functools.partial(self._push_interval_to_grade_in_heap, type=IntervalType.LOW_FACE))
+
         self._fuzzy_grader = FuzzyGrader()
 
+        # method to record grades
         self._json_file: str = to_abs_path("intervals.json")
         parse.init_json(self._json_file)
+        self.s_concent_interval_refreshed.connect(
+            lambda interval: parse.append_to_json(self._json_file, interval.__dict__))
 
-        self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
-        self._interval_detector.s_interval_detected.connect(self.check_normal_concentration)
-        self._face_existence_counter.s_low_existence_detected.connect(self.check_low_face_concentration)
+        # Min heaps that store the intervals to grade.
+        # The curr heap has the REAL_TIME and LOW_FACEs, which are in the current
+        # windows; the prev heap has the LOOK_BACKs, which are in the previous.
+        self._curr_heap  = MinHeap[Tuple[Interval, IntervalType, Optional[int]]]()
+        self._look_backs = MinHeap[Tuple[Interval, IntervalType, int]]()
 
-    def get_ratio_threshold(self) -> float:
+        # Record the progress of grading time so we don't grade twice.
+        self._last_end_time: int = 0
+
+        self._process_timer = QTimer(self)
+        self._process_timer.timeout.connect(self._grade_intervals)
+        self._process_timer.start(1_000)
+
+    @property
+    def ratio_threshold(self) -> float:
         """Returns the ratio threshold used to consider an EAR lower than it
         to be a blink with noise."""
         return self._blink_detector.ratio_threshold
 
-    def set_ratio_threshold(self, threshold: float) -> None:
+    @ratio_threshold.setter
+    def ratio_threshold(self, threshold: float) -> None:
         """
         Arguments:
             threshold:
@@ -89,9 +131,6 @@ class ConcentrationGrader(QObject):
 
     def add_frame(self) -> None:
         self._face_existence_counter.add_frame()
-        # Basicly, add_frame() is called every frame,
-        # so call method which should be called manually together.
-        self._interval_detector.check_blink_rate()
 
     def add_face(self) -> None:
         self._face_existence_counter.add_face()
@@ -102,89 +141,181 @@ class ConcentrationGrader(QObject):
     def add_body_distraction(self) -> None:
         self._body_concent_counter.add_distraction()
 
-    def check_normal_concentration(
+    @pyqtSlot(Interval, IntervalType)
+    @pyqtSlot(Interval, IntervalType, int)
+    def _push_interval_to_grade_in_heap(
             self,
-            type: WindowType,
-            start_time: int,
-            end_time: int,
-            blink_rate: int) -> None:
-        interval_logger.info("in check at normal")
-
-        interval_logger.info(f"Check at {to_date_time(start_time)} ~ "
-                             f"{to_date_time(end_time)}")
-        interval_logger.info(f"blink rate = {blink_rate}")
-        body_concent: float = self._body_concent_counter.get_concentration_ratio(
-            type, start_time, end_time)
-        interval_logger.info(f"body concentration = {body_concent}")
-
-        grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
-        if type is WindowType.PREVIOUS:
-            grade = self._fuzzy_grader.compute_grade(
-                # argument 1 of compute_grade has type int
-                # TODO: An average-based blink rate might be floating-point number
-                int((blink_rate * 60) / (end_time - start_time)), body_concent)
-            # A grading from the previous can only be bad, since they didn't
-            # pass when they were current.
-            self.s_concent_interval_refreshed.emit(
-                IntervalLevel.BAD, start_time, end_time, grade)
-            parse.append_to_json(
-                self._json_file,
-                Interval(start=start_time, end=end_time, grade=grade).__dict__)
-            self.clear_windows(WindowType.PREVIOUS)
-            interval_logger.info(f"bad concentration: {grade}")
-        elif grade >= 0.6:
-            self.s_concent_interval_refreshed.emit(
-                IntervalLevel.GOOD, start_time, end_time, grade)
-            parse.append_to_json(
-                self._json_file,
-                Interval(start=start_time, end=end_time, grade=grade).__dict__)
-            # The grading of previous should precede current, so after the
-            # grading of current, we should and must clear previous also.
-            self.clear_windows(WindowType.PREVIOUS, WindowType.CURRENT)
-            interval_logger.info(f"good concentration: {grade}")
+            interval: Interval,
+            type: IntervalType,
+            # LOW_FACE doesn't have BR
+            blink_rate: Optional[int] = None) -> None:
+        """
+        The one that starts first should be graded first. If the time are the
+        same, type with higher priority is graded first.
+        """
+        heap: MinHeap
+        if type is IntervalType.LOOK_BACK:
+            heap = self._look_backs
         else:
-            interval_logger.info(f"{grade}, not concentrating")
-        interval_logger.info(f"leave check of normal {to_date_time(start_time)} ~ "
-                             f"{to_date_time(end_time)}")
-        interval_logger.info("")  # separation
+            heap = self._curr_heap
+        heap.push((interval, type, blink_rate))
 
-    def check_low_face_concentration(self, start_time: int, end_time: int) -> None:
-        """
-        Note that no matter good or bad, the low face interval is always graded
-        currently.
-        """
-        interval_logger.info("in check at low face")
+    def _grade_intervals(self) -> None:
+        """Dispatches the intervals to their corresponding grading method."""
+        # First, grade the LOOK_BACKs.
+        while self._look_backs:
+            interval, type, blink_rate = self._look_backs.pop()
+            if not self._is_graded_interval(interval):
+                recorded = self._perform_face_existing_grading(interval, type, blink_rate)
+                if recorded:
+                    self._last_end_time = interval.end
+                    self._interval_detector.sync_last_end_up(self._last_end_time)
+        # Second, grade the REAL_TIME and LOW_FACEs.
+        # Additionally grade EXTRUSIONs if existed.
+        while self._curr_heap:
+            interval, type, blink_rate = self._curr_heap.pop()  # type: ignore
+            # Error because of the following reason:
+            # Variable reuse within one function body. Mypy really prefers that you don't do that.
+            # I decide to ignore and keep clean.
+            if not self._is_graded_interval(interval):
+                if type is IntervalType.LOW_FACE:
+                    recorded = self._perform_low_face_grading(interval)
+                elif self._face_existence_counter.is_low_face():
+                    # Not a LOW_FACE interval but is low face. We can expect
+                    # that there is a LOW_FACE but not yet in the heap.
+                    # So keep poping util we get the request of LOW_FACE.
+                    # Note that I assume the time asychronous problem is
+                    # negligible since it's within a second.
+                    self._grade_logger.info(
+                        f"low face, skip {to_date_time(interval.start)} ~ "
+                        f"{to_date_time(interval.end)}, {str(type)}")
+                    continue
+                else:
+                    recorded = self._perform_face_existing_grading(interval, type, blink_rate)
+                if recorded:
+                    extrude_interval: Optional[Tuple[Interval, IntervalType, int]] = (
+                        self._interval_detector.get_extrude_interval())
+                    if (extrude_interval is not None
+                            and not self._is_graded_interval(extrude_interval[0])):
+                        self._perform_face_existing_grading(*extrude_interval)
+                    # unexpected situation, logging...
+                    if (extrude_interval is not None
+                            and self._is_graded_interval(extrude_interval[0])):
+                        self._grade_logger.info(str(extrude_interval))
+                        self._grade_logger.info(str(self._last_end_time))
 
-        interval_logger.info(f"Check at {to_date_time(start_time)} ~ "
-                             f"{to_date_time(end_time)}")
-        interval_logger.info("low face existence, check body only:")
+                    self._last_end_time = interval.end
+                    self._interval_detector.sync_last_end_up(self._last_end_time)
+
+    def _is_graded_interval(self, interval: Interval) -> bool:
+        """Returns whether the interval starts before the last end time.
+
+        Arguments:
+            interval: The interval dataclass which contains start and end time.
+        """
+        return interval.start < self._last_end_time
+
+    def _perform_face_existing_grading(
+            self,
+            interval: Interval,
+            type: IntervalType,
+            blink_rate: int) -> bool:
+        """Performs grading on the face existing interval and records it
+        if the grade is high enough.
+
+        Notice that this method doesn't update the last end time.
+
+        Arguments:
+            interval: The interval dataclass which contains start and end time.
+            type: The type of such interval.
+            blink_rate: The blink rate in that interval.
+
+        Returns:
+            True if the grading result is recorded, otherwise False.
+
+        Emits:
+            s_concent_interval_refreshed:
+                Emits if the the grading result is recorded and sends the grade.
+        """
+        self._grade_logger.info(f"Normal check at {to_date_time(interval.start)} ~ "
+                                f"{to_date_time(interval.end)}")
+        self._grade_logger.info(f"blink rate = {blink_rate}")
+
+        window_type = WindowType.CURRENT
+        if type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
+            window_type = WindowType.PREVIOUS
+
+        body_concent: float = self._body_concent_counter.get_concentration_ratio(
+            window_type, interval)
+        self._grade_logger.info(f"body concentration = {body_concent}")
+
+        # LOOK_BACK and EXTRUSIONs are always graded and record.
+        if type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
+            if type is IntervalType.LOOK_BACK:
+                interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
+            elif type is IntervalType.EXTRUSION:
+                # Use an average-based BR.
+                interval.grade = self._fuzzy_grader.compute_grade(
+                    (blink_rate*ONE_MIN) / (interval.end-interval.start), body_concent)
+            self.s_concent_interval_refreshed.emit(interval)
+            self._clear_windows(window_type)
+            # A grading on previous can only be bad, since they didn't
+            # pass when they were real time.
+            self._grade_logger.info(f"bad concentration: {interval.grade}")
+            return True
+        # REAL_TIMEs
+        grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
+        if grade >= 0.6:
+            interval.grade = grade
+            self.s_concent_interval_refreshed.emit(interval)
+            self._clear_windows(window_type)
+            self._grade_logger.info(f"good concentration: {interval.grade}")
+            return True
+        else:
+            self._grade_logger.info(f"{grade}, not concentrating")
+            return False
+
+    def _perform_low_face_grading(self, interval: Interval) -> bool:
+        """Performs grading on the low face existence interval and records it
+        if the grade is high enough.
+
+        Notice that this method doesn't update the last end time.
+
+        Arguments:
+            interval: The interval dataclass which contains start and end time.
+
+        Returns:
+            True if the grading result is recorded, otherwise False.
+
+            Note that this method always records the result and returns True.
+
+        Emits:
+            s_concent_interval_refreshed:
+                Emits if the the grading result is recorded and sends the grade.
+        """
+        self._grade_logger.info(f"Low face check at {to_date_time(interval.start)} ~ "
+                                f"{to_date_time(interval.end)}")
 
         # low face existence check is always on the current window
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
-            WindowType.CURRENT, start_time, end_time)
-        grade: float = body_concent
+            WindowType.CURRENT, interval)
+        self._grade_logger.info(f"body concentration = {body_concent}")
+        # Directly take the body concentration as the final grade.
+        interval.grade = body_concent
+        self.s_concent_interval_refreshed.emit(interval)
+        self._clear_windows(WindowType.CURRENT)
 
-        level = IntervalLevel.GOOD if grade >= 0.6 else IntervalLevel.BAD
-        self.s_concent_interval_refreshed.emit(level, start_time, end_time, grade)
-        parse.append_to_json(
-            self._json_file,
-            Interval(start=start_time, end=end_time, grade=grade).__dict__
-        )
-        self.clear_windows(WindowType.CURRENT)
+        review = "good" if interval.grade >= 0.6 else "bad"
+        self._grade_logger.info(review + f" concentration: {interval.grade}")
+        return True
 
-        interval_logger.info(f"concentration: {grade}")
-        interval_logger.info(f"leave check of low face {to_date_time(start_time)} ~ "
-                             f"{to_date_time(end_time)}")
-        interval_logger.info("")  # separation
-
-    def clear_windows(self, *args: WindowType) -> None:
+    def _clear_windows(self, window_type: WindowType) -> None:
         """Clears the corresponding window of all grading components.
 
         Arguments:
-            args: Various amount of window types.
+            window_type: The type of window to be cleared.
         """
-        self._body_concent_counter.clear_windows(*args)
-        self._interval_detector.clear_windows(*args)
-
-        if WindowType.CURRENT in args:
+        self._body_concent_counter.clear_windows(window_type)
+        self._interval_detector.clear_windows(window_type)
+        if window_type is WindowType.CURRENT:
             self._face_existence_counter.clear_windows()

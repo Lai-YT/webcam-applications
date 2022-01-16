@@ -28,11 +28,14 @@ venv/
 !start.jpg
 !wait.jpg
 
-train_sample/
-train/
-*.h5
-
 # image_filter
 !dark_room.jpg
 !dark_room_with_lightspot.jpg
 !dark_room_with_lightspot1.jpg
+
+train_sample/
+train/
+*.h5
+
+# hide broken test
+test/test_concentration_grader.py

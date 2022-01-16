@@ -8,9 +8,9 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
-from blink.interval import IntervalLevel
 from brightness.calcuator import BrightnessMode
 from brightness.controller import BrightnessController
+from concentration.fuzzy.classes import Interval
 from concentration.grader import ConcentrationGrader
 from distance.calculator import (DistanceCalculator,
                                  draw_landmarks_used_by_distance_calculator)
@@ -51,7 +51,8 @@ class WebcamApplication(QObject):
             Sends the new brightness value.
         s_concent_interval_refreshed:
             Emits everytime a new grade is published.
-            Sends the level of that interval and the start time, end time and grade.
+            Sends the interval dataclass which contains the start time,
+            end time and grade.
         s_frame_refreshed:
             Emits every time a new frame is captured.
             Sends the new frame.
@@ -67,7 +68,7 @@ class WebcamApplication(QObject):
     s_time_refreshed = pyqtSignal(int, TimeState)
     s_posture_refreshed = pyqtSignal(PostureLabel, str)
     s_brightness_refreshed = pyqtSignal(int)
-    s_concent_interval_refreshed = pyqtSignal(IntervalLevel, int, int, float)
+    s_concent_interval_refreshed = pyqtSignal(Interval)
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 
@@ -199,7 +200,7 @@ class WebcamApplication(QObject):
             landmarks: NDArray[(68, 2), Int[32]] = self._get_landmarks(canvas, frame)
             # Do applications!
             if self._distance_measure:
-                if landmarks.any():
+                if has_face(landmarks):
                     self._distance_guard.warn_if_too_close(canvas, landmarks)
             if self._posture_detect:
                 draw_landmarks_used_by_angle_calculator(canvas, landmarks)
@@ -207,7 +208,7 @@ class WebcamApplication(QObject):
             if self._focus_time:
                 # If the landmarks of face are clear, ths user is considered not focusing
                 # on the screen, so the timer is paused.
-                if not landmarks.any():
+                if not has_face(landmarks):
                     self._timer.pause()
                 else:
                     self._timer.start()
@@ -223,7 +224,7 @@ class WebcamApplication(QObject):
 
             # Do concentration gradings!
             self._concentration_grader.add_frame()
-            if landmarks.any():
+            if has_face(landmarks):
                 self._concentration_grader.add_face()
                 self._concentration_grader.detect_blink(landmarks)
 
@@ -292,8 +293,8 @@ class WebcamApplication(QObject):
         self._distance_guard.s_distance_refreshed.connect(self.s_distance_refreshed)
 
         self._angle_calculator = AngleCalculator()
-        self._posture_guard: PostureGuard = PostureGuard(calculator=self._angle_calculator,
-                                           grader=self._concentration_grader)
+        self._posture_guard: PostureGuard = PostureGuard(
+            calculator=self._angle_calculator, grader=self._concentration_grader)
         self._posture_guard.s_posture_refreshed.connect(self.s_posture_refreshed)
 
         self._time_guard: TimeGuard = TimeGuard()
@@ -305,6 +306,11 @@ class WebcamApplication(QObject):
         self._concentration_grader = ConcentrationGrader()
         self._concentration_grader.s_concent_interval_refreshed.connect(
             self.s_concent_interval_refreshed)
+
+
+def has_face(landmarks: NDArray[(68, 2), Int[32]]) -> bool:
+    """Returns whether the landmarks indicate a face."""
+    return landmarks.any()
 
 
 def mark_face(

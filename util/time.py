@@ -1,6 +1,11 @@
 import time
 
 
+# often-used define constants
+ONE_MIN  = 60
+HALF_MIN = 30
+
+
 class Timer:
     """
     This class makes the measurement of running time easy.
@@ -64,4 +69,4 @@ def min_to_sec(time_in_min: int) -> int:
 
 
 def to_date_time(epoch_time: int) -> str:
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch_time))
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(epoch_time))

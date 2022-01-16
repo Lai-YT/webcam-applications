@@ -1,32 +1,26 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
 @dataclass
 class Grade:
-    """This data class stores the grade; and the corresponding blink rate and
+    """This data class stores the grade, and the corresponding blink rate and
     body concentration value of it.
-
-    Data:
-        blink
-        body
-        grade
     """
+    grade: float
     blink: Optional[int]  # None occurs when face existence is low.
     body: float
-    grade: float
 
 
-@dataclass
+@dataclass(order=True)
 class Interval:
     """This data class stores the start time, end time (epoch) and grade of an
     interval.
 
-    Data:
-        start
-        end
-        grade
+    Interval is comparable as if is's the tuple (start, end).
     """
     start: int
     end: int
-    grade: float
+    # When comparing the intervals, grades aren't taken under consideration.
+    # None means this interval isn't graded.
+    grade: Optional[float] = field(default=None, compare=False)
