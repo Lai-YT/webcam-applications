@@ -8,13 +8,11 @@ from nptyping import Int, NDArray
 
 import concentration.fuzzy.parse as parse
 from blink.detector import AntiNoiseBlinkDetector
-
 from concentration.criterion import (
     BlinkRateIntervalDetector,
     BodyConcentrationCounter,
     FaceExistenceRateCounter
 )
-
 from concentration.fuzzy.classes import Interval
 from concentration.fuzzy.grader import FuzzyGrader
 from concentration.interval import IntervalType
