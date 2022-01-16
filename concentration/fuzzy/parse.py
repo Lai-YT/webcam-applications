@@ -58,7 +58,7 @@ def read_grades_from_json(filename: str) -> List[Grade]:
         filename: The json file which contains the grades.
     """
     def to_grade_object(raw_grade: Dict[str, Union[int, float]]) -> Grade:
-        """Converts the dict of blink, body and grade in to Grade object."""
+        """Converts the dict of blink, body and grade into Grade object."""
         return Grade(**raw_grade)  # type: ignore
         # type ignored since mypy fails on such infer types
 
@@ -74,7 +74,7 @@ def read_intervals_from_json(filename: str) -> List[Interval]:
         filename: The json file which contains the intervals.
     """
     def to_good_interval_object(raw_interval: Dict[str, Union[int, float]]) -> Interval:
-        """Converts the dict of start and grade in to Interval object."""
+        """Converts the dict of start and grade into Interval object."""
         return Interval(**raw_interval)  # type: ignore
         # type ignored since mypy fails on such infer types
 

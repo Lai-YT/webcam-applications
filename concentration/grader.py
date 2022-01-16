@@ -13,7 +13,7 @@ from concentration.criterion import (
     BodyConcentrationCounter,
     FaceExistenceRateCounter
 )
-from concentration.fuzzy.classes import Grade, Interval
+from concentration.fuzzy.classes import Interval
 from concentration.fuzzy.grader import FuzzyGrader
 from concentration.interval import IntervalType
 from util.heap import MinHeap
@@ -145,7 +145,7 @@ class ConcentrationGrader(QObject):
             self,
             interval: Interval,
             type: IntervalType,
-            # LOW_FACE doesn't has BR
+            # LOW_FACE doesn't have BR
             blink_rate: Optional[int] = None) -> None:
         """
         The one that starts first should be graded first. If the time are the
@@ -248,20 +248,16 @@ class ConcentrationGrader(QObject):
         self._grade_logger.info(f"body concentration = {body_concent}")
 
         # LOOK_BACK and EXTRUSIONs are always graded and record.
-        if type is IntervalType.LOOK_BACK:
-            interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
+        if type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
+            if type is IntervalType.LOOK_BACK:
+                interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
+            elif type is IntervalType.EXTRUSION:
+                # Use an average-based BR.
+                interval.grade = self._fuzzy_grader.compute_grade(
+                    (blink_rate*ONE_MIN) / (interval.end-interval.start), body_concent)
             self.s_concent_interval_refreshed.emit(interval)
             self._clear_windows(window_type)
-            # A grading on look back can only be bad, since they didn't
-            # pass when they were real time.
-            self._grade_logger.info(f"bad concentration: {interval.grade}")
-            return True
-        elif type is IntervalType.EXTRUSION:
-            interval.grade = self._fuzzy_grader.compute_grade(
-                (blink_rate*ONE_MIN) / (interval.end-interval.start), body_concent)
-            self.s_concent_interval_refreshed.emit(interval)
-            self._clear_windows(window_type)
-            # A grading on look back can only be bad, since they didn't
+            # A grading on previous can only be bad, since they didn't
             # pass when they were real time.
             self._grade_logger.info(f"bad concentration: {interval.grade}")
             return True
