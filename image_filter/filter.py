@@ -1,18 +1,23 @@
+import sys
+
 import cv2
 import dlib
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
-
 from imutils import face_utils
 from nptyping import NDArray
-from numpy.ma.core import MaskedConstant
 
+from util.color import MAGENTA
 from util.image_type import ColorImage
 
-np.set_printoptions(threshold=np.inf)
+
+# See https://numpy.org/doc/stable/reference/generated/numpy.set_printoptions.html#numpy-set-printoptions
+np.set_printoptions(threshold=sys.maxsize)
+
+
 class ImageFilter:
-    """Handle processes which filter the brightness of the image."""
+    """Handles processes which filters the brightness of the image."""
 
     _face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
 
@@ -29,7 +34,7 @@ class ImageFilter:
         self._get_brightness()
 
     def plot_image(self) -> None:
-        """Plot the image and show filtered brightness on the window."""
+        """Plots the image and shows filtered brightness on the window."""
         title = f"Brightness: {self._brightness}"
 
         plt.imshow(self._image)
@@ -46,44 +51,35 @@ class ImageFilter:
         # Value is as known as brightness.
         hue, saturation, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
 
-        mask = self._generate_mask(value)
         # array of "value" channel with face area masked
-        masked_value = self._mask_face_area(value, mask)
-        self._brightness = round(100 * self._filtered_mean(masked_value) / 255, 2)
+        masked_array = self._mask_face_area(value)
+        self._brightness = round(100 * self._filtered_mean(masked_array) / 255, 2)
 
-    def _generate_mask(self, ndarray: NDArray) -> NDArray:
-        """Get the boundaries of face area and generate the array with
+    def _generate_mask(self, array: NDArray) -> NDArray:
+        """Gets the boundaries of face area and generates the array with
         corresponding elements masked.
-        
-        Note: 
-            The size of the mask should be the same as "one" channel of an image,
-        passing the size of self._image leads to size error because its size is three
-        times larger than the "value" channel of hsv. 
         """
-        # doesn't handle multiple faces
-        if len(self._faces) == 1:
-            fx, fy, fw, fh = face_utils.rect_to_bb(self._faces[0])
-            cv2.rectangle(self._image, (fx, fy), (fx+fw, fy+fh), (255, 0, 255), 1)
+        # Note: The size of the mask should be the same as a single channel of
+        # an image, passing the size of self._image leads to size error because
+        # its size is three times larger than the "value" channel of hsv.
+        if len(self._faces) != 1:
+            raise ValueError("multiple faces aren't allowed")
+
+        fx, fy, fw, fh = face_utils.rect_to_bb(self._faces[0])
+        cv2.rectangle(self._image, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
+
         # generate mask with face area masked
-        mask = np.zeros(ndarray.shape)
-        for i in range(fy, fy+fh+1):
-            for j in range(fx, fx+fx+1):
-                mask[i][j] = 1
+        mask = np.zeros(array.shape, dtype=np.bool8)
+        mask[fy:fy+fh+1, fx:fx+fw+1] = 1
         return mask
 
-    def _mask_face_area(self, ndarray: NDArray, mask: NDArray) -> NDArray:
-        return ma.masked_array(ndarray, mask)
+    def _mask_face_area(self, array: NDArray) -> NDArray:
+        mask = self._generate_mask(array)
+        return ma.masked_array(array, mask)
 
     @staticmethod
-    def _filtered_mean(ndarray: NDArray) -> float:
+    def _filtered_mean(masked_array: NDArray) -> float:
         """Filter out the brightest and darkest 5% area of a masked image."""
-        # Flatten the array to 1D and sort it in increasing order.
-        sorted_arr = np.sort(ndarray, axis=None)
-        # Cut the masked value to fix the size of the masked array.
-        arr = []
-        for element in sorted_arr:
-            if type(element) != MaskedConstant:
-                arr.append(element)
-        # Convert the array to ndarray to use the mean method.
-        arr = np.array(arr)
-        return arr[int(arr.size * 0.05):int(arr.size * 0.95)].mean()
+        unmasked = masked_array.compressed()
+        unmasked.sort()
+        return unmasked[int(unmasked.size * 0.05):int(unmasked.size * 0.95)].mean()
