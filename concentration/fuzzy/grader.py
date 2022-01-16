@@ -1,7 +1,7 @@
 # Please read the example of tipping problem before playing with this file.
 # https://pythonhosted.org/scikit-fuzzy/auto_examples/plot_tipping_problem_newapi.html
 
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 import skfuzzy as fuzz

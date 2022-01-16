@@ -28,6 +28,11 @@ venv/
 !start.jpg
 !wait.jpg
 
+# image_filter
+!dark_room.jpg
+!dark_room_with_lightspot.jpg
+!dark_room_with_lightspot1.jpg
+
 train_sample/
 train/
 *.h5
