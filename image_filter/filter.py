@@ -19,7 +19,7 @@ np.set_printoptions(threshold=sys.maxsize)
 
 class ImageFilter:
     """Handles processes which filters the brightness of the image."""
-
+    # init face detector
     _face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
 
     def __init__(self) -> None:
@@ -53,7 +53,7 @@ class ImageFilter:
         hue, saturation, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
 
         # array of "value" channel with face area masked
-        masked_array = self._mask_face_area(value)
+        masked_array = self._get_masked_array(value)
         self._brightness = round(100 * self._filtered_mean(masked_array) / 255, 2)
 
     def _generate_mask(self, array: NDArray) -> NDArray:
@@ -76,13 +76,14 @@ class ImageFilter:
         mask[fy:fy+fh+1, fx:fx+fw+1] = 1
         return mask
 
-    def _mask_face_area(self, array: NDArray) -> NDArray:
+    def _get_masked_array(self, array: NDArray) -> NDArray:
         mask = self._generate_mask(array)
         return ma.masked_array(array, mask)
 
     @staticmethod
     def _filtered_mean(masked_array: NDArray) -> float:
         """Filter out the brightest and darkest 5% area of a masked image."""
+        # compress the masked array to truncate masked constants
         unmasked = masked_array.compressed()
         unmasked.sort()
         return unmasked[int(unmasked.size * 0.05):int(unmasked.size * 0.95)].mean()
