@@ -4,12 +4,12 @@ from typing import Optional
 
 @dataclass
 class Grade:
-    """This data class stores the grade; and the corresponding blink rate and
+    """This data class stores the grade, and the corresponding blink rate and
     body concentration value of it.
     """
+    grade: float
     blink: Optional[int]  # None occurs when face existence is low.
     body: float
-    grade: float
 
 
 @dataclass(order=True)
@@ -22,5 +22,5 @@ class Interval:
     start: int
     end: int
     # When comparing the intervals, grades aren't taken under consideration.
-    # None mean this interval isn't graded.
+    # None means this interval isn't graded.
     grade: Optional[float] = field(default=None, compare=False)
