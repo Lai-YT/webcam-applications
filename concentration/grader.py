@@ -41,7 +41,7 @@ class ConcentrationGrader(QObject):
             ratio_threshold: float = 0.24,
             # Passed to the underlaying AntiNoiseBlinkDetector.
             consec_frame: int = 3,
-            good_rate_range: Tuple[int, int] = (1, 21),
+            good_rate_range: Tuple[int, int] = (0, 21),
             # Passed to the underlaying FaceExistenceRateCounter.
             low_existence: float = 0.66) -> None:
         """
@@ -178,6 +178,16 @@ class ConcentrationGrader(QObject):
             if not self._is_graded_interval(interval):
                 if type is IntervalType.LOW_FACE:
                     recorded = self._perform_low_face_grading(interval)
+                elif self._face_existence_counter.is_low_face():
+                    # Not a LOW_FACE interval but is low face. We can expect
+                    # that there is a LOW_FACE but not yet in the heap.
+                    # So keep poping util we get the request of LOW_FACE.
+                    # Note that I assume the time asychronous problem is
+                    # negligible since it's within a second.
+                    self._grade_logger.info(
+                        f"low face, skip {to_date_time(interval.start)} ~ "
+                        f"{to_date_time(interval.end)}, {str(type)}")
+                    continue
                 else:
                     recorded = self._perform_face_existing_grading(interval, type, blink_rate)
                 if recorded:

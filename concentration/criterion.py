@@ -57,6 +57,7 @@ class FaceExistenceRateCounter(QObject):
         """Adds a face count and detects whether face existence is low.
 
         Notice that this method should always be called with an add_frame().
+        
         Emits:
             s_low_existence_detected:
                 Emits when face existence is low and sends the face existence rate.
@@ -64,6 +65,15 @@ class FaceExistenceRateCounter(QObject):
         self._face_times.append_time()
         # An add face should always be with an add frame,
         # so we don't need extra synchronization.
+
+    def is_low_face(self) -> bool:
+        """Returns True if the counts of the current minute indicates a low
+        face interval.
+
+        Notice that this method doesn't really know the minute, only the
+        windows. ZeroDivisionError may occur when called right after a clear.
+        """
+        return self._get_face_existence_rate() <= self._low_existence
 
     def clear_windows(self) -> None:
         """Clears the time of face and frames in the past 1 minute.
@@ -79,6 +89,7 @@ class FaceExistenceRateCounter(QObject):
 
         Note that this method doesn't maintain the sliding window and is
         automatically called by add_frame().
+
         Emits:
             s_low_existence_detected:
                 Emits when face existence is low and sends the start and end time.
@@ -87,7 +98,7 @@ class FaceExistenceRateCounter(QObject):
         # so is used as the prerequisite for face existence check.
         if (self._frame_times
                 and get_current_time() - self._frame_times[0] >= ONE_MIN
-                and self._get_face_existence_rate() <= self._low_existence):
+                and self.is_low_face()):
             self.s_low_existence_detected.emit(
                 Interval(self._frame_times[0], self._frame_times[0] + ONE_MIN))
 
