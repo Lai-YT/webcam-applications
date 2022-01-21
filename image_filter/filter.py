@@ -37,7 +37,10 @@ class ImageFilter:
 
     def plot_image(self) -> None:
         """Plots the image and shows filtered brightness on the window."""
-        title = f"Brightness without mask: {self._brightness_without_mask}\nResult brightness: {self._brightness} (diff = {round(self._brightness - self._brightness_without_mask, 2)})"
+
+        diff = self._brightness - self._brightness_without_mask
+        title = (f"Brightness without mask: {self._brightness_without_mask}\n"
+                 f"Result brightness: {self._brightness} (diff = {diff:.2f})")
 
         plt.imshow(self._image)
         plt.title(title)
@@ -53,9 +56,9 @@ class ImageFilter:
         # Value is as known as brightness.
         hue, saturation, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
 
+        self._brightness_without_mask = round(100 * self._filtered_mean(value) / 255, 2)
         # array of "value" channel with face area masked
         masked_array = self._get_masked_array(value)
-        self._brightness_without_mask = round(100 * self._filtered_mean(value) / 255, 2)
         self._brightness = round(100 * self._filtered_mean(masked_array) / 255, 2)
 
     def _generate_mask(self, array: NDArray) -> NDArray:
@@ -65,10 +68,13 @@ class ImageFilter:
         # Note: The size of the mask should be the same as a single channel of
         # an image, passing the size of self._image leads to size error because
         # its size is three times larger than the "value" channel of hsv.
-        if len(self._faces) == 0:
+        if self._faces is None:
             raise ValueError("please refresh the image first")
         if len(self._faces) > 1:
             raise ValueError("multiple faces aren't allowed")
+        if not self._faces:
+            # all-pass for a no face image
+            return np.zeros(array.shape, dtype=np.bool8)
 
         fx, fy, fw, fh = face_utils.rect_to_bb(self._faces[0])
         cv2.rectangle(self._image, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
