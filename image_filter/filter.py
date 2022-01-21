@@ -25,6 +25,7 @@ class ImageFilter:
     def __init__(self) -> None:
         self._image: Optional[ColorImage] = None
         self._faces: Optional[dlib.rectangles] = None
+        self._brightness_without_mask: float = 0
         self._brightness: float = 0
 
     def refresh_image(self, image: ColorImage) -> None:
@@ -36,7 +37,7 @@ class ImageFilter:
 
     def plot_image(self) -> None:
         """Plots the image and shows filtered brightness on the window."""
-        title = f"Brightness: {self._brightness}"
+        title = f"Brightness without mask: {self._brightness_without_mask}\nResult brightness: {self._brightness} (diff = {round(self._brightness - self._brightness_without_mask, 2)})"
 
         plt.imshow(self._image)
         plt.title(title)
@@ -54,6 +55,7 @@ class ImageFilter:
 
         # array of "value" channel with face area masked
         masked_array = self._get_masked_array(value)
+        self._brightness_without_mask = round(100 * self._filtered_mean(value) / 255, 2)
         self._brightness = round(100 * self._filtered_mean(masked_array) / 255, 2)
 
     def _generate_mask(self, array: NDArray) -> NDArray:
@@ -63,9 +65,9 @@ class ImageFilter:
         # Note: The size of the mask should be the same as a single channel of
         # an image, passing the size of self._image leads to size error because
         # its size is three times larger than the "value" channel of hsv.
-        if self._faces is None:
+        if len(self._faces) == 0:
             raise ValueError("please refresh the image first")
-        if len(self._faces) != 1:
+        if len(self._faces) > 1:
             raise ValueError("multiple faces aren't allowed")
 
         fx, fy, fw, fh = face_utils.rect_to_bb(self._faces[0])
@@ -84,6 +86,6 @@ class ImageFilter:
     def _filtered_mean(masked_array: NDArray) -> float:
         """Filter out the brightest and darkest 5% area of a masked image."""
         # compress the masked array to truncate masked constants
-        unmasked = masked_array.compressed()
+        unmasked = ma.compressed(masked_array)
         unmasked.sort()
         return unmasked[int(unmasked.size * 0.05):int(unmasked.size * 0.95)].mean()
