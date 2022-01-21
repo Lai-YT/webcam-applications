@@ -32,7 +32,7 @@ class ImageFilter:
         # Value is as known as brightness.
         _, _, self._value = cv2.split(cv2.cvtColor(self._image, cv2.COLOR_BGR2HSV))
 
-    def get_brightness(self, mask: bool = True) -> None:
+    def get_brightness(self, mask: bool = True) -> float:
         """Returns the filtered mean of brightness of the image.
 
         The brightness is rounded to two decimal places.
@@ -41,6 +41,8 @@ class ImageFilter:
             mask: Whether the brightest and darkest 5% area of the image is
                   excluded or not. True in default.
         """
+        if self._face is None or self._value is None:
+            raise ValueError("please refresh the image first")
         if mask:
             # array of "value" channel with face area masked
             masked_arr = self._get_value_with_face_masked()
@@ -57,8 +59,6 @@ class ImageFilter:
         # Note: The size of the mask should be the same as a single channel of
         # an image, passing the size of self._image leads to size error because
         # its size is three times larger than the "value" channel of hsv.
-        if self._face is None or self._value is None:
-            raise ValueError("please refresh the image first")
         if self._face.is_empty():
             # all-pass for a no face image
             face_mask = np.zeros(self._value.shape, dtype=np.bool8)
