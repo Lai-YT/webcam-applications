@@ -59,6 +59,8 @@ class ImageFilter:
         # Note: The size of the mask should be the same as a single channel of
         # an image, passing the size of self._image leads to size error because
         # its size is three times larger than the "value" channel of hsv.
+        if self._face is None or self._value is None:
+            raise ValueError("please refresh the image first")
         if self._face.is_empty():
             # all-pass for a no face image
             face_mask = np.zeros(self._value.shape, dtype=np.bool8)
