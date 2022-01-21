@@ -13,21 +13,6 @@ venv/
 *.png
 *.log
 
-# message
-!warning.jpg
-!timer_bg.jpg
-!break_bg.jpg
-!what.mp3
-!brightness_window.jpg
-
-# demo
-!white.jpg
-!black.jpg
-
-# gui
-!start.jpg
-!wait.jpg
-
 # image_filter
 !dark_room.jpg
 !dark_room_with_lightspot.jpg
