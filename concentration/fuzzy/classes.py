@@ -4,10 +4,10 @@ from typing import Optional
 
 @dataclass
 class Grade:
-    """This data class stores the grade, and the corresponding blink rate and
-    body concentration value of it.
+    """This data class stores the value of grade, and the corresponding blink
+    rate and body concentration value of it.
     """
-    grade: float
+    value: float
     blink: Optional[int]  # None occurs when face existence is low.
     body: float
 

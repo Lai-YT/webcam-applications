@@ -199,9 +199,8 @@ class WebcamApplication(QObject):
             # Analyze the frame to get face landmarks.
             landmarks: NDArray[(68, 2), Int[32]] = self._get_landmarks(canvas, frame)
             # Do applications!
-            if self._distance_measure:
-                if has_face(landmarks):
-                    self._distance_guard.warn_if_too_close(canvas, landmarks)
+            if self._distance_measure and has_face(landmarks):
+                self._distance_guard.warn_if_too_close(canvas, landmarks)
             if self._posture_detect:
                 draw_landmarks_used_by_angle_calculator(canvas, landmarks)
                 self._posture_guard.check_posture(canvas, frame, landmarks)

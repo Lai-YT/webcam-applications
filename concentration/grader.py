@@ -85,7 +85,7 @@ class ConcentrationGrader(QObject):
 
         self._face_existence_counter = FaceExistenceRateCounter(low_existence)
         self._face_existence_counter.s_low_existence_detected.connect(
-            functools.partial(self._push_interval_to_grade_in_heap, type=IntervalType.LOW_FACE))
+            functools.partial(self._push_interval_to_grade_in_heap, interval_type=IntervalType.LOW_FACE))
 
         self._fuzzy_grader = FuzzyGrader()
 
@@ -144,7 +144,7 @@ class ConcentrationGrader(QObject):
     def _push_interval_to_grade_in_heap(
             self,
             interval: Interval,
-            type: IntervalType,
+            interval_type: IntervalType,
             # LOW_FACE doesn't have BR
             blink_rate: Optional[int] = None) -> None:
         """
@@ -152,58 +152,58 @@ class ConcentrationGrader(QObject):
         same, type with higher priority is graded first.
         """
         heap: MinHeap
-        if type is IntervalType.LOOK_BACK:
+        if interval_type is IntervalType.LOOK_BACK:
             heap = self._look_backs
         else:
             heap = self._curr_heap
-        heap.push((interval, type, blink_rate))
+        heap.push((interval, interval_type, blink_rate))
 
     def _grade_intervals(self) -> None:
         """Dispatches the intervals to their corresponding grading method."""
         # First, grade the LOOK_BACKs.
         while self._look_backs:
-            interval, type, blink_rate = self._look_backs.pop()
-            if not self._is_graded_interval(interval):
-                recorded = self._perform_face_existing_grading(interval, type, blink_rate)
-                if recorded:
-                    self._last_end_time = interval.end
-                    self._interval_detector.sync_last_end_up(self._last_end_time)
+            interval, interval_type, blink_rate = self._look_backs.pop()
+            if (not self._is_graded_interval(interval)
+                    and self._perform_face_existing_grading(interval, interval_type, blink_rate)):
+                self._last_end_time = interval.end
+                self._interval_detector.sync_last_end_up(self._last_end_time)
         # Second, grade the REAL_TIME and LOW_FACEs.
         # Additionally grade EXTRUSIONs if existed.
         while self._curr_heap:
-            interval, type, blink_rate = self._curr_heap.pop()  # type: ignore
+            interval, interval_type, blink_rate = self._curr_heap.pop()  # type: ignore
             # Error because of the following reason:
             # Variable reuse within one function body. Mypy really prefers that you don't do that.
             # I decide to ignore and keep clean.
-            if not self._is_graded_interval(interval):
-                if type is IntervalType.LOW_FACE:
-                    recorded = self._perform_low_face_grading(interval)
-                elif self._face_existence_counter.is_low_face():
-                    # Not a LOW_FACE interval but is low face. We can expect
-                    # that there is a LOW_FACE but not yet in the heap.
-                    # So keep poping util we get the request of LOW_FACE.
-                    # Note that I assume the time asychronous problem is
-                    # negligible since it's within a second.
-                    self._grade_logger.info(
-                        f"low face, skip {to_date_time(interval.start)} ~ "
-                        f"{to_date_time(interval.end)}, {str(type)}")
-                    continue
-                else:
-                    recorded = self._perform_face_existing_grading(interval, type, blink_rate)
-                if recorded:
-                    extrude_interval: Optional[Tuple[Interval, IntervalType, int]] = (
-                        self._interval_detector.get_extrude_interval())
-                    if (extrude_interval is not None
-                            and not self._is_graded_interval(extrude_interval[0])):
-                        self._perform_face_existing_grading(*extrude_interval)
-                    # unexpected situation, logging...
-                    if (extrude_interval is not None
-                            and self._is_graded_interval(extrude_interval[0])):
-                        self._grade_logger.info(str(extrude_interval))
-                        self._grade_logger.info(str(self._last_end_time))
+            if self._is_graded_interval(interval):
+                continue
+            if interval_type is IntervalType.LOW_FACE:
+                recorded = self._perform_low_face_grading(interval)
+            elif self._face_existence_counter.is_low_face():
+                # Not a LOW_FACE interval but is low face. We can expect
+                # that there is a LOW_FACE but not yet in the heap.
+                # So keep poping util we get the request of LOW_FACE.
+                # Note that I assume the time asychronous problem is
+                # negligible since it's within a second.
+                self._grade_logger.info(
+                    f"low face, skip {to_date_time(interval.start)} ~ "
+                    f"{to_date_time(interval.end)}, {str(interval_type)}")
+                continue
+            else:
+                recorded = self._perform_face_existing_grading(interval, interval_type, blink_rate)
+            if recorded:
+                extrude_interval: Optional[Tuple[Interval, IntervalType, int]] = (
+                    self._interval_detector.get_extrude_interval())
+                if (extrude_interval is not None
+                        and not self._is_graded_interval(extrude_interval[0])):
+                    self._perform_face_existing_grading(*extrude_interval)
+                # unexpected situation, logging...
+                if (extrude_interval is not None
+                        and self._is_graded_interval(extrude_interval[0])):
+                    self._grade_logger.info(str(extrude_interval))
+                    self._grade_logger.info(str(self._last_end_time))
 
-                    self._last_end_time = interval.end
-                    self._interval_detector.sync_last_end_up(self._last_end_time)
+                self._last_end_time = interval.end
+                self._interval_detector.sync_last_end_up(self._last_end_time)
 
     def _is_graded_interval(self, interval: Interval) -> bool:
         """Returns whether the interval starts before the last end time.
@@ -216,7 +216,7 @@ class ConcentrationGrader(QObject):
     def _perform_face_existing_grading(
             self,
             interval: Interval,
-            type: IntervalType,
+            interval_type: IntervalType,
             blink_rate: int) -> bool:
         """Performs grading on the face existing interval and records it
         if the grade is high enough.
@@ -225,7 +225,7 @@ class ConcentrationGrader(QObject):
 
         Arguments:
             interval: The interval dataclass which contains start and end time.
-            type: The type of such interval.
+            interval_type: The type of such interval.
             blink_rate: The blink rate in that interval.
 
         Returns:
@@ -240,7 +240,7 @@ class ConcentrationGrader(QObject):
         self._grade_logger.info(f"blink rate = {blink_rate}")
 
         window_type = WindowType.CURRENT
-        if type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
+        if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
             window_type = WindowType.PREVIOUS
 
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
@@ -248,10 +248,10 @@ class ConcentrationGrader(QObject):
         self._grade_logger.info(f"body concentration = {body_concent}")
 
         # LOOK_BACK and EXTRUSIONs are always graded and record.
-        if type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
-            if type is IntervalType.LOOK_BACK:
+        if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
+            if interval_type is IntervalType.LOOK_BACK:
                 interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
-            elif type is IntervalType.EXTRUSION:
+            elif interval_type is IntervalType.EXTRUSION:
                 # Use an average-based BR.
                 interval.grade = self._fuzzy_grader.compute_grade(
                     (blink_rate*ONE_MIN) / (interval.end-interval.start), body_concent)

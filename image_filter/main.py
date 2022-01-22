@@ -14,7 +14,7 @@ from util.path import to_abs_path
 
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(
-"posture/trained_models/shape_predictor_68_face_landmarks.dat")
+    "posture/trained_models/shape_predictor_68_face_landmarks.dat")
 filter = ImageFilter()
 
 
