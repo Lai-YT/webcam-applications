@@ -17,7 +17,7 @@ def get_test_grades() -> List[Grade]:
     for blink_rate in range(22):
         for body_concent in (round(0.1 * i, 1) for i in range(11)):
             grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent)
-            concent_grades.append(Grade(blink=blink_rate, body=body_concent, grade=grade))
+            concent_grades.append(Grade(blink=blink_rate, body=body_concent, value=grade))
     return concent_grades
 
 
@@ -44,7 +44,7 @@ def save_grades_to_spreadsheet(filename: str, grades: List[Grade]) -> None:
         # blink won't be None in the test grades
         row = chr(grade.blink + 66)  # type: ignore
         col = str(int(grade.body * 10 + 2))
-        sheet[row + col] = grade.grade
+        sheet[row + col] = grade.value
 
     workbook.save(filename=filename)
 
