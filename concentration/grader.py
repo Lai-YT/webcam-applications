@@ -1,6 +1,6 @@
-import functools
 import time
 import logging
+from functools import partial
 from typing import Optional, Tuple
 
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal, pyqtSlot
@@ -85,7 +85,7 @@ class ConcentrationGrader(QObject):
 
         self._face_existence_counter = FaceExistenceRateCounter(low_existence)
         self._face_existence_counter.s_low_existence_detected.connect(
-            functools.partial(self._push_interval_to_grade_in_heap, interval_type=IntervalType.LOW_FACE))
+            partial(self._push_interval_to_grade_in_heap, interval_type=IntervalType.LOW_FACE))
 
         self._fuzzy_grader = FuzzyGrader()
 
@@ -96,9 +96,9 @@ class ConcentrationGrader(QObject):
             lambda interval: parse.append_to_json(self._json_file, interval.__dict__))
 
         # Min heaps that store the intervals to grade.
-        # The curr heap has the REAL_TIME and LOW_FACEs, which are in the current
-        # windows; the prev heap has the LOOK_BACKs, which are in the previous.
-        self._curr_heap  = MinHeap[Tuple[Interval, IntervalType, Optional[int]]]()
+        # The in-times has the REAL_TIME and LOW_FACEs, which are in the current
+        # windows; the look-backs has the LOOK_BACKs, which are in the previous.
+        self._in_times = MinHeap[Tuple[Interval, IntervalType, Optional[int]]]()
         self._look_backs = MinHeap[Tuple[Interval, IntervalType, int]]()
 
         # Record the progress of grading time so we don't grade twice.
@@ -155,25 +155,29 @@ class ConcentrationGrader(QObject):
         if interval_type is IntervalType.LOOK_BACK:
             heap = self._look_backs
         else:
-            heap = self._curr_heap
+            heap = self._in_times
         heap.push((interval, interval_type, blink_rate))
 
     def _grade_intervals(self) -> None:
         """Dispatches the intervals to their corresponding grading method."""
-        # First, grade the LOOK_BACKs.
+        self._grade_look_backs()
+        self._grade_in_times()
+
+    def _grade_look_backs(self) -> None:
+        """Grades the LOOK_BACKs."""
         while self._look_backs:
             interval, interval_type, blink_rate = self._look_backs.pop()
             if (not self._is_graded_interval(interval)
                     and self._perform_face_existing_grading(interval, interval_type, blink_rate)):
                 self._last_end_time = interval.end
                 self._interval_detector.sync_last_end_up(self._last_end_time)
-        # Second, grade the REAL_TIME and LOW_FACEs.
-        # Additionally grade EXTRUSIONs if existed.
-        while self._curr_heap:
-            interval, interval_type, blink_rate = self._curr_heap.pop()  # type: ignore
-            # Error because of the following reason:
-            # Variable reuse within one function body. Mypy really prefers that you don't do that.
-            # I decide to ignore and keep clean.
+
+    def _grade_in_times(self) -> None:
+        """Grades the REAL_TIME and LOW_FACEs.
+        Additionally grades EXTRUSIONs if existed.
+        """
+        while self._in_times:
+            interval, interval_type, blink_rate = self._in_times.pop()
             if self._is_graded_interval(interval):
                 continue
             if interval_type is IntervalType.LOW_FACE:
@@ -190,6 +194,7 @@ class ConcentrationGrader(QObject):
                 continue
             else:
                 recorded = self._perform_face_existing_grading(interval, interval_type, blink_rate)
+                
             if recorded:
                 extrude_interval: Optional[Tuple[Interval, IntervalType, int]] = (
                     self._interval_detector.get_extrude_interval())

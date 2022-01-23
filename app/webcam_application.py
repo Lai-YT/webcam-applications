@@ -11,11 +11,11 @@ from nptyping import Int, NDArray
 from app.webcam_application_ import has_face, mark_face
 from distance.calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from distance.guard import DistanceGuard
+from focus_time.guard import TimeGuard
 from posture.calculator import (AngleCalculator, PosturePredictor,
                                 draw_landmarks_used_by_angle_calculator)
 from posture.guard import PostureGuard
 from posture.train import ModelPath, ModelTrainer
-from time_.guard import TimeGuard
 from util.image_type import ColorImage
 from util.path import to_abs_path
 from util.time import Timer
