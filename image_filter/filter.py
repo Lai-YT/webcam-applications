@@ -12,6 +12,7 @@ from nptyping import NDArray, UInt8
 from util.color import MAGENTA
 from util.image_type import ColorImage
 
+np.set_printoptions(threshold=sys.maxsize)
 
 class ImageFilter:
     """Handles processes which filters the brightness of the image."""
@@ -27,12 +28,13 @@ class ImageFilter:
 
     def refresh_image(self, image: ColorImage, face: dlib.rectangle) -> None:
         """Refreshes the image in the filter and starts the process of filtering."""
+        # init arguments
         self._image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         self._face = face
         # Value is as known as brightness.
         _, _, self._value = cv2.split(cv2.cvtColor(self._image, cv2.COLOR_BGR2HSV))
 
-    def get_brightness(self, mask: bool = True) -> float:
+    def get_brightness(self, mask: bool = True, weight: bool = False) -> float:
         """Returns the filtered mean of brightness of the image.
 
         The brightness is rounded to two decimal places.
@@ -43,6 +45,10 @@ class ImageFilter:
         """
         if self._face is None or self._value is None:
             raise ValueError("please refresh the image first")
+        if weight:
+            weighted_value = self._get_weighted_value()
+            data_arr = weighted_value.flatten()
+            return round(100 * data_arr.mean() / 255, 2)
         if mask:
             # array of "value" channel with face area masked
             masked_arr = self._get_value_with_face_masked()
@@ -85,16 +91,31 @@ class ImageFilter:
         """
         array.sort()
         return array[int(array.size * 0.05):int(array.size * 0.95)].mean()
+    
+    def _get_weighted_value(self) -> NDArray[(Any,), Any]:
+        """Weights the value by area."""
+        fx, fy, fw, fh = face_utils.rect_to_bb(self._face)
 
+        value = self._value
+        for y in range(len(self._value)):
+            for x in range(len(self._value[0])):
+                if y >= fy and y <= fy+fh and x >= fx and x <= fx+fw:
+                    # face area
+                    value[y][x] *= 2
+                else:
+                    value[y][x] *= 0.5
+        return value
 
 def plot_mask_diff(filter: ImageFilter) -> None:
     """Plots the image and shows filtered brightness on the window."""
     masked = filter.get_brightness()
     without_mask = filter.get_brightness(mask=False)
     diff = masked - without_mask
+    weighted = filter.get_brightness(weight=True)
 
     title = (f"Brightness without mask: {without_mask}\n"
-             f"Result brightness: {masked} (diff = {diff:.2f})")
+             f"Result brightness: {masked} (diff = {diff:.2f})\n"
+             f"Weighted brightness: {weighted}")
 
     plt.imshow(filter.image)
     plt.title(title)
