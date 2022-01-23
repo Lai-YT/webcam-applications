@@ -193,8 +193,10 @@ class ConcentrationGrader(QObject):
                     f"{to_date_time(interval.end)}, {str(interval_type)}")
                 continue
             else:
+                if blink_rate is None:
+                    raise TypeError("REAL_TIME interval without blink rate")
                 recorded = self._perform_face_existing_grading(interval, interval_type, blink_rate)
-                
+
             if recorded:
                 extrude_interval: Optional[Tuple[Interval, IntervalType, int]] = (
                     self._interval_detector.get_extrude_interval())
