@@ -32,7 +32,7 @@ def loop_over():
 def mask_and_slice():
     val = value.astype(np.float32)
     face_area = np.zeros(val.shape, dtype=np.bool8)
-    face_area[fy:fy+fh+1, fx:fx+fw+1] = 1
+    face_area[fy:fy+fh+1, fx:fx+fw+1] = True
     val[face_area] *= 2
     val[~face_area] *= 0.5
     return val

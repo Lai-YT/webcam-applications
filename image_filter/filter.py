@@ -97,7 +97,7 @@ class ImageFilter:
             fx, fy, fw, fh = face_utils.rect_to_bb(self._face)
             # generate mask with face area masked
             face_mask = np.zeros(self._value.shape, dtype=np.bool8)
-            face_mask[fy:fy+fh+1, fx:fx+fw+1] = 1
+            face_mask[fy:fy+fh+1, fx:fx+fw+1] = True
         return face_mask
 
     def _get_value_with_face_masked(self) -> NDArray:
@@ -126,7 +126,7 @@ class ImageFilter:
         # floating-point number array, too.
         value: NDArray[(Any, Any), Float32] = self._value.astype(np.float32)
         face_area = np.zeros(value.shape, dtype=np.bool8)
-        face_area[fy:fy+fh+1, fx:fx+fw+1] = 1
+        face_area[fy:fy+fh+1, fx:fx+fw+1] = True
         value[face_area] *= 2
         value[~face_area] *= 0.5
         return value
