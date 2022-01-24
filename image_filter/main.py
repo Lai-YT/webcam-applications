@@ -34,7 +34,7 @@ def real_time_brightness_capture() -> None:
         fx, fy, fw, fh = face_utils.rect_to_bb(faces[0])
         cv2.rectangle(frame, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
 
-        brightness: float = filter.get_brightness()
+        brightness: float = filter.get_brightness(mask=True)
         cv2.putText(frame, f"Bright. = {brightness}", (50, 50), FONT_0, 1, CYAN, 2)
         frame = imutils.resize(frame, width=600)
         cv2.imshow("Brightness", frame)

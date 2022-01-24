@@ -7,10 +7,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
 from imutils import face_utils
-from nptyping import NDArray, UInt8
+from nptyping import Float32, NDArray, UInt8
 
 from util.color import MAGENTA
 from util.image_type import ColorImage
+
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -32,27 +33,49 @@ class ImageFilter:
         self._image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         self._face = face
         # Value is as known as brightness.
-        _, _, self._value = cv2.split(cv2.cvtColor(self._image, cv2.COLOR_BGR2HSV))
+        *_, self._value = cv2.split(cv2.cvtColor(self._image, cv2.COLOR_BGR2HSV))
 
-    def get_brightness(self, mask: bool = True, weight: bool = False) -> float:
-        """Returns the filtered mean of brightness of the image.
+    def get_brightness(self, *, weight: bool = False, mask: bool = False) -> float:
+        """Returns the mean of brightness of the image.
+
+        Notice that mask and weight can't both be True.
+        A simple filtered mean is used when both of them are False;
+        mask-filtered mean when mask is True and weight is False;
+        weighted mean when weight is True and mask is mean.
+        Which filter means to exclude the brightest and darkest 5% area of the
+        image.
 
         The brightness is rounded to two decimal places.
 
         Arguments:
-            mask: Whether the brightest and darkest 5% area of the image is
-                  excluded or not. True in default.
+            weight:
+                Whether the face area and background area have different
+                weightings. False in default.
+            mask:
+                Whether the face area of the image is excluded or not.
+                False in default.
         """
+        if mask & weight:
+            raise ValueError("arguments mask and weight can't both be True")
         if self._face is None or self._value is None:
             raise ValueError("please refresh the image first")
+
+        brightness: float
         if weight:
-            weighted_value = self._get_weighted_value()
-            data_arr = weighted_value.flatten()
-            return round(100 * data_arr.mean() / 255, 2)
+            brightness = self._get_weighted_brightness()
+        else:
+            brightness = self._get_filtered_brightness(mask)
+        return brightness
+
+    def _get_weighted_brightness(self) -> float:
+        weighted_value = self._get_weighted_value()
+        data_arr = weighted_value.flatten()
+        return round(100 * data_arr.mean() / 255, 2)
+
+    def _get_filtered_brightness(self, mask: bool = True) -> float:
         if mask:
-            # array of "value" channel with face area masked
             masked_arr = self._get_value_with_face_masked()
-            # compress the masked array to truncate masked constants
+            # truncate masked constants
             data_arr = masked_arr.compressed()
         else:
             data_arr = self._value.flatten()
@@ -89,27 +112,30 @@ class ImageFilter:
         Arguments:
             array: A 1-D to calculate mean on.
         """
-        array.sort()
-        return array[int(array.size * 0.05):int(array.size * 0.95)].mean()
-    
-    def _get_weighted_value(self) -> NDArray[(Any,), Any]:
+        # not to modify the input array
+        return np.sort(array)[int(array.size * 0.05):int(array.size * 0.95)].mean()
+
+    def _get_weighted_value(self) -> NDArray[(Any, Any), Float32]:
         """Weights the value by area."""
+        if self._face is None or self._value is None:
+            raise ValueError("please refresh the image first")
+
         fx, fy, fw, fh = face_utils.rect_to_bb(self._face)
 
-        value = self._value
-        for y in range(len(self._value)):
-            for x in range(len(self._value[0])):
-                if y >= fy and y <= fy+fh and x >= fx and x <= fx+fw:
-                    # face area
-                    value[y][x] *= 2
-                else:
-                    value[y][x] *= 0.5
+        # Type cast since multiplied by a floating-point number makes it a
+        # floating-point number array, too.
+        value: NDArray[(Any, Any), Float32] = self._value.astype(np.float32)
+        face_area = np.zeros(value.shape, dtype=np.bool8)
+        face_area[fy:fy+fh+1, fx:fx+fw+1] = 1
+        value[face_area] *= 2
+        value[~face_area] *= 0.5
         return value
+
 
 def plot_mask_diff(filter: ImageFilter) -> None:
     """Plots the image and shows filtered brightness on the window."""
-    masked = filter.get_brightness()
-    without_mask = filter.get_brightness(mask=False)
+    masked = filter.get_brightness(mask=True)
+    without_mask = filter.get_brightness()
     diff = masked - without_mask
     weighted = filter.get_brightness(weight=True)
 
