@@ -33,7 +33,7 @@ class ImageFilter:
         self._image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         self._face = face
         # Value is as known as brightness.
-        *_, self._value = cv2.split(cv2.cvtColor(self._image, cv2.COLOR_BGR2HSV))
+        *_, self._value = cv2.split(cv2.cvtColor(image, cv2.COLOR_BGR2HSV))
 
     def get_brightness(self, *, weight: bool = False, mask: bool = False) -> float:
         """Returns the mean of brightness of the image.
@@ -57,8 +57,6 @@ class ImageFilter:
         """
         if mask & weight:
             raise ValueError("arguments mask and weight can't both be True")
-        if self._face is None or self._value is None:
-            raise ValueError("please refresh the image first")
 
         brightness: float
         if weight:
@@ -73,6 +71,8 @@ class ImageFilter:
         return round(100 * data_arr.mean() / 255, 2)
 
     def _get_filtered_brightness(self, mask: bool = True) -> float:
+        if self._value is None:
+            raise ValueError("please refresh the image first")
         if mask:
             masked_arr = self._get_value_with_face_masked()
             # truncate masked constants
