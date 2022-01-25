@@ -1,5 +1,5 @@
 # Reference:
-#   Adrian Rosebrock. Eye blink detection with OpenCV, Python, and dlib (2016)
+#   Adrian Rosebrock. Eye blink detection with OpenCV, Python, and dlib (2017)
 #   https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
 #
 #   Ali A Abusharha. Changes in blink rate and ocular symptoms during different reading tasks (2017)
