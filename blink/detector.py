@@ -13,7 +13,7 @@
 #   [1] M J Doughty. Consideration of three types of spontaneous eyeblink
 #       activity in normal humans: during reading and video display terminal use,
 #       in primary gaze, and while in conversation (2010)
-#       https://pubmed.ncbi.nlm.nih.gov/11700965/#affiliation-1
+#       https://pubmed.ncbi.nlm.nih.gov/11700965/#abstract
 #        Spontaneous eyeblink rate, SEBR.
 #        Statistical analysis (with calculation of 95% confidence interval values)
 #        indicate that reading-SEBR should be between 1.4 and 14.4 eyeblinks/min,
