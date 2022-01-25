@@ -68,7 +68,7 @@ class ImageFilter:
     def _get_weighted_brightness(self) -> float:
         weighted_value = self._get_weighted_value()
         data_arr = weighted_value.flatten()
-        return round(100 * data_arr.mean() / 255, 2)
+        return round(100 * np.sum(data_arr) / 255, 2)
 
     def _get_filtered_brightness(self, mask: bool = True) -> float:
         if self._value is None:
@@ -125,11 +125,11 @@ class ImageFilter:
         # Type cast since multiplied by a floating-point number makes it a
         # floating-point number array, too.
         value: NDArray[(Any, Any), Float32] = self._value.astype(np.float32)
-        face_area = np.zeros(value.shape, dtype=np.bool8)
-        face_area[fy:fy+fh+1, fx:fx+fw+1] = True
-        value[face_area] *= 2
-        value[~face_area] *= 0.5
-        return value
+        # weights of area outside and inside face are 4 and 6
+        face_area = np.full(value.shape, 4, dtype=np.float32)
+        face_area[fy:fy+fh+1, fx:fx+fw+1] = 6
+        # divide by sum of weights
+        return value * face_area / np.sum(face_area)
 
 
 def plot_mask_diff(filter: ImageFilter) -> None:
