@@ -122,8 +122,8 @@ class ImageFilter:
 
         fx, fy, fw, fh = face_utils.rect_to_bb(self._face)
 
-        # Type cast since multiplied by a floating-point number makes it a
-        # floating-point number array, too.
+        # Weighting makes the data type not int anymore. Numpy automatically
+        # upcast it to float64, but float32 is enough.
         value: NDArray[(Any, Any), Float32] = self._value.astype(np.float32)
         # weights of area outside and inside face are 4 and 6
         face_area = np.full(value.shape, 4, dtype=np.float32)

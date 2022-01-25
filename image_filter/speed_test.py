@@ -18,29 +18,30 @@ fx, fy, fw, fh = 185, 137, 215, 215
 
 
 def loop_over():
+    sum = 0
     val = value.astype(np.float32)
     for y in range(len(val)):
         for x in range(len(val[0])):
             if y >= fy and y <= fy+fh and x >= fx and x <= fx+fw:
                 # face area
-                val[y][x] *= 2
+                val[y][x] *= 6
+                sum += 6
             else:
-                val[y][x] *= 0.5
-    return val
+                val[y][x] *= 4
+                sum += 4
+    return val / sum
 
 
 def mask_and_slice():
     val = value.astype(np.float32)
-    face_area = np.zeros(val.shape, dtype=np.bool8)
-    face_area[fy:fy+fh+1, fx:fx+fw+1] = True
-    val[face_area] *= 2
-    val[~face_area] *= 0.5
-    return val
+    face_area = np.full(value.shape, 4, dtype=np.float32)
+    face_area[fy:fy+fh+1, fx:fx+fw+1] = 6
+    return val * face_area / np.sum(face_area)
 
 
 def test_speed():
     # make sure they're the same
-    assert np.array_equal(loop_over(), mask_and_slice())
+    assert np.allclose(loop_over(), mask_and_slice())
     loop_time = timeit.timeit(loop_over, number=100)
     mask_time = timeit.timeit(mask_and_slice, number=100)
     print(f"loop: {loop_time}")
