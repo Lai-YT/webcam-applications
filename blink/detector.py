@@ -12,7 +12,7 @@
 #
 #   [1] M J Doughty. Consideration of three types of spontaneous eyeblink
 #       activity in normal humans: during reading and video display terminal use,
-#       in primary gaze, and while in conversation (2010)
+#       in primary gaze, and while in conversation (2001)
 #       https://pubmed.ncbi.nlm.nih.gov/11700965/#abstract
 #        Spontaneous eyeblink rate, SEBR.
 #        Statistical analysis (with calculation of 95% confidence interval values)
