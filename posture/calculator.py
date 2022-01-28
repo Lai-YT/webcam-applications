@@ -41,7 +41,7 @@ class AngleCalculator:
         # same sign.
 
         # Horizontal value is already what we want, vertical value needs to be adjusted.
-        # And again, we take their average
+        # And again, we take their average.
         angle: float = (
             (horizontal + (vertical + 90.0)) / 2
             if vertical < 0 else

@@ -33,8 +33,8 @@ def save_chart_of_intervals(filename: str, intervals: List[Interval]) -> None:
     ax.axhline(y=0.6, linestyle="dashed", color="black")
     ax.set_ylabel("grade")
     ax.set_xlabel("time (min)")
-    ax.set_title(f"Concentration grades from {to_date_time(init_time)}")
-    ax.bar_label(rects, padding=3)
+    # ax.set_title(f"Concentration grades from {to_date_time(init_time)}")
+    # ax.bar_label(rects, padding=3)
 
     fig.savefig(filename)
 

@@ -20,7 +20,7 @@ class DistanceCalculator:
             landmarks: (x, y) coordinates of the 68 face landmarks.
             camera_dist: Distance between face and camera when taking reference image.
         """
-        self._product: float = (self._get_face_width(landmarks) * camera_dist)
+        self._product: float = self._get_face_width(landmarks) * camera_dist
         self._cache: Optional[float] = None
 
     def calculate(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:

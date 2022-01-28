@@ -14,7 +14,7 @@ class FrameWidget(QLabel):
         the widget is visible.
 
         Arguments:
-            frame (QImage): The image to be set.
+            frame: The image to be set.
         """
         if not self.isVisible():
             # to save efficiency
