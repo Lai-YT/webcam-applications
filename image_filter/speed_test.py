@@ -18,18 +18,18 @@ fx, fy, fw, fh = 185, 137, 215, 215
 
 
 def loop_over():
-    sum = 0
+    sum_ = 0
     val = value.astype(np.float32)
     for y in range(len(val)):
         for x in range(len(val[0])):
             if y >= fy and y <= fy+fh and x >= fx and x <= fx+fw:
                 # face area
                 val[y][x] *= 6
-                sum += 6
+                sum_ += 6
             else:
                 val[y][x] *= 4
-                sum += 4
-    return val / sum
+                sum_ += 4
+    return val / sum_
 
 
 def mask_and_slice():
