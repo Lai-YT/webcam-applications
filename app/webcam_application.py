@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import cv2
 import dlib
@@ -8,7 +8,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
-from app.webcam_application_ import has_face, mark_face
+from app.webcam_application_ import get_biggest_face, has_face, mark_face
 from distance.calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from distance.guard import DistanceGuard
 from focus_time.guard import TimeGuard
@@ -66,7 +66,7 @@ class WebcamApplication(QObject):
         """Starts the applications that has been enabled.
 
         Arguments:
-            refresh (int): Refresh speed in millisecond. 1ms in default.
+            refresh: Refresh speed in millisecond. 1ms in default.
         """
         # Set the flag to True so can start capturing.
         # Loop breaks if someone calls stop() and sets the flag to False.
@@ -119,17 +119,19 @@ class WebcamApplication(QObject):
         self._f_ready = False
 
     def _get_landmarks(self, canvas: ColorImage, frame: ColorImage) -> NDArray[(68, 2), Int[32]]:
-        """Returns the numpy array with all elements in 0 if there isn't exactly 1 face in the frame.
+        """Returns the numpy array with all elements in 0 if theres no face in the frame.
+
         Note that one can use .any() to check if any of the elements is not 0.
         """
-        faces: dlib.rectangles = self._face_detector(frame)
-        # doesn't handle multiple faces
-        if len(faces) == 1:
-            landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(frame, faces[0]))
-            mark_face(canvas, face_utils.rect_to_bb(faces[0]), landmarks)
-            draw_landmarks_used_by_distance_calculator(canvas, landmarks)
-        else:
+        # take the biggest face when a frame contains multiple faces
+        face: Optional[dlib.rectangle] = get_biggest_face(self._face_detector(frame))
+        landmarks: NDArray[(68, 2), Int[32]]
+        if face is None:
             landmarks = numpy.zeros(shape=(68, 2), dtype=numpy.int32)
+        else:
+            landmarks = face_utils.shape_to_np(self._shape_predictor(frame, face))
+            mark_face(canvas, face_utils.rect_to_bb(face), landmarks)
+            draw_landmarks_used_by_distance_calculator(canvas, landmarks)
         return landmarks
 
     def _create_face_detectors(self) -> None:

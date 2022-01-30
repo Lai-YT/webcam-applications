@@ -1,3 +1,4 @@
+from operator import methodcaller
 from typing import Dict, Optional, Tuple
 
 import cv2
@@ -239,24 +240,24 @@ class WebcamApplication(QObject):
         self._f_ready = False
 
     def _get_landmarks(self, canvas: ColorImage, frame: ColorImage) -> NDArray[(68, 2), Int[32]]:
-        """Returns the numpy array with all elements in 0 if there isn't exactly
-        1 face in the frame.
+        """Returns the numpy array with all elements in 0 if there's no face in
+        the frame.
 
         Note that one can use .any() to check if any of the elements is not 0.
 
         Arguments:
             canvas: The image to draw the landmarks on.
-            frame: The image to get landmarks of.
+            frame: The image to get landmarks from.
         """
-        faces: dlib.rectangles = self._face_detector(frame)
-        # doesn't handle multiple faces
+        # take the biggest face when a frame contains multiple faces
+        face: Optional[dlib.rectangle] = get_biggest_face(self._face_detector(frame))
         landmarks: NDArray[(68, 2), Int[32]]
-        if len(faces) == 1:
-            landmarks = face_utils.shape_to_np(self._shape_predictor(frame, faces[0]))
-            mark_face(canvas, face_utils.rect_to_bb(faces[0]), landmarks)
-            draw_landmarks_used_by_distance_calculator(canvas, landmarks)
-        else:
+        if face is None:
             landmarks = numpy.zeros(shape=(68, 2), dtype=numpy.int32)
+        else:
+            landmarks = face_utils.shape_to_np(self._shape_predictor(frame, face))
+            mark_face(canvas, face_utils.rect_to_bb(face), landmarks)
+            draw_landmarks_used_by_distance_calculator(canvas, landmarks)
         return landmarks
 
     def _create_face_detectors(self) -> None:
@@ -305,6 +306,14 @@ class WebcamApplication(QObject):
         self._concentration_grader = ConcentrationGrader()
         self._concentration_grader.s_concent_interval_refreshed.connect(
             self.s_concent_interval_refreshed)
+
+
+def get_biggest_face(faces: dlib.rectangles) -> Optional[dlib.rectangle]:
+    """Returns the face with the biggest area.
+    None if the input faces is empty.
+    """
+    # faces are compared through the area method
+    return max(faces, default=None, key=methodcaller("area"))
 
 
 def has_face(landmarks: NDArray[(68, 2), Int[32]]) -> bool:
