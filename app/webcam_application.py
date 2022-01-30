@@ -119,7 +119,7 @@ class WebcamApplication(QObject):
         self._f_ready = False
 
     def _get_landmarks(self, canvas: ColorImage, frame: ColorImage) -> NDArray[(68, 2), Int[32]]:
-        """Returns the numpy array with all elements in 0 if theres no face in the frame.
+        """Returns the numpy array with all elements in 0 if there's no face in the frame.
 
         Note that one can use .any() to check if any of the elements is not 0.
         """
