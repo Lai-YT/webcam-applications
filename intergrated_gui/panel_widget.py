@@ -2,11 +2,15 @@ from enum import IntEnum
 from typing import Dict
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtWidgets import QFormLayout, QGridLayout, QGroupBox, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import (
+    QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QVBoxLayout, QWidget,
+)
 
 from brightness.calcuator import BrightnessMode
-from intergrated_gui.component import (CheckableGroupBox, HorizontalSlider, Label,
-                                       LineEdit, OptionCheckBox, OptionRadioButton)
+from intergrated_gui.component import (
+    ActionButton, CheckableGroupBox, HorizontalSlider, Label, LineEdit,
+    OptionCheckBox, OptionRadioButton,
+)
 
 
 class PanelWidget(QWidget):
@@ -39,6 +43,16 @@ class DistancePanel(CheckableGroupBox):
         self._set_restrictions()
 
     def _create_settings(self) -> None:
+        self._file_path_layout = QHBoxLayout()
+        self._layout.setLayout(0, QFormLayout.SpanningRole, self._file_path_layout)
+
+        self._file_path_layout.addWidget(Label("Reference:"))
+        self.img_path = LineEdit()
+        self.img_path.setReadOnly(True)
+        self._file_path_layout.addWidget(self.img_path)
+        self.file_open = ActionButton("Open File...")
+        self._file_path_layout.addWidget(self.file_open)
+
         settings = {
             "camera_dist": "Distance in reference:",
             "warn_dist": "Shortest distance allowed:",
