@@ -3,6 +3,7 @@ from configparser import ConfigParser
 
 from PyQt5.QtCore import QCoreApplication, QEvent, QObject, Qt, pyqtSlot
 from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtWidgets import QFileDialog
 
 from app.webcam_application_ import WebcamApplication
 from brightness.calcuator import BrightnessMode
@@ -165,12 +166,18 @@ class PanelController(QObject):
     def _connect_distance_signals(self) -> None:
         panel = self._panel.panels["distance"]
         panel.toggled.connect(lambda checked: self._app.set_distance_measure(enabled=checked))
+        panel.file_open.clicked.connect(self._choose_file_path)
         distance = panel.settings["camera_dist"]
         distance.editingFinished.connect(lambda: self._app.set_distance_measure(camera_dist=float(distance.text())))
         bound = panel.settings["warn_dist"]
         bound.editingFinished.connect(lambda: self._app.set_distance_measure(warn_dist=float(bound.text())))
         warning = panel.warning
         warning.toggled.connect(lambda checked: self._app.set_distance_measure(warning_enabled=checked))
+
+    def _choose_file_path(self) -> None:
+        filename, *_ =  QFileDialog.getOpenFileName(
+            self._panel.panels["distance"], "Open File", "C:\\", "Images (*.png *.jpg)")
+        self._panel.panels["distance"].img_path.setText(os.path.basename(filename))
 
     def _connect_time_signals(self) -> None:
         panel = self._panel.panels["time"]
