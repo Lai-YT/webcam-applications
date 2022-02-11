@@ -14,7 +14,8 @@ from intergrated_gui.component import (
 
 
 class PanelWidget(QWidget):
-    def __init__(self, parent: QWidget= None) -> None:
+    """A widget which contains the views of applications."""
+    def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
 
         self.panels: Dict[str, CheckableGroupBox] = {
@@ -33,6 +34,7 @@ class PanelWidget(QWidget):
 
 
 class DistancePanel(CheckableGroupBox):
+    """A view which contains the settings of distance measurement."""
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Distance Measurement", parent)
 
@@ -43,15 +45,18 @@ class DistancePanel(CheckableGroupBox):
         self._set_restrictions()
 
     def _create_settings(self) -> None:
+        # the file path line and button are in their own layout
         self._file_path_layout = QHBoxLayout()
-        self._layout.setLayout(0, QFormLayout.SpanningRole, self._file_path_layout)
-
         self._file_path_layout.addWidget(Label("Reference:"))
-        self.img_path = LineEdit()
-        self.img_path.setReadOnly(True)
-        self._file_path_layout.addWidget(self.img_path)
+
+        self.file_path = LineEdit()
+        self.file_path.setReadOnly(True)
+        self._file_path_layout.addWidget(self.file_path)
+
         self.file_open = ActionButton("Open File...")
         self._file_path_layout.addWidget(self.file_open)
+
+        self._layout.setLayout(0, QFormLayout.SpanningRole, self._file_path_layout)
 
         settings = {
             "camera_dist": "Distance in reference:",
@@ -81,6 +86,7 @@ class DistancePanel(CheckableGroupBox):
 
 
 class TimePanel(CheckableGroupBox):
+    """A view which contains the settings of focus timing."""
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Focus Timing", parent)
 
@@ -126,6 +132,7 @@ class AngleTolerance(IntEnum):
     STRICT = 15
 
 class PosturePanel(CheckableGroupBox):
+    """A view which contains the settings of posture detection."""
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Posture Detection", parent)
 
@@ -140,15 +147,13 @@ class PosturePanel(CheckableGroupBox):
         group_box.setLayout(box_layout)
         self._layout.addWidget(group_box)
 
-        angles = [AngleTolerance.LOOSE, AngleTolerance.STRICT]
         self.angles: Dict[AngleTolerance, OptionRadioButton] = {}
-        for tolerance in angles:
-            self.angles[tolerance] = OptionRadioButton(f"{tolerance.name.lower()} ({tolerance})")
+        for tolerance in AngleTolerance:
+            btn = OptionRadioButton(f"{tolerance.name.lower()} ({tolerance})")
+            self.angles[tolerance] = btn
+            box_layout.addWidget(btn)
         # a loose angle tolerance is used in default
         self.angles[AngleTolerance.LOOSE].setChecked(True)
-
-        for btn in self.angles.values():
-            box_layout.addWidget(btn)
 
         # sound warning is enabled in default
         self.warning = OptionCheckBox("enable sound warning")
@@ -160,6 +165,7 @@ class PosturePanel(CheckableGroupBox):
 
 
 class BrightnessPanel(CheckableGroupBox):
+    """A view which contains which the settings of brightness optimization."""
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Brightness Optimization", parent)
 
@@ -175,8 +181,9 @@ class BrightnessPanel(CheckableGroupBox):
 
     def _create_modes(self) -> None:
         # name | description
-        modes = {
-            BrightnessMode.WEBCAM: "Webcam-based brightness detector \n(webcam required)",
+        modes: Dict[BrightnessMode, str] = {
+            BrightnessMode.WEBCAM: ("Webcam-based brightness detector \n"
+                                    "(webcam required)"),
             BrightnessMode.COLOR_SYSTEM: "Color-system mode",
         }
         self.modes: Dict[BrightnessMode, OptionCheckBox] = {}
