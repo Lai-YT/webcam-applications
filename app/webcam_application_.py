@@ -73,7 +73,7 @@ class WebcamApplication(QObject):
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         # applications
         self._distance_measure: bool = False
@@ -81,8 +81,13 @@ class WebcamApplication(QObject):
         self._posture_detect: bool = False
         self._brightness_optimize: bool = False
 
+        self._ref_img_path: str = "img/ref_img.jpg"
+        self._ref_landmarks: NDArray[(68, 2), Int[32]] = (
+            numpy.zeros(shape=(68, 2), dtype=numpy.int32))
+
         # Used to break the capturing loop inside start().
-        # If the application is in progress, sets the ready flag to False will stop it.
+        # If the application is in progress, sets the ready
+        # flag to False will stop it.
         self._f_ready: bool = False
 
         self._webcam = cv2.VideoCapture(0)
@@ -91,6 +96,11 @@ class WebcamApplication(QObject):
         self._create_concentration_grader()
         self._create_guards()
 
+    def set_ref_image_path(self, ref_img_path: str, camera_dist: float) -> None:
+        self._ref_img_path = to_abs_path(ref_img_path)
+        self._update_ref_landmarks()
+        self._distance_guard.set_calculator(DistanceCalculator(self._ref_landmarks, camera_dist))
+
     def set_distance_measure(
             self, *,
             enabled: Optional[bool] = None,
@@ -98,7 +108,7 @@ class WebcamApplication(QObject):
             warn_dist: Optional[float] = None,
             warning_enabled: Optional[bool] = None) -> None:
         if camera_dist is not None:
-            self._distance_guard.set_calculator(DistanceCalculator(self._landmarks, camera_dist))
+            self._distance_guard.set_calculator(DistanceCalculator(self._ref_landmarks, camera_dist))
         if warn_dist is not None:
             self._distance_guard.set_warn_dist(warn_dist)
         if warning_enabled is not None:
@@ -280,15 +290,18 @@ class WebcamApplication(QObject):
             BrightnessMode.COLOR_SYSTEM: False,
         }
 
-    def _create_guards(self) -> None:
-        """Creates guards used in WebcamApplication and connects their signals."""
+    def _update_ref_landmarks(self) -> None:
         # Creates the DistanceCalculator with reference image.
-        ref_img: ColorImage = cv2.imread(to_abs_path("img/ref_img.jpg"))
+        ref_img: ColorImage = cv2.imread(self._ref_img_path)
         faces: dlib.rectangles = self._face_detector(ref_img)
         if len(faces) != 1:
             # must have exactly one face in the reference image
             raise ValueError("should have exactly 1 face in the reference image")
-        self._landmarks: NDArray[(68, 2), Int[32]] = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
+        self._ref_landmarks = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
+
+    def _create_guards(self) -> None:
+        """Creates guards used in WebcamApplication and connects their signals."""
+        self._update_ref_landmarks()
         self._distance_guard: DistanceGuard = DistanceGuard(grader=self._concentration_grader)
         self._distance_guard.s_distance_refreshed.connect(self.s_distance_refreshed)
 

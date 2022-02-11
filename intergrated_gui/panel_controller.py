@@ -177,7 +177,8 @@ class PanelController(QObject):
     def _choose_file_path(self) -> None:
         filename, *_ =  QFileDialog.getOpenFileName(
             self._panel.panels["distance"], "Open File", "C:\\", "Images (*.png *.jpg)")
-        self._panel.panels["distance"].img_path.setText(os.path.basename(filename))
+        self._panel.panels["distance"].file_path.setText(os.path.basename(filename))
+        self._app.set_ref_image_path(filename, float(self._panel.panels["distance"].settings["camera_dist"].text()))
 
     def _connect_time_signals(self) -> None:
         panel = self._panel.panels["time"]
