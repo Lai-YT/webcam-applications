@@ -92,6 +92,49 @@ class WebcamApplication(QObject):
         self._create_concentration_grader()
         self._create_guards()
 
+    def _create_face_detectors(self) -> None:
+        """Creates face detector and shape predictor."""
+        self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
+        self._shape_predictor = dlib.shape_predictor(
+            to_abs_path("posture/trained_models/shape_predictor_68_face_landmarks.dat"))
+
+    def _create_brightness_controller(self) -> None:
+        """Creates brightness calculator and connects its signals."""
+        self._brightness_controller = BrightnessController()
+        # Init controller mode to MANUAL.
+        self._brightness_controller.set_mode(BrightnessMode.MANUAL)
+        self._brightness_controller.s_brightness_refreshed.connect(
+            self.s_brightness_refreshed)
+        # This dict records whether the modes have been enabled.
+        # So when both modes are True, we know a BOTH mode should be set.
+        self._brightness_modes_enabled: Dict[BrightnessMode, bool] = {
+            BrightnessMode.WEBCAM: False,
+            BrightnessMode.COLOR_SYSTEM: False,
+        }
+
+    def _create_guards(self) -> None:
+        """Creates guards used in WebcamApplication and connects their signals."""
+        self._ref_img_path: Optional[str] = None
+        self._ref_landmarks: NDArray[(68, 2), Int[32]] = np.zeros((68, 2), dtype=np.int32)
+        self._camera_dist: Optional[float] = None
+        self._distance_guard = DistanceGuard(grader=self._concentration_grader)
+        self._distance_guard.s_distance_refreshed.connect(self.s_distance_refreshed)
+
+        self._angle_calculator = AngleCalculator()
+        self._posture_guard = PostureGuard(
+            calculator=self._angle_calculator, grader=self._concentration_grader)
+        self._posture_guard.s_posture_refreshed.connect(self.s_posture_refreshed)
+
+        self._time_guard = TimeGuard()
+        self._time_guard.s_time_refreshed.connect(self.s_time_refreshed)
+        self.s_stopped.connect(self._time_guard.close_timer_widget)
+
+    def _create_concentration_grader(self) -> None:
+        """Create ConcentrationGrader shared by guards."""
+        self._concentration_grader = ConcentrationGrader()
+        self._concentration_grader.s_concent_interval_refreshed.connect(
+            self.s_concent_interval_refreshed)
+
     def set_distance_measure(
             self, *,
             enabled: Optional[bool] = None,
@@ -269,26 +312,6 @@ class WebcamApplication(QObject):
             draw_landmarks_used_by_distance_calculator(canvas, landmarks)
         return landmarks
 
-    def _create_face_detectors(self) -> None:
-        """Creates face detector and shape predictor."""
-        self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
-        self._shape_predictor = dlib.shape_predictor(
-            to_abs_path("posture/trained_models/shape_predictor_68_face_landmarks.dat"))
-
-    def _create_brightness_controller(self) -> None:
-        """Creates brightness calculator and connects its signals."""
-        self._brightness_controller = BrightnessController()
-        # Init controller mode to MANUAL.
-        self._brightness_controller.set_mode(BrightnessMode.MANUAL)
-        self._brightness_controller.s_brightness_refreshed.connect(
-            self.s_brightness_refreshed)
-        # This dict records whether the modes have been enabled.
-        # So when both modes are True, we know a BOTH mode should be set.
-        self._brightness_modes_enabled: Dict[BrightnessMode, bool] = {
-            BrightnessMode.WEBCAM: False,
-            BrightnessMode.COLOR_SYSTEM: False,
-        }
-
     def _update_ref_landmarks(self) -> None:
         # Creates the DistanceCalculator with reference image.
         ref_img: ColorImage = cv2.imread(self._ref_img_path)
@@ -297,29 +320,6 @@ class WebcamApplication(QObject):
             # must have exactly one face in the reference image
             raise ValueError("should have exactly 1 face in the reference image")
         self._ref_landmarks = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
-
-    def _create_guards(self) -> None:
-        """Creates guards used in WebcamApplication and connects their signals."""
-        self._ref_img_path: Optional[str] = None
-        self._ref_landmarks: NDArray[(68, 2), Int[32]] = np.zeros((68, 2), dtype=np.int32)
-        self._camera_dist: Optional[int] = None
-        self._distance_guard: DistanceGuard = DistanceGuard(grader=self._concentration_grader)
-        self._distance_guard.s_distance_refreshed.connect(self.s_distance_refreshed)
-
-        self._angle_calculator = AngleCalculator()
-        self._posture_guard: PostureGuard = PostureGuard(
-            calculator=self._angle_calculator, grader=self._concentration_grader)
-        self._posture_guard.s_posture_refreshed.connect(self.s_posture_refreshed)
-
-        self._time_guard: TimeGuard = TimeGuard()
-        self._time_guard.s_time_refreshed.connect(self.s_time_refreshed)
-        self.s_stopped.connect(self._time_guard.close_timer_widget)
-
-    def _create_concentration_grader(self) -> None:
-        """Create ConcentrationGrader shared by guards."""
-        self._concentration_grader = ConcentrationGrader()
-        self._concentration_grader.s_concent_interval_refreshed.connect(
-            self.s_concent_interval_refreshed)
 
 
 def get_biggest_face(faces: dlib.rectangles) -> Optional[dlib.rectangle]:

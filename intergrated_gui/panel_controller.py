@@ -1,5 +1,6 @@
 import os
 from configparser import ConfigParser
+from functools import partial
 
 from PyQt5.QtCore import QCoreApplication, QEvent, QObject, Qt, pyqtSlot
 from PyQt5.QtGui import QKeyEvent
@@ -192,11 +193,15 @@ class PanelController(QObject):
         warning.toggled.connect(lambda checked: self._app.set_focus_time(warning_enabled=checked))
 
     def _connect_posture_signals(self) -> None:
+        def change_tolerance_angle(checked: bool, angle: AngleTolerance) -> None:
+            if checked:
+                self._app.set_posture_detect(warn_angle=angle)
+
         panel = self._panel.panels["posture"]
 
         panel.toggled.connect(lambda checked: self._app.set_posture_detect(enabled=checked))
-        panel.angles[AngleTolerance.LOOSE].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.LOOSE) if checked else None)
-        panel.angles[AngleTolerance.STRICT].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.STRICT) if checked else None)
+        for angle in AngleTolerance:
+            panel.angles[angle].toggled.connect(partial(change_tolerance_angle, angle=angle))
         custom = panel.custom
         custom.toggled.connect(lambda checked: self._app.set_posture_detect(model_path=(ModelPath.CUSTOM if checked else ModelPath.DEFAULT)))
         warning = panel.warning
