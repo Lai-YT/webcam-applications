@@ -3,7 +3,7 @@ from typing import Dict, Optional, Tuple
 
 import cv2
 import dlib
-import numpy
+import numpy as np
 from PyQt5.QtGui import QImage
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
@@ -81,10 +81,6 @@ class WebcamApplication(QObject):
         self._posture_detect: bool = False
         self._brightness_optimize: bool = False
 
-        self._ref_img_path: str = "img/ref_img.jpg"
-        self._ref_landmarks: NDArray[(68, 2), Int[32]] = (
-            numpy.zeros(shape=(68, 2), dtype=numpy.int32))
-
         # Used to break the capturing loop inside start().
         # If the application is in progress, sets the ready
         # flag to False will stop it.
@@ -96,19 +92,22 @@ class WebcamApplication(QObject):
         self._create_concentration_grader()
         self._create_guards()
 
-    def set_ref_image_path(self, ref_img_path: str, camera_dist: float) -> None:
-        self._ref_img_path = to_abs_path(ref_img_path)
-        self._update_ref_landmarks()
-        self._distance_guard.set_calculator(DistanceCalculator(self._ref_landmarks, camera_dist))
-
     def set_distance_measure(
             self, *,
             enabled: Optional[bool] = None,
+            ref_img_path: Optional[str] = None,
             camera_dist: Optional[float] = None,
             warn_dist: Optional[float] = None,
             warning_enabled: Optional[bool] = None) -> None:
-        if camera_dist is not None:
-            self._distance_guard.set_calculator(DistanceCalculator(self._ref_landmarks, camera_dist))
+        if camera_dist is not None or ref_img_path is not None:
+            if camera_dist is not None:
+                self._camera_dist = camera_dist
+            if ref_img_path is not None:
+                self._ref_img_path = ref_img_path
+                self._update_ref_landmarks()
+            if self._camera_dist is not None and self._ref_img_path is not None:
+                self._distance_guard.set_calculator(
+                    DistanceCalculator(self._ref_landmarks, self._camera_dist))
         if warn_dist is not None:
             self._distance_guard.set_warn_dist(warn_dist)
         if warning_enabled is not None:
@@ -263,7 +262,7 @@ class WebcamApplication(QObject):
         face: Optional[dlib.rectangle] = get_biggest_face(self._face_detector(frame))
         landmarks: NDArray[(68, 2), Int[32]]
         if face is None:
-            landmarks = numpy.zeros(shape=(68, 2), dtype=numpy.int32)
+            landmarks = np.zeros(shape=(68, 2), dtype=np.int32)
         else:
             landmarks = face_utils.shape_to_np(self._shape_predictor(frame, face))
             mark_face(canvas, face_utils.rect_to_bb(face), landmarks)
@@ -301,7 +300,9 @@ class WebcamApplication(QObject):
 
     def _create_guards(self) -> None:
         """Creates guards used in WebcamApplication and connects their signals."""
-        self._update_ref_landmarks()
+        self._ref_img_path: Optional[str] = None
+        self._ref_landmarks: NDArray[(68, 2), Int[32]] = np.zeros((68, 2), dtype=np.int32)
+        self._camera_dist: Optional[int] = None
         self._distance_guard: DistanceGuard = DistanceGuard(grader=self._concentration_grader)
         self._distance_guard.s_distance_refreshed.connect(self.s_distance_refreshed)
 

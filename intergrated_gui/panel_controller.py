@@ -166,7 +166,7 @@ class PanelController(QObject):
     def _connect_distance_signals(self) -> None:
         panel = self._panel.panels["distance"]
         panel.toggled.connect(lambda checked: self._app.set_distance_measure(enabled=checked))
-        panel.file_open.clicked.connect(self._choose_file_path)
+        panel.file_open.clicked.connect(lambda: self._app.set_distance_measure(ref_img_path=self._choose_file_path()))
         distance = panel.settings["camera_dist"]
         distance.editingFinished.connect(lambda: self._app.set_distance_measure(camera_dist=float(distance.text())))
         bound = panel.settings["warn_dist"]
@@ -174,11 +174,11 @@ class PanelController(QObject):
         warning = panel.warning
         warning.toggled.connect(lambda checked: self._app.set_distance_measure(warning_enabled=checked))
 
-    def _choose_file_path(self) -> None:
+    def _choose_file_path(self) -> str:
         filename, *_ =  QFileDialog.getOpenFileName(
             self._panel.panels["distance"], "Open File", "C:\\", "Images (*.png *.jpg)")
         self._panel.panels["distance"].file_path.setText(os.path.basename(filename))
-        self._app.set_ref_image_path(filename, float(self._panel.panels["distance"].settings["camera_dist"].text()))
+        return filename
 
     def _connect_time_signals(self) -> None:
         panel = self._panel.panels["time"]
