@@ -149,7 +149,7 @@ class DistanceGuard(QObject):
             state: The state of distance to send info about.
         """
         # TODO: Should too far but not too close be considered as distraction?
-        if self._grader is None:
+        if self._grader is not None:
             if state is DistanceState.NORMAL:
                 self._grader.add_body_concentration()
             else:
