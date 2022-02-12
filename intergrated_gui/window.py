@@ -1,9 +1,10 @@
 from typing import Any, Callable, Dict, Optional, Tuple
 
 from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QCloseEvent, QResizeEvent
+from PyQt5.QtGui import QCloseEvent, QIcon, QResizeEvent
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 
+import gui.img.icon
 from intergrated_gui.frame_widget import FrameWidget
 from intergrated_gui.information_widget import InformationWidget
 from intergrated_gui.panel_widget import PanelWidget
@@ -13,6 +14,8 @@ class Window(QMainWindow):
     """The main GUI view of the applications."""
     def __init__(self) -> None:
         super().__init__()
+        self.setWindowTitle("Webcam application")
+        self.setWindowIcon(QIcon(":webcam.ico"))
 
         self._general_layout = QHBoxLayout()
         self._central_widget = QWidget()

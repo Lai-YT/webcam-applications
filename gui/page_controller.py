@@ -22,7 +22,6 @@ class PageController(QObject):
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
-        pass
 
     @abstractmethod
     def store_configs(self, config):
@@ -32,7 +31,6 @@ class PageController(QObject):
         Arguments:
             config (ConfigParser): The parser which reads the config file
         """
-        pass
 
 
 class OptionController(PageController):
