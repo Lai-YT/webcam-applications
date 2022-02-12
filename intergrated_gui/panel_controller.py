@@ -88,8 +88,7 @@ class PanelController(QObject):
             config.set("distance", name, line_edit.text())
         config.set("distance", "warning_enabled",
             str(panels["distance"].warning.isChecked()))
-        config.set("distance", "file_path",
-            str(panels["distance"].file_path.text()))
+        config.set("distance", "file_path", panels["distance"].file_path.text())
         # time
         for name, line_edit in panels["time"].settings.items():
             config.set("time", name, line_edit.text())
