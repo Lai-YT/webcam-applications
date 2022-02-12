@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QLabel, QWidget
 
 
 class FrameWidget(QLabel):
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
         self.setStyleSheet("border: 1px solid black;")
 
@@ -20,11 +20,11 @@ class FrameWidget(QLabel):
             # to save efficiency
             return
         # This is a self-adjust way.
-        # If simply use self.frameGeometry().width(), the image will grow.
-        # Because the image is always as big as the widget and PyQt will always
-        # give use a bigger widget, unstoppable.
+        # NOTE: If simply use self.frameGeometry().width(), the image will grow.
+        #   Because the image is always as big as the widget and PyQt will
+        #   always give us a bigger widget, unstoppable.
         self.setPixmap(QPixmap.fromImage(frame).scaled(
-            self.frameGeometry().width() - 10,
+            self.frameGeometry().width()  - 10,
             self.frameGeometry().height() - 10,
             Qt.KeepAspectRatio
         ))

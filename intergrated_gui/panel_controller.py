@@ -1,8 +1,10 @@
 import os
 from configparser import ConfigParser
+from functools import partial
 
 from PyQt5.QtCore import QCoreApplication, QEvent, QObject, Qt, pyqtSlot
 from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtWidgets import QFileDialog
 
 from app.webcam_application_ import WebcamApplication
 from brightness.calcuator import BrightnessMode
@@ -48,6 +50,7 @@ class PanelController(QObject):
             line_edit.setText(config.get("distance", name))
             QCoreApplication.sendEvent(line_edit, return_pressed_event)
         panels["distance"].warning.setChecked(config.getboolean("distance", "warning_enabled"))
+        panels["distance"].file_path.setText(config.get("distance", "file_path"))
         # time
         for name, line_edit in panels["time"].settings.items():
             line_edit.setText(config.get("time", name))
@@ -85,6 +88,7 @@ class PanelController(QObject):
             config.set("distance", name, line_edit.text())
         config.set("distance", "warning_enabled",
             str(panels["distance"].warning.isChecked()))
+        config.set("distance", "file_path", panels["distance"].file_path.text())
         # time
         for name, line_edit in panels["time"].settings.items():
             config.set("time", name, line_edit.text())
@@ -112,6 +116,8 @@ class PanelController(QObject):
         distance = panel.settings["camera_dist"]
         if distance.text():
             self._app.set_distance_measure(camera_dist=float(distance.text()))
+        if panel.file_path.text():
+            self._app.set_distance_measure(ref_img_path=panel.file_path.text())
         bound = panel.settings["warn_dist"]
         if bound.text():
             self._app.set_distance_measure(warn_dist=float(bound.text()))
@@ -165,12 +171,25 @@ class PanelController(QObject):
     def _connect_distance_signals(self) -> None:
         panel = self._panel.panels["distance"]
         panel.toggled.connect(lambda checked: self._app.set_distance_measure(enabled=checked))
+        # file_open -> (connect) choose file -> (Call) setText
+        # -> (emit) textChanged -> (connect) set_path
+        panel.file_open.clicked.connect(self._choose_file_path)
+        panel.file_path.textChanged.connect(lambda path: self._app.set_distance_measure(ref_img_path=path))
         distance = panel.settings["camera_dist"]
         distance.editingFinished.connect(lambda: self._app.set_distance_measure(camera_dist=float(distance.text())))
         bound = panel.settings["warn_dist"]
         bound.editingFinished.connect(lambda: self._app.set_distance_measure(warn_dist=float(bound.text())))
         warning = panel.warning
         warning.toggled.connect(lambda checked: self._app.set_distance_measure(warning_enabled=checked))
+
+    def _choose_file_path(self) -> None:
+        panel = self._panel.panels["distance"]
+        root = panel.file_path.text() if panel.file_path.text() else "C:\\"
+        filename, *_ =  QFileDialog.getOpenFileName(
+            panel, "Open File", root, "Images (*.png *.jpg)")
+        # the choose may be cancelled
+        if filename:
+            panel.file_path.setText(filename)
 
     def _connect_time_signals(self) -> None:
         panel = self._panel.panels["time"]
@@ -184,11 +203,15 @@ class PanelController(QObject):
         warning.toggled.connect(lambda checked: self._app.set_focus_time(warning_enabled=checked))
 
     def _connect_posture_signals(self) -> None:
+        def change_tolerance_angle(checked: bool, angle: AngleTolerance) -> None:
+            if checked:
+                self._app.set_posture_detect(warn_angle=angle)
+
         panel = self._panel.panels["posture"]
 
         panel.toggled.connect(lambda checked: self._app.set_posture_detect(enabled=checked))
-        panel.angles[AngleTolerance.LOOSE].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.LOOSE) if checked else None)
-        panel.angles[AngleTolerance.STRICT].toggled.connect(lambda checked: self._app.set_posture_detect(warn_angle=AngleTolerance.STRICT) if checked else None)
+        for angle in AngleTolerance:
+            panel.angles[angle].toggled.connect(partial(change_tolerance_angle, angle=angle))
         custom = panel.custom
         custom.toggled.connect(lambda checked: self._app.set_posture_detect(model_path=(ModelPath.CUSTOM if checked else ModelPath.DEFAULT)))
         warning = panel.warning

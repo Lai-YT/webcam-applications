@@ -17,8 +17,8 @@ class TextColor(Enum):
 
 
 class InformationWidget(QWidget):
-    """This widget provides update method to show the result of applications
-    on its corresponding labels.
+    """Provides update methods to show the results of applications on
+    their corresponding labels.
     """
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
@@ -40,10 +40,10 @@ class InformationWidget(QWidget):
         """
         self.information["distance"].setNum(round(distance, 2))
 
+        color: TextColor = TextColor.BLACK
         if state is DistanceState.WARNING:
-            self.information["distance"].set_color(TextColor.RED.value)
-        else:
-            self.information["distance"].set_color(TextColor.BLACK.value)
+            color = TextColor.RED
+        self.information["distance"].set_color(color.value)
 
     @pyqtSlot(int, TimeState)
     def update_time(self, time: int, state: TimeState) -> None:
@@ -55,16 +55,15 @@ class InformationWidget(QWidget):
             time: Time to update, in seconds.
             state: The state of the time.
         """
-        time_str: str = f"{(time // 60):02d}:{(time % 60):02d}"
+        time_str = f"{(time // 60):02d}:{(time % 60):02d}"
         self.information["time"].setText(time_str)
         self.information["time-state"].setText(state.name.lower())
 
+        color: TextColor = TextColor.BLACK
         if state is TimeState.BREAK:
-            self.information["time"].set_color(TextColor.RED.value)
-            self.information["time-state"].set_color(TextColor.RED.value)
-        else:
-            self.information["time"].set_color(TextColor.BLACK.value)
-            self.information["time-state"].set_color(TextColor.BLACK.value)
+            color = TextColor.RED
+        self.information["time"].set_color(color.value)
+        self.information["time-state"].set_color(color.value)
 
     @pyqtSlot(PostureLabel, str)
     def update_posture(self, posture: PostureLabel, detail: str) -> None:
@@ -81,12 +80,11 @@ class InformationWidget(QWidget):
         wrapped_detail: str = detail.replace(":", ":\n")
         self.information["posture-detail"].setText(wrapped_detail)
 
+        color: TextColor = TextColor.BLACK
         if posture is PostureLabel.SLUMP:
-            self.information["posture"].set_color(TextColor.RED.value)
-            self.information["posture-detail"].set_color(TextColor.RED.value)
-        else:
-            self.information["posture"].set_color(TextColor.BLACK.value)
-            self.information["posture-detail"].set_color(TextColor.BLACK.value)
+            color = TextColor.RED
+        self.information["posture"].set_color(color.value)
+        self.information["posture-detail"].set_color(color.value)
 
     @pyqtSlot(int)
     def update_brightness(self, brightness: int) -> None:
@@ -121,7 +119,7 @@ class InformationWidget(QWidget):
 
         font_size: int = 15
         for name, description in information.items():
-            # Notice that if the line warp isn't set to True,
+            # Notice that if the line wrap isn't set to True,
             # the label might grow and affect size of other widget.
             self.information[name] = Label(font_size=font_size, wrap=True)
             self.information[name].setFrameStyle(QFrame.WinPanel | QFrame.Raised)

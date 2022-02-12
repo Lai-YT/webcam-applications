@@ -17,7 +17,7 @@ class DistanceCalculator:
     def __init__(self, landmarks: NDArray[(68, 2), Int[32]], camera_dist: float) -> None:
         """
         Arguments:
-            landmarks: (x, y) coordinates of the 68 face landmarks.
+            landmarks: (x, y) coordinates of the 68 face landmarks in the reference image.
             camera_dist: Distance between face and camera when taking reference image.
         """
         self._product: float = self._get_face_width(landmarks) * camera_dist
