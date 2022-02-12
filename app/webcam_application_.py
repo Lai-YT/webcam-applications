@@ -313,7 +313,7 @@ class WebcamApplication(QObject):
         return landmarks
 
     def _update_ref_landmarks(self) -> None:
-        # Creates the DistanceCalculator with reference image.
+        """Updates the reference landmarks with the reference image path."""
         ref_img: ColorImage = cv2.imread(self._ref_img_path)
         faces: dlib.rectangles = self._face_detector(ref_img)
         if len(faces) != 1:
