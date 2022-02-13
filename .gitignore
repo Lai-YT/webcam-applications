@@ -1,6 +1,7 @@
 __pycache__/
 .mypy_cache/
 .scannerwork/
+.coverage
 
 .vs
 .vscode
