@@ -99,16 +99,20 @@ class WebcamApplication(QObject):
             to_abs_path("posture/trained_models/shape_predictor_68_face_landmarks.dat"))
 
     def _create_brightness_controller(self) -> None:
-        """Creates brightness calculator and connects its signals."""
-        self._brightness_controller = BrightnessController()
-        # Init controller mode to MANUAL.
-        self._brightness_controller.set_mode(BrightnessMode.MANUAL)
+        """Creates brightness calculator and initializes modes."""
+        self._brightness_controller = BrightnessController(mode=BrightnessMode.MANUAL)
         # This dict records whether the modes have been enabled.
         # So when both modes are True, we know a BOTH mode should be set.
         self._brightness_modes_enabled: Dict[BrightnessMode, bool] = {
             BrightnessMode.WEBCAM: False,
             BrightnessMode.COLOR_SYSTEM: False,
         }
+
+    def _create_concentration_grader(self) -> None:
+        """Create ConcentrationGrader shared by guards."""
+        self._concentration_grader = ConcentrationGrader()
+        self._concentration_grader.s_concent_interval_refreshed.connect(
+            self.s_concent_interval_refreshed)
 
     def _create_guards(self) -> None:
         """Creates guards used in WebcamApplication and connects their signals."""
@@ -126,12 +130,6 @@ class WebcamApplication(QObject):
         self._time_guard = TimeGuard()
         self._time_guard.s_time_refreshed.connect(self.s_time_refreshed)
         self.s_stopped.connect(self._time_guard.close_timer_widget)
-
-    def _create_concentration_grader(self) -> None:
-        """Create ConcentrationGrader shared by guards."""
-        self._concentration_grader = ConcentrationGrader()
-        self._concentration_grader.s_concent_interval_refreshed.connect(
-            self.s_concent_interval_refreshed)
 
     def set_distance_measure(
             self, *,

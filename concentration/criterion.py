@@ -1,18 +1,12 @@
-import logging
 from typing import List, Optional, Sized, Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from concentration.fuzzy.classes import Interval
 from concentration.interval import IntervalType
-from util.logger import setup_logger
 from util.path import to_abs_path
 from util.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
 from util.time import HALF_MIN, ONE_MIN, get_current_time, to_date_time
-
-
-interval_logger: logging.Logger = setup_logger(
-    "interval_logger", to_abs_path("intervals.log"), logging.DEBUG)
 
 
 class FaceExistenceRateCounter(QObject):
@@ -39,8 +33,6 @@ class FaceExistenceRateCounter(QObject):
         self._frame_times = TimeWindow(ONE_MIN)
         self._frame_times.set_time_catch_callback(self._check_face_existence)
 
-        self.s_low_existence_detected.connect(self._log_intervals)
-
     def add_frame(self) -> None:
         """Adds a frame count and detects whether face existence is low.
 
@@ -57,7 +49,7 @@ class FaceExistenceRateCounter(QObject):
         """Adds a face count and detects whether face existence is low.
 
         Notice that this method should always be called with an add_frame().
-        
+
         Emits:
             s_low_existence_detected:
                 Emits when face existence is low and sends the face existence rate.
@@ -112,10 +104,6 @@ class FaceExistenceRateCounter(QObject):
         """
         return round(len(self._face_times) / len(self._frame_times), 2)
 
-    def _log_intervals(self, interval: Interval) -> None:
-        interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, "
-                             f"{str(IntervalType.LOW_FACE)}")
-
 
 class BlinkRateIntervalDetector(QObject):
     """Splits the times into intervals using the technique of sliding window.
@@ -144,8 +132,6 @@ class BlinkRateIntervalDetector(QObject):
         self._blink_times.set_time_catch_callback(self._check_blink_rate)
         self._last_end_time: int = get_current_time()
 
-        self.s_interval_detected.connect(self._log_intervals)
-
     def add_blink(self) -> None:
         """Adds a new time of blink and checks whether there's a good interval.
 
@@ -173,9 +159,6 @@ class BlinkRateIntervalDetector(QObject):
                 Interval(self._last_end_time, one_min_before),
                 IntervalType.EXTRUSION,
                 self._get_blink_rate(WindowType.PREVIOUS))
-
-            # logging...
-            self._log_intervals(*extrude_interval)
 
             return extrude_interval
         return None
@@ -234,10 +217,6 @@ class BlinkRateIntervalDetector(QObject):
         elif type is WindowType.PREVIOUS:
             blink_rate = len(self._blink_times.previous)
         return blink_rate
-
-    def _log_intervals(self, interval: Interval, type: IntervalType, rate: int) -> None:
-        interval_logger.info(f"{to_date_time(interval.start)} ~ {to_date_time(interval.end)}, "
-                             f"{str(type)}")
 
 
 class BodyConcentrationCounter:
