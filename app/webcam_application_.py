@@ -103,8 +103,6 @@ class WebcamApplication(QObject):
         self._brightness_controller = BrightnessController()
         # Init controller mode to MANUAL.
         self._brightness_controller.set_mode(BrightnessMode.MANUAL)
-        self._brightness_controller.s_brightness_refreshed.connect(
-            self.s_brightness_refreshed)
         # This dict records whether the modes have been enabled.
         # So when both modes are True, we know a BOTH mode should be set.
         self._brightness_modes_enabled: Dict[BrightnessMode, bool] = {
@@ -272,7 +270,8 @@ class WebcamApplication(QObject):
                 if self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM]:
                     self._brightness_controller.refresh_color_system_screenshot()
                 # Optimize brightness after passing required images.
-                self._brightness_controller.optimize_brightness()
+                bright: int = self._brightness_controller.optimize_brightness()
+                self.s_brightness_refreshed.emit(bright)
 
             # Do concentration gradings!
             self._concentration_grader.add_frame()
