@@ -22,6 +22,7 @@ class TimeWindow:
         """
         self._window: Deque[int] = deque()
         self._time_width = time_width
+        self._time_catch_callback: Optional[Callable[[], Any]] = None
 
     def set_time_catch_callback(self, time_catch_callback: Callable[[], Any]) -> None:
         """
@@ -55,7 +56,7 @@ class TimeWindow:
             while self._window and time_ - self._window[0] > self._time_width:
                 self._window.popleft()
 
-        if hasattr(self, "_time_catch_callback"):
+        if self._time_catch_callback is not None:
             self._time_catch_callback()
 
     def clear(self) -> None:
@@ -118,6 +119,7 @@ class DoubleTimeWindow:
         self._window: Deque[int] = deque()
         self._pre_window: Deque[int] = deque()
         self._time_width = time_width
+        self._time_catch_callback: Optional[Callable[[], Any]] = None
 
     def append_time(self) -> None:
         """Appends the current time to the window and catches up the time."""
@@ -158,7 +160,7 @@ class DoubleTimeWindow:
             while self._pre_window and time_ - self._pre_window[0] > self._time_width:
                 self._pre_window.popleft()
 
-        if hasattr(self, "_time_catch_callback"):
+        if self._time_catch_callback is not None:
             self._time_catch_callback()
 
     @property

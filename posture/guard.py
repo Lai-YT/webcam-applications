@@ -27,12 +27,13 @@ class PostureGuard(QObject):
 
     s_posture_refreshed = pyqtSignal(PostureLabel, str)
 
-    def __init__(self,
-                 predictor: Optional[PosturePredictor] = None,
-                 calculator: Optional[AngleCalculator] = None,
-                 warn_angle: Optional[float] = None,
-                 warning_enabled: bool = True,
-                 grader: Optional[ConcentrationGrader] = None) -> None:
+    def __init__(
+            self,
+            predictor: Optional[PosturePredictor] = None,
+            calculator: Optional[AngleCalculator] = None,
+            warn_angle: Optional[float] = None,
+            warning_enabled: bool = True,
+            grader: Optional[ConcentrationGrader] = None) -> None:
         """
         All arguments can be set later with their corresponding setters.
 
@@ -52,14 +53,10 @@ class PostureGuard(QObject):
         """
         super().__init__()
 
-        if predictor is not None:
-            self._predictor: PosturePredictor = predictor
-        if calculator is not None:
-            self._calculator: AngleCalculator = calculator
-        if warn_angle is not None:
-            self._warn_angle: float = warn_angle
-        if grader is not None:
-            self._grader: ConcentrationGrader = grader
+        self._predictor: Optional[PosturePredictor] = predictor
+        self._calculator: Optional[AngleCalculator] = calculator
+        self._warn_angle: Optional[float] = warn_angle
+        self._grader: Optional[ConcentrationGrader] = grader
         self._warning_enabled: bool = warning_enabled
 
         self._wavfile: str = to_abs_path("sounds/posture_slump.wav")
@@ -120,7 +117,7 @@ class PostureGuard(QObject):
             The PostureLabel and the detail string of the determination.
             None if any of the necessary attributes aren't set.
         """
-        if not hasattr(self, "_calculator") or not hasattr(self, "_warn_angle"):
+        if self._calculator is None or self._warn_angle is None:
             return
 
         # Get posture label...
@@ -161,7 +158,7 @@ class PostureGuard(QObject):
         Arguments:
             posture: The label of posture to send info about.
         """
-        if hasattr(self, "_grader"):
+        if self._grader is not None:
             if posture is PostureLabel.GOOD:
                 self._grader.add_body_concentration()
             else:
@@ -181,10 +178,15 @@ class PostureGuard(QObject):
         Returns:
             The PostureLabel and the detail string of the determination.
         """
+        if self._calculator is None:
+            raise ValueError("please set a calculator before checking angles")
+
         angle: float = self._calculator.calculate(landmarks)
         detail: str = f"by angle: {round(angle, 1)} degrees"
         cv2.putText(canvas, detail, (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
 
+        if self._warn_angle is None:
+            raise ValueError("please set the angle to warn before checking angles")
         posture: PostureLabel = PostureLabel.GOOD
         if abs(angle) >= self._warn_angle:
             posture = PostureLabel.SLUMP
@@ -204,6 +206,9 @@ class PostureGuard(QObject):
         Returns:
             The PostureLabel and the detail string of the determination.
         """
+        if self._predictor is None:
+            raise ValueError("please set a predictor before checking postures")
+
         posture: PostureLabel
         conf: Float[32]
         posture, conf = self._predictor.predict(frame)
