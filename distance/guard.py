@@ -1,16 +1,11 @@
 from enum import Enum, auto
-from typing import Optional
+from typing import Optional, Tuple
 
-import cv2
-from PyQt5.QtCore import QObject, pyqtSignal
 from nptyping import Int, NDArray
 from playsound import playsound
 
 from concentration.grader import ConcentrationGrader
 from distance.calculator import DistanceCalculator
-from util.color import MAGENTA, RED
-from util.cv_font import FONT_0
-from util.image_type import ColorImage
 from util.path import to_abs_path
 from util.time import Timer
 
@@ -24,15 +19,10 @@ class DistanceState(Enum):
     WARNING = auto()
 
 
-class DistanceGuard(QObject):
+class DistanceGuard:
     """DistanceGuard checks whether the face obtained by the landmarks are at
     a short distance.
-
-    Signals:
-        s_distance_refreshed: Emits everytime a new distance is calculated.
     """
-
-    s_distance_refreshed = pyqtSignal(float, DistanceState)
 
     def __init__(
             self,
@@ -89,19 +79,14 @@ class DistanceGuard(QObject):
 
     def warn_if_too_close(
             self,
-            canvas: ColorImage,
-            landmarks: NDArray[(68, 2), Int[32]]) -> None:
-        """Warning message shows when the distance is less than warn_dist.
+            landmarks: NDArray[(68, 2), Int[32]]) -> Tuple[float, DistanceState]:
+        """Returns the distance and the state of it, also plays the warning
+        sound when the distance is less than warn_dist if enabled.
 
         Arguments:
-            canvas: The image to put text on.
             landmarks: (x, y) coordinates of the 68 face landmarks.
-
-        Emits:
-            s_distance_refreshed: With the distance calculated.
         """
         distance: float = self._calculator.calculate(landmarks)
-        self._put_distance_text(canvas, distance)
 
         # warning logic...
         if self._warning_enabled and distance < self._warn_dist:
@@ -122,10 +107,10 @@ class DistanceGuard(QObject):
         state = DistanceState.NORMAL
         if distance < self._warn_dist:
             state = DistanceState.WARNING
-            cv2.putText(canvas, "too close", (10, 150), FONT_0, 0.9, RED, 2)
-        self.s_distance_refreshed.emit(distance, state)
 
         self._send_concentration_info(state)
+
+        return distance, state
 
     def _send_concentration_info(self, state: DistanceState) -> None:
         """Sends a concentration to the grader if the state is normal,
@@ -142,15 +127,3 @@ class DistanceGuard(QObject):
                 self._grader.add_body_concentration()
             else:
                 self._grader.add_body_distraction()
-
-    def _put_distance_text(self, canvas: ColorImage, distance: float) -> None:
-        """Puts distance text on the canvas.
-
-        Distance is rounded to two decimal places.
-
-        Arguments:
-            canvas: Imgae to put text on.
-            distance: The distance to be put.
-        """
-        text = "dist. " + str(round(distance, 2))
-        cv2.putText(canvas, text, (10, 30), FONT_0, 0.9, MAGENTA, 2)
