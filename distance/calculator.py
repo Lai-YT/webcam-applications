@@ -34,6 +34,9 @@ class DistanceCalculator:
         return distance
 
     def distance(self) -> Optional[float]:
+        """Returns the distance of the lastest calculation; None if haven't
+        calculate any distance yet.
+        """
         return self._cache
 
     @staticmethod

@@ -15,7 +15,7 @@ class BrightnessMode(Enum):
 
 
 class BrightnessCalculator:
-    """Handle processes which require value modulation."""
+    """Handles processes which require value modulation."""
 
     def __init__(self) -> None:
         # Used to weight with frame brightness to reduce the effect of
@@ -60,9 +60,11 @@ class BrightnessCalculator:
         if mode in (BrightnessMode.COLOR_SYSTEM, BrightnessMode.BOTH):
             screenshot_brightness: int = BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.COLOR_SYSTEM])
         if mode is BrightnessMode.BOTH:
-            # webcam frame takes the lead
+            # Webcam frame takes the lead. To protect one's eye,
+            # the brighter the system is, the darker the result should be.
             weighted_frame_brightness: float = (
-                webcam_frame_brightness * 0.6 + (100-screenshot_brightness) * 0.4
+                webcam_frame_brightness * 0.6
+                + (100-screenshot_brightness) * 0.4
             )
 
         # New frame brightness has the weight of 0.4 while the remaining
@@ -117,11 +119,13 @@ class BrightnessCalculator:
         """
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # Value is as known as brightness.
-        hue, saturation, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
+        *_, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
         return int(100 * value.mean() / 255)
 
     def reset(self) -> None:
-        """Reset the variables to make every time auto optimization triggered independent."""
+        """Resets the attributes to make auto optimization triggered
+        independently every time.
+        """
         self._pre_weighted_value = None
         self._base_value = None
         self._brightness_value = None

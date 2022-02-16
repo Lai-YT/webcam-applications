@@ -25,8 +25,8 @@ class TimeGuard(QObject):
 
     def __init__(
             self,
-            time_limit: Optional[int] = None,
-            break_time: Optional[int] = None,
+            time_limit: int,
+            break_time: int,
             warning_enabled: bool = True) -> None:
         """
         All arguments can be set later with their corresponding setters.
@@ -40,12 +40,8 @@ class TimeGuard(QObject):
         """
         super().__init__()
 
-        self._time_limit: Optional[int] = time_limit
-        if time_limit is not None:
-            self._time_limit = min_to_sec(time_limit)
-        self._break_time: Optional[int] = break_time
-        if break_time is not None:
-            self._break_time = min_to_sec(break_time)
+        self._time_limit = min_to_sec(time_limit)
+        self._break_time = min_to_sec(break_time)
         self._warning_enabled: bool = warning_enabled
 
         self._f_break_started: bool = False
@@ -81,9 +77,6 @@ class TimeGuard(QObject):
         """The timer widget switches to break mode if the time held by timer exceeds
         the time limit.
 
-        Notice that the time is simply updated to the timer widget and kept in
-        work mode if time limit or break time haven't been set yet.
-
         Arguments:
             timer: Contains time record.
 
@@ -92,12 +85,6 @@ class TimeGuard(QObject):
                 If isn't time to take a break, the time held by timer and work state is
                 sent; otherwise the countdown of break and break state is sent.
         """
-        if self._break_time is None or self._time_limit is None:
-            # Only display the time if the guard is not ready.
-            self._time_shower.update_time(timer.time())
-            self.s_time_refreshed.emit(timer.time(), TimeState.WORK)
-            return
-
         # Break time is over.
         if self._break_timer.time() > self._break_time:
             timer.reset()
@@ -141,8 +128,6 @@ class TimeGuard(QObject):
         Emits:
             s_time_refreshed: Emits with the countdown of break and the break state.
         """
-        if self._break_time is None or self._time_limit is None:
-            return
         # If is the very moment to enter the break.
         if not self._f_break_started:
             self._enter_break()

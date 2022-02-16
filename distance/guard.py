@@ -34,11 +34,12 @@ class DistanceGuard(QObject):
 
     s_distance_refreshed = pyqtSignal(float, DistanceState)
 
-    def __init__(self,
-                 calculator: Optional[DistanceCalculator] = None,
-                 warn_dist: Optional[float] = None,
-                 warning_enabled: bool = True,
-                 grader: Optional[ConcentrationGrader] = None) -> None:
+    def __init__(
+            self,
+            calculator: DistanceCalculator,
+            warn_dist: float,
+            warning_enabled: bool = True,
+            grader: Optional[ConcentrationGrader] = None) -> None:
         """
         Arguments:
             calculator: Use to calculate the distance between face and screen.
@@ -53,8 +54,8 @@ class DistanceGuard(QObject):
         """
         super().__init__()
 
-        self._calculator: Optional[DistanceCalculator] = calculator
-        self._warn_dist: Optional[float] = warn_dist
+        self._calculator: DistanceCalculator = calculator
+        self._warn_dist: float = warn_dist
         self._grader: Optional[ConcentrationGrader] = grader
         self._warning_enabled: bool = warning_enabled
 
@@ -92,9 +93,6 @@ class DistanceGuard(QObject):
             landmarks: NDArray[(68, 2), Int[32]]) -> None:
         """Warning message shows when the distance is less than warn_dist.
 
-        Notice that this method does nothing if distance calculator haven't been
-        set yet; no warning if warn dist haven't been set yet.
-
         Arguments:
             canvas: The image to put text on.
             landmarks: (x, y) coordinates of the 68 face landmarks.
@@ -102,18 +100,8 @@ class DistanceGuard(QObject):
         Emits:
             s_distance_refreshed: With the distance calculated.
         """
-        # Can't do any thing without DistanceCalculator.
-        if self._calculator is None:
-            return
-        # Distance can be calculated when DistanceCalculator exists.
-        if self._calculator is not None:
-            distance: float = self._calculator.calculate(landmarks)
-            self._put_distance_text(canvas, distance)
-        # Has DistanceCalculator but no warn dist.
-        # Send the distance with normal state. And no further process.
-        if self._warn_dist is None:
-            self.s_distance_refreshed.emit(distance, DistanceState.NORMAL)
-            return
+        distance: float = self._calculator.calculate(landmarks)
+        self._put_distance_text(canvas, distance)
 
         # warning logic...
         if self._warning_enabled and distance < self._warn_dist:
