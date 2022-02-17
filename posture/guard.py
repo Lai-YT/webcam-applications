@@ -1,32 +1,21 @@
 from typing import Optional, Tuple
 
 import cv2
-from PyQt5.QtCore import QObject, pyqtSignal
 from nptyping import Float, Int, NDArray
 from playsound import playsound
 
 from concentration.grader import ConcentrationGrader
 from posture.calculator import AngleCalculator, PosturePredictor
 from posture.train import PostureLabel
-from util.color import GREEN, RED
-from util.cv_font import FONT_0
 from util.image_type import ColorImage
 from util.path import to_abs_path
 from util.time import Timer
 
 
-class PostureGuard(QObject):
+class PostureGuard:
     """PostureGuard checks whether the face obtained by landmarks implies a
     good or slump posture.
-
-    Signals:
-        s_posture_refreshed:
-            Emits everytime a posture is checked (all attributes need to be set).
-            It sents the PostureLabel and the detail string of the determination.
     """
-
-    s_posture_refreshed = pyqtSignal(PostureLabel, str)
-
     def __init__(
             self,
             predictor: PosturePredictor,
@@ -92,21 +81,16 @@ class PostureGuard(QObject):
 
     def check_posture(
             self,
-            canvas: ColorImage,
             frame: ColorImage,
-            landmarks: NDArray[(68, 2), Int[32]]) -> None:
-        """Sound plays if is a "slump" posture and warning is enabled.
+            landmarks: NDArray[(68, 2), Int[32]]) -> Tuple[PostureLabel, str]:
+        """Sound plays when is a "slump" posture if warning is enabled.
 
         If the landmarks of face are clear, use AngleCalculator to calculate the
         slope precisely; otherwise use the model to predict the posture.
 
         Arguments:
-            canvas: The prediction will be texted on the canvas.
             frame: The image contains posture to be predicted.
             landmarks: (x, y) coordinates of the 68 face landmarks.
-
-        Emits:
-            s_posture_refreshed: Sends the posture label and result detail.
 
         Returns:
             The PostureLabel and the detail string of the determination.
@@ -114,12 +98,11 @@ class PostureGuard(QObject):
         """
         # Get posture label...
         posture: PostureLabel
-        detect: str
+        detail: str
         if landmarks.any():
-            posture, detail = self._do_posture_angle_check(canvas, landmarks)
+            posture, detail = self._do_posture_angle_check(landmarks)
         else:
-            posture, detail = self._do_posture_model_predict(canvas, frame)
-        self.s_posture_refreshed.emit(posture, detail)
+            posture, detail = self._do_posture_model_predict(frame)
 
         # sound warning logic
         if self._warning_enabled and posture is not PostureLabel.GOOD:
@@ -138,8 +121,7 @@ class PostureGuard(QObject):
 
         self._send_concentration_info(posture)
 
-        text, color = ("Good", GREEN) if posture is PostureLabel.GOOD else ("Slump", RED)
-        cv2.putText(canvas, text, (10, 70), FONT_0, 0.9, color, thickness=2)
+        return posture, detail
 
     def _send_concentration_info(self, posture: PostureLabel) -> None:
         """Sends a concentration to the grader if the posture is good,
@@ -158,11 +140,8 @@ class PostureGuard(QObject):
 
     def _do_posture_angle_check(
             self,
-            canvas: ColorImage,
             landmarks: NDArray[(68, 2), Int[32]]) -> Tuple[PostureLabel, str]:
-        """Puts posture and angle text on the canvas. "Good" in green if angle
-        doesn't exceed the warn_angle, otherwise "Slump" in red.
-
+        """
         Arguments:
             canvas: The image to put text on.
             landmarks: (x, y) coordinates of the 68 face landmarks.
@@ -172,7 +151,6 @@ class PostureGuard(QObject):
         """
         angle: float = self._calculator.calculate(landmarks)
         detail: str = f"by angle: {round(angle, 1)} degrees"
-        cv2.putText(canvas, detail, (15, 110), FONT_0, 0.7, (200, 200, 255), 2)
 
         posture: PostureLabel = PostureLabel.GOOD
         if abs(angle) >= self._warn_angle:
@@ -182,12 +160,9 @@ class PostureGuard(QObject):
 
     def _do_posture_model_predict(
             self,
-            canvas: ColorImage,
             frame: ColorImage) -> Tuple[PostureLabel, str]:
-        """Puts posture label text on the canvas.
-
+        """
         Arguments:
-            canvas: The prediction will be texted on the canvas.
             frame: The image contains posture to be predicted.
 
         Returns:
@@ -198,6 +173,5 @@ class PostureGuard(QObject):
         posture, conf = self._predictor.predict(frame)
 
         detail: str = f"by model: {conf:.0%}"
-        cv2.putText(canvas, detail, (15, 110), FONT_0, 0.7, (200, 200, 255), thickness=2)
 
         return posture, detail
