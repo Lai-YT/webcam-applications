@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
     QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QVBoxLayout, QWidget,
 )
 
+from app.app_type import ApplicationType
 from brightness.calcuator import BrightnessMode
 from intergrated_gui.component import (
     ActionButton, CheckableGroupBox, HorizontalSlider, Label, LineEdit,
@@ -18,15 +19,15 @@ class PanelWidget(QWidget):
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
 
-        self.panels: Dict[str, CheckableGroupBox] = {
-            "distance": DistancePanel(),
-            "time": TimePanel(),
-            "posture": PosturePanel(),
-            "brightness": BrightnessPanel(),
+        self.panels: Dict[ApplicationType, CheckableGroupBox] = {
+            ApplicationType.DISTANCE_MEASUREMENT: DistancePanel(),
+            ApplicationType.FOCUS_TIMING: TimePanel(),
+            ApplicationType.POSTURE_DETECTION: PosturePanel(),
+            ApplicationType.BRIGHTNESS_OPTIMIZATION: BrightnessPanel(),
         }
 
         layout = QVBoxLayout()
-        for name, panel in self.panels.items():
+        for panel in self.panels.values():
             layout.addWidget(panel, stretch=1)
 
         layout.addStretch(5)

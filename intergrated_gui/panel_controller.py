@@ -1,11 +1,10 @@
-import os
 from configparser import ConfigParser
 from functools import partial
 
-from PyQt5.QtCore import QCoreApplication, QEvent, QObject, Qt, pyqtSlot
-from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QFileDialog
 
+from app.app_type import ApplicationType
 from app.webcam_application_ import WebcamApplication
 from brightness.calcuator import BrightnessMode
 from intergrated_gui.panel_widget import AngleTolerance, PanelWidget
@@ -15,151 +14,65 @@ from posture.train import ModelPath
 class PanelController(QObject):
     def __init__(self, panel_widget: PanelWidget, app: WebcamApplication) -> None:
         super().__init__()
-        self._panel = panel_widget
+        self._panel_widget = panel_widget
         self._app = app
+        self._init_panels()
         # Connect signals first to make sure the init states can trigger their
         # corresponding methods.
         self._connect_signals()
-        self._init_states()
 
-    def _init_states(self) -> None:
-        self._init_distance_states()
-        self._init_time_states()
-        self._init_posture_states()
-        self._init_brightness_states()
+    def _init_panels(self) -> None:
+        settings: ConfigParser = self._app.settings
 
-    def load_configs(self, config: ConfigParser) -> None:
-        """Loads the configs and set init state of each mode
-        and its following detailed widgets.
+        # Enable apps that are enabled.
+        for app_type, panel in self._panel_widget.panels.items():
+            panel.setChecked(settings.getboolean(app_type.name, "ENABLED"))
 
-        The init state of the widgets will affect the initialization of app.
-        """
-        panels = self._panel.panels
+        self._init_distance_panel(settings)
+        self._init_time_panel(settings)
+        self._init_posture_panel(settings)
+        self._init_brightness_panel(settings)
 
-        # Enable modes that are set True.
-        for mode, panel in panels.items():
-            panel.setChecked(config.getboolean(mode, "checked"))
+    def _init_distance_panel(self, settings: ConfigParser) -> None:
+        app_type = ApplicationType.DISTANCE_MEASUREMENT
+        panel = self._panel_widget.panels[app_type]
 
-        # A simple setText does not trigger the editingFinished signal since
-        # no enter or return key is pressed. So send a return pressed event
-        # everytime after the setText to act like a manual user.
-        return_pressed_event = QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier)
+        panel.settings["camera_dist"].setText(settings.get(app_type.name, "REFERENCE_DISTANCE"))
+        panel.settings["warn_dist"].setText(settings.get(app_type.name, "LIMIT"))
+        panel.file_path.setText(settings.get(app_type.name, "REFERENCE_IMAGE_PATH"))
+        panel.warning.setChecked(settings.getboolean(app_type.name, "WARNING"))
 
-        # distance
-        for name, line_edit in panels["distance"].settings.items():
-            line_edit.setText(config.get("distance", name))
-            QCoreApplication.sendEvent(line_edit, return_pressed_event)
-        panels["distance"].warning.setChecked(config.getboolean("distance", "warning_enabled"))
-        panels["distance"].file_path.setText(config.get("distance", "file_path"))
-        # time
-        for name, line_edit in panels["time"].settings.items():
-            line_edit.setText(config.get("time", name))
-            QCoreApplication.sendEvent(line_edit, return_pressed_event)
-        panels["time"].warning.setChecked(config.getboolean("time", "warning_enabled"))
-        # posture
-        if config.get("posture", "warn_angle") == "loose":
-            panels["posture"].angles[AngleTolerance.LOOSE].setChecked(True)
-        elif config.get("posture", "warn_angle") == "strict":
-            panels["posture"].angles[AngleTolerance.STRICT].setChecked(True)
-        if config.get("posture", "model_path") == "custom":
-            panels["posture"].custom.setChecked(True)
-        elif config.get("posture", "model_path") == "default":
-            panels["posture"].custom.setChecked(False)
-        panels["posture"].warning.setChecked(config.getboolean("posture", "warning_enabled"))
-        # brightness
-        panels["brightness"].slider.setValue(config.getint("brightness", "slider_value"))
-        if config.getboolean("brightness", "webcam_enabled"):
-            panels["brightness"].modes[BrightnessMode.WEBCAM].setChecked(True)
-        if config.getboolean("brightness", "color_system_enabled"):
-            panels["brightness"].modes[BrightnessMode.COLOR_SYSTEM].setChecked(True)
+    def _init_time_panel(self, settings: ConfigParser) -> None:
+        app_type = ApplicationType.FOCUS_TIMING
+        panel = self._panel_widget.panels[app_type]
 
-    def store_configs(self, config: ConfigParser) -> None:
-        """Stores data of each mode and its following detailed widgets
-        in the configs.
-        """
-        panels = self._panel.panels
+        panel.settings["time_limit"].setText(settings.get(app_type.name, "LIMIT"))
+        panel.settings["break_time"].setText(settings.get(app_type.name, "BREAK_TIME"))
+        panel.warning.setChecked(settings.getboolean(app_type.name, "WARNING"))
 
-        # Set true if the group box is checked.
-        for section, check_box in panels.items():
-            config.set(section, "checked", str(check_box.isChecked()))
+    def _init_posture_panel(self, settings: ConfigParser) -> None:
+        app_type = ApplicationType.POSTURE_DETECTION
+        panel = self._panel_widget.panels[app_type]
 
-        # distance
-        for name, line_edit in panels["distance"].settings.items():
-            config.set("distance", name, line_edit.text())
-        config.set("distance", "warning_enabled",
-            str(panels["distance"].warning.isChecked()))
-        config.set("distance", "file_path", panels["distance"].file_path.text())
-        # time
-        for name, line_edit in panels["time"].settings.items():
-            config.set("time", name, line_edit.text())
-        config.set("time", "warning_enabled",
-            str(panels["distance"].warning.isChecked()))
-        # posture
-        config.set("posture", "warn_angle",
-            "loose" if panels["posture"].angles[AngleTolerance.LOOSE].isChecked() else "strict")
-        config.set("posture", "model_path",
-            "custom" if panels["posture"].custom.isChecked() else "default")
-        config.set("posture", "warning_enabled",
-            str(panels["distance"].warning.isChecked()))
-        # brightness
-        config.set("brightness", "slider_value",
-            str(panels["brightness"].slider.value()))
-        config.set("brightness", "webcam_enabled",
-            str(panels["brightness"].modes[BrightnessMode.WEBCAM].isChecked()))
-        config.set("brightness", "color_system_enabled",
-            str(panels["brightness"].modes[BrightnessMode.COLOR_SYSTEM].isChecked()))
+        angle = settings.getfloat(app_type.name, "ANGLE")
+        panel.angles[AngleTolerance(angle)].setChecked(True)
+        panel.custom.setChecked(
+            settings.get(app_type.name, "MODEL_PATH") == ModelPath.CUSTOM.name
+        )
+        panel.warning.setChecked(settings.getboolean(app_type.name, "WARNING"))
 
-    def _init_distance_states(self) -> None:
-        panel = self._panel.panels["distance"]
+    def _init_brightness_panel(self, settings: ConfigParser) -> None:
+        app_type = ApplicationType.BRIGHTNESS_OPTIMIZATION
+        panel = self._panel_widget.panels[app_type]
 
-        self._app.set_distance_measure(enabled=panel.isChecked())
-        distance = panel.settings["camera_dist"]
-        if distance.text():
-            self._app.set_distance_measure(camera_dist=float(distance.text()))
-        if panel.file_path.text():
-            self._app.set_distance_measure(ref_img_path=panel.file_path.text())
-        bound = panel.settings["warn_dist"]
-        if bound.text():
-            self._app.set_distance_measure(warn_dist=float(bound.text()))
-        warning = panel.warning
-        self._app.set_distance_measure(warning_enabled=warning.isChecked())
-
-    def _init_time_states(self) -> None:
-        panel = self._panel.panels["time"]
-
-        self._app.set_focus_time(enabled=panel.isChecked())
-        limit = panel.settings["time_limit"]
-        if limit.text():
-            self._app.set_focus_time(time_limit=int(limit.text()))
-        break_ = panel.settings["break_time"]
-        if break_.text():
-            self._app.set_focus_time(break_time=int(break_.text()))
-        warning = panel.warning
-        self._app.set_focus_time(warning_enabled=warning.isChecked())
-
-    def _init_posture_states(self) -> None:
-        panel = self._panel.panels["posture"]
-
-        self._app.set_posture_detect(enabled=panel.isChecked())
-        if panel.angles[AngleTolerance.LOOSE].isChecked():
-            self._app.set_posture_detect(warn_angle=AngleTolerance.LOOSE)
-        else:
-            self._app.set_posture_detect(warn_angle=AngleTolerance.STRICT)
-        custom = panel.custom
-        if custom.isChecked():
-            self._app.set_posture_detect(model_path=ModelPath.CUSTOM)
-        else:
-            self._app.set_posture_detect(model_path=ModelPath.DEFAULT)
-        warning = panel.warning
-        self._app.set_posture_detect(warning_enabled=warning.isChecked())
-
-    def _init_brightness_states(self) -> None:
-        panel = self._panel.panels["brightness"]
-        self._app.set_brightness_optimization(
-            enabled=panel.isChecked(),
-            slider_value=panel.slider.value(),
-            webcam_enabled=panel.modes[BrightnessMode.WEBCAM].isChecked(),
-            color_system_enabled=panel.modes[BrightnessMode.COLOR_SYSTEM].isChecked()
+        panel.slider.setValue(settings.getint(app_type.name, "BASE_VALUE"))
+        mode: str = settings.get(app_type.name, "MODE")  # name of enum
+        mode_type = BrightnessMode[mode]
+        panel.modes[BrightnessMode.WEBCAM].setChecked(
+            mode_type in (BrightnessMode.WEBCAM, BrightnessMode.BOTH)
+        )
+        panel.modes[BrightnessMode.COLOR_SYSTEM].setChecked(
+            mode_type in (BrightnessMode.COLOR_SYSTEM, BrightnessMode.BOTH)
         )
 
     def _connect_signals(self) -> None:
@@ -169,21 +82,32 @@ class PanelController(QObject):
         self._connect_brightness_signals()
 
     def _connect_distance_signals(self) -> None:
-        panel = self._panel.panels["distance"]
-        panel.toggled.connect(lambda checked: self._app.set_distance_measure(enabled=checked))
+        panel = self._panel_widget.panels[ApplicationType.DISTANCE_MEASUREMENT]
+
+        panel.toggled.connect(
+            lambda checked: self._app.set_distance_measure(enabled=checked)
+        )
         # file_open -> (connect) choose file -> (Call) setText
         # -> (emit) textChanged -> (connect) set_path
         panel.file_open.clicked.connect(self._choose_file_path)
-        panel.file_path.textChanged.connect(lambda path: self._app.set_distance_measure(ref_img_path=path))
+        panel.file_path.textChanged.connect(
+            lambda path: self._app.set_distance_measure(ref_img_path=path)
+        )
         distance = panel.settings["camera_dist"]
-        distance.editingFinished.connect(lambda: self._app.set_distance_measure(camera_dist=float(distance.text())))
+        distance.editingFinished.connect(
+            lambda: self._app.set_distance_measure(camera_dist=float(distance.text()))
+        )
         bound = panel.settings["warn_dist"]
-        bound.editingFinished.connect(lambda: self._app.set_distance_measure(warn_dist=float(bound.text())))
+        bound.editingFinished.connect(
+            lambda: self._app.set_distance_measure(warn_dist=float(bound.text()))
+        )
         warning = panel.warning
-        warning.toggled.connect(lambda checked: self._app.set_distance_measure(warning_enabled=checked))
+        warning.toggled.connect(
+            lambda checked: self._app.set_distance_measure(warning_enabled=checked)
+        )
 
     def _choose_file_path(self) -> None:
-        panel = self._panel.panels["distance"]
+        panel = self._panel_widget.panels[ApplicationType.DISTANCE_MEASUREMENT]
         root = panel.file_path.text() if panel.file_path.text() else "C:\\"
         filename, *_ =  QFileDialog.getOpenFileName(
             panel, "Open File", root, "Images (*.png *.jpg)")
@@ -192,35 +116,75 @@ class PanelController(QObject):
             panel.file_path.setText(filename)
 
     def _connect_time_signals(self) -> None:
-        panel = self._panel.panels["time"]
+        panel = self._panel_widget.panels[ApplicationType.FOCUS_TIMING]
 
-        panel.toggled.connect(lambda checked: self._app.set_focus_time(enabled=checked))
+        panel.toggled.connect(
+            lambda checked: self._app.set_focus_time(enabled=checked)
+        )
         limit = panel.settings["time_limit"]
-        limit.editingFinished.connect(lambda: self._app.set_focus_time(time_limit=int(limit.text())))
+        limit.editingFinished.connect(
+            lambda: self._app.set_focus_time(time_limit=int(limit.text()))
+        )
         break_ = panel.settings["break_time"]
-        break_.editingFinished.connect(lambda: self._app.set_focus_time(break_time=int(break_.text())))
+        break_.editingFinished.connect(
+            lambda: self._app.set_focus_time(break_time=int(break_.text()))
+        )
         warning = panel.warning
-        warning.toggled.connect(lambda checked: self._app.set_focus_time(warning_enabled=checked))
+        warning.toggled.connect(
+            lambda checked: self._app.set_focus_time(warning_enabled=checked)
+        )
 
     def _connect_posture_signals(self) -> None:
+        panel = self._panel_widget.panels[ApplicationType.POSTURE_DETECTION]
+
         def change_tolerance_angle(checked: bool, angle: AngleTolerance) -> None:
+            """Sets the corresponding angle if is checked."""
             if checked:
                 self._app.set_posture_detect(warn_angle=angle)
 
-        panel = self._panel.panels["posture"]
-
-        panel.toggled.connect(lambda checked: self._app.set_posture_detect(enabled=checked))
+        panel.toggled.connect(
+            lambda checked: self._app.set_posture_detect(enabled=checked)
+        )
         for angle in AngleTolerance:
-            panel.angles[angle].toggled.connect(partial(change_tolerance_angle, angle=angle))
+            panel.angles[angle].toggled.connect(
+                partial(change_tolerance_angle, angle=angle)
+            )
         custom = panel.custom
-        custom.toggled.connect(lambda checked: self._app.set_posture_detect(model_path=(ModelPath.CUSTOM if checked else ModelPath.DEFAULT)))
+        custom.toggled.connect(
+            lambda checked: self._app.set_posture_detect(
+                model_path=(ModelPath.CUSTOM if checked else ModelPath.DEFAULT)
+            )
+        )
         warning = panel.warning
-        warning.toggled.connect(lambda checked: self._app.set_posture_detect(warning_enabled=checked))
+        warning.toggled.connect(
+            lambda checked: self._app.set_posture_detect(warning_enabled=checked)
+        )
 
     def _connect_brightness_signals(self) -> None:
-        panel = self._panel.panels["brightness"]
+        panel = self._panel_widget.panels[ApplicationType.BRIGHTNESS_OPTIMIZATION]
 
-        panel.toggled.connect(lambda checked: self._app.set_brightness_optimization(enabled=checked))
-        panel.slider.valueChanged.connect(lambda value: self._app.set_brightness_optimization(slider_value=value))
-        panel.modes[BrightnessMode.WEBCAM].toggled.connect(lambda checked: self._app.set_brightness_optimization(webcam_enabled=checked))
-        panel.modes[BrightnessMode.COLOR_SYSTEM].toggled.connect(lambda checked: self._app.set_brightness_optimization(color_system_enabled=checked))
+        def get_brightness_mode() -> BrightnessMode:
+            """Returns the brightness mode determined by the combination of
+            checked buttons.
+            """
+            if (panel.modes[BrightnessMode.WEBCAM].isChecked()
+                    and panel.modes[BrightnessMode.COLOR_SYSTEM].isChecked()):
+                return BrightnessMode.BOTH
+            if (not panel.modes[BrightnessMode.WEBCAM].isChecked()
+                    and not panel.modes[BrightnessMode.COLOR_SYSTEM].isChecked()):
+                return BrightnessMode.MANUAL
+            if panel.modes[BrightnessMode.WEBCAM].isChecked():
+                return BrightnessMode.WEBCAM
+            if panel.modes[BrightnessMode.COLOR_SYSTEM].isChecked():
+                return BrightnessMode.COLOR_SYSTEM
+
+        panel.toggled.connect(
+            lambda checked: self._app.set_brightness_optimization(enabled=checked)
+        )
+        panel.slider.valueChanged.connect(
+            lambda value: self._app.set_brightness_optimization(slider_value=value)
+        )
+        for mode in (BrightnessMode.WEBCAM, BrightnessMode.COLOR_SYSTEM):
+            panel.modes[mode].toggled.connect(
+                lambda: self._app.set_brightness_optimization(mode=get_brightness_mode())
+            )
