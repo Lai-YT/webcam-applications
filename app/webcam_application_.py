@@ -1,4 +1,8 @@
+import atexit
+from configparser import ConfigParser
+from copy import deepcopy
 from operator import methodcaller
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import cv2
@@ -9,6 +13,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
+from app.app_type import ApplicationType
 from brightness.calcuator import BrightnessMode
 from brightness.controller import BrightnessController
 from concentration.fuzzy.classes import Interval
@@ -63,6 +68,8 @@ class WebcamApplication(QObject):
             Emits after the WebcamApplication stops running.
     """
 
+    SETTINGS_FILE = (Path(__file__).parent / "settings.ini").resolve()
+
     # Signals used to communicate with controller.
     s_frame_refreshed = pyqtSignal(QImage)
     s_distance_refreshed = pyqtSignal(float, DistanceState)
@@ -75,11 +82,8 @@ class WebcamApplication(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        # applications
-        self._distance_measure: bool = False
-        self._focus_time: bool = False
-        self._posture_detect: bool = False
-        self._brightness_optimize: bool = False
+        self._load_settings()
+        atexit.register(self._store_settings)
 
         # Used to break the capturing loop inside start().
         # If the application is in progress, sets the ready
@@ -88,48 +92,92 @@ class WebcamApplication(QObject):
 
         self._webcam = cv2.VideoCapture(0)
         self._create_face_detectors()
-        self._create_brightness_controller()
         self._create_concentration_grader()
         self._create_guards()
+        self._create_brightness_controller()
+
+    def _load_settings(self) -> None:
+        self._settings = ConfigParser()
+        self._settings.read(self.SETTINGS_FILE, encoding="utf-8")
+
+    @property
+    def settings(self) -> ConfigParser:
+        """Returns a copy of the currents settings used by the applcations."""
+        return deepcopy(self._settings)
+
+    def _store_settings(self) -> None:
+        with open(self.SETTINGS_FILE, "w", encoding="utf-8") as f:
+            self._settings.write(f)
 
     def _create_face_detectors(self) -> None:
         """Creates face detector and shape predictor."""
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
         self._shape_predictor = dlib.shape_predictor(
-            to_abs_path("posture/trained_models/shape_predictor_68_face_landmarks.dat"))
+            to_abs_path("posture/trained_models/shape_predictor_68_face_landmarks.dat")
+        )
 
     def _create_brightness_controller(self) -> None:
         """Creates brightness calculator and initializes modes."""
-        self._brightness_controller = BrightnessController(mode=BrightnessMode.MANUAL)
-        # This dict records whether the modes have been enabled.
-        # So when both modes are True, we know a BOTH mode should be set.
-        self._brightness_modes_enabled: Dict[BrightnessMode, bool] = {
-            BrightnessMode.WEBCAM: False,
-            BrightnessMode.COLOR_SYSTEM: False,
-        }
+        settings = self._settings[ApplicationType.BRIGHTNESS_OPTIMIZATION.name]
+
+        self._brightness_optimize = settings.getboolean("ENABLED")
+        self._brightness_controller = BrightnessController(
+            settings.getint("BASE_VALUE"),
+            BrightnessMode[settings["MODE"]],
+        )
 
     def _create_concentration_grader(self) -> None:
         """Create ConcentrationGrader shared by guards."""
         self._concentration_grader = ConcentrationGrader()
         self._concentration_grader.s_concent_interval_refreshed.connect(
-            self.s_concent_interval_refreshed)
+            self.s_concent_interval_refreshed
+        )
 
     def _create_guards(self) -> None:
-        """Creates guards used in WebcamApplication and connects their signals."""
-        self._ref_img_path: Optional[str] = None
-        self._ref_landmarks: NDArray[(68, 2), Int[32]] = np.zeros((68, 2), dtype=np.int32)
-        self._camera_dist: Optional[float] = None
-        self._distance_guard = DistanceGuard(grader=self._concentration_grader)
-        self._distance_guard.s_distance_refreshed.connect(self.s_distance_refreshed)
+        self._create_distance_guard()
+        self._create_time_guard()
+        self._create_posture_guard()
 
-        self._angle_calculator = AngleCalculator()
-        self._posture_guard = PostureGuard(
-            calculator=self._angle_calculator, grader=self._concentration_grader)
-        self._posture_guard.s_posture_refreshed.connect(self.s_posture_refreshed)
+    def _create_distance_guard(self) -> None:
+        self._ref_landmarks: NDArray[(68, 2), Int[32]]
+        self._update_ref_landmarks()
 
-        self._time_guard = TimeGuard()
-        self._time_guard.s_time_refreshed.connect(self.s_time_refreshed)
+        settings = self._settings[ApplicationType.DISTANCE_MEASUREMENT.name]
+
+        self._distance_measure = settings.getboolean("ENABLED")
+        self._distance_guard = DistanceGuard(
+            DistanceCalculator(
+                self._ref_landmarks,
+                settings.getfloat("REFERENCE_DISTANCE")
+            ),
+            settings.getfloat("LIMIT"),
+            settings.getboolean("WARNING"),
+        )
+
+    def _create_time_guard(self) -> None:
+        settings = self._settings[ApplicationType.FOCUS_TIMING.name]
+
+        self._focus_time = settings.getboolean("ENABLED")
+        self._time_guard = TimeGuard(
+            settings.getint("LIMIT"),
+            settings.getint("BREAK_TIME"),
+            settings.getboolean("WARNING")
+        )
+        if self._focus_time:
+            self._time_guard.show()
         self.s_stopped.connect(self._time_guard.close_timer_widget)
+
+    def _create_posture_guard(self) -> None:
+        settings = self._settings[ApplicationType.POSTURE_DETECTION.name]
+
+        self._posture_detect = settings.get_biggest_face("ENABLED")
+        model: str = settings["MODEL_PATH"]
+        self._posture_guard = PostureGuard(
+            PosturePredictor(ModelTrainer.load_model(ModelPath[model])),
+            AngleCalculator(),
+            settings.getfloat("ANGLE"),
+            settings.getboolean("WARNING")
+        )
 
     def set_distance_measure(
             self, *,
@@ -138,21 +186,28 @@ class WebcamApplication(QObject):
             camera_dist: Optional[float] = None,
             warn_dist: Optional[float] = None,
             warning_enabled: Optional[bool] = None) -> None:
+        settings = self._settings[ApplicationType.POSTURE_DETECTION.name]
+
         if camera_dist is not None or ref_img_path is not None:
             if camera_dist is not None:
-                self._camera_dist = camera_dist
+                settings["REFERENCE_DISTANCE"] = str(camera_dist)
             if ref_img_path is not None:
-                self._ref_img_path = ref_img_path
+                settings["REFERENCE_IMAGE_PATH"] = ref_img_path
                 self._update_ref_landmarks()
-            if self._camera_dist is not None and self._ref_img_path is not None:
-                self._distance_guard.set_calculator(
-                    DistanceCalculator(self._ref_landmarks, self._camera_dist))
+            self._distance_guard.set_calculator(
+                DistanceCalculator(
+                    self._ref_landmarks,
+                    settings.getfloat("REFERENCE_DISTANCE")
+                )
+            )
         if warn_dist is not None:
+            settings["LIMIT"] = str(warn_dist)
             self._distance_guard.set_warn_dist(warn_dist)
         if warning_enabled is not None:
+            settings["WARNING"] = str(warning_enabled)
             self._distance_guard.set_warning_enabled(warning_enabled)
-        # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
+            settings["ENABLED"] = str(enabled)
             self._distance_measure = enabled
 
     def set_focus_time(
@@ -161,16 +216,21 @@ class WebcamApplication(QObject):
             time_limit: Optional[int] = None,
             break_time: Optional[int] = None,
             warning_enabled: Optional[bool] = None) -> None:
+        settings = self._settings[ApplicationType.FOCUS_TIMING.name]
+
         if time_limit is not None:
+            settings["LIMIT"] = str(time_limit)
             self._time_guard.set_time_limit(time_limit)
         if break_time is not None:
+            settings["BREAK_TIME"] = str(break_time)
             self._time_guard.set_break_time(break_time)
         if warning_enabled is not None:
+            settings["WARNING"] = str(warning_enabled)
             self._time_guard.set_warning_enabled(warning_enabled)
-        # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
-            self._time_guard.reset()
+            settings["ENABLED"] = str(enabled)
             self._focus_time = enabled
+            self._time_guard.reset()
             if enabled:
                 self._timer = Timer()  # Use a new timer.
                 self._time_guard.show()
@@ -183,41 +243,38 @@ class WebcamApplication(QObject):
             model_path: Optional[ModelPath] = None,
             warn_angle: Optional[float] = None,
             warning_enabled: Optional[bool] = None) -> None:
+        settings = self._settings[ApplicationType.POSTURE_DETECTION.name]
+
         if model_path is not None:
+            settings["MODEL_PATH"] = model_path.name  # is enum
             self._posture_guard.set_predictor(
-                PosturePredictor(ModelTrainer.load_model(model_path)))
+                PosturePredictor(ModelTrainer.load_model(model_path))
+            )
         if warn_angle is not None:
+            settings["LIMIT"] = str(warn_angle)
             self._posture_guard.set_warn_angle(warn_angle)
         if warning_enabled is not None:
+            settings["WARNING"] = str(warning_enabled)
             self._posture_guard.set_warning_enabled(warning_enabled)
-        # Notice that enabled after all other arguments are set to prevent from AttributeError.
         if enabled is not None:
+            settings["ENABLED"] = str(enabled)
             self._posture_detect = enabled
 
     def set_brightness_optimization(
             self, *,
             enabled: Optional[bool] = None,
             slider_value: Optional[int] = None,
-            webcam_enabled: Optional[bool] = None,
-            color_system_enabled: Optional[bool] = None) -> None:
+            mode: Optional[BrightnessMode] = None) -> None:
+        settings = self._settings[ApplicationType.BRIGHTNESS_OPTIMIZATION.name]
+
         if slider_value is not None:
+            settings["BASE_VALUE"] = str(slider_value)
             self._brightness_controller.set_base_value(slider_value)
-        if webcam_enabled is not None:
-            self._brightness_modes_enabled[BrightnessMode.WEBCAM] = webcam_enabled
-        if color_system_enabled is not None:
-            self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM] = color_system_enabled
-        # If any of the enabled is changed, reset the mode.
-        if webcam_enabled is not None or color_system_enabled is not None:
-            if all(self._brightness_modes_enabled.values()):
-                self._brightness_controller.set_mode(BrightnessMode.BOTH)
-            elif self._brightness_modes_enabled[BrightnessMode.WEBCAM]:
-                self._brightness_controller.set_mode(BrightnessMode.WEBCAM)
-            elif self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM]:
-                self._brightness_controller.set_mode(BrightnessMode.COLOR_SYSTEM)
-            else:
-                self._brightness_controller.set_mode(BrightnessMode.MANUAL)
-        # Notice that enabled after all other arguments are set to prevent from AttributeError.
+        if mode is not None:
+            settings["MODE"] = mode.name  # is enum
+            self._brightness_controller.set_mode(mode)
         if enabled is not None:
+            settings["ENABLED"] = str(enabled)
             self._brightness_optimize = enabled
 
     @pyqtSlot()
@@ -249,23 +306,27 @@ class WebcamApplication(QObject):
             landmarks: NDArray[(68, 2), Int[32]] = self._get_landmarks(canvas, frame)
             # Do applications!
             if self._distance_measure and has_face(landmarks):
-                self._distance_guard.warn_if_too_close(canvas, landmarks)
+                dist_info = self._distance_guard.warn_if_too_close(landmarks)
+                self.s_distance_refreshed.emit(*dist_info)
             if self._posture_detect:
                 draw_landmarks_used_by_angle_calculator(canvas, landmarks)
-                self._posture_guard.check_posture(canvas, frame, landmarks)
+                post_info = self._posture_guard.check_posture(frame, landmarks)
+                self.s_posture_refreshed.emit(*post_info)
             if self._focus_time:
-                # If the landmarks of face are clear, ths user is considered not focusing
-                # on the screen, so the timer is paused.
+                # If the landmarks doesn't contain a face, ths user is
+                # considered not focusing on the screen, so the timer is paused.
                 if not has_face(landmarks):
                     self._timer.pause()
                 else:
                     self._timer.start()
-                self._time_guard.break_time_if_too_long(self._timer)
+                time_info = self._time_guard.break_time_if_too_long(self._timer)
+                self.s_time_refreshed.emit(*time_info)
             if self._brightness_optimize:
-                # pass canvas if webcam is checked
-                if self._brightness_modes_enabled[BrightnessMode.WEBCAM]:
-                    self._brightness_controller.set_webcam_frame(canvas)
-                if self._brightness_modes_enabled[BrightnessMode.COLOR_SYSTEM]:
+                # this overhead is small, so I don't check mode
+                self._brightness_controller.set_webcam_frame(frame)
+                # screenshot has greater overhead
+                if (self._brightness_controller.get_mode()
+                        in (BrightnessMode.BOTH, BrightnessMode.COLOR_SYSTEM)):
                     self._brightness_controller.refresh_color_system_screenshot()
                 # Optimize brightness after passing required images.
                 bright: int = self._brightness_controller.optimize_brightness()
@@ -311,7 +372,9 @@ class WebcamApplication(QObject):
 
     def _update_ref_landmarks(self) -> None:
         """Updates the reference landmarks with the reference image path."""
-        ref_img: ColorImage = cv2.imread(self._ref_img_path)
+        ref_img: ColorImage = cv2.imread(
+            self._settings[ApplicationType.DISTANCE_MEASUREMENT.name]["REFERENCE_IMAGE_PATH"]
+        )
         faces: dlib.rectangles = self._face_detector(ref_img)
         if len(faces) != 1:
             # must have exactly one face in the reference image

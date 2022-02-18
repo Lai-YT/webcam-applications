@@ -41,6 +41,10 @@ class BrightnessController:
         """
         self._mode = mode
 
+    def get_mode(self) -> BrightnessMode:
+        """Returns the brightness mode used by the controller."""
+        return self._mode
+
     def set_base_value(self, base_value: int) -> None:
         """
         Arguments:
