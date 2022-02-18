@@ -22,7 +22,7 @@ class PanelController(QObject):
         self._connect_signals()
 
     def _init_panels(self) -> None:
-        settings: ConfigParser = self._app.settings
+        settings: ConfigParser = self._app.get_settings()
 
         # Enable apps that are enabled.
         for app_type, panel in self._panel_widget.panels.items():

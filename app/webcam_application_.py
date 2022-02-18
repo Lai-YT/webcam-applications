@@ -100,8 +100,7 @@ class WebcamApplication(QObject):
         self._settings = ConfigParser()
         self._settings.read(self.SETTINGS_FILE, encoding="utf-8")
 
-    @property
-    def settings(self) -> ConfigParser:
+    def get_settings(self) -> ConfigParser:
         """Returns a copy of the currents settings used by the applcations."""
         return deepcopy(self._settings)
 
