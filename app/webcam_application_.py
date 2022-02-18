@@ -163,6 +163,7 @@ class WebcamApplication(QObject):
             settings.getint("BREAK_TIME"),
             settings.getboolean("WARNING")
         )
+        self._timer = Timer()
         if self._focus_time:
             self._time_guard.show()
         self.s_stopped.connect(self._time_guard.close_timer_widget)
@@ -170,7 +171,7 @@ class WebcamApplication(QObject):
     def _create_posture_guard(self) -> None:
         settings = self._settings[ApplicationType.POSTURE_DETECTION.name]
 
-        self._posture_detect = settings.get_biggest_face("ENABLED")
+        self._posture_detect = settings.getboolean("ENABLED")
         model: str = settings["MODEL_PATH"]
         self._posture_guard = PostureGuard(
             PosturePredictor(ModelTrainer.load_model(ModelPath[model])),
@@ -231,8 +232,8 @@ class WebcamApplication(QObject):
             settings["ENABLED"] = str(enabled)
             self._focus_time = enabled
             self._time_guard.reset()
+            self._timer.reset()
             if enabled:
-                self._timer = Timer()  # Use a new timer.
                 self._time_guard.show()
             else:
                 self._time_guard.hide()
@@ -290,6 +291,7 @@ class WebcamApplication(QObject):
         self._f_ready = True
 
         # focus time needs a timer to help.
+        self._timer.reset()
         if self._focus_time:
             self._timer.start()
 

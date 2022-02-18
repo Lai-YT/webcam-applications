@@ -1,6 +1,5 @@
 from typing import Optional, Tuple
 
-from PyQt5.QtCore import pyqtSlot
 from playsound import playsound
 
 from gui.popup_shower import TimeShower
@@ -106,7 +105,6 @@ class TimeGuard:
         self._time_shower.switch_time_state(TimeState.WORK)
         self._break_timer.reset()
 
-    @pyqtSlot()
     def close_timer_widget(self) -> None:
         self._time_shower.close_timer_widget()
         # If not reset, a break-time-close might keep the countdown to next start.
