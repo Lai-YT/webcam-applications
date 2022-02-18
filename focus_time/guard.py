@@ -1,6 +1,5 @@
-from typing import Optional
+from typing import Tuple
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from playsound import playsound
 
 from gui.popup_shower import TimeShower
@@ -10,23 +9,15 @@ from util.time import Timer, min_to_sec
 
 
 # FIXME: Negative time occurs under unknown condition
-class TimeGuard(QObject):
+class TimeGuard:
     """TimeGuard checks whether the time held by a Timer exceeds time limit
     and interacts with a TimeShower to show the corresponding TimerWidget.
-
-    Signals:
-        s_time_refreshed:
-            Emits everytime break_time_if_too_long is called.
-            If isn't time to take a break, the time held br timer and state work
-            is sent; otherwise the countdown of break and state break is sent.
     """
-
-    s_time_refreshed = pyqtSignal(int, TimeState)
-
-    def __init__(self,
-                 time_limit: Optional[int] = None,
-                 break_time: Optional[int] = None,
-                 warning_enabled: bool = True) -> None:
+    def __init__(
+            self,
+            time_limit: int,
+            break_time: int,
+            warning_enabled: bool = True) -> None:
         """
         All arguments can be set later with their corresponding setters.
 
@@ -39,10 +30,8 @@ class TimeGuard(QObject):
         """
         super().__init__()
 
-        if time_limit is not None:
-            self._time_limit: int = min_to_sec(time_limit)
-        if break_time is not None:
-            self._break_time: int = min_to_sec(break_time)
+        self._time_limit = min_to_sec(time_limit)
+        self._break_time = min_to_sec(break_time)
         self._warning_enabled: bool = warning_enabled
 
         self._f_break_started: bool = False
@@ -74,40 +63,31 @@ class TimeGuard(QObject):
         """
         self._warning_enabled = enabled
 
-    def break_time_if_too_long(self, timer: Timer) -> None:
-        """The timer widget switches to break mode if the time held by timer exceeds
-        the time limit.
-
-        Notice that the time is simply updated to the timer widget and kept in
-        work mode if time limit or break time haven't been set yet.
+    def break_time_if_too_long(self, timer: Timer) -> Tuple[int, TimeState]:
+        """The timer widget switches to break mode if the time held by timer
+        exceeds the time limit.
 
         Arguments:
             timer: Contains time record.
 
-        Emits:
-            s_time_refreshed:
-                If isn't time to take a break, the time held by timer and work state is
-                sent; otherwise the countdown of break and break state is sent.
+        Returns:
+            A tuple about the time and state.
+            Time of the timer if in work state, countdown time if in break state.
         """
-        if not hasattr(self, "_break_time") or not hasattr(self, "_time_limit"):
-            # Only display the time if the guard is not ready.
-            self._time_shower.update_time(timer.time())
-            self.s_time_refreshed.emit(timer.time(), TimeState.WORK)
-            return
-
         # Break time is over.
         if self._break_timer.time() > self._break_time:
             timer.reset()
             self._end_break()
+            return 0, TimeState.WORK
         # not the time to take a break
-        # Note that an extra flag check is to prevent state change during break
+        # NOTE: an extra flag check is to prevent state change during break
         # due to a time limit setting.
-        elif timer.time() < self._time_limit and not self._f_break_started:
+        if timer.time() < self._time_limit and not self._f_break_started:
             # The time of the normal timer is to be shown.
             self._time_shower.update_time(timer.time())
-            self.s_time_refreshed.emit(timer.time(), TimeState.WORK)
-        else:
-            self._take_break()
+            return timer.time(), TimeState.WORK
+
+        return self._take_break()
 
     def show(self) -> None:
         """Shows the TimerWidget."""
@@ -125,18 +105,17 @@ class TimeGuard(QObject):
         self._time_shower.switch_time_state(TimeState.WORK)
         self._break_timer.reset()
 
-    @pyqtSlot()
     def close_timer_widget(self) -> None:
         self._time_shower.close_timer_widget()
         # If not reset, a break-time-close might keep the countdown to next start.
         # (no effect if every start is a fresh new guard)
         self.reset()
 
-    def _take_break(self) -> None:
+    def _take_break(self) -> Tuple[int, TimeState]:
         """Updates the time of the break timer to the timer widget.
 
-        Emits:
-            s_time_refreshed: Emits with the countdown of break and the break state.
+        Returns:
+            Countdown time and TimeState.BREAK.
         """
         # If is the very moment to enter the break.
         if not self._f_break_started:
@@ -144,7 +123,7 @@ class TimeGuard(QObject):
         countdown: int = self._break_time - self._break_timer.time()
         # The time (countdown) of the break timer is to be shown.
         self._time_shower.update_time(countdown)
-        self.s_time_refreshed.emit(countdown, TimeState.BREAK)
+        return countdown, TimeState.BREAK
 
     def _enter_break(self) -> None:
         """Sound warning is played if it's enabled.

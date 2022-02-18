@@ -1,5 +1,4 @@
 import time
-import logging
 from functools import partial
 from typing import Optional, Tuple
 
@@ -17,7 +16,6 @@ from concentration.fuzzy.classes import Interval
 from concentration.fuzzy.grader import FuzzyGrader
 from concentration.interval import IntervalType
 from util.heap import MinHeap
-from util.logger import setup_logger
 from util.path import to_abs_path
 from util.sliding_window import WindowType
 from util.time import ONE_MIN, get_current_time, to_date_time
@@ -62,11 +60,6 @@ class ConcentrationGrader(QObject):
                 existence. 0.66 (2/3) in default.
         """
         super().__init__()
-        # Loggings for flow tracing.
-        self._grade_logger: logging.Logger = setup_logger(
-            "grade_logger", to_abs_path("grades.log"), logging.DEBUG)
-        self._grade_logger.info(f"Grader starts at {to_date_time(get_current_time())}\n")
-
         # FIXME: Blink detection not accurate, lots of false blink.
         self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
 
@@ -186,11 +179,8 @@ class ConcentrationGrader(QObject):
                 # Not a LOW_FACE interval but is low face. We can expect
                 # that there is a LOW_FACE but not yet in the heap.
                 # So keep poping util we get the request of LOW_FACE.
-                # Note that I assume the time asychronous problem is
+                # NOTE: I assume the time asychronous problem is
                 # negligible since it's within a second.
-                self._grade_logger.info(
-                    f"low face, skip {to_date_time(interval.start)} ~ "
-                    f"{to_date_time(interval.end)}, {str(interval_type)}")
                 continue
             else:
                 if blink_rate is None:
@@ -203,11 +193,6 @@ class ConcentrationGrader(QObject):
                 if (extrude_interval is not None
                         and not self._is_graded_interval(extrude_interval[0])):
                     self._perform_face_existing_grading(*extrude_interval)
-                # unexpected situation, logging...
-                if (extrude_interval is not None
-                        and self._is_graded_interval(extrude_interval[0])):
-                    self._grade_logger.info(str(extrude_interval))
-                    self._grade_logger.info(str(self._last_end_time))
 
                 self._last_end_time = interval.end
                 self._interval_detector.sync_last_end_up(self._last_end_time)
@@ -242,19 +227,14 @@ class ConcentrationGrader(QObject):
             s_concent_interval_refreshed:
                 Emits if the the grading result is recorded and sends the grade.
         """
-        self._grade_logger.info(f"Normal check at {to_date_time(interval.start)} ~ "
-                                f"{to_date_time(interval.end)}")
-        self._grade_logger.info(f"blink rate = {blink_rate}")
-
         window_type = WindowType.CURRENT
         if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
             window_type = WindowType.PREVIOUS
 
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
             window_type, interval)
-        self._grade_logger.info(f"body concentration = {body_concent}")
 
-        # LOOK_BACK and EXTRUSIONs are always graded and record.
+        # LOOK_BACK and EXTRUSIONs are always graded and recorded.
         if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
             if interval_type is IntervalType.LOOK_BACK:
                 interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
@@ -264,9 +244,6 @@ class ConcentrationGrader(QObject):
                     (blink_rate*ONE_MIN) / (interval.end-interval.start), body_concent)
             self.s_concent_interval_refreshed.emit(interval)
             self._clear_windows(window_type)
-            # A grading on previous can only be bad, since they didn't
-            # pass when they were real time.
-            self._grade_logger.info(f"bad concentration: {interval.grade}")
             return True
         # REAL_TIMEs
         grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
@@ -274,10 +251,8 @@ class ConcentrationGrader(QObject):
             interval.grade = grade
             self.s_concent_interval_refreshed.emit(interval)
             self._clear_windows(window_type)
-            self._grade_logger.info(f"good concentration: {interval.grade}")
             return True
         else:
-            self._grade_logger.info(f"{grade}, not concentrating")
             return False
 
     def _perform_low_face_grading(self, interval: Interval) -> bool:
@@ -298,20 +273,13 @@ class ConcentrationGrader(QObject):
             s_concent_interval_refreshed:
                 Emits if the the grading result is recorded and sends the grade.
         """
-        self._grade_logger.info(f"Low face check at {to_date_time(interval.start)} ~ "
-                                f"{to_date_time(interval.end)}")
-
         # low face existence check is always on the current window
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
             WindowType.CURRENT, interval)
-        self._grade_logger.info(f"body concentration = {body_concent}")
         # Directly take the body concentration as the final grade.
         interval.grade = body_concent
         self.s_concent_interval_refreshed.emit(interval)
         self._clear_windows(WindowType.CURRENT)
-
-        review = "good" if interval.grade >= 0.6 else "bad"
-        self._grade_logger.info(review + f" concentration: {interval.grade}")
         return True
 
     def _clear_windows(self, window_type: WindowType) -> None:

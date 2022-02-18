@@ -1,16 +1,13 @@
-import os
-from configparser import ConfigParser
 from typing import Dict, Tuple
 
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
+from app.app_type import ApplicationType
 from app.webcam_application_ import WebcamApplication
 from intergrated_gui.panel_controller import PanelController
 from intergrated_gui.window import Window
 from util.task_worker import TaskWorker
 
-# Path of the config file.
-CONFIG = os.path.join(os.path.abspath(os.path.dirname(__file__)), "gui_state.ini")
 
 class WindowController(QObject):
     def __init__(self, window: Window, app: WebcamApplication) -> None:
@@ -20,11 +17,9 @@ class WindowController(QObject):
         self._app = app
         self._panel_controller = PanelController(window.widgets["panel"], self._app)
 
-        self._load_panel_configs()
         self._connect_app_and_information()
         self._connect_app_and_frame()
         self._connect_information_and_panel()
-        self._connect_clean_up_signal()
         self._start_app()
 
     def _start_app(self) -> None:
@@ -59,11 +54,11 @@ class WindowController(QObject):
         panel_widget = self._window.widgets["panel"]
 
         # panel and its relative name of info
-        relations: Dict[str, Tuple[str, ...]] = {
-            "distance": ("distance",),
-            "time": ("time", "time-state"),
-            "posture": ("posture", "posture-detail"),
-            "brightness": ("brightness",),
+        relations: Dict[ApplicationType, Tuple[str, ...]] = {
+            ApplicationType.DISTANCE_MEASUREMENT: ("distance",),
+            ApplicationType.FOCUS_TIMING: ("time", "time-state"),
+            ApplicationType.POSTURE_DETECTION: ("posture", "posture-detail"),
+            ApplicationType.BRIGHTNESS_OPTIMIZATION: ("brightness",),
         }
         # init state
         for panel, infos in relations.items():
@@ -77,25 +72,7 @@ class WindowController(QObject):
             for info in infos:
                 panel_widget.panels[panel].toggled.connect(
                     lambda checked, info=info:
-                    info_widget.show(info) if checked
-                    else info_widget.hide(info)
+                        info_widget.show(info)
+                        if checked else
+                        info_widget.hide(info)
                 )
-
-    def _connect_clean_up_signal(self) -> None:
-        # Have the configs save before GUI being destroyed.
-        self._window.set_clean_up_before_destroy(self._store_panel_configs)
-
-    def _load_panel_configs(self) -> None:
-        """Loads the configs of panel controller."""
-        # Create a shared parser since they depends on the same config file.
-        self._config = ConfigParser()
-        self._config.read(CONFIG)
-
-        self._panel_controller.load_configs(self._config)
-
-    def _store_panel_configs(self) -> None:
-        """Stores the configs of panel controller."""
-        self._panel_controller.store_configs(self._config)
-        # Save the states of all pages back to the config file all at once.
-        with open(CONFIG, "w") as f:
-            self._config.write(f)

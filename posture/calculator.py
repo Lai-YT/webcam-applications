@@ -68,6 +68,9 @@ class AngleCalculator:
             return math.atan((y2 - y1) / (x2 - x1)) * 180 / math.pi
 
     def angle(self) -> Optional[float]:
+        """Returns the angle of the lastest calculation; None if haven't
+        calculate any angle yet.
+        """
         return self._cache
 
 
