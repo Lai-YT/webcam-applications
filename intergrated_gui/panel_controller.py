@@ -54,7 +54,7 @@ class PanelController(QObject):
         app_type = ApplicationType.POSTURE_DETECTION
         panel = self._panel_widget.panels[app_type]
 
-        angle = settings.getfloat(app_type.name, "ANGLE")
+        angle = settings.getint(app_type.name, "ANGLE")
         panel.angles[AngleTolerance(angle)].setChecked(True)
         panel.custom.setChecked(
             settings.get(app_type.name, "MODEL_PATH") == ModelPath.CUSTOM.name
@@ -101,8 +101,7 @@ class PanelController(QObject):
         bound.editingFinished.connect(
             lambda: self._app.set_distance_measure(warn_dist=float(bound.text()))
         )
-        warning = panel.warning
-        warning.toggled.connect(
+        panel.warning.toggled.connect(
             lambda checked: self._app.set_distance_measure(warning_enabled=checked)
         )
 
@@ -129,8 +128,7 @@ class PanelController(QObject):
         break_.editingFinished.connect(
             lambda: self._app.set_focus_time(break_time=int(break_.text()))
         )
-        warning = panel.warning
-        warning.toggled.connect(
+        panel.warning.toggled.connect(
             lambda checked: self._app.set_focus_time(warning_enabled=checked)
         )
 
@@ -155,8 +153,7 @@ class PanelController(QObject):
                 model_path=(ModelPath.CUSTOM if checked else ModelPath.DEFAULT)
             )
         )
-        warning = panel.warning
-        warning.toggled.connect(
+        panel.warning.toggled.connect(
             lambda checked: self._app.set_posture_detect(warning_enabled=checked)
         )
 
@@ -170,13 +167,11 @@ class PanelController(QObject):
             if (panel.modes[BrightnessMode.WEBCAM].isChecked()
                     and panel.modes[BrightnessMode.COLOR_SYSTEM].isChecked()):
                 return BrightnessMode.BOTH
-            if (not panel.modes[BrightnessMode.WEBCAM].isChecked()
-                    and not panel.modes[BrightnessMode.COLOR_SYSTEM].isChecked()):
-                return BrightnessMode.MANUAL
             if panel.modes[BrightnessMode.WEBCAM].isChecked():
                 return BrightnessMode.WEBCAM
             if panel.modes[BrightnessMode.COLOR_SYSTEM].isChecked():
                 return BrightnessMode.COLOR_SYSTEM
+            return BrightnessMode.MANUAL
 
         panel.toggled.connect(
             lambda checked: self._app.set_brightness_optimization(enabled=checked)
