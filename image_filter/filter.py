@@ -132,17 +132,17 @@ class ImageFilter:
         return value * face_area / np.sum(face_area)
 
 
-def plot_mask_diff(filter: ImageFilter) -> None:
+def plot_mask_diff(filter_: ImageFilter) -> None:
     """Plots the image and shows filtered brightness on the window."""
-    masked = filter.get_brightness(mask=True)
-    without_mask = filter.get_brightness()
+    masked = filter_.get_brightness(mask=True)
+    without_mask = filter_.get_brightness()
     diff = masked - without_mask
-    weighted = filter.get_brightness(weight=True)
+    weighted = filter_.get_brightness(weight=True)
 
     title = (f"Brightness without mask: {without_mask}\n"
              f"Result brightness: {masked} (diff = {diff:.2f})\n"
              f"Weighted brightness: {weighted}")
 
-    plt.imshow(filter.image)
+    plt.imshow(filter_.image)
     plt.title(title)
     plt.show()

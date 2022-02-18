@@ -203,18 +203,18 @@ class BlinkRateIntervalDetector(QObject):
                                           IntervalType.LOOK_BACK,
                                           self._get_blink_rate(WindowType.PREVIOUS))
 
-    def _get_blink_rate(self, type: WindowType) -> int:
+    def _get_blink_rate(self, window_type: WindowType) -> int:
         """Returns the blink rate of the corresponding window.
 
         Arguments:
-            type: The window to get blink rate from.
+            window_type: The window to get blink rate from.
         """
         # Since the width of window is 60 seconds, its length is exactly the
         # blink rate.
         blink_rate: int
-        if type is WindowType.CURRENT:
+        if window_type is WindowType.CURRENT:
             blink_rate = len(self._blink_times)
-        elif type is WindowType.PREVIOUS:
+        elif window_type is WindowType.PREVIOUS:
             blink_rate = len(self._blink_times.previous)
         return blink_rate
 
@@ -236,21 +236,21 @@ class BodyConcentrationCounter:
 
     def get_concentration_ratio(
             self,
-            type: WindowType,
+            window_type: WindowType,
             interval: Interval) -> float:
         """Returns the amount of body concentration in the interval.
 
         The result is rounded to two decimal places.
 
         Arguments:
-            type: The window to get concentration from.
+            window_type: The window to get concentration from.
             interval: The interval dataclass which contains start and end time.
         """
         def count_time_in_interval(times: DoubleTimeWindow) -> int:
             # Assumes that the interval is synced up properly, so the count is
             # simply the length of the corresponding window.
             window: Sized
-            if type is WindowType.PREVIOUS:
+            if window_type is WindowType.PREVIOUS:
                 window = times.previous
             else:
                 window = times

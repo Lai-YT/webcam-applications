@@ -15,7 +15,7 @@ from util.path import to_abs_path
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(
     "posture/trained_models/shape_predictor_68_face_landmarks.dat")
-filter = ImageFilter()
+filter_ = ImageFilter()
 
 
 def real_time_brightness_capture() -> None:
@@ -29,12 +29,12 @@ def real_time_brightness_capture() -> None:
             continue
         # 1st is used
         face: dlib.rectangle = faces[0]
-        filter.refresh_image(frame, face)
+        filter_.refresh_image(frame, face)
         # draw face
         fx, fy, fw, fh = face_utils.rect_to_bb(faces[0])
         cv2.rectangle(frame, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
 
-        brightness: float = filter.get_brightness(mask=True)
+        brightness: float = filter_.get_brightness(mask=True)
         cv2.putText(frame, f"Bright. = {brightness}", (50, 50), FONT_0, 1, CYAN, 2)
         frame = imutils.resize(frame, width=600)
         cv2.imshow("Brightness", frame)
@@ -50,13 +50,13 @@ def show_static_diff(frame: ColorImage) -> None:
         return
     # 1st is used
     face: dlib.rectangle = faces[0]
-    filter.refresh_image(frame, face)
-    plot_mask_diff(filter)
+    filter_.refresh_image(frame, face)
+    plot_mask_diff(filter_)
 
 
 if __name__ == "__main__":
     # real_time_brightness_capture()
 
-    dir = to_abs_path("image_filter")
-    frame = cv2.imread(dir + "/img/ref_img.jpg")
+    dir_ = to_abs_path("image_filter")
+    frame = cv2.imread(dir_ + "/img/ref_img.jpg")
     show_static_diff(frame)

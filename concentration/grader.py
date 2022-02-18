@@ -252,8 +252,7 @@ class ConcentrationGrader(QObject):
             self.s_concent_interval_refreshed.emit(interval)
             self._clear_windows(window_type)
             return True
-        else:
-            return False
+        return False
 
     def _perform_low_face_grading(self, interval: Interval) -> bool:
         """Performs grading on the low face existence interval and records it
