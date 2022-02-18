@@ -22,9 +22,6 @@ class BrightnessController:
                 The user's screen brightness preference.
                 Brightness is adjusted up and down with respect to it.
             mode: Mode that the brightness adjustment depends on.
-            frames:
-                Used to compare brightness with the base value to can get
-                the new brightness.
         """
         super().__init__()
 
