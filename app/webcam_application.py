@@ -91,9 +91,9 @@ class WebcamApplication(QObject):
             landmarks: NDArray[(68, 2), Int[32]] = self._get_landmarks(canvas, frame)
             # Do applications!
             if self._distance_measure and has_face(landmarks):
-                self._distance_guard.warn_if_too_close(canvas, landmarks)
+                self._distance_guard.warn_if_too_close(landmarks)
             if self._posture_detect:
-                self._posture_guard.check_posture(canvas, frame, landmarks)
+                self._posture_guard.check_posture(frame, landmarks)
                 draw_landmarks_used_by_angle_calculator(canvas, landmarks)
             if self._focus_time:
                 # If the landmarks of face are clear, ths user is considered not focusing
