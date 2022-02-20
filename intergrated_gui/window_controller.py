@@ -3,7 +3,7 @@ from typing import Dict, Tuple
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
 from app.app_type import ApplicationType
-from app.webcam_application_ import WebcamApplication
+from app.webcam_application import WebcamApplication
 from intergrated_gui.panel_controller import PanelController
 from intergrated_gui.window import Window
 from util.task_worker import TaskWorker

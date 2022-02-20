@@ -1,7 +1,7 @@
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
-import gui.img.icon
+import intergrated_gui.img.icon
 from gui.page_widget import PageWidget
 from intergrated_gui.component import StatusBar
 

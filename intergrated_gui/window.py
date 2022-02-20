@@ -4,7 +4,7 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QCloseEvent, QIcon, QResizeEvent
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 
-import gui.img.icon
+import intergrated_gui.img.icon
 from intergrated_gui.frame_widget import FrameWidget
 from intergrated_gui.information_widget import InformationWidget
 from intergrated_gui.panel_widget import PanelWidget

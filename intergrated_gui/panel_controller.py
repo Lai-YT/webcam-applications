@@ -5,7 +5,7 @@ from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QFileDialog
 
 from app.app_type import ApplicationType
-from app.webcam_application_ import WebcamApplication
+from app.webcam_application import WebcamApplication
 from brightness.calcuator import BrightnessMode
 from intergrated_gui.panel_widget import AngleTolerance, PanelWidget
 from posture.train import ModelPath

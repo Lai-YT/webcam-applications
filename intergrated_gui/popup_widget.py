@@ -6,7 +6,6 @@ from PyQt5.QtGui import QIcon, QMouseEvent
 from PyQt5.QtWidgets import (QStackedWidget, QVBoxLayout, QToolButton, QWhatsThis,
                              QWidget)
 
-import gui.img.icon
 from intergrated_gui.component import LCDClock
 
 
@@ -27,8 +26,6 @@ class TimerWidget(QWidget):
         super().__init__(parent, Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         # Set some basic properties.
-        self.setWindowTitle("Timer")
-        self.setWindowIcon(QIcon(":webcam.ico"))
         self.setFixedSize(250, 150)
 
         self._general_layout = QVBoxLayout()
