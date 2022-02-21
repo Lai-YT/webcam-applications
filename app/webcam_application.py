@@ -151,6 +151,7 @@ class WebcamApplication(QObject):
             ),
             settings.getfloat("LIMIT"),
             settings.getboolean("WARNING"),
+            self._concentration_grader
         )
 
     def _create_time_guard(self) -> None:
@@ -176,7 +177,8 @@ class WebcamApplication(QObject):
             PosturePredictor(ModelTrainer.load_model(ModelPath[model])),
             AngleCalculator(),
             settings.getfloat("ANGLE"),
-            settings.getboolean("WARNING")
+            settings.getboolean("WARNING"),
+            self._concentration_grader
         )
 
     def set_distance_measure(
