@@ -23,7 +23,6 @@
 
 import math
 import statistics
-from enum import Enum, auto
 from typing import List, Tuple
 
 import cv2
@@ -33,11 +32,6 @@ from nptyping import Int, NDArray
 
 from util.color import BGR, GREEN
 from util.image_type import ColorImage
-
-
-class EyeSide(Enum):
-    LEFT  = auto()
-    RIGHT = auto()
 
 
 class TailorMadeNormalEyeAspectRatioMaker:
@@ -81,8 +75,12 @@ class TailorMadeNormalEyeAspectRatioMaker:
         if not landmarks.any():
             return
         self._sample_ratios.append(BlinkDetector.get_average_eye_aspect_ratio(landmarks))
-        # Keep the length of the samples fixed to number threshold,
-        # which is the most recent samples.
+        self._remove_oldest_sample_if_reaches_threshold()
+
+    def _remove_oldest_sample_if_reaches_threshold(self) -> None:
+        """Removes the oldest sample ratio if the number of samples reaches the
+        threshold.
+        """
         if len(self._sample_ratios) > self._number_threshold:
             self._sample_ratios.pop(0)
 
@@ -94,17 +92,20 @@ class TailorMadeNormalEyeAspectRatioMaker:
         # If the number of samples isn't enough,
         # temp_ratio is used as the normal EAR.
         if num_of_sample < self._number_threshold:
-            return num_of_sample, self._temp_ratio
-        # Sort the ratios and take the mean of the upper 75% as the normal EAR.
+            ratio = self._temp_ratio
+        else:
+            ratio = self._get_middle_mean_of_sample_ratios()
+        return num_of_sample, ratio
+
+    def _get_middle_mean_of_sample_ratios(self) -> float:
+        """Sorts the ratios and take the mean of the upper 75% as the normal EAR."""
         # The lower 25% is not taken under consideration because those may be blinking.
-        #
-        # Note that we can't sort the samples in-place because we want to keep
+        # NOTE: We can't sort the samples in-place because we want to keep
         # the recent samples, which is the append order.
         # If the sort is in-place, we don't know which one to pop next time a
         # new sample is appended.
         sorted_samples: List[float] = sorted(self._sample_ratios)
-        ratio = statistics.mean(sorted_samples[int(num_of_sample*0.25):])
-        return num_of_sample, ratio
+        return statistics.mean(sorted_samples[int(len(sorted_samples)*0.25):])
 
     def clear(self) -> None:
         """Clears the existing samples."""
@@ -151,7 +152,9 @@ class BlinkDetector:
         self._ratio_threshold = threshold
 
     @classmethod
-    def get_average_eye_aspect_ratio(cls, landmarks: NDArray[(68, 2), Int[32]]) -> float:
+    def get_average_eye_aspect_ratio(
+            cls,
+            landmarks: NDArray[(68, 2), Int[32]]) -> float:
         """Returns the average EAR from the left and right eye.
 
         Arguments:
@@ -159,8 +162,12 @@ class BlinkDetector:
         """
         # use the left and right eye coordinates to compute
         # the eye aspect ratio for both eyes
-        left_ratio = BlinkDetector._get_eye_aspect_ratio(cls._extract_eye(landmarks, EyeSide.LEFT))
-        right_ratio = BlinkDetector._get_eye_aspect_ratio(cls._extract_eye(landmarks, EyeSide.RIGHT))
+        left_ratio = BlinkDetector._get_eye_aspect_ratio(
+            cls._extract_left_eye(landmarks)
+        )
+        right_ratio = BlinkDetector._get_eye_aspect_ratio(
+            cls._extract_right_eye(landmarks)
+        )
 
         # average the eye aspect ratio together for both eyes
         return statistics.mean((left_ratio, right_ratio))
@@ -202,21 +209,18 @@ class BlinkDetector:
         return statistics.mean(vert) / statistics.mean(hor)
 
     @classmethod
-    def _extract_eye(cls, landmarks: NDArray[(68, 2), Int[32]], side: EyeSide) -> NDArray[(6, 2), Int[32]]:
-        """Returns the 6 (x, y) coordinates of landmarks that represent the eye.
+    def _extract_left_eye(
+            cls,
+            landmarks: NDArray[(68, 2), Int[32]]) -> NDArray[(6, 2), Int[32]]:
+        return landmarks[cls.LEFT_EYE_START_END_IDXS[0]
+                         :cls.LEFT_EYE_START_END_IDXS[1]]
 
-        Arguments:
-            landmarks: (x, y) coordinates of the 68 face landmarks.
-            side: The side of eye to be extracted.
-        """
-        eye: NDArray[(6, 2), Int[32]]
-        if side is EyeSide.LEFT:
-            eye = landmarks[cls.LEFT_EYE_START_END_IDXS[0]:cls.LEFT_EYE_START_END_IDXS[1]]
-        elif side is EyeSide.RIGHT:
-            eye = landmarks[cls.RIGHT_EYE_START_END_IDXS[0]:cls.RIGHT_EYE_START_END_IDXS[1]]
-        else:
-            raise TypeError(f"type of argument side must be EyeSide, not '{type(side).__name__}'")
-        return eye
+    @classmethod
+    def _extract_right_eye(
+            cls,
+            landmarks: NDArray[(68, 2), Int[32]]) -> NDArray[(6, 2), Int[32]]:
+        return landmarks[cls.RIGHT_EYE_START_END_IDXS[0]
+                         :cls.RIGHT_EYE_START_END_IDXS[1]]
 
 
 def draw_landmarks_used_by_blink_detector(
@@ -234,7 +238,8 @@ def draw_landmarks_used_by_blink_detector(
 
     # compute the convex hull for the left and right eye, then
     # visualize each of the eyes
-    for start, end in (BlinkDetector.LEFT_EYE_START_END_IDXS, BlinkDetector.RIGHT_EYE_START_END_IDXS):
+    for start, end in (BlinkDetector.LEFT_EYE_START_END_IDXS,
+                       BlinkDetector.RIGHT_EYE_START_END_IDXS):
         hull = cv2.convexHull(landmarks[start:end])
         cv2.drawContours(canvas_, [hull], -1, color, 1)
 
@@ -291,12 +296,14 @@ class AntiNoiseBlinkDetector(QObject):
         Emits:
             s_blinked: Emits when a anti-noise blink is detected.
         """
-        blinked: bool = self._base_detector.detect_blink(landmarks)
-        if blinked:
+        if self._base_detector.detect_blink(landmarks):
            self._consec_count += 1
         else:
-            # if the eyes were closed for a sufficient number of frames,
-            # it's considered to be a real blink
-            if self._consec_count >= self._consec_frame:
-                self.s_blinked.emit()
+            self._emit_blink_if_sufficient_consec_frames()
             self._consec_count = 0
+
+    def _emit_blink_if_sufficient_consec_frames(self) -> None:
+        # if the eyes were closed for a sufficient number of frames,
+        # it's considered to be a real blink
+        if self._consec_count >= self._consec_frame:
+            self.s_blinked.emit()
