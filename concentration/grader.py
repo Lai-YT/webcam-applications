@@ -17,8 +17,8 @@ from concentration.fuzzy.grader import FuzzyGrader
 from concentration.interval import IntervalType
 from util.heap import MinHeap
 from util.path import to_abs_path
-from util.sliding_window import WindowType
 from util.time import ONE_MIN, get_current_time, to_date_time
+from util.time_window import WindowType
 
 
 class ConcentrationGrader(QObject):

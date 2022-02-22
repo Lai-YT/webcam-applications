@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from util.sliding_window import DoubleTimeWindow, TimeWindow, WindowType
+from util.time_window import DoubleTimeWindow, TimeWindow, WindowType
 from util.time import get_current_time
 
 
