@@ -63,8 +63,14 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
         for _ in range(16):
             self.time_window.append_time()
             time.sleep(4.5)
+
         self.assertEqual(len(self.time_window), 14)
         self.assertEqual(len(self.time_window.previous), 2)
+
+    def test_window_modified_with_property(self) -> None:
+        self.time_window.previous.append(0)
+
+        self.assertEqual(len(self.time_window.previous), 0)
 
     def test_append_time_not_exceed(self) -> None:
         times = []

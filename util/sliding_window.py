@@ -142,7 +142,7 @@ class DoubleTimeWindow(TimeWindow):
     @property
     def previous(self) -> Deque[int]:
         """Returns the previous time window."""
-        return self._prev_window
+        return self._prev_window.copy()
 
     # Override
     def clear(self, window_type: Optional[WindowType] = None) -> None:
