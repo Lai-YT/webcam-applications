@@ -24,7 +24,9 @@ class TimeWindow:
         self._time_width = time_width
         self._time_catch_callback: Optional[Callable[[], Any]] = None
 
-    def set_time_catch_callback(self, time_catch_callback: Callable[[], Any]) -> None:
+    def set_time_catch_callback(
+            self,
+            time_catch_callback: Callable[[], Any]) -> None:
         """
         Arguments:
             time_catch_callback: Called after the window catches up the time.
@@ -32,36 +34,36 @@ class TimeWindow:
         self._time_catch_callback = time_catch_callback
 
     def append_time(self) -> None:
-        """Appends the current time to the window and catches up the time."""
+        """Appends the current time to the window."""
         self._window.append(get_current_time())
-        self.catch_up_time()
+        self.catch_up_with_current_time()
 
-    def catch_up_time(self, *, manual: bool = False) -> None:
-        """Pops out the earliest time record until the window catches up with the
-        time (doesn't exceed the time_width), then calls the time_catch_callback
-        if it's set.
-
-        Arguments:
-            manual:
-                If manual is True, the time to catch up with is the current time,
-                otherwise with the latest time in the window. False in default.
+    def catch_up_with_current_time(self) -> None:
+        """Pops out the earliest time record until the window catches up with
+        the current time (doesn't exceed the time_width), then calls the
+        time_catch_callback if it's set.
         """
-        time: int
-        if self._window:
-            # the time to catch up with
-            time_ = self._window[-1]
-            if manual:
-                time_ = get_current_time()
-            # Catch up. Pop out only if "greater" than width.
-            while self._window and time_ - self._window[0] > self._time_width:
-                self._window.popleft()
+        while self._window_overfilled():
+            self._window.popleft()
 
-        if self._time_catch_callback is not None:
-            self._time_catch_callback()
+        if self._has_time_catch_callback():
+            self._time_catch_callback()  # type: ignore
+                                         # Nullity already checked above.
 
     def clear(self) -> None:
         """Removes all times from the window."""
         self._window.clear()
+
+    def _window_overfilled(self) -> bool:
+        return self._width_of_window() > self._time_width
+
+    def _width_of_window(self) -> int:
+        if not self._window:
+            return 0
+        return get_current_time() - self._window[0]
+
+    def _has_time_catch_callback(self) -> bool:
+        return self._time_catch_callback is not None
 
     def __getitem__(self, index: int) -> int:
         """Returns the index-th earliest time in the window.
@@ -93,7 +95,7 @@ class WindowType(Enum):
 
 
 class DoubleTimeWindow:
-    """Instead of simply maintain a current window, this object also keeps the
+    """Instead of simply maintains a current window, this object also keeps the
     previous window, so is named double time.
 
     Note that one may treat this class as the single TimeWindow since all special

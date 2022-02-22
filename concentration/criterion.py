@@ -43,7 +43,7 @@ class FaceExistenceRateCounter(QObject):
         self._frame_times.append_time()
         # But also the face time needs to have the same window,
         # so we don't get the wrong value when _get_face_existence_rate().
-        self._face_times.catch_up_time(manual=True)
+        self._face_times.catch_up_with_current_time()
 
     def add_face(self) -> None:
         """Adds a face count and detects whether face existence is low.
