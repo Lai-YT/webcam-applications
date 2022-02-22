@@ -111,7 +111,6 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
         self.assertEqual(len(self.time_window.previous), 0)
 
         self.time_window.clear(WindowType.CURRENT)
-        self.time_window.clear()
         self.assertEqual(len(self.time_window), 0)
         self.assertEqual(len(self.time_window.previous), 0)
 
@@ -120,7 +119,7 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
             self.time_window.append_time()
             time.sleep(4.5)
 
-        self.time_window.clear(WindowType.CURRENT, WindowType.PREVIOUS)
+        self.time_window.clear()
         self.assertEqual(len(self.time_window), 0)
         self.assertEqual(len(self.time_window.previous), 0)
 

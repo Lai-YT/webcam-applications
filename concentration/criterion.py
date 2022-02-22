@@ -149,7 +149,7 @@ class BlinkRateIntervalDetector(QObject):
         Emits:
             s_interval_detected:
         """
-        self._blink_times.catch_up_time(manual=True)
+        self._blink_times.catch_up_with_current_time()
 
     def get_extrude_interval(self) -> Optional[Tuple[Interval, IntervalType, int]]:
         one_min_before: int = get_current_time() - ONE_MIN

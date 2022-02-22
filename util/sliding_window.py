@@ -94,7 +94,7 @@ class WindowType(Enum):
     PREVIOUS = auto()
 
 
-class DoubleTimeWindow:
+class DoubleTimeWindow(TimeWindow):
     """Instead of simply maintains a current window, this object also keeps the
     previous window, so is named double time.
 
@@ -102,6 +102,7 @@ class DoubleTimeWindow:
     methods work with the current window only. To work with the previous window,
     call the previous property.
     """
+    # Override
     def __init__(self, time_width: int = 60) -> None:
         """
         Arguments:
@@ -118,78 +119,53 @@ class DoubleTimeWindow:
                 seconds, but one may operate separatly on the 0 ~ 60 and 61 ~ 120
                 part.
         """
-        self._window: Deque[int] = deque()
-        self._pre_window: Deque[int] = deque()
-        self._time_width = time_width
-        self._time_catch_callback: Optional[Callable[[], Any]] = None
+        super().__init__(time_width)
+        self._prev_window: Deque[int] = deque()
 
-    def append_time(self) -> None:
-        """Appends the current time to the window and catches up the time."""
-        self._window.append(get_current_time())
-        self.catch_up_time()
-
-    def set_time_catch_callback(self, time_catch_callback: Callable[[], Any]) -> None:
+    # Override
+    def catch_up_with_current_time(self) -> None:
+        """Pops out the earliest time record until the window catches up with
+        the current time (doesn't exceed the time_width), then calls the
+        time_catch_callback if it's set.
         """
-        Arguments:
-            time_catch_callback: Called after the window catches up the time.
-        """
-        self._time_catch_callback = time_catch_callback
+        while self._window_overfilled():
+            self._prev_window.append(self._window.popleft())
 
-    def catch_up_time(self, *, manual: bool = False) -> None:
-        """Pops out the earliest time record until the window catches up with the
-        time (doesn't exceed the time_width), then calls the time_catch_callback
-        if it's set.
+        while self._prev_window_overfilled():
+            self._prev_window.popleft()
 
-        Arguments:
-            manual:
-                If manual is True, the time to catch up with is the current time,
-                otherwise with the latest time in the window. False in default.
-        """
-        time_: int
-        if self._window:
-            # the time to catch up with
-            time_ = self._window[-1]
-            if manual:
-                time_ = get_current_time()
-            # Catch up. Pop out only if "greater" than width.
-            while self._window and time_ - self._window[0] > self._time_width:
-                self._pre_window.append(self._window.popleft())
-        if self._pre_window:
-            time_ = self._pre_window[-1]
-            if manual:
-                time_ = get_current_time() - self._time_width
-            # Catch up. Pop out only if "greater" than width.
-            while self._pre_window and time_ - self._pre_window[0] > self._time_width:
-                self._pre_window.popleft()
-
-        if self._time_catch_callback is not None:
+        if self._has_time_catch_callback():
             self._time_catch_callback()
 
     @property
     def previous(self) -> Deque[int]:
         """Returns the previous time window."""
-        return self._pre_window
+        return self._prev_window
 
-    def clear(self, *args: WindowType) -> None:
-        if WindowType.PREVIOUS in args:
-            self._pre_window.clear()
-        if WindowType.CURRENT in args:
-            self._window.clear()
+    # Override
+    def clear(self, window_type: Optional[WindowType] = None) -> None:
+        """Clears the corresponding type of window.
 
-    def __len__(self) -> int:
-        return len(self._window)
+        Arguments:
+            window_type:
+                If not specified, both current and previous window are cleared.
+        """
+        if window_type in (WindowType.CURRENT, None):
+            super().clear()
+        if window_type in (WindowType.PREVIOUS, None):
+            self._prev_window.clear()
 
-    def __getitem__(self, index: int) -> int:
-        return self._window[index]
+    def _prev_window_overfilled(self) -> bool:
+        return self._width_of_prev_window() > self._time_width
 
-    def __iter__(self) -> Iterator[int]:
-        return iter(self._window)
+    def _width_of_prev_window(self) -> int:
+        if not self._prev_window:
+            return 0
+        return get_current_time() - self._time_width - self._prev_window[0]
 
-    def __reversed__(self) -> Iterator[int]:
-        return reversed(self._window)
-
+    # Override
     def __str__(self) -> str:
         return ("DoubleTimeWindow{previous"
-                + str(self._pre_window).lstrip("deque") + ", "
+                + str(self._prev_window).lstrip("deque") + ", "
                 + str(self._window).lstrip("deque")
                 + "}")
