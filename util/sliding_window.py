@@ -46,9 +46,7 @@ class TimeWindow:
         while self._window_overfilled():
             self._window.popleft()
 
-        if self._has_time_catch_callback():
-            self._time_catch_callback()  # type: ignore
-                                         # Nullity already checked above.
+        self._call_time_catch_callback_if_has()
 
     def clear(self) -> None:
         """Removes all times from the window."""
@@ -61,6 +59,11 @@ class TimeWindow:
         if not self._window:
             return 0
         return get_current_time() - self._window[0]
+
+    def _call_time_catch_callback_if_has(self) -> None:
+        if self._has_time_catch_callback():
+            self._time_catch_callback()  # type: ignore
+                                         # Nullity already checked above.
 
     def _has_time_catch_callback(self) -> bool:
         return self._time_catch_callback is not None
@@ -134,8 +137,7 @@ class DoubleTimeWindow(TimeWindow):
         while self._prev_window_overfilled():
             self._prev_window.popleft()
 
-        if self._has_time_catch_callback():
-            self._time_catch_callback()
+        self._call_time_catch_callback_if_has()
 
     @property
     def previous(self) -> Deque[int]:
