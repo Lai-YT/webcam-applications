@@ -1,8 +1,15 @@
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QCloseEvent, QIcon, QResizeEvent
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QMainWindow,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
 import intergrated_gui.img.icon
 from intergrated_gui.frame_widget import FrameWidget
@@ -23,11 +30,14 @@ class Window(QMainWindow):
         self.setCentralWidget(self._central_widget)
         self._create_widgets()
 
+        self._set_minimum_window_size()
+
+        self._clean_up_callback: Optional[Callable[[], Any]] = None
+
+    def _set_minimum_window_size(self) -> None:
         self._screen_size: QSize = QApplication.instance().primaryScreen().availableSize()
         # Limit the size to stay in comfort
         self.setMinimumSize(self._screen_size / 2)
-
-        self._clean_up_callback: Optional[Callable[[], Any]] = None
 
     # Override
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -79,3 +89,11 @@ class Window(QMainWindow):
         for name, (widget, stretch) in widgets.items():
             self.widgets[name] = widget
             self._general_layout.addWidget(widget, stretch=stretch)
+
+        self._make_panel_widget_scrollable()
+
+    def _make_panel_widget_scrollable(self) -> None:
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(self.widgets["panel"])
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._general_layout.addWidget(scroll_area)
