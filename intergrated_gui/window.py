@@ -30,11 +30,14 @@ class Window(QMainWindow):
         self.setCentralWidget(self._central_widget)
         self._create_widgets()
 
+        self._set_minimum_window_size()
+
+        self._clean_up_callback: Optional[Callable[[], Any]] = None
+
+    def _set_minimum_window_size(self) -> None:
         self._screen_size: QSize = QApplication.instance().primaryScreen().availableSize()
         # Limit the size to stay in comfort
         self.setMinimumSize(self._screen_size / 2)
-
-        self._clean_up_callback: Optional[Callable[[], Any]] = None
 
     # Override
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -87,6 +90,9 @@ class Window(QMainWindow):
             self.widgets[name] = widget
             self._general_layout.addWidget(widget, stretch=stretch)
 
+        self._make_panel_widget_scrollable()
+
+    def _make_panel_widget_scrollable(self) -> None:
         scroll_area = QScrollArea()
         scroll_area.setWidget(self.widgets["panel"])
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
