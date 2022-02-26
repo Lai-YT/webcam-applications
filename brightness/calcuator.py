@@ -99,9 +99,9 @@ class BrightnessCalculator:
         # screen clear and lower the brightness if the display on the screen is
         # light colored to reduce contrast of light.
         if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
-            self._brightness_value += base_value_diff + weighted_value_diff * 0.25
+            self._brightness_value += base_value_diff + weighted_value_diff * 0.35
         elif mode is BrightnessMode.COLOR_SYSTEM:
-            self._brightness_value += base_value_diff - weighted_value_diff * 0.25
+            self._brightness_value += base_value_diff - weighted_value_diff * 0.45
         self._brightness_value = _clamp(self._brightness_value, 0, 100)
 
         # Update previous value.
