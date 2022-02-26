@@ -80,8 +80,8 @@ class BrightnessController:
             # The latest use of the brightness calculator is finished,
             # so it is reset to clean all weighted value of the history.
             self._brightness_calculator.reset()
-            # No new value, the current brightness value is set.
-            value = sbc.get_brightness(method="wmi")
+            # New value is determined directly by the base value.
+            value = self._base_value
         else:
             new_brightness: int = (
                 self._brightness_calculator.calculate_proper_screen_brightness(
