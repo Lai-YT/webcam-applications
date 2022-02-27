@@ -18,18 +18,14 @@ class BrightnessCalculator:
     """Handles processes which require value modulation."""
 
     def __init__(self) -> None:
-        # Used to weight with frame brightness to reduce the effect of
-        # brightness difference, which may cause dramatical value change of
-        # brightness value.
+        # Used to weight with current frame value to prevent
+        # dramatical change of brightness.
         self._pre_weighted_value: Optional[float] = None
-        # Store current slider value.
-        # If slider value changes, get the difference of two values
-        # and update base value.
+        # Current slider value.
         self._base_value: Optional[int] = None
-        # Store current screen brightness value.
-        # Every new frame generates a new offset of brightness, then the
-        # process will add the offset to current brightness value,
-        # emit the signal of value change, and update current brightness value.
+        # Current screen brightness value.
+        # New brightness will be determined based on this value, and fine-tuned
+        # by difference of weighted value and base value.
         self._brightness_value: Optional[float] = None
 
     def calculate_proper_screen_brightness(
@@ -40,19 +36,35 @@ class BrightnessCalculator:
         """Returns the suggested screen brightness value, which is between 0 and 100.
 
         Arguments:
-            mode: Mode affects algorithm used in calculation.
+            mode: The attribute determining which alogorithm to use for calculation.
             current_base_value:
                 The base value of brightness (The value of the slider).
             frames:
-                Frame of the corresponding brightness mode.
+                The frame of the corresponding brightness mode.
                 If mode is BOTH, there should have two frames.
         """
-        # Take the values of the first time as the initial values.
+        # Set the values by current value passed in the first call.
         if self._base_value is None:
             self._base_value = current_base_value
         if self._brightness_value is None:
             self._brightness_value = current_base_value
 
+        new_weighted_value = self._get_new_weighted_value(mode, frames)
+        # Both value differences affect the brightness value.
+        base_value_diff: float = current_base_value - self._base_value
+        weighted_value_diff: float = new_weighted_value - self._pre_weighted_value
+
+        self._update_current_value(mode, base_value_diff, weighted_value_diff)
+
+        # Set previous values as current ones.
+        self._base_value = current_base_value
+        self._pre_weighted_value = new_weighted_value
+
+        return self._brightness_value
+
+    def _get_new_weighted_value(self, 
+                                mode: BrightnessMode, 
+                                frames: Dict[BrightnessMode, ColorImage]) -> float:
         # Prepare the brightness precentage of the frame(s) that will be used
         # under the corresponding mode.
         if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
@@ -90,10 +102,12 @@ class BrightnessCalculator:
                 frame_brightness * brightness_weight
                 + self._pre_weighted_value * (1-brightness_weight)
             )
-        # Both value differences affect the brightness value.
-        base_value_diff: float = current_base_value - self._base_value
-        weighted_value_diff: float = new_weighted_value - self._pre_weighted_value
+        return new_weighted_value
 
+    def _update_current_value(self,
+                                 mode: BrightnessMode, 
+                                 base_value_diff: int,
+                                 weighted_value_diff: float) -> None:
         # Add value difference effect as offset on current brightness value.
         # Higher the brightness if the surrounding light is bright to keep the
         # screen clear and lower the brightness if the display on the screen is
@@ -102,17 +116,12 @@ class BrightnessCalculator:
             self._brightness_value += base_value_diff + weighted_value_diff * 0.35
         elif mode is BrightnessMode.COLOR_SYSTEM:
             self._brightness_value += base_value_diff - weighted_value_diff * 0.45
-        self._brightness_value = _clamp(self._brightness_value, 0, 100)
-
-        # Update previous value.
-        self._base_value = current_base_value
-        self._pre_weighted_value = new_weighted_value
-
-        return int(self._brightness_value)
+        self._brightness_value = int(_clamp(self._brightness_value, 0, 100))
 
     @staticmethod
     def get_brightness_percentage(frame: ColorImage) -> int:
-        """Returns the mean of brightness of the frame.
+        """Returns the mean of value channel, which represents the average brightness
+           of the frame.
 
         Arguments:
             frame: The image to perform brightness calculation on.
@@ -123,7 +132,7 @@ class BrightnessCalculator:
         return int(100 * value.mean() / 255)
 
     def reset(self) -> None:
-        """Resets the attributes to make auto optimization triggered
+        """Resets the attributes to make optimizing method triggered
         independently every time.
         """
         self._pre_weighted_value = None

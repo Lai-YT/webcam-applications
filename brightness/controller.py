@@ -10,9 +10,7 @@ from util.image_type import ColorImage
 
 
 class BrightnessController:
-    """BrightnessController adjusts the brightness of screen depending on the
-    mode you set.
-    """
+    """Store arguments and controls the optimizing method."""
     def __init__(self, base_value: int, mode: BrightnessMode) -> None:
         """
         All arguments can be set later with their corresponding setters.
@@ -20,8 +18,8 @@ class BrightnessController:
         Arguments:
             base_value:
                 The user's screen brightness preference.
-                Brightness is adjusted up and down with respect to it.
-            mode: Mode that the brightness adjustment depends on.
+                Brightness will be fine-tuned based on the base value.
+            mode: The attribute affecting the algorithm of optimizing method.
         """
         super().__init__()
 
@@ -45,9 +43,7 @@ class BrightnessController:
     def set_base_value(self, base_value: int) -> None:
         """
         Arguments:
-            base_value:
-                The user's screen brightness preference. Brightness is adjusted
-                up and down with respect to it.
+            base_value: The user's screen brightness preference. 
         """
         self._base_value = base_value
 
@@ -55,13 +51,14 @@ class BrightnessController:
         """
         Arguments:
             frame:
-                The image used to compare brightness with in WEBCAM (BOTH) mode.
+                The image used to weight brightness value in optimizing method
+                with WEBCAM (BOTH) mode.
         """
         self._frames[BrightnessMode.WEBCAM] = frame
 
     def refresh_color_system_screenshot(self) -> None:
         """Takes a screenshot of the current screen and sets it as the frame of
-        color system.
+        COLOR_SYSTEM mode.
         """
         screenshot: QPixmap = (
             QApplication.primaryScreen().grabWindow(QApplication.desktop().winId()))
@@ -77,16 +74,15 @@ class BrightnessController:
         """
         value: int
         if self._mode is BrightnessMode.MANUAL or not self._frames:
-            # The latest use of the brightness calculator is finished,
-            # so it is reset to clean all weighted value of the history.
+            # Clean all weighted value of history.
             self._brightness_calculator.reset()
-            # New value is determined directly by the base value.
+            # Screen brightness is determined directly by the base value.
             value = self._base_value
         else:
-            new_brightness: int = (
+            optimized_brightness: int = (
                 self._brightness_calculator.calculate_proper_screen_brightness(
                     self._mode, self._base_value, self._frames)
             )
-            value = new_brightness
+            value = optimized_brightness
         sbc.set_brightness(value, method="wmi")
         return value
