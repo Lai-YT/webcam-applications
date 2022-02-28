@@ -50,7 +50,8 @@ class BrightnessCalculator:
             self._brightness_value = current_base_value
 
         new_weighted_value = self._get_new_weighted_value(mode, frames)
-        # Both value differences affect the brightness value.
+
+        # Get diff values that will be added to the current value later.
         base_value_diff: float = current_base_value - self._base_value
         weighted_value_diff: float = new_weighted_value - self._pre_weighted_value
 
@@ -60,63 +61,53 @@ class BrightnessCalculator:
         self._base_value = current_base_value
         self._pre_weighted_value = new_weighted_value
 
-        return self._brightness_value
+        return int(self._brightness_value)
 
     def _get_new_weighted_value(self, 
                                 mode: BrightnessMode, 
                                 frames: Dict[BrightnessMode, ColorImage]) -> float:
-        # Prepare the brightness precentage of the frame(s) that will be used
-        # under the corresponding mode.
-        if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
-            webcam_frame_brightness: int = BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.WEBCAM])
-        if mode in (BrightnessMode.COLOR_SYSTEM, BrightnessMode.BOTH):
-            screenshot_brightness: int = BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.COLOR_SYSTEM])
-        if mode is BrightnessMode.BOTH:
-            # Webcam frame takes the lead. To protect one's eye,
-            # the brighter the system is, the darker the result should be.
-            weighted_frame_brightness: float = (
-                webcam_frame_brightness * 0.6
-                + (100-screenshot_brightness) * 0.4
-            )
-
-        # New frame brightness has the weight of 0.4 while the remaining
-        # is on previous weighted value.
-        weight_of_modes: Dict[BrightnessMode, Tuple[str, float]] = {
-            BrightnessMode.WEBCAM: ("webcam_frame_brightness", 0.4),
-            BrightnessMode.COLOR_SYSTEM: ("screenshot_brightness", 0.4),
-            BrightnessMode.BOTH: ("weighted_frame_brightness", 0.4),
-        }
-
-        frame_brightness: float = locals()[weight_of_modes[mode][0]]
-        brightness_weight: float = weight_of_modes[mode][1]
+        # Get new value that will be involved in the weighting process later.
+        new_value = self._get_new_value(mode, frames)
+        
+        # Weight new value and previous weighted value to get new weighted value.
         new_weighted_value: float
         if self._pre_weighted_value is None:
-            # No previous weighted value, so new weighted value should be set
-            # the same value as frame_brightness
-            new_weighted_value = frame_brightness * 1
-            # Set previous weighted value as new weighted value
-            # to avoid NoneType Error while computing offset.
+            # New weighted value should be set the same value as frame_brightness
+            # if no previous weighted value.
+            new_weighted_value = new_value
+            # avoid NoneType Error while computing offset
             self._pre_weighted_value = new_weighted_value
         else:
-            new_weighted_value = (
-                frame_brightness * brightness_weight
-                + self._pre_weighted_value * (1-brightness_weight)
-            )
+            new_weighted_value = new_value * 0.4 + self._pre_weighted_value * 0.6
+        
         return new_weighted_value
 
+    def _get_new_value(self, 
+                       mode: BrightnessMode,
+                       frames: Dict[BrightnessMode, ColorImage]) -> float:
+        """Returns the value that will be involved in the weighting process."""
+        new_value: float
+        if mode in (BrightnessMode.WEBCAM, BrightnessMode.COLOR_SYSTEM):
+            new_value = BrightnessCalculator.get_brightness_percentage(frames[mode])
+        else: # BOTH
+            new_value = (
+                0.6 * BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.WEBCAM])
+                + 0.4 * (100 - BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.COLOR_SYSTEM]))
+            )
+        return new_value
+
     def _update_current_value(self,
-                                 mode: BrightnessMode, 
-                                 base_value_diff: int,
-                                 weighted_value_diff: float) -> None:
-        # Add value difference effect as offset on current brightness value.
-        # Higher the brightness if the surrounding light is bright to keep the
-        # screen clear and lower the brightness if the display on the screen is
-        # light colored to reduce contrast of light.
+                              mode: BrightnessMode,
+                              base_value_diff: int,
+                              weighted_value_diff: float) -> None:
+        # After getting two diff values, add them with corresponding weight as offset 
+        # on previous brightness value.
         if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
             self._brightness_value += base_value_diff + weighted_value_diff * 0.35
         elif mode is BrightnessMode.COLOR_SYSTEM:
             self._brightness_value += base_value_diff - weighted_value_diff * 0.45
-        self._brightness_value = int(_clamp(self._brightness_value, 0, 100))
+        # Value over boundary will be returned as boundary value.
+        self._brightness_value = _clamp(self._brightness_value, 0, 100)
 
     @staticmethod
     def get_brightness_percentage(frame: ColorImage) -> int:
