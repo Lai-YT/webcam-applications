@@ -1,4 +1,10 @@
+import dlib
+import numpy as np
+import numpy.ma as ma
+from tkinter import BOTH
 from enum import Enum, auto
+from imutils import face_utils
+from nptyping import NDArray
 from typing import Any, Dict, Optional, Tuple
 
 import cv2
@@ -32,7 +38,8 @@ class BrightnessCalculator:
             self,
             mode: BrightnessMode,
             current_base_value: int,
-            frames: Dict[BrightnessMode, ColorImage]) -> int:
+            frames: Dict[BrightnessMode, ColorImage],
+            face: Optional[dlib.rectangle]) -> int:
         """Returns the suggested screen brightness value, which is between 0 and 100.
 
         Arguments:
@@ -49,7 +56,7 @@ class BrightnessCalculator:
         if self._brightness_value is None:
             self._brightness_value = current_base_value
 
-        new_weighted_value = self._get_new_weighted_value(mode, frames)
+        new_weighted_value = self._get_new_weighted_value(mode, frames, face)
 
         # Get diff values that will be added to the current value later.
         base_value_diff: float = current_base_value - self._base_value
@@ -65,9 +72,10 @@ class BrightnessCalculator:
 
     def _get_new_weighted_value(self, 
                                 mode: BrightnessMode, 
-                                frames: Dict[BrightnessMode, ColorImage]) -> float:
+                                frames: Dict[BrightnessMode, ColorImage],
+                                face: Optional[dlib.rectangle]) -> float:
         # Get new value that will be involved in the weighting process later.
-        new_value = self._get_new_value(mode, frames)
+        new_value = self._get_new_value(mode, frames, face)
         
         # Weight new value and previous weighted value to get new weighted value.
         new_weighted_value: float
@@ -84,16 +92,27 @@ class BrightnessCalculator:
 
     def _get_new_value(self, 
                        mode: BrightnessMode,
-                       frames: Dict[BrightnessMode, ColorImage]) -> float:
+                       frames: Dict[BrightnessMode, ColorImage],
+                       face: Optional[dlib.rectangle]) -> float:
         """Returns the value that will be involved in the weighting process."""
+        frame_value: float
+        screenshot_value: float
         new_value: float
-        if mode in (BrightnessMode.WEBCAM, BrightnessMode.COLOR_SYSTEM):
-            new_value = BrightnessCalculator.get_brightness_percentage(frames[mode])
+        # calculate the brightness of webcam frame
+        if face is not None:
+            frame_value = self._get_brightness(frames[BrightnessMode.WEBCAM], face)
+        else:
+            frame_value = self._get_brightness(frames[BrightnessMode.WEBCAM])
+        # calculate the brightness of screenshot
+        screenshot_value = self._get_brightness(frames[BrightnessMode.COLOR_SYSTEM])
+
+        # check mode and return corresponding value
+        if mode is BrightnessMode.WEBCAM:
+            new_value = frame_value
+        elif mode is BrightnessMode.COLOR_SYSTEM:
+            new_value = screenshot_value
         else: # BOTH
-            new_value = (
-                0.6 * BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.WEBCAM])
-                + 0.4 * (100 - BrightnessCalculator.get_brightness_percentage(frames[BrightnessMode.COLOR_SYSTEM]))
-            )
+            new_value = 0.6 * frame_value + 0.4 * (100 - screenshot_value)
         return new_value
 
     def _update_current_value(self,
@@ -109,8 +128,9 @@ class BrightnessCalculator:
         # Value over boundary will be returned as boundary value.
         self._brightness_value = _clamp(self._brightness_value, 0, 100)
 
-    @staticmethod
-    def get_brightness_percentage(frame: ColorImage) -> int:
+    def _get_brightness(self, 
+                        frame: ColorImage,
+                        face: Optional[dlib.rectangle] = None) -> int:
         """Returns the mean of value channel, which represents the average brightness
            of the frame.
 
@@ -120,7 +140,24 @@ class BrightnessCalculator:
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # Value is as known as brightness.
         *_, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
+
+        if face is not None:
+            mask = self._generate_face_mask(face, value.shape)
+            masked_arr = ma.masked_array(value, mask)
+            # truncate masked constants
+            data_arr = masked_arr.compressed()
         return int(100 * value.mean() / 255)
+
+    def _generate_face_mask(self, face: Optional[dlib.rectangle], frame_shape) -> NDArray:
+        """Gets the boundaries of face area and generates the value with
+        corresponding elements masked.
+        """
+        # get the four corners of face
+        fx, fy, fw, fh = face_utils.rect_to_bb(face)
+        # generate mask with face area masked
+        face_mask = np.zeros(frame_shape, dtype=np.bool8)
+        face_mask[fy:fy+fh+1, fx:fx+fw+1] = True
+        return face_mask
 
     def reset(self) -> None:
         """Resets the attributes to make optimizing method triggered

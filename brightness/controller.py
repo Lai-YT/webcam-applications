@@ -1,4 +1,5 @@
-from typing import Dict
+import dlib
+from typing import Dict, Optional
 
 import screen_brightness_control as sbc
 from PyQt5.QtGui import QPixmap
@@ -65,6 +66,13 @@ class BrightnessController:
 
         self._frames[BrightnessMode.COLOR_SYSTEM] = qpixmap_to_ndarray(screenshot)
 
+    def update_face(self, face: Optional[dlib.rectangle]) -> None:
+        """
+        Arguments:
+            face: Data of user's face on the frame. 
+        """
+        self._face = face
+
     def optimize_brightness(self) -> int:
         """Sets brightness of screen to a suggested brightness with respect to
         mode, the base value and frames.
@@ -81,7 +89,7 @@ class BrightnessController:
         else:
             optimized_brightness: int = (
                 self._brightness_calculator.calculate_proper_screen_brightness(
-                    self._mode, self._base_value, self._frames)
+                    self._mode, self._base_value, self._frames, self._face)
             )
             value = optimized_brightness
         sbc.set_brightness(value, method="wmi")

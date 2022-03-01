@@ -110,6 +110,8 @@ class WebcamApplication(QObject):
 
     def _create_face_detectors(self) -> None:
         """Creates face detector and shape predictor."""
+        self._face: Optional[dlib.rectangle] = None
+        self._landmarks: NDArray[(68, 2), Int[32]] = None
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
         self._shape_predictor = dlib.shape_predictor(
             to_abs_path("posture/trained_models/shape_predictor_68_face_landmarks.dat")
@@ -305,20 +307,20 @@ class WebcamApplication(QObject):
             frame = cv2.flip(frame, flipCode=1)
             # separate detections and markings
             canvas: ColorImage = frame.copy()
-            # Analyze the frame to get face landmarks.
-            landmarks: NDArray[(68, 2), Int[32]] = self._get_landmarks(canvas, frame)
+            # Analyze the frame to update face landmarks.
+            self._update_face_and_landmarks(canvas, frame)
             # Do applications!
-            if self._distance_measure and has_face(landmarks):
-                dist_info = self._distance_guard.warn_if_too_close(landmarks)
+            if self._distance_measure and has_face(self._landmarks):
+                dist_info = self._distance_guard.warn_if_too_close(self._landmarks)
                 self.s_distance_refreshed.emit(*dist_info)
             if self._posture_detect:
-                draw_landmarks_used_by_angle_calculator(canvas, landmarks)
-                post_info = self._posture_guard.check_posture(frame, landmarks)
+                draw_landmarks_used_by_angle_calculator(canvas, self._landmarks)
+                post_info = self._posture_guard.check_posture(frame, self._landmarks)
                 self.s_posture_refreshed.emit(*post_info)
             if self._focus_time:
                 # If the landmarks doesn't contain a face, ths user is
                 # considered not focusing on the screen, so the timer is paused.
-                if not has_face(landmarks):
+                if not has_face(self._landmarks):
                     self._timer.pause()
                 else:
                     self._timer.start()
@@ -331,15 +333,17 @@ class WebcamApplication(QObject):
                 if (self._brightness_controller.get_mode()
                         in (BrightnessMode.BOTH, BrightnessMode.COLOR_SYSTEM)):
                     self._brightness_controller.refresh_color_system_screenshot()
-                # Optimize brightness after passing required images.
+                # Update face data in the controller.
+                self._brightness_controller.update_face(self._face)
+                # Optimize brightness after passing required images and face data.
                 bright: int = self._brightness_controller.optimize_brightness()
                 self.s_brightness_refreshed.emit(bright)
 
             # Do concentration gradings!
             self._concentration_grader.add_frame()
-            if has_face(landmarks):
+            if has_face(self._landmarks):
                 self._concentration_grader.add_face()
-                self._concentration_grader.detect_blink(landmarks)
+                self._concentration_grader.detect_blink(self._landmarks)
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
             cv2.waitKey(refresh)
@@ -352,7 +356,7 @@ class WebcamApplication(QObject):
         """Stops the execution loop by changing the flag."""
         self._f_ready = False
 
-    def _get_landmarks(self, canvas: ColorImage, frame: ColorImage) -> NDArray[(68, 2), Int[32]]:
+    def _update_face_and_landmarks(self, canvas: ColorImage, frame: ColorImage) -> NDArray[(68, 2), Int[32]]:
         """Returns the numpy array with all elements in 0 if there's no face in
         the frame.
 
@@ -363,15 +367,13 @@ class WebcamApplication(QObject):
             frame: The image to get landmarks from.
         """
         # take the biggest face when a frame contains multiple faces
-        face: Optional[dlib.rectangle] = get_biggest_face(self._face_detector(frame))
-        landmarks: NDArray[(68, 2), Int[32]]
-        if face is None:
-            landmarks = np.zeros(shape=(68, 2), dtype=np.int32)
+        self._face = get_biggest_face(self._face_detector(frame))
+        if self._face is None:
+            self._landmarks = np.zeros(shape=(68, 2), dtype=np.int32)
         else:
-            landmarks = face_utils.shape_to_np(self._shape_predictor(frame, face))
-            mark_face(canvas, face_utils.rect_to_bb(face), landmarks)
-            draw_landmarks_used_by_distance_calculator(canvas, landmarks)
-        return landmarks
+            self._landmarks = face_utils.shape_to_np(self._shape_predictor(frame, self._face))
+            mark_face(canvas, face_utils.rect_to_bb(self._face), self._landmarks)
+            draw_landmarks_used_by_distance_calculator(canvas, self._landmarks)
 
     def _update_ref_landmarks(self) -> None:
         """Updates the reference landmarks with the reference image path."""
