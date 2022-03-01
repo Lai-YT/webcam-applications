@@ -8,7 +8,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
-from app.webcam_application import get_biggest_face, has_face, mark_face
+from app.webcam_application import get_biggest_face, mark_face
 from distance.calculator import DistanceCalculator, draw_landmarks_used_by_distance_calculator
 from distance.guard import DistanceGuard
 from focus_time.guard import TimeGuard
@@ -161,3 +161,8 @@ class WebcamApplication(QObject):
         self._time_guard = TimeGuard(time_limit, break_time)
         self._time_guard.show()
         self.s_stopped.connect(self._time_guard.close_timer_widget)
+
+
+def has_face(landmarks: NDArray[(68, 2), Int[32]]) -> bool:
+    """Returns whether the landmarks indicate a face."""
+    return landmarks.any()

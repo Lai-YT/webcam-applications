@@ -310,7 +310,7 @@ class WebcamApplication(QObject):
             # Analyze the frame to update face landmarks.
             self._update_face_and_landmarks(canvas, frame)
             # Do applications!
-            if self._distance_measure and has_face(self._landmarks):
+            if self._distance_measure and self._has_face():
                 dist_info = self._distance_guard.warn_if_too_close(self._landmarks)
                 self.s_distance_refreshed.emit(*dist_info)
             if self._posture_detect:
@@ -320,7 +320,7 @@ class WebcamApplication(QObject):
             if self._focus_time:
                 # If the landmarks doesn't contain a face, ths user is
                 # considered not focusing on the screen, so the timer is paused.
-                if not has_face(self._landmarks):
+                if not self._has_face():
                     self._timer.pause()
                 else:
                     self._timer.start()
@@ -341,7 +341,7 @@ class WebcamApplication(QObject):
 
             # Do concentration gradings!
             self._concentration_grader.add_frame()
-            if has_face(self._landmarks):
+            if self._has_face():
                 self._concentration_grader.add_face()
                 self._concentration_grader.detect_blink(self._landmarks)
 
@@ -356,12 +356,8 @@ class WebcamApplication(QObject):
         """Stops the execution loop by changing the flag."""
         self._f_ready = False
 
-    def _update_face_and_landmarks(self, canvas: ColorImage, frame: ColorImage) -> NDArray[(68, 2), Int[32]]:
-        """Returns the numpy array with all elements in 0 if there's no face in
-        the frame.
-
-        Note that one can use .any() to check if any of the elements is not 0.
-
+    def _update_face_and_landmarks(self, canvas: ColorImage, frame: ColorImage) -> None:
+        """
         Arguments:
             canvas: The image to draw the landmarks on.
             frame: The image to get landmarks from.
@@ -371,7 +367,9 @@ class WebcamApplication(QObject):
         if self._face is None:
             self._landmarks = np.zeros(shape=(68, 2), dtype=np.int32)
         else:
-            self._landmarks = face_utils.shape_to_np(self._shape_predictor(frame, self._face))
+            self._landmarks = face_utils.shape_to_np(
+                self._shape_predictor(frame, self._face)
+            )
             mark_face(canvas, face_utils.rect_to_bb(self._face), self._landmarks)
             draw_landmarks_used_by_distance_calculator(canvas, self._landmarks)
 
@@ -386,6 +384,10 @@ class WebcamApplication(QObject):
             raise ValueError("should have exactly 1 face in the reference image")
         self._ref_landmarks = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
 
+    def _has_face(self) -> bool:
+        """Returns whether the landmarks indicate a face."""
+        return self._landmarks.any()
+
 
 def get_biggest_face(faces: dlib.rectangles) -> Optional[dlib.rectangle]:
     """Returns the face with the biggest area.
@@ -393,11 +395,6 @@ def get_biggest_face(faces: dlib.rectangles) -> Optional[dlib.rectangle]:
     """
     # faces are compared through the area method
     return max(faces, default=None, key=methodcaller("area"))
-
-
-def has_face(landmarks: NDArray[(68, 2), Int[32]]) -> bool:
-    """Returns whether the landmarks indicate a face."""
-    return landmarks.any()
 
 
 def mark_face(
