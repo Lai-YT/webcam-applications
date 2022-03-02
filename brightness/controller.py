@@ -45,7 +45,7 @@ class BrightnessController:
         """
         self._brightness_calculator.update_base_value(new_base_value)
 
-    def set_webcam_frame(self, frame: ColorImage) -> None:
+    def update_webcam_frame(self, frame: ColorImage) -> None:
         """
         Arguments:
             frame:

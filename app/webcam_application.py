@@ -326,7 +326,7 @@ class WebcamApplication(QObject):
                 self.s_time_refreshed.emit(*time_info)
             if self._brightness_optimize:
                 # this overhead is small, so I don't check mode
-                self._brightness_controller.set_webcam_frame(frame)
+                self._brightness_controller.update_webcam_frame(frame)
                 # screenshot has greater overhead
                 if (self._brightness_controller.get_mode()
                         in (BrightnessMode.BOTH, BrightnessMode.COLOR_SYSTEM)):
