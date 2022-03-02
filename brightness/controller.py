@@ -23,27 +23,26 @@ class BrightnessController:
         """
         super().__init__()
 
-        self._mode: BrightnessMode = mode
         self._base_value: int = base_value
         # frame dict is empty if no frame passed
         self._frames: Dict[BrightnessMode, ColorImage] = {}
-        self._brightness_calculator = BrightnessCalculator()
+        self._brightness_calculator = BrightnessCalculator(mode, base_value)
 
     def set_mode(self, mode: BrightnessMode) -> None:
         """
         Arguments:
             mode: Mode that the brightness adjustment depends on.
         """
-        self._mode = mode
+        self._brightness_calculator.mode = mode
 
     def get_mode(self) -> BrightnessMode:
         """Returns the brightness mode used by the controller."""
-        return self._mode
+        return self._brightness_calculator.mode
 
     def set_base_value(self, base_value: int) -> None:
         """
         Arguments:
-            base_value: The user's screen brightness preference. 
+            base_value: The user's screen brightness preference.
         """
         self._base_value = base_value
 
@@ -72,17 +71,10 @@ class BrightnessController:
         Returns:
             The brightness value after optimization.
         """
-        value: int
-        if self._mode is BrightnessMode.MANUAL or not self._frames:
-            # Clean all weighted value of history.
-            self._brightness_calculator.reset()
-            # Screen brightness is determined directly by the base value.
-            value = self._base_value
-        else:
-            optimized_brightness: int = (
-                self._brightness_calculator.calculate_proper_screen_brightness(
-                    self._mode, self._base_value, self._frames)
+        optimized_brightness: int = (
+            self._brightness_calculator.calculate_proper_screen_brightness(
+                self._base_value, self._frames
             )
-            value = optimized_brightness
-        sbc.set_brightness(value, method="wmi")
-        return value
+        )
+        sbc.set_brightness(optimized_brightness, method="wmi")
+        return optimized_brightness
