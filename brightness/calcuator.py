@@ -98,13 +98,19 @@ class BrightnessCalculator:
         frame_value: float
         screenshot_value: float
         new_value: float
+
         # calculate the brightness of webcam frame
-        if face is not None:
-            frame_value = self._get_brightness(frames[BrightnessMode.WEBCAM], face)
-        else:
-            frame_value = self._get_brightness(frames[BrightnessMode.WEBCAM])
+        if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
+            if face is not None:
+                frame_value = self._get_brightness(frames[BrightnessMode.WEBCAM], face)
+            else:
+                frame_value = self._get_brightness(frames[BrightnessMode.WEBCAM])
+
         # calculate the brightness of screenshot
-        screenshot_value = self._get_brightness(frames[BrightnessMode.COLOR_SYSTEM])
+        if mode in (BrightnessMode.COLOR_SYSTEM, BrightnessMode.BOTH):
+            screenshot_value = self._get_brightness(
+                frames[BrightnessMode.COLOR_SYSTEM]
+            )
 
         # check mode and return corresponding value
         if mode is BrightnessMode.WEBCAM:
@@ -112,7 +118,7 @@ class BrightnessCalculator:
         elif mode is BrightnessMode.COLOR_SYSTEM:
             new_value = screenshot_value
         else: # BOTH
-            new_value = 0.6 * frame_value + 0.4 * (100 - screenshot_value)
+            new_value = 0.8 * frame_value + 0.2 * (100 - screenshot_value)
         return new_value
 
     def _update_current_value(self,
@@ -139,13 +145,13 @@ class BrightnessCalculator:
         """
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # Value is as known as brightness.
-        *_, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
+        *channel, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
 
         if face is not None:
             mask = self._generate_face_mask(face, value.shape)
             masked_arr = ma.masked_array(value, mask)
             # truncate masked constants
-            data_arr = masked_arr.compressed()
+            value = masked_arr.compressed()
         return int(100 * value.mean() / 255)
 
     def _generate_face_mask(self, face: Optional[dlib.rectangle], frame_shape) -> NDArray:
