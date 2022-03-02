@@ -19,52 +19,47 @@ class BrightnessCalculator:
 
     def __init__(self, mode: BrightnessMode, base_value: int) -> None:
         self._mode = mode
-        self._pre_base_value: int = base_value
+        self._base_value: int = base_value
         # Used to weight with new frame value to prevent
         # dramatical change of brightness.
         self._pre_weighted_value: float = 0
         # New brightness will be determined based on previous value, and
         # fine-tuned by difference of weighted value and base value.
-        self._pre_brightness_value: int = base_value
+        self._pre_brightness_offset: int = 0
 
-    @property
-    def mode(self) -> BrightnessMode:
+    def get_mode(self) -> BrightnessMode:
         return self._mode
 
-    @mode.setter
-    def mode(self, new_mode: BrightnessMode) -> None:
+    def set_mode(self, new_mode: BrightnessMode) -> None:
         self._mode = new_mode
+
+    def update_base_value(self, new_base_value: int) -> None:
+        self._base_value = new_base_value
 
     def calculate_proper_screen_brightness(
             self,
-            new_base_value: int,
             frames: Dict[BrightnessMode, ColorImage]) -> int:
         """Returns the suggested screen brightness value, which is between 0 and 100.
 
         Arguments:
-            new_base_value:
-                The base value of brightness (The value of the slider).
             frames:
                 The frame of the corresponding brightness mode.
                 If mode is BOTH, there should have two frames;
                 if is MANUAL, would be ignored.
         """
-        self._new_base_value = new_base_value
-
         if self._mode is BrightnessMode.MANUAL:
-            self._pre_base_value = self._new_base_value
-            return self._new_base_value
+            return self._base_value
 
         self._frames = frames
 
         self._calculate_frame_brightness()
-        self._calculate_new_weighted_value()
-        self._calculate_value_difference()
-        self._calculate_brightness_value()
+        self._calculate_weighted_value()
+        self._calculate_weighted_difference()
+        self._calculate_brightness_offset()
 
         self._set_pre_values_as_new_ones()
 
-        return self._new_brightness_value
+        return _clamp(self._base_value + self._new_brightness_offset, 0, 100)
 
     def _calculate_frame_brightness(self) -> None:
         if self._mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
@@ -91,40 +86,36 @@ class BrightnessCalculator:
             )
             self._frame_brightness = weighted_frame_brightness
 
-    def _calculate_new_weighted_value(self) -> None:
+    def _calculate_weighted_value(self) -> None:
         # New frame brightness has the weight of 0.4 while the remaining
         # is on previous weighted value.
         self._new_weighted_value = (
             self._frame_brightness * 0.4 + self._pre_weighted_value * 0.6
         )
 
-    def _calculate_value_difference(self) -> None:
-        self._base_value_diff = self._new_base_value - self._pre_base_value
+    def _calculate_weighted_difference(self) -> None:
         self._weighted_value_diff = (
             self._new_weighted_value - self._pre_weighted_value
         )
 
-    def _calculate_brightness_value(self) -> None:
+    def _calculate_brightness_offset(self) -> None:
         # Add value difference effect as offset on new brightness value.
         # Higher the brightness if the surrounding light is bright to keep the
         # screen clear and lower the brightness if the display on the screen is
         # light colored to reduce contrast of light.
         if self._mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
-            brightness_value = (
-                self._pre_brightness_value
-                + self._base_value_diff + self._weighted_value_diff * 0.35
+            brightness_offset = (
+                self._pre_brightness_offset + self._weighted_value_diff * 0.35
             )
         elif self._mode is BrightnessMode.COLOR_SYSTEM:
-            brightness_value = (
-                self._pre_brightness_value
-                + self._base_value_diff - self._weighted_value_diff * 0.45
+            brightness_offset = (
+                self._pre_brightness_offset - self._weighted_value_diff * 0.45
             )
-        self._new_brightness_value = int(_clamp(brightness_value, 0, 100))
+        self._new_brightness_offset = int(brightness_offset)
 
     def _set_pre_values_as_new_ones(self) -> None:
-        self._pre_base_value = self._new_base_value
         self._pre_weighted_value = self._new_weighted_value
-        self._pre_brightness_value = self._new_brightness_value
+        self._pre_brightness_offset = self._new_brightness_offset
 
     @staticmethod
     def get_brightness_percentage(frame: ColorImage) -> float:

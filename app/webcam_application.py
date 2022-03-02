@@ -271,7 +271,7 @@ class WebcamApplication(QObject):
 
         if slider_value is not None:
             settings["BASE_VALUE"] = str(slider_value)
-            self._brightness_controller.set_base_value(slider_value)
+            self._brightness_controller.update_base_value(slider_value)
         if mode is not None:
             settings["MODE"] = mode.name  # is enum
             self._brightness_controller.set_mode(mode)

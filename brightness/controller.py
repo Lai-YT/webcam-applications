@@ -23,28 +23,27 @@ class BrightnessController:
         """
         super().__init__()
 
-        self._base_value: int = base_value
         # frame dict is empty if no frame passed
         self._frames: Dict[BrightnessMode, ColorImage] = {}
         self._brightness_calculator = BrightnessCalculator(mode, base_value)
 
-    def set_mode(self, mode: BrightnessMode) -> None:
+    def set_mode(self, new_mode: BrightnessMode) -> None:
         """
         Arguments:
-            mode: Mode that the brightness adjustment depends on.
+            new_mode: Mode that the brightness adjustment depends on.
         """
-        self._brightness_calculator.mode = mode
+        self._brightness_calculator.set_mode(new_mode)
 
     def get_mode(self) -> BrightnessMode:
         """Returns the brightness mode used by the controller."""
-        return self._brightness_calculator.mode
+        return self._brightness_calculator.get_mode()
 
-    def set_base_value(self, base_value: int) -> None:
+    def update_base_value(self, new_base_value: int) -> None:
         """
         Arguments:
-            base_value: The user's screen brightness preference.
+            new_base_value: The user's screen brightness preference.
         """
-        self._base_value = base_value
+        self._brightness_calculator.update_base_value(new_base_value)
 
     def set_webcam_frame(self, frame: ColorImage) -> None:
         """
@@ -73,7 +72,7 @@ class BrightnessController:
         """
         optimized_brightness: int = (
             self._brightness_calculator.calculate_proper_screen_brightness(
-                self._base_value, self._frames
+                self._frames
             )
         )
         sbc.set_brightness(optimized_brightness, method="wmi")
