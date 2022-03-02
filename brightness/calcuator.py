@@ -59,7 +59,9 @@ class BrightnessCalculator:
 
         self._set_pre_values_as_new_ones()
 
-        return _clamp(self._base_value + self._new_brightness_offset, 0, 100)
+        return int(self._clamp_between_zero_and_hundred(
+                    self._base_value + self._new_brightness_offset
+                ))
 
     def _calculate_frame_brightness(self) -> None:
         if self._mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
@@ -130,20 +132,10 @@ class BrightnessCalculator:
         *_, value = cv2.split(hsv)  # can be gotten with hsv[:, :, 2] - the 3rd channel
         return 100 * value.mean() / 255
 
-
-# outer utilities
-
-def _clamp(value: float, v_min: float, v_max: float) -> float:
-    """Clamps the value into the range [v_min, v_max].
-
-    e.g., _clamp(50, 20, 40) returns 40.
-    v_min should be less or equal to v_max. (v_min <= v_max)
-    """
-    if not v_min < v_max:
-        raise ValueError("v_min is the lower bound, which should be smaller than v_max")
-
-    if value > v_max:
-        value = v_max
-    elif value < v_min:
-        value = v_min
-    return value
+    @staticmethod
+    def _clamp_between_zero_and_hundred(value: float) -> float:
+        if value > 100:
+            return 100
+        if value < 0:
+            return 0
+        return value
