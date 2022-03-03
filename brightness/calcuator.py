@@ -108,7 +108,7 @@ class BrightnessCalculator:
 
         # calculate the brightness of screenshot
         if mode in (BrightnessMode.COLOR_SYSTEM, BrightnessMode.BOTH):
-            screenshot_value = self._get_brightness(
+            screenshot_value = 100 - self._get_brightness(
                 frames[BrightnessMode.COLOR_SYSTEM]
             )
 
@@ -118,7 +118,7 @@ class BrightnessCalculator:
         elif mode is BrightnessMode.COLOR_SYSTEM:
             new_value = screenshot_value
         else: # BOTH
-            new_value = 0.8 * frame_value + 0.2 * (100 - screenshot_value)
+            new_value = 0.6 * frame_value + 0.4 * screenshot_value
         return new_value
 
     def _update_current_value(self,
@@ -127,10 +127,10 @@ class BrightnessCalculator:
                               weighted_value_diff: float) -> None:
         # After getting two diff values, add them with corresponding weight as offset 
         # on previous brightness value.
-        if mode in (BrightnessMode.WEBCAM, BrightnessMode.BOTH):
-            self._brightness_value += base_value_diff + weighted_value_diff * 0.35
-        elif mode is BrightnessMode.COLOR_SYSTEM:
-            self._brightness_value += base_value_diff - weighted_value_diff * 0.45
+        if mode is BrightnessMode.BOTH:
+            self._brightness_value += base_value_diff + weighted_value_diff * 0.4
+        else:
+            self._brightness_value += base_value_diff + weighted_value_diff * 0.3
         # Value over boundary will be returned as boundary value.
         self._brightness_value = _clamp(self._brightness_value, 0, 100)
 
