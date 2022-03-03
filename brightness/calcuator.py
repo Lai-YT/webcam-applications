@@ -118,7 +118,7 @@ class BrightnessCalculator:
         elif mode is BrightnessMode.COLOR_SYSTEM:
             new_value = screenshot_value
         else: # BOTH
-            new_value = 0.6 * frame_value + 0.4 * screenshot_value
+            new_value = 0.7 * frame_value + 0.3 * screenshot_value
         return new_value
 
     def _update_current_value(self,
