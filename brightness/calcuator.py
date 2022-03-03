@@ -127,10 +127,7 @@ class BrightnessCalculator:
                               weighted_value_diff: float) -> None:
         # After getting two diff values, add them with corresponding weight as offset 
         # on previous brightness value.
-        if mode is BrightnessMode.BOTH:
-            self._brightness_value += base_value_diff + weighted_value_diff * 0.4
-        else:
-            self._brightness_value += base_value_diff + weighted_value_diff * 0.3
+        self._brightness_value += base_value_diff + weighted_value_diff * 0.3
         # Value over boundary will be returned as boundary value.
         self._brightness_value = _clamp(self._brightness_value, 0, 100)
 
