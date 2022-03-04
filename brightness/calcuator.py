@@ -59,35 +59,33 @@ class BrightnessCalculator:
 
         self._frames = frames
 
-        self._calculate_frame_brightness()
+        self._calculate_frame_value()
         self._calculate_weighted_value()
         self._calculate_weighted_difference()
         self._calculate_brightness_value()
 
         self._set_pre_values_as_new_ones()
-
+        # Value over boundary will be returned as boundary value.
         return int(self._clamp_between_zero_and_hundred(self._brightness_value))
 
     def _check_mode_change(self) -> None:
         if self._mode_change_list:
             self._mode = self._mode_change_list.pop(0)
 
-    def _calculate_frame_brightness(self) -> None:
+    def _calculate_frame_value(self) -> None:
         if self._mode in (BrightnessMode.WEBCAM, BrightnessMode.COLOR_SYSTEM):
-            self._new_value = self.get_brightness_percentage(self._frames[self._mode])
+            self._frame_value = self.get_brightness_percentage(self._frames[self._mode])
         else: # BOTH
             # Webcam frame takes the lead. To protect one's eye,
             # the brighter the system is, the darker the result should be.
-            self._new_value = (
+            self._frame_value = (
                 0.6 * self.get_brightness_percentage(self._frames[BrightnessMode.WEBCAM])
                 + 0.4 * (100 - self.get_brightness_percentage(self._frames[BrightnessMode.COLOR_SYSTEM]))
             )
 
     def _calculate_weighted_value(self) -> None:
-        # New frame brightness has the weight of 0.4 while the remaining
-        # is on previous weighted value.
         self._new_weighted_value = (
-            self._new_value * 0.4 + self._pre_weighted_value * 0.6
+            self._frame_value * 0.4 + self._pre_weighted_value * 0.6
         )
 
     def _calculate_weighted_difference(self) -> None:
