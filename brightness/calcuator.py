@@ -26,12 +26,15 @@ class BrightnessCalculator:
         # New brightness will be determined based on previous value, and
         # fine-tuned by difference of weighted value and base value.
         self._pre_brightness_offset: int = 0
+        # For thread-safety, a mode change is appended into the list instead of
+        # directly writing to the variable.
+        self._mode_change_list: List[BrightnessMode] = []
 
     def get_mode(self) -> BrightnessMode:
         return self._mode
 
     def set_mode(self, new_mode: BrightnessMode) -> None:
-        self._mode = new_mode
+        self._mode_change_list.append(new_mode)
 
     def update_base_value(self, new_base_value: int) -> None:
         self._base_value = new_base_value
@@ -47,6 +50,10 @@ class BrightnessCalculator:
                 If mode is BOTH, there should have two frames;
                 if is MANUAL, would be ignored.
         """
+        # check if there's a mode change
+        if self._mode_change_list:
+            self._mode = self._mode_change_list.pop(0)
+
         if self._mode is BrightnessMode.MANUAL:
             return self._base_value
 

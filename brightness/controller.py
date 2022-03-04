@@ -70,11 +70,10 @@ class BrightnessController:
         Returns:
             The brightness value after optimization.
         """
-        # this overhead is small, so I don't check mode
+        # This is kind of hacking, I pass both of them every time so
+        # no worries about getting a "old" mode when threading.
         self._update_webcam_frame(frame)
-        # screenshot has greater overhead
-        if self.get_mode() in (BrightnessMode.BOTH, BrightnessMode.COLOR_SYSTEM):
-            self._refresh_color_system_screenshot()
+        self._refresh_color_system_screenshot()
 
         optimized_brightness: int = (
             self._brightness_calculator.calculate_proper_screen_brightness(
