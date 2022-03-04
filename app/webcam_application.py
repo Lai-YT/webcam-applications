@@ -325,14 +325,9 @@ class WebcamApplication(QObject):
                 time_info = self._time_guard.break_time_if_too_long(self._timer)
                 self.s_time_refreshed.emit(*time_info)
             if self._brightness_optimize:
-                # this overhead is small, so I don't check mode
-                self._brightness_controller.update_webcam_frame(frame)
-                # screenshot has greater overhead
-                if (self._brightness_controller.get_mode()
-                        in (BrightnessMode.BOTH, BrightnessMode.COLOR_SYSTEM)):
-                    self._brightness_controller.refresh_color_system_screenshot()
+
                 # Optimize brightness after passing required images.
-                bright: int = self._brightness_controller.optimize_brightness()
+                bright: int = self._brightness_controller.optimize_brightness(frame)
                 self.s_brightness_refreshed.emit(bright)
 
             # Do concentration gradings!

@@ -45,7 +45,7 @@ class BrightnessController:
         """
         self._brightness_calculator.update_base_value(new_base_value)
 
-    def update_webcam_frame(self, frame: ColorImage) -> None:
+    def _update_webcam_frame(self, frame: ColorImage) -> None:
         """
         Arguments:
             frame:
@@ -54,7 +54,7 @@ class BrightnessController:
         """
         self._frames[BrightnessMode.WEBCAM] = frame
 
-    def refresh_color_system_screenshot(self) -> None:
+    def _refresh_color_system_screenshot(self) -> None:
         """Takes a screenshot of the current screen and sets it as the frame of
         COLOR_SYSTEM mode.
         """
@@ -63,13 +63,19 @@ class BrightnessController:
 
         self._frames[BrightnessMode.COLOR_SYSTEM] = qpixmap_to_ndarray(screenshot)
 
-    def optimize_brightness(self) -> int:
+    def optimize_brightness(self, frame: ColorImage) -> int:
         """Sets brightness of screen to a suggested brightness with respect to
         mode, the base value and frames.
 
         Returns:
             The brightness value after optimization.
         """
+        # this overhead is small, so I don't check mode
+        self._update_webcam_frame(frame)
+        # screenshot has greater overhead
+        if self.get_mode() in (BrightnessMode.BOTH, BrightnessMode.COLOR_SYSTEM):
+            self._refresh_color_system_screenshot()
+
         optimized_brightness: int = (
             self._brightness_calculator.calculate_proper_screen_brightness(
                 self._frames
