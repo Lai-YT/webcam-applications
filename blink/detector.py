@@ -1,120 +1,21 @@
-# Reference:
-#   Adrian Rosebrock. Eye blink detection with OpenCV, Python, and dlib (2017)
-#   https://www.pyimagesearch.com/2017/04/24/eye-blink-detection-opencv-python-dlib/
-#
-#   Ali A Abusharha. Changes in blink rate and ocular symptoms during different reading tasks (2017)
-#   https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6118863/
-#    Several studies have investigated the blink rate and the interval between
-#    blinks. It has been reported that the normal spontaneous blink rate is
-#    between 12 and 15/min[1]. Other studies showed that the interval between blinks
-#    ranges from 2.8 to 4 and from 2 to 10 s. A mean blink rate of up to 22 blinks/min
-#    has been reported under relaxed conditions.
-#
-#   [1] M J Doughty. Consideration of three types of spontaneous eyeblink
-#       activity in normal humans: during reading and video display terminal use,
-#       in primary gaze, and while in conversation (2001)
-#       https://pubmed.ncbi.nlm.nih.gov/11700965/#abstract
-#        Spontaneous eyeblink rate, SEBR.
-#        Statistical analysis (with calculation of 95% confidence interval values)
-#        indicate that reading-SEBR should be between 1.4 and 14.4 eyeblinks/min,
-#        primary gaze-SEBR between 8.0 and 21.0 eyeblinks/min and conversational-SEBR
-#        between 10.5 and 32.5 eyeblinks/min for normal adults.
-
+# refer to https://github.com/EE-Ind-Stud-Group/blink-detection
 
 import math
 import statistics
-from typing import List, Tuple
+from collections import deque
+from typing import Deque, Tuple, Union
 
-import cv2
-from PyQt5.QtCore import QObject, pyqtSignal
+import numpy as np
 from imutils import face_utils
 from nptyping import Int, NDArray
-
-from util.color import BGR, GREEN
-from util.image_type import ColorImage
-
-
-class TailorMadeNormalEyeAspectRatioMaker:
-    """Take a certain number of landmarks that contains face to determine
-    a tailor-made normal EAR of the user.
-
-    It can be used with a BlinkDetector to provide better detections on different
-    users.
-    """
-    def __init__(
-            self,
-            temp_ratio: float = 0.3,
-            number_threshold: int = 100) -> None:
-        """
-        Arguments:
-            temp_ratio:
-                Used before the normal EAR is determined. Prevents from getting
-                an unreliable normal EAR due to low number of samples.
-                Should be in range [0.15, 0.5].
-            number_threshold:
-                Higher number of samples than this is considered to be reliable.
-        """
-        if temp_ratio < 0.15 or temp_ratio > 0.5:
-            raise ValueError("normal eye aspect ratio should >= 0.15 and <= 0.5")
-        if number_threshold < 100:
-            raise ValueError("number of samples under 100 makes the normal eye"
-                             "aspect ratio susceptible to extreme values")
-
-        self._temp_ratio = temp_ratio
-        self._number_threshold = number_threshold
-        # TODO: Any better data structure to queue, sort and sum?
-        self._sample_ratios: List[float] = []
-
-    def read_sample(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
-        """Reads in landmarks of face, gets its EAR value and stores as a sample.
-
-        Arguments:
-            landmarks: (x, y) coordinates of the 68 face landmarks.
-        """
-        # Empty landmarks is not count.
-        if not landmarks.any():
-            return
-        self._sample_ratios.append(BlinkDetector.get_average_eye_aspect_ratio(landmarks))
-        self._remove_oldest_sample_if_reaches_threshold()
-
-    def _remove_oldest_sample_if_reaches_threshold(self) -> None:
-        """Removes the oldest sample ratio if the number of samples reaches the
-        threshold.
-        """
-        if len(self._sample_ratios) > self._number_threshold:
-            self._sample_ratios.pop(0)
-
-    def get_normal_ratio(self) -> Tuple[int, float]:
-        """Returns the tailor-made EAR when the number of sample ratios is
-        enough; otherwise the temp ratio.
-        """
-        num_of_sample = len(self._sample_ratios)
-        # If the number of samples isn't enough,
-        # temp_ratio is used as the normal EAR.
-        if num_of_sample < self._number_threshold:
-            ratio = self._temp_ratio
-        else:
-            ratio = self._get_middle_mean_of_sample_ratios()
-        return num_of_sample, ratio
-
-    def _get_middle_mean_of_sample_ratios(self) -> float:
-        """Sorts the ratios and take the mean of the upper 75% as the normal EAR."""
-        # The lower 25% is not taken under consideration because those may be blinking.
-        # NOTE: We can't sort the samples in-place because we want to keep
-        # the recent samples, which is the append order.
-        # If the sort is in-place, we don't know which one to pop next time a
-        # new sample is appended.
-        sorted_samples: List[float] = sorted(self._sample_ratios)
-        return statistics.mean(sorted_samples[int(len(sorted_samples)*0.25):])
-
-    def clear(self) -> None:
-        """Clears the existing samples."""
-        self._sample_ratios.clear()
 
 
 class BlinkDetector:
     """Detects whether the eyes are blinking or not by calculating
     the eye aspect ratio (EAR).
+
+    A window-based approach is used to detect the change points of EARs, which
+    indicates a possible occurrence of blink.
 
     Attributes:
         LEFT_EYE_START_END_IDXS:
@@ -128,38 +29,22 @@ class BlinkDetector:
     LEFT_EYE_START_END_IDXS:  Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
     RIGHT_EYE_START_END_IDXS: Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
-    def __init__(self, ratio_threshold: float = 0.24) -> None:
-        """
-        Arguments:
-            ratio_threshold:
-                An eye aspect ratio lower than this is considered to be a blink.
-        """
-        self._ratio_threshold = ratio_threshold
+    # critical parameters to fine-tune
+    WINDOW_SIZE = 10
+    DRAMATIC_STD_CHANGE = 0.008
 
-    @property
-    def ratio_threshold(self) -> float:
-        """Returns the ratio threshold used to consider an EAR lower than it
-        to be a blink."""
-        return self._ratio_threshold
-
-    @ratio_threshold.setter
-    def ratio_threshold(self, threshold: float) -> None:
-        """
-        Arguments:
-            threshold:
-                An eye aspect ratio lower than this is considered to be a blink.
-        """
-        self._ratio_threshold = threshold
+    def __init__(self) -> None:
+        self._is_blinking = False
+        self._window: Deque[float] = deque(maxlen=self.WINDOW_SIZE)
+        self._pre_mean: float = 0
+        self._pre_std:  float = 0
+        self._cool_down: int = -1
 
     @classmethod
     def get_average_eye_aspect_ratio(
             cls,
             landmarks: NDArray[(68, 2), Int[32]]) -> float:
-        """Returns the average EAR from the left and right eye.
-
-        Arguments:
-            landmarks: (x, y) coordinates of the 68 face landmarks.
-        """
+        """Returns the averaged EAR of the two eyes."""
         # use the left and right eye coordinates to compute
         # the eye aspect ratio for both eyes
         left_ratio = BlinkDetector._get_eye_aspect_ratio(
@@ -172,17 +57,57 @@ class BlinkDetector:
         # average the eye aspect ratio together for both eyes
         return statistics.mean((left_ratio, right_ratio))
 
-    def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> bool:
-        """Returns whether the eyes in the face landmarks are blinking or not.
-
-        Arguments:
-            landmark: (x, y) coordinates of the 68 face landmarks.
-        """
+    def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         if not landmarks.any():
             raise ValueError("landmarks should represent a face")
 
         ratio = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
-        return ratio < self._ratio_threshold
+
+        if self._is_initial_detection():
+            self._pre_mean = ratio
+            self._pre_std  = 0
+            # dummy samples
+            self._window.extend([ratio] * (self.WINDOW_SIZE - 1))
+
+        self._window.append(ratio)
+        cur_mean = statistics.mean(self._window)
+        cur_std = statistics.stdev(self._window)
+
+        # important details when implementing this approach
+        self._is_blinking = (
+            self._not_too_near()
+                and self._dramatically_changed(cur_std)
+                and self._ear_decreased(cur_mean)
+        )
+        if self._is_blinking:
+            self._start_cooling_down()
+        else:
+            self._cool_down -= 1
+
+        self._pre_mean = cur_mean
+        self._pre_std  = cur_std
+
+    def _not_too_near(self) -> bool:
+        # a near blink is probably caused by noise
+        return self._cool_down < 0
+
+    def _dramatically_changed(self, cur_std: float) -> bool:
+        return cur_std - self._pre_std > self.DRAMATIC_STD_CHANGE
+
+    def _ear_decreased(self, cur_mean: float) -> bool:
+        return cur_mean - self._pre_mean < 0
+
+    def _start_cooling_down(self) -> None:
+        # no frequent blinkings can happen within 3 slides
+        self._cool_down = 3
+
+    def is_blinking(self) -> bool:
+        """Returns the result of the latest detection."""
+        return self._is_blinking
+
+    def _is_initial_detection(self) -> bool:
+        # it's impossible for the mean to be 0
+        return self._pre_mean == 0
 
     @staticmethod
     def _get_eye_aspect_ratio(eye: NDArray[(6, 2), Int[32]]) -> float:
@@ -191,18 +116,15 @@ class BlinkDetector:
         Eye aspect ratio is the ratio between height and width of the eye.
         EAR = (eye height) / (eye width)
         An opened eye has EAR between 0.2 and 0.4 normaly.
-
-        Arguments:
-            eye: (x, y) coordinates of the 6 single eye landmarks.
         """
         # compute the euclidean distances between the two sets of
-        # vertical eye landmarks (x, y)-coordinates
+        # vertical eye landmarks
         vert = []
         vert.append(math.dist(eye[1], eye[5]))
         vert.append(math.dist(eye[2], eye[4]))
 
         # compute the euclidean distance between the horizontal
-        # eye landmark (x, y)-coordinates
+        # eye landmarks
         hor = []
         hor.append(math.dist(eye[0], eye[3]))
 
@@ -221,89 +143,3 @@ class BlinkDetector:
             landmarks: NDArray[(68, 2), Int[32]]) -> NDArray[(6, 2), Int[32]]:
         return landmarks[cls.RIGHT_EYE_START_END_IDXS[0]
                          :cls.RIGHT_EYE_START_END_IDXS[1]]
-
-
-def draw_landmarks_used_by_blink_detector(
-        canvas: ColorImage,
-        landmarks: NDArray[(68, 2), Int[32]],
-        color: BGR = GREEN) -> ColorImage:
-    """Returns the canvas with the eyes' contours.
-
-    Arguments:
-        canvas: The image to draw on, it'll be copied.
-        landmarks: (x, y) coordinates of the 68 face landmarks.
-        color: Color of the lines, green (0, 255, 0) in default.
-    """
-    canvas_: ColorImage = canvas.copy()
-
-    # compute the convex hull for the left and right eye, then
-    # visualize each of the eyes
-    for start, end in (BlinkDetector.LEFT_EYE_START_END_IDXS,
-                       BlinkDetector.RIGHT_EYE_START_END_IDXS):
-        hull = cv2.convexHull(landmarks[start:end])
-        cv2.drawContours(canvas_, [hull], -1, color, 1)
-
-    # make lines transparent
-    canvas_ = cv2.addWeighted(canvas_, 0.4, canvas, 0.6, 0)
-    return canvas_
-
-
-class AntiNoiseBlinkDetector(QObject):
-    """Uses a normal BlinkDetector as its underlayer but noise or face move may
-    cause a false-positive "blink".
-    So the AntiNoiseBlinkDetector agrees a "blink" only if it continues for a
-    sufficient number of frames.
-
-    Signals:
-        s_blinked: Emits everytime a blink is detected.
-    """
-
-    s_blinked = pyqtSignal()
-
-    def __init__(self, ratio_threshold: float = 0.24, consec_frame: int = 3) -> None:
-        """
-        Arguments:
-            ratio_threshold: The eye aspect ratio to indicate blink.
-            consec_frame:
-                The number of consecutive frames the eye must be below the threshold
-                to indicate an anti-noise blink.
-        """
-        super().__init__()
-        # the underlaying BlinkDetector
-        self._base_detector = BlinkDetector(ratio_threshold)
-        self._consec_frame = consec_frame
-        self._consec_count: int = 0
-
-    @property
-    def ratio_threshold(self) -> float:
-        """Returns the ratio threshold used to consider an EAR lower than it
-        to be a blink with noise."""
-        return self._base_detector.ratio_threshold
-
-    @ratio_threshold.setter
-    def ratio_threshold(self, threshold: float) -> None:
-        """
-        Arguments:
-            threshold:
-                An eye aspect ratio lower than this is considered to be a blink with noise.
-        """
-        self._base_detector.ratio_threshold = threshold
-
-    def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
-        """Uses the base detector with EYE_AR_CONSEC_FRAMES to determine whether
-        there's an anti-noise blink.
-
-        Emits:
-            s_blinked: Emits when a anti-noise blink is detected.
-        """
-        if self._base_detector.detect_blink(landmarks):
-           self._consec_count += 1
-        else:
-            self._emit_blink_if_sufficient_consec_frames()
-            self._consec_count = 0
-
-    def _emit_blink_if_sufficient_consec_frames(self) -> None:
-        # if the eyes were closed for a sufficient number of frames,
-        # it's considered to be a real blink
-        if self._consec_count >= self._consec_frame:
-            self.s_blinked.emit()

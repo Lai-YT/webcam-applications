@@ -6,7 +6,7 @@ from PyQt5.QtCore import QObject, QTimer, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
 import concentration.fuzzy.parse as parse
-from blink.detector import AntiNoiseBlinkDetector
+from blink.detector import BlinkDetector
 from concentration.criterion import (
     BlinkRateIntervalDetector,
     BodyConcentrationCounter,
@@ -35,20 +35,11 @@ class ConcentrationGrader(QObject):
 
     def __init__(
             self,
-            # Passed to the underlaying AntiNoiseBlinkDetector.
-            ratio_threshold: float = 0.24,
-            # Passed to the underlaying AntiNoiseBlinkDetector.
-            consec_frame: int = 3,
             good_rate_range: Tuple[int, int] = (1, 21),
             # Passed to the underlaying FaceExistenceRateCounter.
             low_existence: float = 0.66) -> None:
         """
         Arguments:
-            ratio_threshold:
-                The eye aspect ratio to indicate blink. 0.24 in default.
-            consec_frame:
-                The number of consecutive frames the eye must be below the
-                threshold to indicate a blink. 3 in default.
             good_rate_range:
                 The min and max boundary of the good blink rate (blinks per minute).
                 It's not about the average rate, so both are with type int.
@@ -60,13 +51,11 @@ class ConcentrationGrader(QObject):
                 existence. 0.66 (2/3) in default.
         """
         super().__init__()
-        # FIXME: Blink detection not accurate, lots of false blink.
-        self._blink_detector = AntiNoiseBlinkDetector(ratio_threshold, consec_frame)
+        self._blink_detector = BlinkDetector()
 
         self._interval_detector = BlinkRateIntervalDetector(good_rate_range)
         self._interval_detector.s_interval_detected.connect(
             self._push_interval_to_grade_in_heap)
-        self._blink_detector.s_blinked.connect(self._interval_detector.add_blink)
 
         # Since the append of blinks is sparse, we need a timer to periodically
         # sync its windows up.
@@ -101,24 +90,10 @@ class ConcentrationGrader(QObject):
         self._process_timer.timeout.connect(self._grade_intervals)
         self._process_timer.start(1_000)
 
-    @property
-    def ratio_threshold(self) -> float:
-        """Returns the ratio threshold used to consider an EAR lower than it
-        to be a blink with noise."""
-        return self._blink_detector.ratio_threshold
-
-    @ratio_threshold.setter
-    def ratio_threshold(self, threshold: float) -> None:
-        """
-        Arguments:
-            threshold:
-                An eye aspect ratio lower than this is considered to be a blink
-                with noise.
-        """
-        self._blink_detector.ratio_threshold = threshold
-
     def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         self._blink_detector.detect_blink(landmarks)
+        if self._blink_detector.is_blinking():
+            self._interval_detector.add_blink()
 
     def add_frame(self) -> None:
         self._face_existence_counter.add_frame()
