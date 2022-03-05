@@ -273,7 +273,7 @@ class WebcamApplication(QObject):
 
         if slider_value is not None:
             settings["BASE_VALUE"] = str(slider_value)
-            self._brightness_controller.set_base_value(slider_value)
+            self._brightness_controller.update_base_value(slider_value)
         if mode is not None:
             settings["MODE"] = mode.name  # is enum
             self._brightness_controller.set_mode(mode)
@@ -327,16 +327,8 @@ class WebcamApplication(QObject):
                 time_info = self._time_guard.break_time_if_too_long(self._timer)
                 self.s_time_refreshed.emit(*time_info)
             if self._brightness_optimize:
-                # this overhead is small, so I don't check mode
-                self._brightness_controller.set_webcam_frame(frame)
-                # screenshot has greater overhead
-                if (self._brightness_controller.get_mode()
-                        in (BrightnessMode.BOTH, BrightnessMode.COLOR_SYSTEM)):
-                    self._brightness_controller.refresh_color_system_screenshot()
-                # Update face data in the controller.
-                self._brightness_controller.update_face(self._face)
-                # Optimize brightness after passing required images and face data.
-                bright: int = self._brightness_controller.optimize_brightness()
+                # Optimize brightness after passing required images.
+                bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
                 self.s_brightness_refreshed.emit(bright)
 
             # Do concentration gradings!
