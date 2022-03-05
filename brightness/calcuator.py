@@ -55,6 +55,7 @@ class BrightnessCalculator:
         self._check_mode_change()
 
         if self._mode is BrightnessMode.MANUAL:
+            self._reset()
             return self._base_value
 
         self._frames = frames
@@ -94,7 +95,6 @@ class BrightnessCalculator:
         )
 
     def _calculate_brightness_value(self) -> None:
-        # Add value difference effect as offset on new brightness value.
         # Higher the brightness if the surrounding light is bright to keep the
         # screen clear and lower the brightness if the display on the screen is
         # light colored to reduce contrast of light.
@@ -106,6 +106,12 @@ class BrightnessCalculator:
 
     def _set_pre_values_as_new_ones(self) -> None:
         self._pre_weighted_value = self._new_weighted_value
+
+    def _reset(self) -> None:
+        # Sets the brightness back to base, and weighted value = 0 prevents
+        # the value from immediate jump.
+        self._pre_weighted_value = 0
+        self._brightness_value = self._base_value
 
     @staticmethod
     def get_brightness_percentage(frame: ColorImage) -> float:
