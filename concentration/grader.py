@@ -126,6 +126,19 @@ class ConcentrationGrader(QObject):
             heap = self._in_times
         heap.push((interval, interval_type, blink_rate))
 
+    def start_grading(self) -> None:
+        """Starts the grader if it is stopped."""
+        if not self._process_timer.isActive():
+            self._process_timer.start()
+
+    def stop_grading(self) -> None:
+        """Stops the grader and clears all windows of criteria,
+        which means the current interval is thrown away.
+        """
+        self._process_timer.stop()
+        for window_type in WindowType:
+            self._clear_windows(window_type)
+
     def _grade_intervals(self) -> None:
         """Dispatches the intervals to their corresponding grading method."""
         self._grade_look_backs()
