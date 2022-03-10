@@ -79,11 +79,9 @@ class BrightnessCalculator:
         return int(self._clamp_between_zero_and_hundred(self._brightness_value))
 
     def _check_mode_change(self) -> None:
-        if self._mode_change_list:
+        self._mode_change_flag = bool(self._mode_change_list)
+        if self._mode_change_flag:
             self._mode = self._mode_change_list.pop(0)
-            self._mode_change_flag = True
-        else:
-            self._mode_change_flag = False
 
     def _calculate_new_value(self) -> None:
         # calculate the brightness of webcam frame
@@ -109,7 +107,7 @@ class BrightnessCalculator:
         self._new_value = new_value
 
     def _calculate_weighted_value(self) -> None:
-        # When first frame passed or mode changed, 
+        # When first frame passed or mode changed,
         # view the brightness of current frame as datum value.
         # That is, set both pre and new weighted value the same as
         # new value to make diff be 0.
@@ -122,6 +120,9 @@ class BrightnessCalculator:
             )
 
     def _calculate_weighted_difference(self) -> None:
+        if self._pre_weighted_value is None:
+            raise ValueError("first frame pass not handled")
+            
         self._weighted_value_diff = (
             self._new_weighted_value - self._pre_weighted_value
         )
