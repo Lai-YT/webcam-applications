@@ -27,13 +27,15 @@ class BrightnessCalculator:
         self._base_value: int = base_value
         # Used to weight with new frame value to prevent
         # dramatical change of brightness.
-        self._pre_weighted_value: float = 0
+        self._pre_weighted_value: Optional[float] = None
         # New brightness will be determined based on this value, and
         # fine-tuned by difference of weighted value and base value.
         self._brightness_value = float(base_value)
         # For thread-safety, a mode change is appended into the list instead of
         # directly writing to the variable.
         self._mode_change_list: List[BrightnessMode] = []
+        # The flag will be set True when user changes mode.
+        self._mode_change_flag: bool = False
 
     def get_mode(self) -> BrightnessMode:
         return self._mode
@@ -42,7 +44,7 @@ class BrightnessCalculator:
         self._mode_change_list.append(new_mode)
 
     def update_base_value(self, new_base_value: int) -> None:
-        # an offset on base value directly reflects to the brightness value
+        # an offset on base value linearly reflects to the brightness value
         self._brightness_value += new_base_value - self._base_value
         self._base_value = new_base_value
 
@@ -79,6 +81,9 @@ class BrightnessCalculator:
     def _check_mode_change(self) -> None:
         if self._mode_change_list:
             self._mode = self._mode_change_list.pop(0)
+            self._mode_change_flag = True
+        else:
+            self._mode_change_flag = False
 
     def _calculate_new_value(self) -> None:
         # calculate the brightness of webcam frame
@@ -104,9 +109,17 @@ class BrightnessCalculator:
         self._new_value = new_value
 
     def _calculate_weighted_value(self) -> None:
-        self._new_weighted_value = (
-            self._new_value * 0.4 + self._pre_weighted_value * 0.6
-        )
+        # When first frame passed or mode changed, 
+        # view the brightness of current frame as datum value.
+        # That is, set both pre and new weighted value the same as
+        # new value to make diff be 0.
+        if self._pre_weighted_value is None or self._mode_change_flag:
+            self._pre_weighted_value = self._new_value
+            self._new_weighted_value = self._new_value
+        else:
+            self._new_weighted_value = (
+                self._new_value * 0.4 + self._pre_weighted_value * 0.6
+            )
 
     def _calculate_weighted_difference(self) -> None:
         self._weighted_value_diff = (
@@ -120,9 +133,9 @@ class BrightnessCalculator:
         self._pre_weighted_value = self._new_weighted_value
 
     def _reset(self) -> None:
-        # Sets the brightness back to base, and weighted value = 0 prevents
-        # the value from immediate jump.
-        self._pre_weighted_value = 0
+        # Sets the brightness back to base, and weighted value to None
+        # to prevent the value from immediate jump.
+        self._pre_weighted_value = None
         self._brightness_value = self._base_value
 
     @staticmethod

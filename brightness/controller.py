@@ -72,7 +72,7 @@ class BrightnessController:
             The brightness value after optimization.
         """
         # This is kind of hacking, I pass both of them every time so
-        # no worries about getting a "old" mode when threading.
+        # no worries about getting an "old" mode when threading.
         self._update_webcam_frame(frame)
         self._refresh_color_system_screenshot()
 
