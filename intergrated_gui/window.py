@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
 )
 
 import intergrated_gui.img.icon
+from intergrated_gui.component import Label
 from intergrated_gui.frame_widget import FrameWidget
 from intergrated_gui.information_widget import InformationWidget
 from intergrated_gui.panel_widget import PanelWidget
@@ -79,18 +80,33 @@ class Window(QMainWindow):
         """Creates information widget at the left-hand side, capture view in the
         middle, control panel at the right.
         """
+        self.widgets: Dict[str, QWidget] = {}
+        self._create_info_and_lang_widget()
+
         # The number is the stretch of the widget.
         widgets: Dict[str, Tuple[QWidget, int]] = {
-            "information": (InformationWidget(), 1),
             "frame": (FrameWidget(), 2),
             "panel": (PanelWidget(), 1),
         }
-        self.widgets: Dict[str, QWidget] = {}
+
         for name, (widget, stretch) in widgets.items():
             self.widgets[name] = widget
             self._general_layout.addWidget(widget, stretch=stretch)
 
         self._make_panel_widget_scrollable()
+
+    def _create_info_and_lang_widget(self) -> None:
+        # The number is the stretch of the widget.
+        widgets: Dict[str, Tuple[QWidget, int]] = {
+            "information": (InformationWidget(), 5),
+            "language": (Label("lang"), 1),
+        }
+        info_and_lang_layout = QVBoxLayout()
+        for name, (widget, stretch) in widgets.items():
+            self.widgets[name] = widget
+            info_and_lang_layout.addWidget(widget, stretch=stretch)
+
+        self._general_layout.addLayout(info_and_lang_layout, stretch=1)
 
     def _make_panel_widget_scrollable(self) -> None:
         scroll_area = QScrollArea()
