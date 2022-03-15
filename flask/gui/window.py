@@ -1,0 +1,23 @@
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
+
+from gui.component import Label
+
+
+class FlaskGui(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        # Set some main window's properties.
+        self.setWindowTitle("flask test")
+        self.setFixedSize(600, 400)
+        # Set the central widget and the general layout.
+        self._general_layout = QVBoxLayout()
+        self._central_widget = QWidget()
+        self._central_widget.setLayout(self._general_layout)
+        self.setCentralWidget(self._central_widget)
+
+        self._create_label()
+    
+    def _create_label(self):
+        self.label = Label("0", wrap=True)
+        self._general_layout.addWidget(self.label, alignment=Qt.AlignCenter)

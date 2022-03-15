@@ -1,0 +1,18 @@
+{
+    "index": "Grade",
+    "grades":
+    [
+        {
+            "index": "01",
+            "start": 0,
+            "end": 60,
+            "grade": 0.72
+        },
+        {
+            "index": "02",
+            "start": 63,
+            "end": 117,
+            "grade": 0.49
+        }
+    ]
+}
