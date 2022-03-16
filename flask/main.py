@@ -11,7 +11,7 @@ from gui.window import FlaskGui
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    # Create the plain GUI.
+    # Create the plain GUI and controller.
     window = FlaskGui()
     window.show()
     controller = GuiController(window, app)
@@ -22,12 +22,8 @@ if __name__ == "__main__":
     @app_.route("/test", methods=["POST", "GET"])
     def create_data():
         if request.method == "POST":
-            res = request.get_json() # a list with a value of the counter
-
-            # Extend the initial list instead of appending
-            # a new list.
-            data.extend(res)
-            controller.update_counter(data)
+            grade = request.get_json()
+            controller.update_grade(grade)
         # Convert the list to json string.
         return json.dumps(data)
 

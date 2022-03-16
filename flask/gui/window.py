@@ -9,7 +9,7 @@ class FlaskGui(QMainWindow):
         super().__init__()
         # Set some main window's properties.
         self.setWindowTitle("flask test")
-        self.setFixedSize(600, 400)
+        self.setFixedSize(480, 320)
         # Set the central widget and the general layout.
         self._general_layout = QVBoxLayout()
         self._central_widget = QWidget()
@@ -19,5 +19,5 @@ class FlaskGui(QMainWindow):
         self._create_label()
     
     def _create_label(self):
-        self.label = Label("0", wrap=True)
+        self.label = Label("No grade received.", wrap=True)
         self._general_layout.addWidget(self.label, alignment=Qt.AlignCenter)

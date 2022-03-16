@@ -6,8 +6,10 @@ class GuiController(QObject):
         self._gui = gui
         self._app = application
 
-        self._counter = 0
+    def update_grade(self, grade):
+        id = grade["id"]
+        time = grade["interval"]
+        grade = grade["grade"]
 
-    def update_counter(self, data_list):
-        self._counter = self._counter + 1
-        self._gui.label.setText(str(data_list))
+        text = f"Student {id}\nTime: {time}\nGrade: {grade}"
+        self._gui.label.setText(text)
