@@ -1,4 +1,5 @@
-from PyQt5.QtCore import QObject, pyqtSlot
+from PyQt5.QtCore import QObject
+
 
 class GuiController(QObject):
     def __init__(self, gui, application):
