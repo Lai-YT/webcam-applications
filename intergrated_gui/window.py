@@ -1,9 +1,11 @@
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QCloseEvent, QIcon, QResizeEvent
+from PyQt5.QtGui import QCloseEvent, QFont, QIcon, QResizeEvent
 from PyQt5.QtWidgets import (
     QApplication,
+    QComboBox,
+    QFormLayout,
     QHBoxLayout,
     QMainWindow,
     QScrollArea,
@@ -96,15 +98,18 @@ class Window(QMainWindow):
         self._make_panel_widget_scrollable()
 
     def _create_info_and_lang_widget(self) -> None:
-        # The number is the stretch of the widget.
-        widgets: Dict[str, Tuple[QWidget, int]] = {
-            "information": (InformationWidget(), 5),
-            "language": (Label("lang"), 1),
-        }
         info_and_lang_layout = QVBoxLayout()
-        for name, (widget, stretch) in widgets.items():
-            self.widgets[name] = widget
-            info_and_lang_layout.addWidget(widget, stretch=stretch)
+
+        self.widgets["information"] = InformationWidget()
+        self.widgets["language"] = QComboBox()
+        self.widgets["language"].addItems(["Chinese", "English"])
+        self.widgets["language"].setFont(QFont("Arial", 12))
+        # create layout for lang combo box
+        lang_layout = QFormLayout()
+        lang_layout.addRow(Label("language:"), self.widgets["language"])
+        # add both of them, information should occupy more space
+        info_and_lang_layout.addWidget(self.widgets["information"], stretch=5)
+        info_and_lang_layout.addLayout(lang_layout, stretch=1)
 
         self._general_layout.addLayout(info_and_lang_layout, stretch=1)
 
