@@ -14,7 +14,7 @@ app_ = Flask(__name__)
 
 data = []
 @app_.route("/test", methods=["POST", "GET"])
-def create_data():
+def update_grade():
     if request.method == "POST":
         grade = request.get_json()
         controller.update_grade(grade)
