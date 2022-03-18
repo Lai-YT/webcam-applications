@@ -8,9 +8,6 @@ class GuiController(QObject):
         self._app = application
 
     def update_grade(self, grade):
-        id = grade["id"]
-        time = grade["interval"]
-        grade = grade["grade"]
-
-        text = f"Student {id}\nTime: {time}\nGrade: {grade}"
+        text = "Student {}\nTime: {}\nGrade: {}".format(
+            grade["id"], grade["interval"], grade["grade"])
         self._gui.label.setText(text)
