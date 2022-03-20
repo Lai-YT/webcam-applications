@@ -5,7 +5,7 @@ from PyQt5.QtGui import QCloseEvent, QFont, QIcon, QResizeEvent
 from PyQt5.QtWidgets import (
     QApplication,
     QComboBox,
-    QFormLayout,
+    QGridLayout,
     QHBoxLayout,
     QMainWindow,
     QScrollArea,
@@ -102,16 +102,22 @@ class Window(QMainWindow):
 
         self.widgets["information"] = InformationWidget()
         self.widgets["language"] = QComboBox()
-        self.widgets["language"].addItems(["Chinese", "English"])
+        self.widgets["language"].addItem(QIcon(":us-flag.ico"), "English")
+        self.widgets["language"].addItem(QIcon(":taiwan-flag.ico"), "Chinese")
         self.widgets["language"].setFont(QFont("Arial", 12))
         # create layout for lang combo box
-        lang_layout = QFormLayout()
-        lang_layout.addRow(Label("language:"), self.widgets["language"])
+        lang_layout = QGridLayout()
+        lang_layout.addWidget(Label("Language:"), 0, 0)
+        lang_layout.addWidget(self.widgets["language"], 0, 1, Qt.AlignLeft)
+        # This sufficiently large strech makes the combobox stick to the label
+        # no matter how the window is streched in width.
+        lang_layout.setColumnStretch(1, 15)
+
         # add both of them, information should occupy more space
         info_and_lang_layout.addWidget(self.widgets["information"], stretch=5)
         info_and_lang_layout.addLayout(lang_layout, stretch=1)
 
-        self._general_layout.addLayout(info_and_lang_layout, stretch=1)
+        self._general_layout.insertLayout(0, info_and_lang_layout, stretch=1)
 
     def _make_panel_widget_scrollable(self) -> None:
         scroll_area = QScrollArea()

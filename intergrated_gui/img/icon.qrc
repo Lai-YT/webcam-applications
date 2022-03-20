@@ -3,5 +3,7 @@
     <file alias="sun.ico">sun.ico</file>
     <file alias="webcam.ico">webcam.ico</file>
     <file alias="help-icon.svg">help-icon.svg</file>
+    <file alias="taiwan-flag.ico">taiwan-flag.ico</file>
+    <file alias="us-flag.ico">us-flag.ico</file>
 </qresource>
 </RCC>
