@@ -1,13 +1,16 @@
-# Display grades
+""" Display grades. """
+
 import sqlite3
+from pathlib import Path
 
 
-grades = "concentration_grade.db"
-conn = sqlite3.connect(grades)
+db = Path(__file__).parent / "../flask/concentration_grade.db"
+conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
 
-rows = conn.execute("select * from concentration_grade;")
+rows = conn.execute("SELECT * FROM grades;")
 for row in rows:
     for field in row:
-        print("{}\t".format(field), end="")
+        print(field, end="\t")
     print()
+
 conn.close()

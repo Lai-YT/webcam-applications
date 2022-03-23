@@ -1,4 +1,5 @@
 import sqlite3
+from pathlib import Path
 
 from PyQt5.QtCore import QObject, pyqtSlot
 
@@ -16,20 +17,19 @@ class GuiController(QObject):
         self._gui.destroyed.connect(self._clear_table)
 
     def _connect_database(self):
-        grades = "concentration_grade.db"
-        self.conn = sqlite3.connect(grades, check_same_thread=False)
+        db = Path(__file__).parent / "../concentration_grade.db"
+        self._conn = sqlite3.connect(db, check_same_thread=False)
 
     def store_grade(self, grade):
-        sql_str = "insert into grades (id, interval, grade) values (?, ?, ?);"
-        self.conn.execute(sql_str, (grade["id"], grade["interval"], grade["grade"]))
-        self.conn.commit()
+        sql = "INSERT INTO grades (id, interval, grade) VALUES (?, ?, ?);"
+        with self._conn:
+            self._conn.execute(sql, (grade["id"], grade["interval"], grade["grade"]))
 
     def update_grade(self):
         pass
 
     @pyqtSlot()
     def _clear_table(self):
-        cur = self.conn.cursor()
-        cur.execute("DELETE FROM grades")
-        self.conn.commit()
-        self.conn.close()
+        with self._conn:
+            self._conn.execute("DELETE FROM grades;")
+        self._conn.close()

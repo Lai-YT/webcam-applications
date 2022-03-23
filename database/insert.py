@@ -1,13 +1,14 @@
 import sqlite3
+from pathlib import Path
 
 
-grades = "concentration_grade.db"
-conn = sqlite3.connect(grades)
+db = Path(__file__).parent / "../flask/concentration_grade.db"
+conn = sqlite3.connect(db)
 
 id = input("Enter ID: ")
 time = input("Enter time interval: ")
 grade = float(input("Enter concent grade: "))
-sql_str = "insert into concentration_grade (id, interval, grade) values (?, ?, ?);"
-conn.execute(sql_str, (id, time, grade))
-conn.commit()
+sql = "INSERT INTO grades (id, interval, grade) VALUES (?, ?, ?);"
+with conn:
+    conn.execute(sql, (id, time, grade))
 conn.close()
