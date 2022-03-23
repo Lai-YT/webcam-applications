@@ -2,16 +2,17 @@ import sqlite3
 
 from PyQt5.QtCore import QObject, pyqtSlot
 
+
 class GuiController(QObject):
     def __init__(self, gui, application):
         super().__init__()
         self._gui = gui
         self._app = application
 
-        self._connect_siganl()
+        self._connect_signal()
         self._connect_database()
 
-    def _connect_siganl(self):
+    def _connect_signal(self):
         self._gui.destroyed.connect(self._clear_table)
 
     def _connect_database(self):
