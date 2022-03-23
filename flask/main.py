@@ -36,5 +36,5 @@ if __name__ == "__main__":
         "use_reloader": False,
         "debug": True,
     }
-    Thread(target=app_.run, daemon=True, kwargs=kwargs).start()
-    app.exec_()
+    Thread(target=app_.run, kwargs=kwargs, daemon=True).start()
+    sys.exit(app.exec_())
