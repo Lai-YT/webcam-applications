@@ -9,6 +9,7 @@ class GuiController(QObject):
         super().__init__()
         self._gui = gui
         self._app = application
+        self._grade = None
 
         self._connect_signal()
         self._connect_database()
@@ -20,13 +21,21 @@ class GuiController(QObject):
         db = Path(__file__).parent / "../concentration_grade.db"
         self._conn = sqlite3.connect(db, check_same_thread=False)
 
-    def store_grade(self, grade):
+    def update_grade(self, grade):
+        """Updates current grade and displays it on gui."""
+        self._grade = grade
+
+        text = ("ID: {}\nInterval: {}\nGrade: {}"
+            .format(self._grade["id"], self._grade["interval"], self._grade["grade"])
+        )
+        self._gui.label.setText(text)
+
+    def store_grade_in_database(self):
         sql = "INSERT INTO grades (id, interval, grade) VALUES (?, ?, ?);"
         with self._conn:
-            self._conn.execute(sql, (grade["id"], grade["interval"], grade["grade"]))
-
-    def update_grade(self):
-        pass
+            self._conn.execute(
+                sql, (self._grade["id"], self._grade["interval"], self._grade["grade"])
+            )
 
     @pyqtSlot()
     def _clear_table(self):
