@@ -4,7 +4,7 @@ import time
 import requests
 
 
-def post_one_by_one_every_two_seconds(data):
+def post_grade_periodically(data):
     for grade in data["grades"]:
         requests.post("http://127.0.0.1:5000/test", json=grade)
         time.sleep(2)
@@ -15,7 +15,7 @@ def main():
         data = json.load(f)
 
     while True:
-        post_one_by_one_every_two_seconds(data)
+        post_grade_periodically(data)
 
 
 if __name__ == "__main__":
