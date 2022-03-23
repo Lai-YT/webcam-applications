@@ -20,10 +20,8 @@ class GuiController(QObject):
         self.conn = sqlite3.connect(grades, check_same_thread=False)
 
     def store_grade(self, grade):
-        sql_str = ("insert into grades(id, interval, grade) values('{}','{}',{});"
-            .format(grade["id"], grade["interval"], grade["grade"])
-        )
-        self.conn.execute(sql_str)
+        sql_str = "insert into grades (id, interval, grade) values (?, ?, ?);"
+        self.conn.execute(sql_str, (grade["id"], grade["interval"], grade["grade"]))
         self.conn.commit()
 
     def update_grade(self):
