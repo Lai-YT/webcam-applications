@@ -17,7 +17,7 @@ data = []
 def update_grade():
     if request.method == "POST":
         grade = request.get_json()
-        controller.update_grade(grade)
+        controller.store_grade_in_database(grade)
     # Convert the list to json string.
     return json.dumps(data)
 
