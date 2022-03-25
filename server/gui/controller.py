@@ -11,11 +11,8 @@ class GuiController(QObject):
         self._app = application
         self._grade = None
 
-        self._connect_signal()
         self._connect_database()
-
-    def _connect_signal(self):
-        self._gui.destroyed.connect(self._clear_table)
+        self._clear_table()
 
     def _connect_database(self):
         db = Path(__file__).parent / "../concentration_grade.db"
@@ -30,6 +27,11 @@ class GuiController(QObject):
             );"""
             self._conn.execute(sql)
 
+    def _clear_table(self):
+        # XXX: is the table always deleted?
+        with self._conn:
+            self._conn.execute("DELETE FROM grades;")   
+
     def store_grade_in_database(self, grade):
         self._grade = grade
 
@@ -40,6 +42,25 @@ class GuiController(QObject):
             )
         self._update_grade_on_gui()
 
+    def update_grade_in_database(self, grade):
+        self._grade = grade
+
+        with self._conn:
+            sql = "SELECT EXISTS (SELECT 1 FROM grades WHERE id=? LIMIT 1);"
+            row = self._conn.execute(sql, (self._grade["id"], )).fetchone()
+            # row not exists
+            if row[0] == 0:
+                sql = "INSERT INTO grades (id, interval, grade) VALUES (?, ?, ?);"
+                self._conn.execute(
+                    sql, (self._grade["id"], self._grade["interval"], self._grade["grade"])
+                )
+            # row exists
+            else:
+                sql = "UPDATE grades SET interval=?, grade=? WHERE id=?;"
+                self._conn.execute(
+                    sql, (self._grade["interval"], self._grade["grade"], self._grade["id"])
+                )
+
     def _update_grade_on_gui(self):
         """Updates the latest grade of "A01" to the GUI."""
         with self._conn:
@@ -49,10 +70,3 @@ class GuiController(QObject):
         for row in rows[-1:]:
             text += "    {} {}\n".format(row["interval"], row["grade"])
         self._gui.label.setText(text)
-
-    @pyqtSlot()
-    def _clear_table(self):
-        # XXX: is the table always deleted?
-        with self._conn:
-            self._conn.execute("DELETE FROM grades;")
-        self._conn.close()

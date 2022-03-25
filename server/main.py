@@ -16,7 +16,7 @@ app_ = Flask(__name__)
 def update_grade():
     if request.method == "POST":
         grade = request.get_json()
-        controller.store_grade_in_database(grade)
+        controller.update_grade_in_database(grade)
     return ""
 
 
