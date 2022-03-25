@@ -1,3 +1,4 @@
+import atexit
 import sqlite3
 from pathlib import Path
 
@@ -14,6 +15,8 @@ class GuiController(QObject):
         self._connect_database()
         self._clear_table()
 
+        atexit.register(self._conn.close)
+
     def _connect_database(self):
         db = Path(__file__).parent / "../concentration_grade.db"
         self._conn = sqlite3.connect(db, check_same_thread=False)
@@ -28,19 +31,8 @@ class GuiController(QObject):
             self._conn.execute(sql)
 
     def _clear_table(self):
-        # XXX: is the table always deleted?
         with self._conn:
             self._conn.execute("DELETE FROM grades;")   
-
-    def store_grade_in_database(self, grade):
-        self._grade = grade
-
-        with self._conn:
-            sql = "INSERT INTO grades (id, interval, grade) VALUES (?, ?, ?);"
-            self._conn.execute(
-                sql, (self._grade["id"], self._grade["interval"], self._grade["grade"])
-            )
-        self._update_grade_on_gui()
 
     def update_grade_in_database(self, grade):
         self._grade = grade
