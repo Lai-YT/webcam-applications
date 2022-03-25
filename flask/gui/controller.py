@@ -46,7 +46,7 @@ class GuiController(QObject):
             sql = """SELECT interval, grade FROM grades WHERE id="A01";"""
             rows = self._conn.execute(sql).fetchall()
         text = "A01: \n"
-        for row in rows[-1]:
+        for row in rows[-1:]:
             text += "    {} {}\n".format(row["interval"], row["grade"])
         self._gui.label.setText(text)
 
