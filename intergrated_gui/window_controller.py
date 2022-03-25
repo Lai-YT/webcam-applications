@@ -1,6 +1,6 @@
 from typing import Dict, Tuple
 
-from PyQt5.QtCore import QObject, QThread, pyqtSlot
+from PyQt5.QtCore import QObject
 
 from app.app_type import ApplicationType
 from app.webcam_application import WebcamApplication
@@ -24,16 +24,7 @@ class WindowController(QObject):
 
     def _start_app(self) -> None:
         self._worker = TaskWorker(self._app.start)
-        self._thread = QThread()
-        self._worker.moveToThread(self._thread)
-        # Worker starts running after the thread is started.
-        self._thread.started.connect(self._worker.run)
-        # The job of thread and worker is finished after the App. calls stop.
-        self._app.s_stopped.connect(self._thread.quit)
-        self._app.s_stopped.connect(self._worker.deleteLater)
-        self._thread.finished.connect(self._thread.deleteLater)
-
-        self._thread.start()
+        self._thread = self._worker.run_in_thread(self._app.s_stopped)
 
     def _connect_app_and_information(self) -> None:
         information = self._window.widgets["information"]
