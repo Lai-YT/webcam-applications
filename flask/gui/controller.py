@@ -20,12 +20,19 @@ class GuiController(QObject):
     def _connect_database(self):
         db = Path(__file__).parent / "../concentration_grade.db"
         self._conn = sqlite3.connect(db, check_same_thread=False)
+        with self._conn:
+            sql = """CREATE TABLE IF NOT EXISTS grades (
+                id INT,
+                interval TEXT,
+                grade FLOAT
+            );"""
+            self._conn.execute(sql)
 
     def store_grade_in_database(self, grade):
         self._grade = grade
 
-        sql = "INSERT INTO grades (id, interval, grade) VALUES (?, ?, ?);"
         with self._conn:
+            sql = "INSERT INTO grades (id, interval, grade) VALUES (?, ?, ?);"
             self._conn.execute(
                 sql, (self._grade["id"], self._grade["interval"], self._grade["grade"])
             )
@@ -39,6 +46,7 @@ class GuiController(QObject):
 
     @pyqtSlot()
     def _clear_table(self):
+        # XXX: is the table really deleted?
         with self._conn:
             self._conn.execute("DELETE FROM grades;")
         self._conn.close()
