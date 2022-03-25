@@ -20,6 +20,8 @@ class GuiController(QObject):
     def _connect_database(self):
         db = Path(__file__).parent / "../concentration_grade.db"
         self._conn = sqlite3.connect(db, check_same_thread=False)
+        # so we can retrieve rows as dictionary
+        self._conn.row_factory = sqlite3.Row
         with self._conn:
             sql = """CREATE TABLE IF NOT EXISTS grades (
                 id INT,
@@ -39,14 +41,18 @@ class GuiController(QObject):
         self._update_grade_on_gui()
 
     def _update_grade_on_gui(self):
-        text = ("ID: {}\nInterval: {}\nGrade: {}"
-            .format(self._grade["id"], self._grade["interval"], self._grade["grade"])
-        )
+        """Updates the latest grade of "A01" to the GUI."""
+        with self._conn:
+            sql = """SELECT interval, grade FROM grades WHERE id="A01";"""
+            rows = self._conn.execute(sql).fetchall()
+        text = "A01: \n"
+        for row in rows[-1]:
+            text += "    {} {}\n".format(row["interval"], row["grade"])
         self._gui.label.setText(text)
 
     @pyqtSlot()
     def _clear_table(self):
-        # XXX: is the table really deleted?
+        # XXX: is the table always deleted?
         with self._conn:
             self._conn.execute("DELETE FROM grades;")
         self._conn.close()
