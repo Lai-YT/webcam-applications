@@ -133,7 +133,7 @@ class WebcamApplication(QObject):
         self._concentration_grader.s_concent_interval_refreshed.connect(
             self.s_concent_interval_refreshed
         )
-        self._stop_grading_if_all_related_app_disabled_else_keep_grading()
+        self._keep_grading_if_related_apps_enabled()
 
     def _create_guards(self) -> None:
         self._create_distance_guard()
@@ -214,7 +214,7 @@ class WebcamApplication(QObject):
         if enabled is not None:
             settings["ENABLED"] = str(enabled)
             self._distance_measure = enabled
-            self._stop_grading_if_all_related_app_disabled_else_keep_grading()
+            self._keep_grading_if_related_apps_enabled()
 
     def set_focus_time(
             self, *,
@@ -242,7 +242,6 @@ class WebcamApplication(QObject):
                 self._time_guard.show()
             else:
                 self._time_guard.hide()
-            self._stop_grading_if_all_related_app_disabled_else_keep_grading()
 
     def set_posture_detect(
             self, *,
@@ -266,7 +265,7 @@ class WebcamApplication(QObject):
         if enabled is not None:
             settings["ENABLED"] = str(enabled)
             self._posture_detect = enabled
-            self._stop_grading_if_all_related_app_disabled_else_keep_grading()
+            self._keep_grading_if_related_apps_enabled()
 
     def set_brightness_optimization(
             self, *,
@@ -352,18 +351,19 @@ class WebcamApplication(QObject):
         """Stops the execution loop by changing the flag."""
         self._f_ready = False
 
-    def _stop_grading_if_all_related_app_disabled_else_keep_grading(self) -> None:
-        all_disabled = not any(
+    def _keep_grading_if_related_apps_enabled(self) -> None:
+        # Need both distance measurement and posture detection to have
+        # the concentration grader work.
+        relate_enabled = all(
             [self._settings.getboolean(app_type.name, "ENABLED")
              for app_type in (ApplicationType.DISTANCE_MEASUREMENT,
-                              ApplicationType.FOCUS_TIMING,
                               ApplicationType.POSTURE_DETECTION)]
         )
 
-        if all_disabled:
-            self._concentration_grader.stop_grading()
-        else:
+        if relate_enabled:
             self._concentration_grader.start_grading()
+        else:
+            self._concentration_grader.stop_grading()
 
     def _update_face_and_landmarks(self, canvas: ColorImage, frame: ColorImage) -> None:
         """
