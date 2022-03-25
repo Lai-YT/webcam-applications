@@ -20,4 +20,4 @@ jobs:
         pip install mypy
     - name: Analysing the code with mypy
       run: |
-        mypy . --ignore-missing-imports
+        mypy . --ignore-missing-imports --install-types --non-interactive
