@@ -13,7 +13,9 @@ def post_grade_every_second(data):
 def main():
     with open("grade.json") as f:
         data = json.load(f)
-        post_grade_every_second(data)
+    # posting is outside of "with" to have the file closed as early
+    # as possible
+    post_grade_every_second(data)
 
 
 if __name__ == "__main__":
