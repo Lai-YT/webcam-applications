@@ -7,7 +7,7 @@ import requests
 def post_grade_every_second(data):
     for grade in data["grades"]:
         requests.post("http://127.0.0.1:5000/test", json=grade)
-        time.sleep(1)
+        time.sleep(2)
 
 
 def main():
