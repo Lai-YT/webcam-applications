@@ -10,9 +10,10 @@ class GuiController(QObject):
         super().__init__()
         self._gui = gui
         self._app = application
+        self.counter = 0
 
         self._connect_database()
-        self._create_table_if_not_exists()
+        self._create_table_if_not_exist()
         self._clear_table()
 
         # Have the connection of database closed right before
@@ -27,11 +28,11 @@ class GuiController(QObject):
         # so we can retrieve rows as dictionary
         self._conn.row_factory = sqlite3.Row
 
-    def _create_table_if_not_exists(self) -> None:
+    def _create_table_if_not_exist(self) -> None:
         # TODO: make student id the primary key
         with self._conn:
             sql = """CREATE TABLE IF NOT EXISTS grades (
-                id INT,
+                id INT PRIMARY KEY,
                 interval TEXT,
                 grade FLOAT
             );"""
@@ -47,8 +48,8 @@ class GuiController(QObject):
 
     def update_grade_in_database(self, grade):
         # Checks whether the id already exists,
-        # if yes, UPDATEs its content;
-        # if no, INSERTs as a new row.
+        # if yes, UPDATE its content;
+        # if no, INSERT as a new row.
         with self._conn:
             sql = "SELECT EXISTS (SELECT 1 FROM grades WHERE id=? LIMIT 1);"
             row = self._conn.execute(sql, (grade["id"], )).fetchone()
@@ -65,12 +66,15 @@ class GuiController(QObject):
         self._update_grade_on_gui()
 
     def _update_grade_on_gui(self):
-        """Updates the latest grade of "A01" to the GUI."""
+        """Updates the latest grade on GUI."""
         with self._conn:
-            sql = 'SELECT interval, grade FROM grades WHERE id="A01" LIMIT 1;'
-            row = self._conn.execute(sql).fetchone()
-        text = "A01: \n"
-        text += "    {} {}\n".format(row["interval"], row["grade"])
+            sql = "SELECT * FROM grades;"
+            rows = self._conn.execute(sql).fetchall()
+
+        self.counter = self.counter + 1
+        text = "Fetch time: {}\n".format(self.counter)
+        for row in rows:
+            text += "{}: \n{} {}\n".format(row["id"], row["interval"], row["grade"])
         self._gui.label.setText(text)
 
     @staticmethod

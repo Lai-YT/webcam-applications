@@ -9,7 +9,7 @@ class FlaskGui(QMainWindow):
         super().__init__()
         # Set some main window's properties.
         self.setWindowTitle("flask test")
-        self.setFixedSize(480, 320)
+        self.setFixedSize(600, 480)
         # Set the central widget and the general layout.
         self._general_layout = QVBoxLayout()
         self._central_widget = QWidget()
