@@ -23,7 +23,7 @@ from distance.calculator import (DistanceCalculator,
                                  draw_landmarks_used_by_distance_calculator)
 from distance.guard import DistanceGuard, DistanceState
 from focus_time.guard import TimeGuard
-from intergrated_gui.popup_widget import TimeState
+from gui.popup_widget import TimeState
 from posture.calculator import (AngleCalculator, PostureLabel,PosturePredictor,
                                 draw_landmarks_used_by_angle_calculator)
 from posture.guard import PostureGuard

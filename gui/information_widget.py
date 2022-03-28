@@ -5,8 +5,8 @@ from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QFormLayout, QFrame, QWidget
 
 from distance.guard import DistanceState
-from intergrated_gui.component import Label
-from intergrated_gui.popup_widget import TimeState
+from gui.component import Label
+from gui.popup_widget import TimeState
 from posture.calculator import PostureLabel
 
 

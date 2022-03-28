@@ -3,8 +3,8 @@ import sys
 from PyQt5.QtWidgets import QApplication
 
 from app.webcam_application import WebcamApplication
-from intergrated_gui.window_controller import WindowController
-from intergrated_gui.window import Window
+from gui.window_controller import WindowController
+from gui.window import Window
 
 
 app = QApplication(sys.argv)
