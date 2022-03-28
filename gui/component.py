@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5 import QtWidgets
 
-from posture.train import PostureLabel
+from posture.calculator import PostureLabel
 
 
 class _ArialFont(QFont):

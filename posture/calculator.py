@@ -1,18 +1,60 @@
 import numpy as np
 import math
 import warnings
-from typing import List, Optional, Tuple
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
+import tensorflow as tf
 from nptyping import Float, Int, NDArray
-from tensorflow.python.keras.engine.sequential import Sequential
+from tensorflow.keras import models
 
-from posture.train import ModelTrainer, PostureLabel
 from util.color import BGR, GREEN
 from util.image_type import ColorImage, GrayImage
 
 
-class AngleCalculator:
+class PostureLabel(Enum):
+    """Posture can be good or slump."""
+    # The values should start from 0 and be consecutive
+    # since they're also used to represent the result of prediction.
+    GOOD:  int = 0
+    SLUMP: int = 1
+
+
+class AngleCalculator(ABC):
+    def __init__(self) -> None:
+        self._cache: Optional[float] = None
+
+    @abstractmethod
+    def calculate(self, landmarks: Any) -> float:
+        pass
+
+    @staticmethod
+    def angle_between(p1, p2) -> float:
+        """Returns the included angle of the vector p2 - p1 in degree.
+        Between (-90.0, 90.0].
+
+        Arguments:
+            p1 (a subscriptable object that contains 2 int elements)
+            p2 (a subscriptable object that contains 2 int elements)
+        """
+        x1 ,y1 = p1
+        x2 ,y2 = p2
+        with warnings.catch_warnings():
+            # RuntimeWarning: divide by zero encountered in long_scalars
+            # Ignore possible warning when 90.0
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            return math.atan((y2 - y1) / (x2 - x1)) * 180 / math.pi
+
+    def angle(self) -> Optional[float]:
+        """Returns the angle of the lastest calculation; None if haven't
+        calculate any angle yet.
+        """
+        return self._cache
+
+
+class HogAngleCalculator(AngleCalculator):
 
     # For dlib’s 68-point facial landmark detector
     NOSE_BRIDGE_IDXS:   List[int] = [27, 30]
@@ -20,9 +62,7 @@ class AngleCalculator:
     RIGHT_EYESIDE_IDXS: List[int] = [42, 45]
     MOUTHSIDE_IDXS:     List[int] = [48, 54]
 
-    def __init__(self) -> None:
-        self._cache: Optional[float] = None
-
+    # Override
     def calculate(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:
         # average the eyes and mouth, they're all horizontal parts
         horizontal: float = (
@@ -50,43 +90,51 @@ class AngleCalculator:
         self._cache = angle
         return angle
 
-    @staticmethod
-    def angle_between(p1, p2) -> float:
-        """Returns the included angle of the vector p2 - p1 in degree.
-        Between (-90.0, 90.0].
 
+class MtcnnAngleCalculator(AngleCalculator):
+    # Override
+    def calculate(self, face: Dict) -> float:
+        """
         Arguments:
-            p1 (a subscriptable object that contains 2 int elements)
-            p2 (a subscriptable object that contains 2 int elements)
+            face: Has the keys and structures as the following.
+            {
+                "box": [199, 192, 207, 251],
+                "confidence": 0.9193363785743713,
+                "keypoints": {
+                    "left_eye":    (261, 286),
+                    "right_eye":   (358, 282),
+                    "nose":        (313, 347),
+                    "mouth_left":  (273, 399),
+                    "mouth_right": (351, 397),
+                },
+            }
         """
-        x1 ,y1 = p1
-        x2 ,y2 = p2
-        with warnings.catch_warnings():
-            # RuntimeWarning: divide by zero encountered in long_scalars
-            # Ignore possible warning when 90.0
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            return math.atan((y2 - y1) / (x2 - x1)) * 180 / math.pi
-
-    def angle(self) -> Optional[float]:
-        """Returns the angle of the lastest calculation; None if haven't
-        calculate any angle yet.
-        """
-        return self._cache
+        landmarks = face["keypoints"]
+        # only horizontal values are extractable from MTCNN faces
+        horizontal: float = (
+            AngleCalculator.angle_between(landmarks["right_eye"], landmarks["left_eye"])
+            + AngleCalculator.angle_between(landmarks["mouth_right"], landmarks["mouth_left"])
+        ) / 2
+        self._cache = horizontal
+        return horizontal
 
 
-def draw_landmarks_used_by_angle_calculator(canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]], color: BGR = GREEN) -> ColorImage:
+def draw_landmarks_used_by_angle_calculator(
+        canvas: ColorImage,
+        landmarks: NDArray[(68, 2), Int[32]],
+        color: BGR = GREEN) -> ColorImage:
     """Returns the canvas with the eye sides, mouth side and nose bridge connected by transparent lines.
 
     Arguments:
-        canvas (NDArray[(Any, Any, 3), UInt8]): The image to draw on, it'll be copied
-        landmarks (NDArray[(68, 2), Int[32]]): (x, y) coordinates of the 68 face landmarks
-        color (int, int, int): Color of the lines, green (0, 255, 0) in default
+        canvas: The image to draw on, it'll be copied
+        landmarks: (x, y) coordinates of the 68 face landmarks
+        color: Color of the lines, green (0, 255, 0) in default
     """
     canvas_ = canvas.copy()
 
     facemarks_idxs: List[List[int]] = [
-        AngleCalculator.LEFT_EYESIDE_IDXS, AngleCalculator.RIGHT_EYESIDE_IDXS,
-        AngleCalculator.NOSE_BRIDGE_IDXS, AngleCalculator.MOUTHSIDE_IDXS
+        HogAngleCalculator.LEFT_EYESIDE_IDXS, HogAngleCalculator.RIGHT_EYESIDE_IDXS,
+        HogAngleCalculator.NOSE_BRIDGE_IDXS, HogAngleCalculator.MOUTHSIDE_IDXS
     ]
     # connect sides with line
     for facemark in facemarks_idxs:
@@ -98,7 +146,7 @@ def draw_landmarks_used_by_angle_calculator(canvas: ColorImage, landmarks: NDArr
 
 
 class PosturePredictor:
-    def __init__(self, model: Sequential) -> None:
+    def __init__(self, model: models.Sequential) -> None:
         self._model = model
 
     def predict(self, frame: ColorImage) -> Tuple[PostureLabel, Float[32]]:
@@ -107,22 +155,8 @@ class PosturePredictor:
         Arguments:
             frame: The image contains posture to be predicted.
         """
-        im: GrayImage = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame_exp = tf.expand_dims(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), 0)
+        predictions = self._model(frame_exp)
+        score = tf.nn.softmax(predictions[0])
 
-        im = cv2.resize(im, ModelTrainer.IMAGE_DIMENSIONS)
-        im = im / 255  # Normalize the image
-        im = im.reshape(1, *ModelTrainer.IMAGE_DIMENSIONS, 1)
-
-        # 1 cuz only 1 predict result; 2 cuz there are 2 PostureLabels.
-        # e.g, [[8.3688545e-05 9.9991632e-01]]
-        predictions: NDArray[(1, 2), Float[32]] = self._model.predict(im)
-        # Gets the index which has the greatest confidence value.
-        class_pred: Int[64] = np.argmax(predictions)
-        # Gets the confidence value.
-        conf: Float[32] = predictions[0][class_pred]
-
-        posture: PostureLabel = PostureLabel.GOOD
-        if class_pred == PostureLabel.GOOD.value:
-            posture = PostureLabel.SLUMP
-
-        return posture, conf
+        return PostureLabel(np.argmax(score)), np.max(score)

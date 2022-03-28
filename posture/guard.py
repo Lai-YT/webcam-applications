@@ -1,12 +1,17 @@
+# The 3-layer posture detection refers to
+# https://github.com/EE-Ind-Stud-Group/posture-detection
+
 from typing import Optional, Tuple
 
 import cv2
+import mtcnn
 from nptyping import Float, Int, NDArray
 from playsound import playsound
 
 from concentration.grader import ConcentrationGrader
-from posture.calculator import AngleCalculator, PosturePredictor
-from posture.train import PostureLabel
+from posture.calculator import (
+    HogAngleCalculator, MtcnnAngleCalculator, PostureLabel, PosturePredictor
+)
 from util.image_type import ColorImage
 from util.path import to_abs_path
 from util.time import Timer
@@ -19,7 +24,6 @@ class PostureGuard:
     def __init__(
             self,
             predictor: PosturePredictor,
-            calculator: AngleCalculator,
             warn_angle: float,
             warning_enabled: bool = True,
             grader: Optional[ConcentrationGrader] = None) -> None:
@@ -27,8 +31,6 @@ class PostureGuard:
         Arguments:
             predictor:
                 Used to predict the label of image when a clear face isn't found.
-            calculator:
-                Used to calculate the angle of face when a face is found.
             warn_angle:
                 Face slope angle larger than this is considered to be a slump posture.
             warning_enabled:
@@ -39,9 +41,10 @@ class PostureGuard:
                 will be send to the grader.
         """
         super().__init__()
-
         self._predictor: PosturePredictor = predictor
-        self._calculator: AngleCalculator = calculator
+        self._hog_angle_calculator = HogAngleCalculator()
+        self._mtcnn_angle_calculator = MtcnnAngleCalculator()
+        self._mtcnn_detector = mtcnn.MTCNN()
         self._warn_angle: float = warn_angle
         self._grader: Optional[ConcentrationGrader] = grader
         self._warning_enabled: bool = warning_enabled
@@ -57,13 +60,6 @@ class PostureGuard:
             predictor: Used to predict the label of image when a clear face isn't found.
         """
         self._predictor = predictor
-
-    def set_calculator(self, calculator: AngleCalculator) -> None:
-        """
-        Arguments:
-            calculator: Used to calculate the angle of face when a face is found.
-        """
-        self._calculator = calculator
 
     def set_warn_angle(self, warn_angle: float) -> None:
         """
@@ -85,9 +81,6 @@ class PostureGuard:
             landmarks: NDArray[(68, 2), Int[32]]) -> Tuple[PostureLabel, str]:
         """Sound plays when is a "slump" posture if warning is enabled.
 
-        If the landmarks of face are clear, use AngleCalculator to calculate the
-        slope precisely; otherwise use the model to predict the posture.
-
         Arguments:
             frame: The image contains posture to be predicted.
             landmarks: (x, y) coordinates of the 68 face landmarks.
@@ -96,13 +89,32 @@ class PostureGuard:
             The PostureLabel and the detail string of the determination.
             None if any of the necessary attributes aren't set.
         """
+        # The posture detection used is made up of 3 layer, where are HOG (Dlib),
+        # MTCNN and self-trained model (TensorFlow).
+        # HOG is accurate enough and has the fastest speed but needs front faces,
+        # so it's used as the first layer; then when the angle is too large that
+        # HOG fails, MTCNN takes over. It's robust but so slow that we can't have
+        # it as the first layer; last, when the above 2 detections both fail on
+        # face detection, we use our model.
+
         # Get posture label...
         posture: PostureLabel
         detail: str
         if landmarks.any():
-            posture, detail = self._do_posture_angle_check(landmarks)
+            # layer 1: hog
+            angle = self._hog_angle_calculator.calculate(landmarks)
+            posture, detail = self._do_angle_check(angle)
         else:
-            posture, detail = self._do_posture_model_predict(frame)
+            # layer 2: mtcnn
+            faces = self._mtcnn_detector.detect_faces(
+                cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            )
+            if faces:
+                angle = self._mtcnn_angle_calculator.calculate(faces[0])
+                posture, detail = self._do_angle_check(angle)
+            else:
+                # layer 3: self-trained model
+                posture, detail = self._do_model_predict(frame)
 
         # sound warning logic
         if self._warning_enabled and posture is not PostureLabel.GOOD:
@@ -138,27 +150,23 @@ class PostureGuard:
             else:
                 self._grader.add_body_distraction()
 
-    def _do_posture_angle_check(
-            self,
-            landmarks: NDArray[(68, 2), Int[32]]) -> Tuple[PostureLabel, str]:
+    def _do_angle_check(self, angle: float) -> Tuple[PostureLabel, str]:
         """
         Arguments:
-            canvas: The image to put text on.
-            landmarks: (x, y) coordinates of the 68 face landmarks.
+            angle: To be checked with the warn angle.
 
         Returns:
             The PostureLabel and the detail string of the determination.
         """
-        angle: float = self._calculator.calculate(landmarks)
-        detail: str = f"by angle: {round(angle, 1)} degrees"
-
         posture: PostureLabel = PostureLabel.GOOD
         if abs(angle) >= self._warn_angle:
             posture = PostureLabel.SLUMP
 
+        detail = f"by angle: {round(angle, 1)} degrees"
+
         return posture, detail
 
-    def _do_posture_model_predict(
+    def _do_model_predict(
             self,
             frame: ColorImage) -> Tuple[PostureLabel, str]:
         """
@@ -172,6 +180,6 @@ class PostureGuard:
         conf: Float[32]
         posture, conf = self._predictor.predict(frame)
 
-        detail: str = f"by model: {conf:.0%}"
+        detail = f"by model: {conf:.0%}"
 
         return posture, detail
