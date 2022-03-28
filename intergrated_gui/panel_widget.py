@@ -161,9 +161,6 @@ class PosturePanel(CheckableGroupBox):
         self.warning.setChecked(True)
         self._layout.addWidget(self.warning)
 
-        self.custom = OptionCheckBox("use customized model")
-        self._layout.addWidget(self.custom)
-
 
 class BrightnessPanel(CheckableGroupBox):
     """A view which contains which the settings of brightness optimization."""

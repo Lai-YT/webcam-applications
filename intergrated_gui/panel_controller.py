@@ -56,9 +56,6 @@ class PanelController(QObject):
 
         angle = settings.getint(app_type.name, "ANGLE")
         panel.angles[AngleTolerance(angle)].setChecked(True)
-        panel.custom.setChecked(
-            settings.get(app_type.name, "MODEL_PATH") == ModelPath.CUSTOM.name
-        )
         panel.warning.setChecked(settings.getboolean(app_type.name, "WARNING"))
 
     def _init_brightness_panel(self, settings: ConfigParser) -> None:
@@ -147,12 +144,6 @@ class PanelController(QObject):
             panel.angles[angle].toggled.connect(
                 partial(change_tolerance_angle, angle=angle)
             )
-        custom = panel.custom
-        custom.toggled.connect(
-            lambda checked: self._app.set_posture_detect(
-                model_path=(ModelPath.CUSTOM if checked else ModelPath.DEFAULT)
-            )
-        )
         panel.warning.toggled.connect(
             lambda checked: self._app.set_posture_detect(warning_enabled=checked)
         )

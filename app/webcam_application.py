@@ -12,6 +12,7 @@ from PyQt5.QtGui import QImage
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
+from tensorflow.keras import models
 
 from app.app_type import ApplicationType
 from brightness.calcuator import BrightnessMode
@@ -114,7 +115,7 @@ class WebcamApplication(QObject):
         self._landmarks: NDArray[(68, 2), Int[32]] = None
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
         self._shape_predictor = dlib.shape_predictor(
-            to_abs_path("posture/trained_models/shape_predictor_68_face_landmarks.dat")
+            to_abs_path("dlib_model/shape_predictor_68_face_landmarks.dat")
         )
 
     def _create_brightness_controller(self) -> None:
@@ -175,9 +176,10 @@ class WebcamApplication(QObject):
         settings = self._settings[ApplicationType.POSTURE_DETECTION.name]
 
         self._posture_detect = settings.getboolean("ENABLED")
-        model: str = settings["MODEL_PATH"]
         self._posture_guard = PostureGuard(
-            PosturePredictor(ModelTrainer.load_model(ModelPath[model])),
+            PosturePredictor(
+                models.load_model(to_abs_path("posture/models/self_trained_model"))
+            ),
             AngleCalculator(),
             settings.getfloat("ANGLE"),
             settings.getboolean("WARNING"),
@@ -246,16 +248,10 @@ class WebcamApplication(QObject):
     def set_posture_detect(
             self, *,
             enabled: Optional[bool] = None,
-            model_path: Optional[ModelPath] = None,
             warn_angle: Optional[float] = None,
             warning_enabled: Optional[bool] = None) -> None:
         settings = self._settings[ApplicationType.POSTURE_DETECTION.name]
 
-        if model_path is not None:
-            settings["MODEL_PATH"] = model_path.name  # is enum
-            self._posture_guard.set_predictor(
-                PosturePredictor(ModelTrainer.load_model(model_path))
-            )
         if warn_angle is not None:
             settings["LIMIT"] = str(warn_angle)
             self._posture_guard.set_warn_angle(warn_angle)
