@@ -19,13 +19,15 @@ from brightness.calculator import BrightnessMode
 from brightness.controller import BrightnessController
 from concentration.fuzzy.classes import Interval
 from concentration.grader import ConcentrationGrader
-from distance.calculator import (DistanceCalculator,
-                                 draw_landmarks_used_by_distance_calculator)
+from distance.calculator import (
+    DistanceCalculator, draw_landmarks_used_by_distance_calculator
+)
 from distance.guard import DistanceGuard, DistanceState
 from focus_time.guard import TimeGuard
 from gui.popup_widget import TimeState
-from posture.calculator import (AngleCalculator, PostureLabel,PosturePredictor,
-                                draw_landmarks_used_by_angle_calculator)
+from posture.calculator import (
+    PostureLabel, draw_landmarks_used_by_angle_calculator
+)
 from posture.guard import PostureGuard
 from util.color import GREEN, MAGENTA
 from util.image_convert import ndarray_to_qimage
@@ -179,7 +181,6 @@ class WebcamApplication(QObject):
             PosturePredictor(
                 models.load_model(to_abs_path("posture/models/self_trained_model"))
             ),
-            AngleCalculator(),
             settings.getfloat("ANGLE"),
             settings.getboolean("WARNING"),
             self._concentration_grader
