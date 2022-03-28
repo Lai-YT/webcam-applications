@@ -15,7 +15,7 @@ from nptyping import Int, NDArray
 from tensorflow.keras import models
 
 from app.app_type import ApplicationType
-from brightness.calcuator import BrightnessMode
+from brightness.calculator import BrightnessMode
 from brightness.controller import BrightnessController
 from concentration.fuzzy.classes import Interval
 from concentration.grader import ConcentrationGrader
@@ -24,10 +24,9 @@ from distance.calculator import (DistanceCalculator,
 from distance.guard import DistanceGuard, DistanceState
 from focus_time.guard import TimeGuard
 from intergrated_gui.popup_widget import TimeState
-from posture.calculator import (AngleCalculator, PosturePredictor,
+from posture.calculator import (AngleCalculator, PostureLabel,PosturePredictor,
                                 draw_landmarks_used_by_angle_calculator)
 from posture.guard import PostureGuard
-from posture.train import ModelPath, ModelTrainer, PostureLabel
 from util.color import GREEN, MAGENTA
 from util.image_convert import ndarray_to_qimage
 from util.image_type import ColorImage

@@ -5,8 +5,7 @@ from nptyping import Float, Int, NDArray
 from playsound import playsound
 
 from concentration.grader import ConcentrationGrader
-from posture.calculator import AngleCalculator, PosturePredictor
-from posture.train import PostureLabel
+from posture.calculator import AngleCalculator, PostureLabel, PosturePredictor
 from util.image_type import ColorImage
 from util.path import to_abs_path
 from util.time import Timer

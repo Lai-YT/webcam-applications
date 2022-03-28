@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
 )
 
 from app.app_type import ApplicationType
-from brightness.calcuator import BrightnessMode
+from brightness.calculator import BrightnessMode
 from intergrated_gui.component import (
     ActionButton, CheckableGroupBox, HorizontalSlider, Label, LineEdit,
     OptionCheckBox, OptionRadioButton,

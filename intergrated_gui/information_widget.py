@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QFormLayout, QFrame, QWidget
 from distance.guard import DistanceState
 from intergrated_gui.component import Label
 from intergrated_gui.popup_widget import TimeState
-from posture.train import PostureLabel
+from posture.calculator import PostureLabel
 
 
 class TextColor(Enum):

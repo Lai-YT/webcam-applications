@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import warnings
+from enum import Enum
 from typing import List, Optional, Tuple
 
 import cv2
@@ -8,10 +9,16 @@ import tensorflow as tf
 from nptyping import Float, Int, NDArray
 from tensorflow.keras import models
 
-from posture.train import ModelTrainer, PostureLabel
 from util.color import BGR, GREEN
 from util.image_type import ColorImage, GrayImage
 
+
+class PostureLabel(Enum):
+    """Posture can be good or slump."""
+    # The values should start from 0 and be consecutive
+    # since they're also used to represent the result of prediction.
+    GOOD:  int = 0
+    SLUMP: int = 1
 
 class AngleCalculator:
 
