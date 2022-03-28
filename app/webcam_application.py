@@ -26,7 +26,7 @@ from distance.guard import DistanceGuard, DistanceState
 from focus_time.guard import TimeGuard
 from gui.popup_widget import TimeState
 from posture.calculator import (
-    PostureLabel, draw_landmarks_used_by_angle_calculator
+    PostureLabel, PosturePredictor, draw_landmarks_used_by_angle_calculator
 )
 from posture.guard import PostureGuard
 from util.color import GREEN, MAGENTA
