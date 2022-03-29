@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
-from gui.component import Label
+from gui.component import Label, LineEdit
 
 
 class FlaskGui(QMainWindow):
@@ -17,7 +17,12 @@ class FlaskGui(QMainWindow):
         self.setCentralWidget(self._central_widget)
 
         self._create_label()
+        self._create_input_line()
     
     def _create_label(self):
         self.label = Label("No grade received.", wrap=True)
         self._general_layout.addWidget(self.label, alignment=Qt.AlignCenter)
+
+    def _create_input_line(self):
+        self.input_line = LineEdit("Enter new ID to create table.")
+        self._general_layout.addWidget(self.input_line, alignment=Qt.AlignCenter)

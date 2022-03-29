@@ -27,3 +27,17 @@ class Label(QtWidgets.QLabel):
     def set_color(self, color: str) -> None:
         """Sets the text color of the label."""
         self.setStyleSheet(f"color: {color};")
+
+class LineEdit(QtWidgets.QLineEdit):
+    """Placeholder text is easily set with constructor.
+    Also provides simple color setting method.
+    """
+    def __init__(self, place_hold_text: str = "", font_size: int = 20) -> None:
+        super().__init__()
+        self.setPlaceholderText(place_hold_text)
+        self.setFixedWidth(450)
+        self.setFont(_ArialFont(font_size))
+
+    def set_color(self, color: str) -> None:
+        """Sets the text color of the line."""
+        self.setStyleSheet(f"color: {color};")

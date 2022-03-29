@@ -1,6 +1,7 @@
 import atexit
 import sqlite3
 from pathlib import Path
+from typing import Optional
 
 from PyQt5.QtCore import QTimer, QObject, pyqtSlot
 
@@ -13,10 +14,10 @@ class GuiController(QObject):
         self._timer = QTimer()
         self._counter = 0
 
+        self._connect_signal()
         self._connect_database()
-        self._create_table_if_not_exist()
         self._clear_table()
-        self._start_fetching()
+        # self._start_fetching()
 
         # Have the connection of database and timer closed right before
         # the controller is destoryed.
@@ -24,29 +25,50 @@ class GuiController(QObject):
         # but such signal seems not guaranteed to always be emitted.
         atexit.register(self._close)
 
+    def _connect_signal(self):
+        input_line = self._gui.input_line
+
+        input_line.textChanged.connect(
+            lambda: self._gui.input_line.set_color("black")
+        )
+        input_line.editingFinished.connect(
+            lambda: self._create_table_if_not_exist(input_line.text())
+        )
+
     def _connect_database(self):
         db = Path(__file__).parent / "../concentration_grade.db"
         self._conn = sqlite3.connect(db, check_same_thread=False)
         # so we can retrieve rows as dictionary
         self._conn.row_factory = sqlite3.Row
 
-    def _create_table_if_not_exist(self) -> None:
-        # TODO: make student id the primary key
+    def _create_table_if_not_exist(self, table) -> None:
         with self._conn:
-            sql = """CREATE TABLE IF NOT EXISTS grades (
-                id INT PRIMARY KEY,
+            # Check if table is already exist.
+            tb_exists ="SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?"
+            
+            if not self._conn.execute(tb_exists, (table,)).fetchone():
+                # Create new table with name same as input.
+                sql = """CREATE TABLE {} (
                 interval TEXT,
                 grade FLOAT
-            );"""
-            self._conn.execute(sql)
+                );""".format(table)
+                self._conn.execute(sql)
+
+                self._gui.input_line.set_color("green")
+                print("Table created successfully")
+            else:
+                self._gui.input_line.set_color("red")
+                print("Table is already exist.")
 
     def _clear_table(self):
-        """Makes sure the table is empty.
+        """Makes sure the tables are empty.
 
-        Since it may contains data from the last connection.
+        Since they may contain data from the last connection.
         """
         with self._conn:
-            self._conn.execute("DELETE FROM grades;")
+            self._conn.execute("DELETE FROM A01;")
+            self._conn.execute("DELETE FROM A02;")
+            self._conn.execute("DELETE FROM A03;")
 
     def _start_fetching(self):
         """Fetch grades in database every second."""
@@ -54,20 +76,11 @@ class GuiController(QObject):
         self._timer.start(1000)
 
     def update_grade_in_database(self, grade):
-        # Checks whether the id already exists,
-        # if yes, UPDATE its content;
-        # if no, INSERT as a new row.
+        # Insert new grade into corresponding table.
         with self._conn:
-            sql = "SELECT EXISTS (SELECT 1 FROM grades WHERE id=? LIMIT 1);"
-            row = self._conn.execute(sql, (grade["id"], )).fetchone()
-
-            if self._row_not_exists(row):
-                sql = "INSERT INTO grades (interval, grade, id) VALUES (?, ?, ?);"
-            else:
-                sql = "UPDATE grades SET interval=?, grade=? WHERE id=?;"
-            # notice the order of columns should be the same
+            sql = "INSERT INTO {} (interval, grade) VALUES (?, ?);".format(grade["id"])
             self._conn.execute(
-                sql, (grade["interval"], grade["grade"], grade["id"])
+                sql, (grade["interval"], grade["grade"])
             )
 
     def _fetch_grade_and_update_gui(self):
