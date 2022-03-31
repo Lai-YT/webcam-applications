@@ -108,22 +108,20 @@ class DistanceGuard:
         if distance < self._warn_dist:
             state = DistanceState.WARNING
 
-        self._send_concentration_info(state)
+        if self._grader is not None:
+            self._send_concentration_info(distance)
 
         return distance, state
 
-    def _send_concentration_info(self, state: DistanceState) -> None:
-        """Sends a concentration to the grader if the state is normal,
-        a distraction otherwise.
-
-        Does nothing if the grader isn't provided.
+    def _send_concentration_info(self, distance: float) -> None:
+        """Sends a distraction to the grader if the distance is too far,
+        a concentration otherwise.
 
         Arguments:
-            state: The state of distance to send info about.
+            distance: The distance to send info about.
         """
-        # TODO: Should too far but not too close be considered as distraction?
-        if self._grader is not None:
-            if state is DistanceState.NORMAL:
-                self._grader.add_body_concentration()
-            else:
-                self._grader.add_body_distraction()
+        TOO_FAR = 80
+        if distance > TOO_FAR:
+            self._grader.add_body_distraction()
+        else:
+            self._grader.add_body_concentration()
