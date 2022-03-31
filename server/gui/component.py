@@ -2,6 +2,7 @@
 
 All with font "Arial".
 """
+from typing import List
 from PyQt5.QtGui import QFont
 from PyQt5 import QtWidgets
 
@@ -16,6 +17,15 @@ class ActionButton(QtWidgets.QPushButton):
     def __init__(self, text: str, font_size: int = 12) -> None:
         super().__init__(text)
         self.setFont(_ArialFont(font_size))
+
+class PullDownMenu(QtWidgets.QComboBox):
+    def __init__(self, font_size: int = 16) -> None:
+        super().__init__()
+        self.setFixedSize(120, 40)
+        self.setFont(_ArialFont(font_size))
+
+    def add_item(self, item: str) -> None:
+        self.addItem(item)
 
 class Label(QtWidgets.QLabel):
     def __init__(self, text: str = "",
