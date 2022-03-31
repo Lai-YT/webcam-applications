@@ -17,7 +17,7 @@ class GuiController(QObject):
         self._connect_signal()
         self._connect_database()
         self._clear_table()
-        # self._start_fetching()
+        self._start_fetching()
 
         # Have the connection of database and timer closed right before
         # the controller is destoryed.
@@ -73,7 +73,7 @@ class GuiController(QObject):
     def _start_fetching(self):
         """Fetch grades in database every second."""
         self._timer.timeout.connect(self._fetch_grade_and_update_gui)
-        self._timer.start(1000)
+        self._timer.start(500)
 
     def update_grade_in_database(self, grade):
         # Insert new grade into corresponding table.
@@ -86,14 +86,17 @@ class GuiController(QObject):
     def _fetch_grade_and_update_gui(self):
         """Updates the latest grades on GUI."""
         with self._conn:
-            sql = "SELECT * FROM grades;"
-            rows = self._conn.execute(sql).fetchall()
+            # Fetch the three latest grades.
+            sql = "SELECT * FROM A01 ORDER BY interval DESC LIMIT 3;"
+            grades = self._conn.execute(sql).fetchall()
 
-        self._counter = self._counter + 1
-        text = "Fetch time: {}\n".format(self._counter)
-        for row in rows:
-            text += "{}: \n{} {}\n".format(row["id"], row["interval"], row["grade"])
-        self._gui.label.setText(text)
+        if grades:
+            title = "A01: \n"
+            text = ""
+            for grade in grades: 
+                # Append the grade in front to keep grades in order by interval.
+                text = "{} {}\n".format(grade["interval"], grade["grade"]) + text
+            self._gui.label.setText(title + text)
 
     def _close(self):
         self._conn.close()
