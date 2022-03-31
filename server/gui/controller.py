@@ -1,7 +1,8 @@
 import atexit
 import sqlite3
+from collections import deque
 from pathlib import Path
-from typing import Optional
+from typing import Deque
 
 from PyQt5.QtCore import QTimer, QObject, pyqtSlot
 
@@ -44,14 +45,14 @@ class GuiController(QObject):
     def _create_table_if_not_exist(self, table) -> None:
         with self._conn:
             # Check if table is already exist.
-            tb_exists ="SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?"
-            
+            tb_exists = "SELECT name FROM sqlite_master WHERE type='table' AND name=?;"
+
             if not self._conn.execute(tb_exists, (table,)).fetchone():
                 # Create new table with name same as input.
-                sql = """CREATE TABLE {} (
-                interval TEXT,
-                grade FLOAT
-                );""".format(table)
+                sql = f"""CREATE TABLE {table} (
+                    interval TEXT,
+                    grade FLOAT
+                );"""
                 self._conn.execute(sql)
 
                 self._gui.input_line.set_color("green")
@@ -78,10 +79,8 @@ class GuiController(QObject):
     def update_grade_in_database(self, grade):
         # Insert new grade into corresponding table.
         with self._conn:
-            sql = "INSERT INTO {} (interval, grade) VALUES (?, ?);".format(grade["id"])
-            self._conn.execute(
-                sql, (grade["interval"], grade["grade"])
-            )
+            sql = f"INSERT INTO {grade['id']} (interval, grade) VALUES (?, ?);"
+            self._conn.execute(sql, (grade["interval"], grade["grade"]))
 
     def _fetch_grade_and_update_gui(self):
         """Updates the latest grades on GUI."""
@@ -92,11 +91,11 @@ class GuiController(QObject):
 
         if grades:
             title = "A01: \n"
-            text = ""
-            for grade in grades: 
+            texts: Deque[str] = deque()
+            for grade in grades:
                 # Append the grade in front to keep grades in order by interval.
-                text = "{} {}\n".format(grade["interval"], grade["grade"]) + text
-            self._gui.label.setText(title + text)
+                texts.appendleft(f"{grade['interval']} {grade['grade']}")
+            self._gui.label.setText(title + "\n".join(texts))
 
     def _close(self):
         self._conn.close()
