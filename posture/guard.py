@@ -98,6 +98,7 @@ class PostureGuard:
         # face detection, we use our model.
 
         # Get posture label...
+        angle: float
         posture: PostureLabel
         detail: str
         if landmarks.any():
@@ -115,6 +116,8 @@ class PostureGuard:
             else:
                 # layer 3: self-trained model
                 posture, detail = self._do_model_predict(frame)
+                # XXX: this is a hack to have all layers produce an angle
+                angle = 5 if posture is PostureLabel.GOOD else 100
 
         # sound warning logic
         if self._warning_enabled and posture is not PostureLabel.GOOD:
@@ -131,24 +134,23 @@ class PostureGuard:
                 self._f_played = False
                 self._warning_repeat_timer.reset()
 
-        self._send_concentration_info(posture)
+        if self._grader is not None:
+            self._send_concentration_info(angle)
 
         return posture, detail
 
-    def _send_concentration_info(self, posture: PostureLabel) -> None:
-        """Sends a concentration to the grader if the posture is good,
-        a distraction otherwise.
-
-        Does nothing if the grader isn't provided.
+    def _send_concentration_info(self, angle: float) -> None:
+        """Sends a distraction to the grader if the absolute value of angle is
+        too large, a concentration otherwise.
 
         Arguments:
-            posture: The label of posture to send info about.
+            angle: The angle to send info about.
         """
-        if self._grader is not None:
-            if posture is PostureLabel.GOOD:
-                self._grader.add_body_concentration()
-            else:
-                self._grader.add_body_distraction()
+        TOO_LARGE = 9.2
+        if abs(angle) > TOO_LARGE:
+            self._grader.add_body_distraction()
+        else:
+            self._grader.add_body_concentration()
 
     def _do_angle_check(self, angle: float) -> Tuple[PostureLabel, str]:
         """
