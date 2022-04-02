@@ -17,20 +17,7 @@ class FlaskGui(QMainWindow):
         self.setCentralWidget(self._central_widget)
 
         self._create_label()
-        self._create_pull_down_menu()
-        self._create_input_line()
     
     def _create_label(self):
         self.label = Label("No grade received.", wrap=True)
         self._general_layout.addWidget(self.label, alignment=Qt.AlignCenter)
-
-    def _create_pull_down_menu(self):
-        self.menu = PullDownMenu()
-        self.menu.add_item("A01")
-        self.menu.add_item("A02")
-        self.menu.add_item("A03")
-        self._general_layout.addWidget(self.menu, alignment=Qt.AlignCenter)
-
-    def _create_input_line(self):
-        self.input_line = LineEdit("Enter new ID to create table.")
-        self._general_layout.addWidget(self.input_line, alignment=Qt.AlignCenter)
