@@ -36,7 +36,7 @@ class GuiController(QObject):
         with self._conn:
             sql = """CREATE TABLE IF NOT EXISTS grades (
                 id INT,
-                interval TEXT,
+                time TEXT,
                 grade FLOAT
             );"""
             self._conn.execute(sql)
@@ -57,9 +57,9 @@ class GuiController(QObject):
     def insert_grade_in_database(self, grade):
         # Insert new grade into corresponding table.
         with self._conn:
-            sql = f"INSERT INTO grades (id, interval, grade) VALUES (?, ?, ?);"
+            sql = f"INSERT INTO grades (id, time, grade) VALUES (?, ?, ?);"
             self._conn.execute(
-                sql, (grade['id'], grade["interval"], grade["grade"])
+                sql, (grade['id'], grade["time"], grade["grade"])
             )
 
     def _close(self):
