@@ -18,6 +18,7 @@ class ActionButton(QtWidgets.QPushButton):
         super().__init__(text)
         self.setFont(_ArialFont(font_size))
 
+
 class PullDownMenu(QtWidgets.QComboBox):
     def __init__(self, font_size: int = 16) -> None:
         super().__init__()
@@ -26,6 +27,7 @@ class PullDownMenu(QtWidgets.QComboBox):
 
     def add_item(self, item: str) -> None:
         self.addItem(item)
+
 
 class Label(QtWidgets.QLabel):
     def __init__(self, text: str = "",
@@ -37,6 +39,7 @@ class Label(QtWidgets.QLabel):
     def set_color(self, color: str) -> None:
         """Sets the text color of the label."""
         self.setStyleSheet(f"color: {color};")
+
 
 class LineEdit(QtWidgets.QLineEdit):
     """Placeholder text is easily set with constructor.
