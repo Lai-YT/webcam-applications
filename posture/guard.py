@@ -155,9 +155,10 @@ class PostureGuard:
         """
         TOO_LARGE = 9.2
         if abs(angle) > TOO_LARGE:
-            self._grader.add_body_distraction()
+            self._grader.add_body_distraction()    # type: ignore[union-attr]
         else:
-            self._grader.add_body_concentration()
+            self._grader.add_body_concentration()    # type: ignore[union-attr]
+        # NOTE: the no nonetype check is ignored since the check is outside
 
     def _do_angle_check(self, angle: float) -> Tuple[PostureLabel, str]:
         """

@@ -122,6 +122,7 @@ class DistanceGuard:
         """
         TOO_FAR = 80
         if distance > TOO_FAR:
-            self._grader.add_body_distraction()
+            self._grader.add_body_distraction()  # type: ignore[union-attr]
         else:
-            self._grader.add_body_concentration()
+            self._grader.add_body_concentration()  # type: ignore[union-attr]
+        # NOTE: the no nonetype check is ignored since the check is outside
