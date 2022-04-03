@@ -108,8 +108,7 @@ class DistanceGuard:
         if distance < self._warn_dist:
             state = DistanceState.WARNING
 
-        if self._grader is not None:
-            self._send_concentration_info(distance)
+        self._send_concentration_info(distance)
 
         return distance, state
 
@@ -117,12 +116,15 @@ class DistanceGuard:
         """Sends a distraction to the grader if the distance is too far,
         a concentration otherwise.
 
+        Does nothing if the grader isn't provided.
+
         Arguments:
             distance: The distance to send info about.
         """
+
         TOO_FAR = 80
-        if distance > TOO_FAR:
-            self._grader.add_body_distraction()  # type: ignore[union-attr]
-        else:
-            self._grader.add_body_concentration()  # type: ignore[union-attr]
-        # NOTE: the no nonetype check is ignored since the check is outside
+        if self._grader is not None:
+            if distance > TOO_FAR:
+                self._grader.add_body_distraction()
+            else:
+                self._grader.add_body_concentration()

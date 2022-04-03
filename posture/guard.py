@@ -141,8 +141,7 @@ class PostureGuard:
                 self._f_played = False
                 self._warning_repeat_timer.reset()
 
-        if self._grader is not None:
-            self._send_concentration_info(angle)
+        self._send_concentration_info(angle)
 
         return posture, detail
 
@@ -150,15 +149,17 @@ class PostureGuard:
         """Sends a distraction to the grader if the absolute value of angle is
         too large, a concentration otherwise.
 
+        Does nothing if the grader isn't provided.
+
         Arguments:
             angle: The angle to send info about.
         """
         TOO_LARGE = 9.2
-        if abs(angle) > TOO_LARGE:
-            self._grader.add_body_distraction()    # type: ignore[union-attr]
-        else:
-            self._grader.add_body_concentration()    # type: ignore[union-attr]
-        # NOTE: the no nonetype check is ignored since the check is outside
+        if self._grader is not None:
+            if abs(angle) > TOO_LARGE:
+                self._grader.add_body_distraction()
+            else:
+                self._grader.add_body_concentration()
 
     def _do_angle_check(self, angle: float) -> Tuple[PostureLabel, str]:
         """
