@@ -54,11 +54,12 @@ class ColumnHeader:
 
     @property
     def col_count(self) -> int:
+        """Returns the number of columns (labels)."""
         return len(self._labels)
 
-    def __iter__(self) -> Iterable[str]:
-        for label, _ in self._labels:
-            yield label
+    def labels(self) -> Tuple[str]:
+        """Returns the labels of the header in column order."""
+        return tuple(label for label, _ in self._labels)
 
     def to_row(self, values: Dict[str, Any]) -> Row:
         """Packs the values into the desirable Row form.
@@ -90,7 +91,7 @@ class Monitor(QMainWindow):
         self._table = QTableWidget(0, header.col_count)
         self.setCentralWidget(self._table)
 
-        self._table.setHorizontalHeaderLabels(header)
+        self._table.setHorizontalHeaderLabels(header.labels())
 
     def insert_row(self, row: Row) -> None:
         self._table.insertRow(self._table.rowCount())
