@@ -1,5 +1,4 @@
 import atexit
-import time
 from configparser import ConfigParser
 from copy import deepcopy
 from operator import methodcaller
@@ -10,7 +9,7 @@ import cv2
 import dlib
 import numpy as np
 from PyQt5.QtGui import QImage
-from PyQt5.QtCore import QMutex, QObject, QSemaphore, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
@@ -97,8 +96,6 @@ class WebcamApplication(QObject):
         self._create_concentration_grader()
         self._create_guards()
         self._create_brightness_controller()
-
-        self._app_sem = QSemaphore()
 
     def _load_settings(self) -> None:
         self._settings = ConfigParser()
@@ -309,7 +306,6 @@ class WebcamApplication(QObject):
         self.s_started.emit()
 
         while self._f_ready:
-            start = time.perf_counter()
             frame: ColorImage
             _, frame = self._webcam.read()
             # mirrors, so horizontally flip
@@ -320,15 +316,13 @@ class WebcamApplication(QObject):
             self._update_face_and_landmarks(canvas, frame)
 
             # Do applications!
-            # workers = []
-            # workers.append(TaskWorker(self._do_distance_measurement))
-            # workers.append(TaskWorker(self._do_posture_detection, canvas, frame))
-            # workers.append(TaskWorker(self._do_focus_timing))
-            # workers.append(TaskWorker(self._do_brightness_optimization, frame))
-            self._do_distance_measurement()
-            self._do_posture_detection(canvas, frame)
-            self._do_focus_timing()
-            self._do_brightness_optimization(frame)
+            workers: List[TaskWorker] = []
+            workers.append(TaskWorker(self._do_distance_measurement))
+            workers.append(TaskWorker(self._do_posture_detection, canvas, frame))
+            workers.append(TaskWorker(self._do_focus_timing))
+            workers.append(TaskWorker(self._do_brightness_optimization, frame))
+            for worker in workers:
+                worker.start()
 
             # Do concentration gradings!
             self._concentration_grader.add_frame()
@@ -337,8 +331,6 @@ class WebcamApplication(QObject):
                 self._concentration_grader.detect_blink(self._landmarks)
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
-            end = time.perf_counter()
-            print(f"Elapsed time: {end - start:.04f}")
             cv2.waitKey(refresh)
         # Release resources.
         self._webcam.release()
