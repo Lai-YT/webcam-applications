@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
-from gui.component import Label
+from gui.component import Label, LineEdit, PullDownMenu
 
 
 class FlaskGui(QMainWindow):
@@ -9,7 +9,7 @@ class FlaskGui(QMainWindow):
         super().__init__()
         # Set some main window's properties.
         self.setWindowTitle("flask test")
-        self.setFixedSize(480, 320)
+        self.setFixedSize(560, 420)
         # Set the central widget and the general layout.
         self._general_layout = QVBoxLayout()
         self._central_widget = QWidget()

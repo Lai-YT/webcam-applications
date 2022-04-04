@@ -11,10 +11,10 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-import intergrated_gui.img.icon
-from intergrated_gui.frame_widget import FrameWidget
-from intergrated_gui.information_widget import InformationWidget
-from intergrated_gui.panel_widget import PanelWidget
+import gui.img.icon
+from gui.frame_widget import FrameWidget
+from gui.information_widget import InformationWidget
+from gui.panel_widget import PanelWidget
 
 
 class Window(QMainWindow):

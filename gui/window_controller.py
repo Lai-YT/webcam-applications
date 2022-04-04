@@ -4,8 +4,8 @@ from PyQt5.QtCore import QObject
 
 from app.app_type import ApplicationType
 from app.webcam_application import WebcamApplication
-from intergrated_gui.panel_controller import PanelController
-from intergrated_gui.window import Window
+from gui.panel_controller import PanelController
+from gui.window import Window
 from util.task_worker import TaskWorker
 
 

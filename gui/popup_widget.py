@@ -6,7 +6,7 @@ from PyQt5.QtGui import QIcon, QMouseEvent
 from PyQt5.QtWidgets import (QStackedWidget, QVBoxLayout, QToolButton, QWhatsThis,
                              QWidget)
 
-from intergrated_gui.component import LCDClock
+from gui.component import LCDClock
 
 
 class TimeState(Enum):

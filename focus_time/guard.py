@@ -2,8 +2,8 @@ from typing import Tuple
 
 from playsound import playsound
 
-from intergrated_gui.popup_shower import TimeShower
-from intergrated_gui.popup_widget import TimeState
+from gui.popup_shower import TimeShower
+from gui.popup_widget import TimeState
 from util.path import to_abs_path
 from util.time import Timer, min_to_sec
 

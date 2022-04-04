@@ -1,4 +1,3 @@
-import json
 import sys
 from threading import Thread
 
@@ -12,14 +11,12 @@ from gui.window import FlaskGui
 # Create flask instance.
 app_ = Flask(__name__)
 
-data = []
 @app_.route("/test", methods=["POST", "GET"])
 def update_grade():
     if request.method == "POST":
         grade = request.get_json()
-        controller.update_grade(grade)
-    # Convert the list to json string.
-    return json.dumps(data)
+        controller.insert_grade_in_database(grade)
+    return ""
 
 
 if __name__ == "__main__":

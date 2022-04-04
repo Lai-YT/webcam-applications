@@ -1,16 +1,24 @@
+# The 3-layer posture detection refers to
+# https://github.com/EE-Ind-Stud-Group/posture-detection
+
+import logging
 from typing import Optional, Tuple
 
 import cv2
+import mtcnn
 from nptyping import Float, Int, NDArray
 from playsound import playsound
 
 from concentration.grader import ConcentrationGrader
-from posture.calculator import AngleCalculator, PosturePredictor
-from posture.train import PostureLabel
+from posture.calculator import (
+    HogAngleCalculator, MtcnnAngleCalculator, PostureLabel, PosturePredictor
+)
 from util.image_type import ColorImage
 from util.path import to_abs_path
 from util.time import Timer
 
+
+logging.basicConfig(filename=to_abs_path("./face_centroid.log"), format="%(message)s", level=logging.INFO)
 
 class PostureGuard:
     """PostureGuard checks whether the face obtained by landmarks implies a
@@ -19,7 +27,6 @@ class PostureGuard:
     def __init__(
             self,
             predictor: PosturePredictor,
-            calculator: AngleCalculator,
             warn_angle: float,
             warning_enabled: bool = True,
             grader: Optional[ConcentrationGrader] = None) -> None:
@@ -27,8 +34,6 @@ class PostureGuard:
         Arguments:
             predictor:
                 Used to predict the label of image when a clear face isn't found.
-            calculator:
-                Used to calculate the angle of face when a face is found.
             warn_angle:
                 Face slope angle larger than this is considered to be a slump posture.
             warning_enabled:
@@ -39,9 +44,10 @@ class PostureGuard:
                 will be send to the grader.
         """
         super().__init__()
-
         self._predictor: PosturePredictor = predictor
-        self._calculator: AngleCalculator = calculator
+        self._hog_angle_calculator = HogAngleCalculator()
+        self._mtcnn_angle_calculator = MtcnnAngleCalculator()
+        self._mtcnn_detector = mtcnn.MTCNN()
         self._warn_angle: float = warn_angle
         self._grader: Optional[ConcentrationGrader] = grader
         self._warning_enabled: bool = warning_enabled
@@ -57,13 +63,6 @@ class PostureGuard:
             predictor: Used to predict the label of image when a clear face isn't found.
         """
         self._predictor = predictor
-
-    def set_calculator(self, calculator: AngleCalculator) -> None:
-        """
-        Arguments:
-            calculator: Used to calculate the angle of face when a face is found.
-        """
-        self._calculator = calculator
 
     def set_warn_angle(self, warn_angle: float) -> None:
         """
@@ -85,9 +84,6 @@ class PostureGuard:
             landmarks: NDArray[(68, 2), Int[32]]) -> Tuple[PostureLabel, str]:
         """Sound plays when is a "slump" posture if warning is enabled.
 
-        If the landmarks of face are clear, use AngleCalculator to calculate the
-        slope precisely; otherwise use the model to predict the posture.
-
         Arguments:
             frame: The image contains posture to be predicted.
             landmarks: (x, y) coordinates of the 68 face landmarks.
@@ -96,13 +92,39 @@ class PostureGuard:
             The PostureLabel and the detail string of the determination.
             None if any of the necessary attributes aren't set.
         """
+        # The posture detection used is made up of 3 layer, where are HOG (Dlib),
+        # MTCNN and self-trained model (TensorFlow).
+        # HOG is accurate enough and has the fastest speed but needs front faces,
+        # so it's used as the first layer; then when the angle is too large that
+        # HOG fails, MTCNN takes over. It's robust but so slow that we can't have
+        # it as the first layer; last, when the above 2 detections both fail on
+        # face detection, we use our model.
+
         # Get posture label...
+        angle: float
         posture: PostureLabel
         detail: str
         if landmarks.any():
-            posture, detail = self._do_posture_angle_check(landmarks)
+            # layer 1: hog
+            angle = self._hog_angle_calculator.calculate(landmarks)
+            posture, detail = self._do_angle_check(angle)
+            centroid = tuple((landmarks[30] + landmarks[33]) / 2)
+            logging.info(f"hog {centroid}")
         else:
-            posture, detail = self._do_posture_model_predict(frame)
+            # layer 2: mtcnn
+            faces = self._mtcnn_detector.detect_faces(
+                cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            )
+            if faces:
+                angle = self._mtcnn_angle_calculator.calculate(faces[0])
+                posture, detail = self._do_angle_check(angle)
+                centroid = faces[0]["keypoints"]["nose"]
+                logging.info(f"mtcnn {centroid}")
+            else:
+                # layer 3: self-trained model
+                posture, detail = self._do_model_predict(frame)
+                # XXX: this is a hack to have all layers produce an angle
+                angle = 5 if posture is PostureLabel.GOOD else 100
 
         # sound warning logic
         if self._warning_enabled and posture is not PostureLabel.GOOD:
@@ -119,46 +141,43 @@ class PostureGuard:
                 self._f_played = False
                 self._warning_repeat_timer.reset()
 
-        self._send_concentration_info(posture)
+        self._send_concentration_info(angle)
 
         return posture, detail
 
-    def _send_concentration_info(self, posture: PostureLabel) -> None:
-        """Sends a concentration to the grader if the posture is good,
-        a distraction otherwise.
+    def _send_concentration_info(self, angle: float) -> None:
+        """Sends a distraction to the grader if the absolute value of angle is
+        too large, a concentration otherwise.
 
         Does nothing if the grader isn't provided.
 
         Arguments:
-            posture: The label of posture to send info about.
+            angle: The angle to send info about.
         """
+        TOO_LARGE = 9.2
         if self._grader is not None:
-            if posture is PostureLabel.GOOD:
-                self._grader.add_body_concentration()
-            else:
+            if abs(angle) > TOO_LARGE:
                 self._grader.add_body_distraction()
+            else:
+                self._grader.add_body_concentration()
 
-    def _do_posture_angle_check(
-            self,
-            landmarks: NDArray[(68, 2), Int[32]]) -> Tuple[PostureLabel, str]:
+    def _do_angle_check(self, angle: float) -> Tuple[PostureLabel, str]:
         """
         Arguments:
-            canvas: The image to put text on.
-            landmarks: (x, y) coordinates of the 68 face landmarks.
+            angle: To be checked with the warn angle.
 
         Returns:
             The PostureLabel and the detail string of the determination.
         """
-        angle: float = self._calculator.calculate(landmarks)
-        detail: str = f"by angle: {round(angle, 1)} degrees"
-
         posture: PostureLabel = PostureLabel.GOOD
         if abs(angle) >= self._warn_angle:
             posture = PostureLabel.SLUMP
 
+        detail = f"by angle: {round(angle, 1)} degrees"
+
         return posture, detail
 
-    def _do_posture_model_predict(
+    def _do_model_predict(
             self,
             frame: ColorImage) -> Tuple[PostureLabel, str]:
         """
@@ -172,6 +191,6 @@ class PostureGuard:
         conf: Float[32]
         posture, conf = self._predictor.predict(frame)
 
-        detail: str = f"by model: {conf:.0%}"
+        detail = f"by model: {conf:.0%}"
 
         return posture, detail

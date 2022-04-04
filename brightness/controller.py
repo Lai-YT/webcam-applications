@@ -5,7 +5,7 @@ import screen_brightness_control as sbc
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication
 
-from brightness.calcuator import BrightnessCalculator, BrightnessMode
+from brightness.calculator import BrightnessCalculator, BrightnessMode
 from util.image_convert import qpixmap_to_ndarray
 from util.image_type import ColorImage
 
