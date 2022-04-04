@@ -1,21 +1,24 @@
 import atexit
 import sqlite3
-from collections import deque
-from pathlib import Path
-from typing import Deque
 
-from PyQt5.QtCore import QTimer, QObject, pyqtSlot
+from PyQt5.QtCore import QObject
+
+from teacher.monitor import ColumnHeader, Monitor
+from util.path import to_abs_path
 
 
-class GuiController(QObject):
-    def __init__(self, gui, application):
+class MonitorController(QObject):
+    def __init__(self, monitor):
         super().__init__()
-        self._gui = gui
-        self._app = application
-        self._timer = QTimer()
+        self._monitor = monitor
+        self._monitor.col_header = ColumnHeader((
+            ("id", int),
+            ("time", int),
+            ("grade", float),
+        ))
 
         self._connect_database()
-        # self._start_fetching()
+        self._create_table_if_not_exist()
 
         # Have the connection of database and timer closed right before
         # the controller is destoryed.
@@ -24,47 +27,34 @@ class GuiController(QObject):
         atexit.register(self._close)
 
     def _connect_database(self):
-        db = Path(__file__).parent / "../concentration_grade.db"
+        db = to_abs_path("server/concentration_grade.db")
         self._conn = sqlite3.connect(db, check_same_thread=False)
         # so we can retrieve rows as dictionary
         self._conn.row_factory = sqlite3.Row
-        # Create table if database is empty.
-        self._create_table_if_not_exist()
-        self._clear_table()
 
     def _create_table_if_not_exist(self) -> None:
+        """Creates table if database is empty."""
+        TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT"}
+
+        self._table_name = "monitor"
+        sql = f"CREATE TABLE IF NOT EXISTS {self._table_name} ("
+        for label, value_type in zip(self._monitor.col_header.labels(),
+                                     self._monitor.col_header.types()):
+            sql += f"{label} {TO_SQL_TYPE[value_type]},"
+        sql = sql[:-1] + ");"
         with self._conn:
-            sql = """CREATE TABLE IF NOT EXISTS grades (
-                id INT,
-                time TEXT,
-                grade FLOAT
-            );"""
             self._conn.execute(sql)
 
-    def _clear_table(self):
-        """Makes sure the table is empty.
-
-        Since it may contain data from the last connection.
-        """
+    def insert_new_data(self, data):
+        # Insert new data into corresponding table.
+        sql = f"INSERT INTO {self._table_name} (id, time, grade) VALUES (?, ?, ?);"
         with self._conn:
-            self._conn.execute("DELETE FROM grades;")
-
-    def _start_fetching(self):
-        """Fetch grades in database every second."""
-        self._timer.timeout.connect(self._fetch_grade_and_update_gui)
-        self._timer.start(500)
-
-    def insert_grade_in_database(self, grade):
-        # Insert new grade into corresponding table.
-        with self._conn:
-            sql = f"INSERT INTO grades (id, time, grade) VALUES (?, ?, ?);"
-            self._conn.execute(
-                sql, (grade['id'], grade["time"], grade["grade"])
-            )
+            self._conn.execute(sql, (data["id"], data["time"], data["grade"]))
+        # Updates to the monitor.
+        self._monitor.insert_row(self._monitor.col_header.to_row(data))
 
     def _close(self):
         self._conn.close()
-        self._timer.stop()
 
     @staticmethod
     def _row_not_exists(row: sqlite3.Row) -> bool:

@@ -1,6 +1,5 @@
 import json
 import sys
-import sqlite3
 from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication
@@ -48,7 +47,6 @@ data = """[
 for datum in json.loads(data):
     window.insert_row(header.to_row(datum))
 
-window.resize(640, 480)
 window.show()
 
 sys.exit(app.exec_())

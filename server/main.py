@@ -4,8 +4,8 @@ from threading import Thread
 from PyQt5.QtWidgets import QApplication
 from flask import Flask, request
 
-from gui.controller import GuiController
-from gui.window import FlaskGui
+from server.gui.controller import MonitorController
+from teacher.monitor import Monitor
 
 
 # Create flask instance.
@@ -15,16 +15,16 @@ app_ = Flask(__name__)
 def update_grade():
     if request.method == "POST":
         grade = request.get_json()
-        controller.insert_grade_in_database(grade)
+        controller.insert_new_data(grade)
     return ""
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    # Create the plain GUI and controller.
-    window = FlaskGui()
-    controller = GuiController(window, app)
-    window.show()
+
+    monitor = Monitor()
+    controller = MonitorController(monitor)
+    monitor.show()
 
     kwargs = {
         "host": "127.0.0.1",

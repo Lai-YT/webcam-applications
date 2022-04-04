@@ -30,5 +30,4 @@ train/
 *.h5
 models/
 
-# hide broken test
-test/test_concentration_grader.py
+*.db

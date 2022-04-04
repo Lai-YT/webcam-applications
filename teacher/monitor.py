@@ -61,6 +61,10 @@ class ColumnHeader:
         """Returns the labels of the header in column order."""
         return tuple(label for label, _ in self._labels)
 
+    def types(self) -> Tuple[type, ...]:
+        """Returns the corresponding value type of the labels in column order."""
+        return tuple(value_type for _, value_type in self._labels)
+
     def to_row(self, values: Dict[str, Any]) -> Row:
         """Packs the values into the desirable Row form.
 
@@ -83,19 +87,30 @@ class ColumnHeader:
 
 
 class Monitor(QMainWindow):
-    def __init__(self, header: ColumnHeader) -> None:
+    def __init__(self, header = ColumnHeader([])) -> None:
         super().__init__()
-        self._header = header
         self.setWindowTitle("Teacher Monitor")
+        self.resize(640, 480)
 
         self._table = QTableWidget(0, header.col_count)
         self.setCentralWidget(self._table)
 
-        self._table.setHorizontalHeaderLabels(header.labels())
+        self.col_header = header
+
+    @property
+    def col_header(self) -> ColumnHeader:
+        return self._header
+
+    @col_header.setter
+    def col_header(self, new_header: ColumnHeader) -> None:
+        self._header = new_header
+        self._table.setColumnCount(new_header.col_count)
+        self._table.setHorizontalHeaderLabels(new_header.labels())
 
     def insert_row(self, row: Row) -> None:
         self._table.insertRow(self._table.rowCount())
 
         row_no = self._table.rowCount() - 1
         for col in row:
+            print(col.no, col.label, col.value)
             self._table.setItem(row_no, col.no, QTableWidgetItem(str(col.value)))
