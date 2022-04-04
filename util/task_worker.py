@@ -1,22 +1,21 @@
 from functools import partial
+from typing import Callable
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QThread
 
 
-class TaskWorker(QObject):
-    """This TaskWorker is a worker class to move into QThread.
-    It takes a task function and arbitrary number of that function's parameters.
-    Only A simple run method is implemented, which calls the task function with
-    the parameters.
+class TaskWorker(QThread):
+    """Takes a task function and arbitrary number of that function's parameters
+    and runs the task function in a new thread.
     """
-
-    # Emit after the task is finished.
-    s_finished = pyqtSignal()
-
-    def __init__(self, task_callback, *args, **kwargs):
+    def __init__(self, task_callback: Callable, *args, **kwargs) -> None:
         super().__init__()
         self._task_callback = partial(task_callback, *args, **kwargs)
 
-    def run(self):
+    # Override
+    def run(self) -> None:
+        """Runs the worker in a new thread.
+
+        This method is called indirectly by QThread.start().
+        """
         self._task_callback()
-        self.s_finished.emit()
