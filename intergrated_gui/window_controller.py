@@ -24,7 +24,8 @@ class WindowController(QObject):
 
     def _start_app(self) -> None:
         self._worker = TaskWorker(self._app.start)
-        self._thread = self._worker.run_in_thread(self._app.s_stopped)
+        self._app.s_stopped.connect(self._worker.quit)
+        self._worker.start()
 
     def _connect_app_and_information(self) -> None:
         information = self._window.widgets["information"]

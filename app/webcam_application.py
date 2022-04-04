@@ -1,4 +1,5 @@
 import atexit
+import time
 from configparser import ConfigParser
 from copy import deepcopy
 from operator import methodcaller
@@ -9,7 +10,7 @@ import cv2
 import dlib
 import numpy as np
 from PyQt5.QtGui import QImage
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QMutex, QObject, QSemaphore, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 
@@ -31,6 +32,7 @@ from util.color import GREEN, MAGENTA
 from util.image_convert import ndarray_to_qimage
 from util.image_type import ColorImage
 from util.path import to_abs_path
+from util.task_worker import TaskWorker
 from util.time import Timer
 
 
@@ -95,6 +97,11 @@ class WebcamApplication(QObject):
         self._create_concentration_grader()
         self._create_guards()
         self._create_brightness_controller()
+
+        self._app_sem = QSemaphore()
+        self._count_lock = QMutex()
+        self._app_fin = 0
+
 
     def _load_settings(self) -> None:
         self._settings = ConfigParser()
@@ -305,6 +312,7 @@ class WebcamApplication(QObject):
         self.s_started.emit()
 
         while self._f_ready:
+            start = time.perf_counter()
             frame: ColorImage
             _, frame = self._webcam.read()
             # mirrors, so horizontally flip
@@ -313,35 +321,27 @@ class WebcamApplication(QObject):
             canvas: ColorImage = frame.copy()
             # Analyze the frame to update face landmarks.
             self._update_face_and_landmarks(canvas, frame)
-            # Do applications!
-            if self._distance_measure and self._has_face():
-                dist_info = self._distance_guard.warn_if_too_close(self._landmarks)
-                self.s_distance_refreshed.emit(*dist_info)
-            if self._posture_detect:
-                draw_landmarks_used_by_angle_calculator(canvas, self._landmarks)
-                post_info = self._posture_guard.check_posture(frame, self._landmarks)
-                self.s_posture_refreshed.emit(*post_info)
-            if self._focus_time:
-                # If the landmarks doesn't contain a face, ths user is
-                # considered not focusing on the screen, so the timer is paused.
-                if not self._has_face():
-                    self._timer.pause()
-                else:
-                    self._timer.start()
-                time_info = self._time_guard.break_time_if_too_long(self._timer)
-                self.s_time_refreshed.emit(*time_info)
-            if self._brightness_optimize:
-                # Optimize brightness after passing required images.
-                bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
-                self.s_brightness_refreshed.emit(bright)
 
-            # Do concentration gradings!
-            self._concentration_grader.add_frame()
-            if self._has_face():
-                self._concentration_grader.add_face()
-                self._concentration_grader.detect_blink(self._landmarks)
+            # Do applications!
+            # workers = []
+            # workers.append(TaskWorker(self._do_distance_measurement))
+            # # workers.append(TaskWorker(self._do_posture_detection, canvas, frame))
+            # # workers.append(TaskWorker(self._do_focus_timing))
+            # # workers.append(TaskWorker(self._do_brightness_optimization, frame))
+            # threads = []
+            # for worker in workers:
+            #     threads.append(worker.run_in_thread())
+            # self._app_sem.acquire()
+            #
+            # # Do concentration gradings!
+            # self._concentration_grader.add_frame()
+            # if self._has_face():
+            #     self._concentration_grader.add_face()
+            #     self._concentration_grader.detect_blink(self._landmarks)
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
+            end = time.perf_counter()
+            print(f"Elapsed time: {end - start:.04f}")
             cv2.waitKey(refresh)
         # Release resources.
         self._webcam.release()
@@ -351,6 +351,63 @@ class WebcamApplication(QObject):
     def stop(self) -> None:
         """Stops the execution loop by changing the flag."""
         self._f_ready = False
+
+    def _do_distance_measurement(self) -> None:
+        print("enter")
+        if self._distance_measure and self._has_face():
+            dist_info = self._distance_guard.warn_if_too_close(self._landmarks)
+            self.s_distance_refreshed.emit(*dist_info)
+        # self._count_lock.lock()
+        # self._app_fin += 1
+        print(f"dis: {self._app_fin}")
+        # if self._app_fin == 1:
+        #     self._app_fin = 0
+        self._app_sem.release()
+        # self._count_lock.unlock()
+
+    def _do_posture_detection(self, canvas, frame) -> None:
+        if self._posture_detect:
+            draw_landmarks_used_by_angle_calculator(canvas, self._landmarks)
+            post_info = self._posture_guard.check_posture(frame, self._landmarks)
+            self.s_posture_refreshed.emit(*post_info)
+        self._count_lock.lock()
+        self._app_fin += 1
+        print(f"pos: {self._app_fin}")
+        if self._app_fin == 4:
+            self._app_fin = 0
+            self._app_sem.release()
+        self._count_lock.unlock()
+
+    def _do_focus_timing(self) -> None:
+        if self._focus_time:
+            # If the landmarks doesn't contain a face, ths user is
+            # considered not focusing on the screen, so the timer is paused.
+            if not self._has_face():
+                self._timer.pause()
+            else:
+                self._timer.start()
+            time_info = self._time_guard.break_time_if_too_long(self._timer)
+            self.s_time_refreshed.emit(*time_info)
+        self._count_lock.lock()
+        self._app_fin += 1
+        print(f"time: {self._app_fin}")
+        if self._app_fin == 4:
+            self._app_fin = 0
+            self._app_sem.release()
+        self._count_lock.unlock()
+
+    def _do_brightness_optimization(self, frame) -> None:
+        if self._brightness_optimize:
+            # Optimize brightness after passing required images.
+            bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
+            self.s_brightness_refreshed.emit(bright)
+        # self._count_lock.lock()
+        # self._app_fin += 1
+        print(f"bri: {self._app_fin}")
+        # if self._app_fin == 4:
+        #     self._app_fin = 0
+        self._app_sem.release()
+        # self._count_lock.unlock()
 
     def _stop_grading_if_all_related_app_disabled_else_keep_grading(self) -> None:
         all_disabled = not any(

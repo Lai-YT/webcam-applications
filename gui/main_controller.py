@@ -104,16 +104,8 @@ class GuiController(QObject):
         # The TaskWorker let us only move the start method into thread,
         # so the App. itself is reusable.
         self._worker = TaskWorker(self._app.start)
-        self._thread = QThread()
-        self._worker.moveToThread(self._thread)
-        # Worker starts running after the thread is started.
-        self._thread.started.connect(self._worker.run)
-        # The job of thread and worker is finished after the App. calls stop.
-        self._app.s_stopped.connect(self._thread.quit)
-        self._app.s_stopped.connect(self._worker.deleteLater)
-        self._thread.finished.connect(self._thread.deleteLater)
-
-        self._thread.start()
+        self._app.s_stopped.connect(self._worker.quit)
+        self._worker.start()
 
     def _start_loading(self):
         """Shows a loading message at the status bar (left corner)."""
