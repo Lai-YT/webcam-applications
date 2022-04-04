@@ -1,6 +1,6 @@
 from typing import Any, Dict, Iterable, List, Tuple, TypeVar
 
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QMainWindow
+from PyQt5.QtWidgets import QAbstractItemView, QTableWidget, QTableWidgetItem, QMainWindow
 
 
 T = TypeVar("T")
@@ -93,6 +93,8 @@ class Monitor(QMainWindow):
         self.resize(640, 480)
 
         self._table = QTableWidget(0, header.col_count)
+        # read-only
+        self._table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.setCentralWidget(self._table)
 
         self.col_header = header
@@ -112,5 +114,4 @@ class Monitor(QMainWindow):
 
         row_no = self._table.rowCount() - 1
         for col in row:
-            print(col.no, col.label, col.value)
             self._table.setItem(row_no, col.no, QTableWidgetItem(str(col.value)))

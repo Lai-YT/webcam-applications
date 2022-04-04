@@ -1,6 +1,5 @@
-import json
 import sys
-from pathlib import Path
+from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
 
@@ -11,39 +10,38 @@ app = QApplication([])
 window = Monitor(ColumnHeader([
     ("status", str),
     ("id", int),
-    ("time", int),
+    ("time", datetime),
     ("grade", float),
 ]))
 
-data = """[
+data = [
     {
         "status": "green",
         "id": 1,
-        "time": 9991002,
-        "grade": 0.85
+        "time": datetime.fromisoformat("2022-04-04 19:05:23"),
+        "grade": 0.9
     },
     {
         "status": "red",
         "id": 2,
-        "time": 9991002,
+        "time": datetime.fromisoformat("2022-04-04 19:05:24"),
         "grade": 0.67
     },
     {
         "status": "green",
         "id": 3,
-        "time": 9991003,
+        "time": datetime.fromisoformat("2022-04-04 19:05:23"),
         "grade": 1.0
     },
     {
         "status": "green",
         "id": 4,
-        "time": 9991000,
+        "time": datetime.fromisoformat("2022-04-04 19:05:22"),
         "grade": 0.9
     }
-]"""
+]
 
-
-for datum in json.loads(data):
+for datum in data:
     window.insert_row(window.col_header.to_row(datum))
 
 window.show()

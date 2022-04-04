@@ -1,5 +1,6 @@
 import atexit
 import sqlite3
+from datetime import datetime
 
 from PyQt5.QtCore import QObject
 
@@ -13,7 +14,7 @@ class MonitorController(QObject):
         self._monitor = monitor
         self._monitor.col_header = ColumnHeader((
             ("id", int),
-            ("time", int),
+            ("time", str),
             ("grade", float),
         ))
 
@@ -29,13 +30,13 @@ class MonitorController(QObject):
 
     def _connect_database(self):
         db = to_abs_path("teacher/database/concentration_grade.db")
-        self._conn = sqlite3.connect(db, check_same_thread=False)
+        self._conn = sqlite3.connect(db, check_same_thread=False, detect_types=sqlite3.PARSE_DECLTYPES)
         # so we can retrieve rows as dictionary
         self._conn.row_factory = sqlite3.Row
 
     def _create_table_if_not_exist(self) -> None:
         """Creates table if database is empty."""
-        TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT"}
+        TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT", datetime: "TIMESTAMP"}
 
         sql = f"CREATE TABLE IF NOT EXISTS {self._table_name} ("
         for label, value_type in zip(self._monitor.col_header.labels(),
@@ -45,7 +46,7 @@ class MonitorController(QObject):
         with self._conn:
             self._conn.execute(sql)
 
-    def insert_new_data(self, data):
+    def send_new_data(self, data):
         # Insert new data into corresponding table.
         sql = f"INSERT INTO {self._table_name} (id, time, grade) VALUES (?, ?, ?);"
         with self._conn:
