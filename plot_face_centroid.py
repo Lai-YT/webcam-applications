@@ -1,5 +1,6 @@
 from ast import literal_eval as make_tuple
 from pathlib import Path
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +16,7 @@ def get_centroid_of_group(points):
 target = Path(__file__).parent / "face_centroid.log"
 
 # "all" keeps the order
-centroids = {"hog": [], "mtcnn": [], "all": []}
+centroids: Dict[str, List[str]] = {"hog": [], "mtcnn": [], "all": []}
 with target.open("r") as f:
     for line in f:
         line = line.rstrip("\n")

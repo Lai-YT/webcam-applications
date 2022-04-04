@@ -57,7 +57,7 @@ class ColumnHeader:
         """Returns the number of columns (labels)."""
         return len(self._labels)
 
-    def labels(self) -> Tuple[str]:
+    def labels(self) -> Tuple[str, ...]:
         """Returns the labels of the header in column order."""
         return tuple(label for label, _ in self._labels)
 
