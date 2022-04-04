@@ -4,7 +4,7 @@ from threading import Thread
 from PyQt5.QtWidgets import QApplication
 from flask import Flask, request
 
-from server.gui.controller import MonitorController
+from teacher.controller import MonitorController
 from teacher.monitor import Monitor
 
 

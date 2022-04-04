@@ -8,13 +8,12 @@ from teacher.monitor import ColumnHeader, Monitor
 
 
 app = QApplication([])
-header = ColumnHeader([
+window = Monitor(ColumnHeader([
     ("status", str),
     ("id", int),
     ("time", int),
     ("grade", float),
-])
-window = Monitor(header)
+]))
 
 data = """[
     {
@@ -45,7 +44,7 @@ data = """[
 
 
 for datum in json.loads(data):
-    window.insert_row(header.to_row(datum))
+    window.insert_row(window.col_header.to_row(datum))
 
 window.show()
 

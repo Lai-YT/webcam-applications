@@ -18,6 +18,7 @@ class MonitorController(QObject):
         ))
 
         self._connect_database()
+        self._table_name = "monitor"
         self._create_table_if_not_exist()
 
         # Have the connection of database and timer closed right before
@@ -27,7 +28,7 @@ class MonitorController(QObject):
         atexit.register(self._close)
 
     def _connect_database(self):
-        db = to_abs_path("server/concentration_grade.db")
+        db = to_abs_path("teacher/database/concentration_grade.db")
         self._conn = sqlite3.connect(db, check_same_thread=False)
         # so we can retrieve rows as dictionary
         self._conn.row_factory = sqlite3.Row
@@ -36,7 +37,6 @@ class MonitorController(QObject):
         """Creates table if database is empty."""
         TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT"}
 
-        self._table_name = "monitor"
         sql = f"CREATE TABLE IF NOT EXISTS {self._table_name} ("
         for label, value_type in zip(self._monitor.col_header.labels(),
                                      self._monitor.col_header.types()):

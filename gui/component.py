@@ -140,6 +140,16 @@ class ProgressDialog(QtWidgets.QProgressDialog):
         self.setLabel(label)
 
 
+class PullDownMenu(QtWidgets.QComboBox):
+    def __init__(self, font_size: int = 12) -> None:
+        super().__init__()
+        self.setFixedSize(120, 40)
+        self.setFont(_ArialFont(font_size))
+
+    def add_item(self, item: str) -> None:
+        self.addItem(item)
+
+
 class StatusBar(QtWidgets.QStatusBar):
     def __init__(self, font_size: int = 12) -> None:
         super().__init__()
