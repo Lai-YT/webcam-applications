@@ -3,6 +3,8 @@ import time
 
 import requests
 
+from util.path import to_abs_path
+
 
 def post_grade(data):
     for grade in data["grades"]:
@@ -11,7 +13,7 @@ def post_grade(data):
 
 
 def main():
-    with open("grade.json") as f:
+    with open(to_abs_path("server/grade.json")) as f:
         data = json.load(f)
     # posting is outside of "with" to have the file closed as early
     # as possible

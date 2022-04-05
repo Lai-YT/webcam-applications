@@ -4,8 +4,8 @@ from threading import Thread
 from PyQt5.QtWidgets import QApplication
 from flask import Flask, request
 
-from gui.controller import GuiController
-from gui.window import FlaskGui
+from server.gui.controller import GuiController
+from server.gui.window import FlaskGui
 
 
 # Create flask instance.

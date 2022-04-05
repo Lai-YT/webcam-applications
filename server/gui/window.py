@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
-from gui.component import Label, LineEdit, PullDownMenu
+from server.gui.component import Label
 
 
 class FlaskGui(QMainWindow):
@@ -17,7 +17,7 @@ class FlaskGui(QMainWindow):
         self.setCentralWidget(self._central_widget)
 
         self._create_label()
-    
+
     def _create_label(self):
         self.label = Label("No grade received.", wrap=True)
         self._general_layout.addWidget(self.label, alignment=Qt.AlignCenter)
