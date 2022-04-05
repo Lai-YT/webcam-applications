@@ -2,6 +2,7 @@ import atexit
 import sqlite3
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict
 
 from teacher.monitor import ColumnHeader, Monitor, Row
@@ -35,7 +36,10 @@ class MonitorController:
         self._worker.s_updated.connect(self.show_new_grade)
 
     def _connect_database(self) -> None:
-        db = to_abs_path("teacher/database/concentration_grade.db")
+        db = Path(to_abs_path("teacher/database/concentration_grade.db"))
+        # create database if not exist
+        db.parent.mkdir(parents=True, exist_ok=True)
+        db.touch()
         self._conn = sqlite3.connect(db, check_same_thread=False, detect_types=sqlite3.PARSE_DECLTYPES)
         # so we can retrieve rows as dictionary
         self._conn.row_factory = sqlite3.Row
