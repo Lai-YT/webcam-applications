@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 
-from teacher.monitor import ColumnHeader, Monitor
+from teacher.monitor import ColumnHeader, Monitor, Row
 from util.path import to_abs_path
 
 
