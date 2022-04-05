@@ -10,12 +10,7 @@ from teacher.worker import ModelWoker
 
 app = QApplication([])
 
-monitor = Monitor(ColumnHeader([
-    ("status", str),
-    ("id", int),
-    ("time", datetime),
-    ("grade", float),
-]))
+monitor = Monitor()
 worker = ModelWoker()
 controller = MonitorController(monitor, worker)
 monitor.show()

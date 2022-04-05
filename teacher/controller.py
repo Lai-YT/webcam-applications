@@ -54,9 +54,10 @@ class MonitorController:
 
     def store_new_grade(self, grade: Dict[str, Any]) -> None:
         """Stores new grade into the database."""
-        sql = f"INSERT INTO {self._table_name} (id, time, grade) VALUES (?, ?, ?);"
+        sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES (?, ?, ?, ?);"
+        row: Row = self._monitor.col_header.to_row(grade)
         with self._conn:
-            self._conn.execute(sql, (grade["id"], grade["time"], grade["grade"]))
+            self._conn.execute(sql, tuple(col.value for col in row))
 
     def show_new_grade(self, grade: Dict[str, Any]) -> None:
         """Shows the new grade to the monitor.
