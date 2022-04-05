@@ -1,37 +1,18 @@
-import sys
-from threading import Thread
+import json
 
-from PyQt5.QtWidgets import QApplication
 from flask import Flask, request
-
-from teacher.controller import MonitorController
-from teacher.monitor import Monitor
 
 
 # Create flask instance.
-app_ = Flask(__name__)
+app = Flask(__name__)
 
-@app_.route("/test", methods=["POST", "GET"])
+data = []
+@app.route("/test", methods=["POST", "GET"])
 def update_grade():
     if request.method == "POST":
-        grade = request.get_json()
-        controller.send_new_data(grade)
-    return ""
+        data.append(request.get_json())
+    return json.dumps(data)
 
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-
-    monitor = Monitor()
-    controller = MonitorController(monitor)
-    monitor.show()
-
-    kwargs = {
-        "host": "127.0.0.1",
-        "port": 5000,
-        "threaded": True,
-        "use_reloader": False,
-        "debug": True,
-    }
-    Thread(target=app_.run, kwargs=kwargs, daemon=True).start()
-    sys.exit(app.exec_())
+    app.run(host="127.0.0.1", port=5000, threaded=True, use_reloader=False, debug=True)
