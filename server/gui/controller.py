@@ -1,8 +1,6 @@
 import atexit
 import sqlite3
-from collections import deque
 from pathlib import Path
-from typing import Deque
 
 from PyQt5.QtCore import QTimer, QObject, pyqtSlot
 
@@ -15,7 +13,7 @@ class GuiController(QObject):
         self._timer = QTimer()
 
         self._connect_database()
-        # self._start_fetching()
+        self._start_fetching()
 
         # Have the connection of database and timer closed right before
         # the controller is destoryed.
@@ -53,6 +51,25 @@ class GuiController(QObject):
         """Fetch grades in database every second."""
         self._timer.timeout.connect(self._fetch_grade_and_update_gui)
         self._timer.start(500)
+
+    def _fetch_grade_and_update_gui(self):
+        """Updates the latest grades on GUI."""
+        with self._conn:
+            sql = (
+                "SELECT * FROM grades WHERE time = (SELECT MAX(time) FROM grades) "
+                "ORDER BY id DESC LIMIT 1;"
+            )
+            grade = self._conn.execute(sql).fetchone()
+
+        if grade:
+            print("{} {} {}".format(grade["id"], grade["time"], grade["grade"]))
+            if grade["grade"] >= 0.6:
+                color = "green"
+            else:
+                color = "red"
+        
+            self._gui.label.setText(grade["id"])
+            self._gui.label.set_color(color)
 
     def insert_grade_in_database(self, grade):
         # Insert new grade into corresponding table.
