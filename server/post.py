@@ -5,6 +5,8 @@ from threading import Thread
 
 import requests
 
+from util.path import to_abs_path
+
 
 # value of "time" and "grade" will be set later
 DATA_1 = [

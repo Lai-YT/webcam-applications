@@ -56,6 +56,16 @@ class MonitorController:
         with self._conn:
             self._conn.execute(sql)
 
+    def _fetch_grade(self):
+        """Fetches the latest grade from database."""
+        with self._conn:
+            sql = f"""
+                SELECT * FROM {self._table_name} WHERE time=(SELECT MAX(time) FROM {self._table_name})
+                ORDER BY id DESC LIMIT 1;
+            """
+            grade = self._conn.execute(sql).fetchone()
+            print(grade)
+
     def store_new_grade(self, grade: Dict[str, Any]) -> None:
         """Stores new grade into the database."""
         sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES (?, ?, ?, ?);"
