@@ -1,15 +1,15 @@
 import atexit
 import sqlite3
 from datetime import datetime
+from typing import Any, Dict
 
-from PyQt5.QtCore import QObject
 
 from teacher.monitor import ColumnHeader, Monitor
 from util.path import to_abs_path
 
 
-class MonitorController(QObject):
-    def __init__(self, monitor):
+class MonitorController:
+    def __init__(self, monitor: Monitor) -> None:
         super().__init__()
         self._monitor = monitor
         self._monitor.col_header = ColumnHeader((
@@ -28,7 +28,7 @@ class MonitorController(QObject):
         # but such signal seems not guaranteed to always be emitted.
         atexit.register(self._close)
 
-    def _connect_database(self):
+    def _connect_database(self) -> None:
         db = to_abs_path("teacher/database/concentration_grade.db")
         self._conn = sqlite3.connect(db, check_same_thread=False, detect_types=sqlite3.PARSE_DECLTYPES)
         # so we can retrieve rows as dictionary
@@ -46,13 +46,19 @@ class MonitorController(QObject):
         with self._conn:
             self._conn.execute(sql)
 
-    def send_new_data(self, data):
+    def send_new_data(self, data: Dict[str, Any]) -> None:
         # Insert new data into corresponding table.
         sql = f"INSERT INTO {self._table_name} (id, time, grade) VALUES (?, ?, ?);"
         with self._conn:
             self._conn.execute(sql, (data["id"], data["time"], data["grade"]))
         # Updates to the monitor.
-        self._monitor.insert_row(self._monitor.col_header.to_row(data))
+        row_no = self._monitor.search_row_no(("id", data["id"]))
+        row: Row = self._monitor.col_header.to_row(data)
+        if row_no == -1:
+            self._monitor.insert_row(row)
+        else:
+            print("update", ("id", data["id"]))
+            self._monitor.update_row(row_no, row)
 
     def _close(self):
         self._conn.close()
