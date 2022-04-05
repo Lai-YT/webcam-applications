@@ -33,6 +33,7 @@ from util.color import GREEN, MAGENTA
 from util.image_convert import ndarray_to_qimage
 from util.image_type import ColorImage
 from util.path import to_abs_path
+from util.task_worker import TaskWorker
 from util.time import Timer
 
 
@@ -70,7 +71,7 @@ class WebcamApplication(QObject):
             Emits after the WebcamApplication stops running.
     """
 
-    SETTINGS_FILE = (Path(__file__).parent / "settings.ini").resolve()
+    SETTINGS_FILE = to_abs_path("./app/settings.ini")
 
     # Signals used to communicate with controller.
     s_frame_refreshed = pyqtSignal(QImage)
@@ -308,27 +309,15 @@ class WebcamApplication(QObject):
             canvas: ColorImage = frame.copy()
             # Analyze the frame to update face landmarks.
             self._update_face_and_landmarks(canvas, frame)
+
             # Do applications!
-            if self._distance_measure and self._has_face():
-                dist_info = self._distance_guard.warn_if_too_close(self._landmarks)
-                self.s_distance_refreshed.emit(*dist_info)
-            if self._posture_detect:
-                draw_landmarks_used_by_angle_calculator(canvas, self._landmarks)
-                post_info = self._posture_guard.check_posture(frame, self._landmarks)
-                self.s_posture_refreshed.emit(*post_info)
-            if self._focus_time:
-                # If the landmarks doesn't contain a face, ths user is
-                # considered not focusing on the screen, so the timer is paused.
-                if not self._has_face():
-                    self._timer.pause()
-                else:
-                    self._timer.start()
-                time_info = self._time_guard.break_time_if_too_long(self._timer)
-                self.s_time_refreshed.emit(*time_info)
-            if self._brightness_optimize:
-                # Optimize brightness after passing required images.
-                bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
-                self.s_brightness_refreshed.emit(bright)
+            workers: List[TaskWorker] = []
+            workers.append(TaskWorker(self._do_distance_measurement))
+            workers.append(TaskWorker(self._do_posture_detection, canvas, frame))
+            workers.append(TaskWorker(self._do_focus_timing))
+            workers.append(TaskWorker(self._do_brightness_optimization, frame))
+            for worker in workers:
+                worker.start()
 
             # Do concentration gradings!
             self._concentration_grader.add_frame()
@@ -346,6 +335,34 @@ class WebcamApplication(QObject):
     def stop(self) -> None:
         """Stops the execution loop by changing the flag."""
         self._f_ready = False
+
+    def _do_distance_measurement(self) -> None:
+        if self._distance_measure and self._has_face():
+            dist_info = self._distance_guard.warn_if_too_close(self._landmarks)
+            self.s_distance_refreshed.emit(*dist_info)
+
+    def _do_posture_detection(self, canvas, frame) -> None:
+        if self._posture_detect:
+            draw_landmarks_used_by_angle_calculator(canvas, self._landmarks)
+            post_info = self._posture_guard.check_posture(frame, self._landmarks)
+            self.s_posture_refreshed.emit(*post_info)
+
+    def _do_focus_timing(self) -> None:
+        if self._focus_time:
+            # If the landmarks doesn't contain a face, ths user is
+            # considered not focusing on the screen, so the timer is paused.
+            if not self._has_face():
+                self._timer.pause()
+            else:
+                self._timer.start()
+            time_info = self._time_guard.break_time_if_too_long(self._timer)
+            self.s_time_refreshed.emit(*time_info)
+
+    def _do_brightness_optimization(self, frame) -> None:
+        if self._brightness_optimize:
+            # Optimize brightness after passing required images.
+            bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
+            self.s_brightness_refreshed.emit(bright)
 
     def _keep_grading_if_related_apps_enabled(self) -> None:
         # Need both distance measurement and posture detection to have
