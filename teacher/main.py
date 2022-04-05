@@ -1,54 +1,22 @@
-import json
 import sys
-import sqlite3
-from pathlib import Path
+from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
 
+from teacher.controller import MonitorController
 from teacher.monitor import ColumnHeader, Monitor
+from teacher.worker import ModelWoker
 
 
 app = QApplication([])
-header = ColumnHeader([
-    ("status", str),
-    ("id", int),
-    ("time", int),
-    ("grade", float),
-])
-window = Monitor(header)
 
-data = """[
-    {
-        "status": "green",
-        "id": 1,
-        "time": 9991002,
-        "grade": 0.85
-    },
-    {
-        "status": "red",
-        "id": 2,
-        "time": 9991002,
-        "grade": 0.67
-    },
-    {
-        "status": "green",
-        "id": 3,
-        "time": 9991003,
-        "grade": 1.0
-    },
-    {
-        "status": "green",
-        "id": 4,
-        "time": 9991000,
-        "grade": 0.9
-    }
-]"""
+monitor = Monitor()
+worker = ModelWoker()
+controller = MonitorController(monitor, worker)
+monitor.show()
 
-
-for datum in json.loads(data):
-    window.insert_row(header.to_row(datum))
-
-window.resize(640, 480)
-window.show()
+# 2 workers work concurrently
+worker.work()
+worker.work()
 
 sys.exit(app.exec_())
