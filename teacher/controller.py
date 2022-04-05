@@ -1,20 +1,21 @@
 import atexit
 import sqlite3
+import time
 from datetime import datetime
 from typing import Any, Dict
 
-
 from teacher.monitor import ColumnHeader, Monitor, Row
+from teacher.worker import ModelWoker
 from util.path import to_abs_path
 
 
 class MonitorController:
-    def __init__(self, monitor: Monitor) -> None:
-        super().__init__()
+    def __init__(self, monitor: Monitor, worker: ModelWoker) -> None:
         self._monitor = monitor
         self._monitor.col_header = ColumnHeader((
+            ("status", str),
             ("id", int),
-            ("time", str),
+            ("time", datetime),
             ("grade", float),
         ))
 
@@ -26,7 +27,12 @@ class MonitorController:
         # the controller is destoryed.
         # NOTE: we've tried to listen to the "destoryed" signal of QMainWindow,
         # but such signal seems not guaranteed to always be emitted.
-        atexit.register(self._close)
+        atexit.register(self._conn.close)
+
+        self._worker = worker
+        # notify both database and monitor
+        self._worker.s_updated.connect(self.store_new_grade)
+        self._worker.s_updated.connect(self.show_new_grade)
 
     def _connect_database(self) -> None:
         db = to_abs_path("teacher/database/concentration_grade.db")
@@ -46,22 +52,24 @@ class MonitorController:
         with self._conn:
             self._conn.execute(sql)
 
-    def send_new_data(self, data: Dict[str, Any]) -> None:
-        # Insert new data into corresponding table.
+    def store_new_grade(self, grade: Dict[str, Any]) -> None:
+        """Stores new grade into the database."""
         sql = f"INSERT INTO {self._table_name} (id, time, grade) VALUES (?, ?, ?);"
         with self._conn:
-            self._conn.execute(sql, (data["id"], data["time"], data["grade"]))
-        # Updates to the monitor.
-        row_no = self._monitor.search_row_no(("id", data["id"]))
-        row: Row = self._monitor.col_header.to_row(data)
-        if row_no == -1:
+            self._conn.execute(sql, (grade["id"], grade["time"], grade["grade"]))
+
+    def show_new_grade(self, grade: Dict[str, Any]) -> None:
+        """Shows the new grade to the monitor.
+
+        A new row is inserted if the "id" introduces a new student,
+        otherwise the students grade is updated to the same row.
+        """
+        row_no = self._monitor.search_row_no(("id", grade["id"]))
+        row: Row = self._monitor.col_header.to_row(grade)
+        if row_no == -1:  # row not found
             self._monitor.insert_row(row)
         else:
-            print("update", ("id", data["id"]))
             self._monitor.update_row(row_no, row)
-
-    def _close(self):
-        self._conn.close()
 
     @staticmethod
     def _row_not_exists(row: sqlite3.Row) -> bool:

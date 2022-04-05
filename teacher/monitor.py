@@ -30,6 +30,8 @@ class Col:
 class Row(List[Col]):
     """Rows should only be constructed by ColumnHeaders to have the Cols in the
     right order which fits the Monitor.
+
+    Inherits List[Col] to provide expressive signature.
     """
 
 
@@ -127,9 +129,9 @@ class Monitor(QMainWindow):
         Returns:
             The row no. where the key is located, -1 if the key doesn't exist.
         """
-        label, value = map(str, key)
+        label, value = key
         col_no = self._header.labels().index(label)
         for row_no in range(self._table.rowCount()):
-            if self._table.item(row_no, col_no).text() == value:
+            if self._table.item(row_no, col_no).text() == str(value):
                 return row_no
         return -1
