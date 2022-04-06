@@ -16,7 +16,7 @@ controller = MonitorController(monitor, worker)
 monitor.show()
 
 # 2 workers work concurrently
-worker.work()
-worker.work()
+# worker.work()
+# worker.work()
 
 sys.exit(app.exec_())

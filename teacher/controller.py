@@ -3,15 +3,21 @@ import sqlite3
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, List
+
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from teacher.monitor import ColumnHeader, Monitor, Row
 from teacher.worker import ModelWoker
 from util.path import to_abs_path
+from util.task_worker import TaskWorker
 
 
-class MonitorController:
+class MonitorController(QObject):
+    s_showed = pyqtSignal(dict)
+
     def __init__(self, monitor: Monitor, worker: ModelWoker) -> None:
+        super().__init__()
         self._monitor = monitor
         self._monitor.col_header = ColumnHeader((
             ("status", str),
@@ -23,6 +29,8 @@ class MonitorController:
         self._connect_database()
         self._table_name = "monitor"
         self._create_table_if_not_exist()
+        self._connect_signal()
+        self._fetch_grades_and_show()
 
         # Have the connection of database and timer closed right before
         # the controller is destoryed.
@@ -30,10 +38,7 @@ class MonitorController:
         # but such signal seems not guaranteed to always be emitted.
         atexit.register(self._conn.close)
 
-        self._worker = worker
-        # notify both database and monitor
-        self._worker.s_updated.connect(self.store_new_grade)
-        self._worker.s_updated.connect(self.show_new_grade)
+        # self._worker = worker
 
     def _connect_database(self) -> None:
         db = Path(to_abs_path("teacher/database/concentration_grade.db"))
@@ -55,25 +60,44 @@ class MonitorController:
         sql = sql[:-1] + ");"
         with self._conn:
             self._conn.execute(sql)
+    
+    def _connect_signal(self):
+        self.s_showed.connect(self.show_new_grade)
 
-    def _fetch_grade(self):
-        """Fetches the latest grade from database."""
+    def _fetch_grades_and_show(self):
+        grades = self._fetch_grades_from_database()
+        self._worker = TaskWorker(self._show_grades_one_by_one, grades)
+        self._worker.start()
+
+    def _fetch_grades_from_database(self) -> List[dict[str, Any]]:
+        """Fetches all grades from database."""
         with self._conn:
             sql = f"""
-                SELECT * FROM {self._table_name} WHERE time=(SELECT MAX(time) FROM {self._table_name})
-                ORDER BY id DESC LIMIT 1;
+                SELECT * FROM {self._table_name} ORDER BY time;
             """
-            grade = self._conn.execute(sql).fetchone()
-            print(grade)
+            grades = self._conn.execute(sql).fetchall()
+        return grades
 
-    def store_new_grade(self, grade: Dict[str, Any]) -> None:
+    def _show_grades_one_by_one(self, grades: List[dict[str, Any]]):
+        for grade in grades:
+            new_grade = {
+                "status": grade["status"],
+                "id": grade["id"],
+                "time": grade["time"],
+                "grade": grade["grade"],
+            }
+            self.s_showed.emit(new_grade)
+            time.sleep(1)
+
+    def store_new_grade(self, grade: dict[str, Any]) -> None:
         """Stores new grade into the database."""
         sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES (?, ?, ?, ?);"
         row: Row = self._monitor.col_header.to_row(grade)
         with self._conn:
             self._conn.execute(sql, tuple(col.value for col in row))
 
-    def show_new_grade(self, grade: Dict[str, Any]) -> None:
+    @pyqtSlot(dict)
+    def show_new_grade(self, grade: dict[str, Any]) -> None:
         """Shows the new grade to the monitor.
 
         A new row is inserted if the "id" introduces a new student,
