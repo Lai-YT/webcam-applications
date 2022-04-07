@@ -4,7 +4,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import QApplication
 
 from teacher.controller import MonitorController
-from teacher.monitor import ColumnHeader, Monitor
+from teacher.monitor import Monitor
 from teacher.worker import ModelWoker
 
 

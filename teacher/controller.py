@@ -65,11 +65,12 @@ class MonitorController(QObject):
         self.s_showed.connect(self.show_new_grade)
 
     def _fetch_grades_and_show(self):
+        """Fetches grades from database and passes to QTableWidget one by one."""
         grades = self._fetch_grades_from_database()
         self._worker = TaskWorker(self._show_grades_one_by_one, grades)
         self._worker.start()
 
-    def _fetch_grades_from_database(self) -> List[dict[str, Any]]:
+    def _fetch_grades_from_database(self) -> List[sqlite3.Row]:
         """Fetches all grades from database."""
         with self._conn:
             sql = f"""
@@ -78,8 +79,9 @@ class MonitorController(QObject):
             grades = self._conn.execute(sql).fetchall()
         return grades
 
-    def _show_grades_one_by_one(self, grades: List[dict[str, Any]]):
+    def _show_grades_one_by_one(self, grades: List[sqlite3.Row]):
         for grade in grades:
+            # Generates dict consisting of values of grade. 
             new_grade = {
                 "status": grade["status"],
                 "id": grade["id"],
