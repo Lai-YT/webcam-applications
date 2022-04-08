@@ -82,7 +82,7 @@ class MonitorController(QObject):
     def _show_grades_one_by_one(self, grades: List[sqlite3.Row]) -> None:
         for grade in grades:
             self.s_showed.emit(grade)
-            time.sleep(0.5)
+            time.sleep(1)
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""

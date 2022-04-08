@@ -124,7 +124,7 @@ class Monitor(QMainWindow):
         for col in row:
             self._table.setItem(row_no, col.no, QTableWidgetItem(str(col.value)))
         # Sort rows in ascending order by grade.
-        self._table.sortItems(self._header.labels().index("grade"), Qt.DescendingOrder)
+        self._table.sortItems(self._header.labels().index("grade"))
 
     def search_row_no(self, key: Tuple[str, Any]) -> int:
         """Searches with the key row by row.
