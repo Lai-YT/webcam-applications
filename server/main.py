@@ -11,6 +11,8 @@ data = []
 def update_grade():
     if request.method == "POST":
         data.append(request.get_json())
+    elif request.method == "GET":
+        data.clear()
     return json.dumps(data)
 
 
