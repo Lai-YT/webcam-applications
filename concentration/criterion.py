@@ -159,7 +159,7 @@ class BlinkRateIntervalDetector(QObject):
                 Interval(self._last_end_time, one_min_before),
                 IntervalType.EXTRUSION,
                 self._get_blink_rate(WindowType.PREVIOUS))
-
+            print(f"EXTRUSION: {extrude_interval[2]}")
             return extrude_interval
         return None
 
@@ -195,10 +195,12 @@ class BlinkRateIntervalDetector(QObject):
         curr_blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
         if (now_time - self._last_end_time >= ONE_MIN
                 and self._good_rate_range[0] <= curr_blink_rate <= self._good_rate_range[1]):
+            print(f"REAL_TIME: {curr_blink_rate}")
             self.s_interval_detected.emit(Interval(one_min_before, now_time),
                                           IntervalType.REAL_TIME, curr_blink_rate)
         # Make each 60 seconds of the previous a look back interval.
         if one_min_before - self._last_end_time >= ONE_MIN:
+            print(f"LOOK_BACK: {self._get_blink_rate(WindowType.PREVIOUS)}")
             self.s_interval_detected.emit(Interval(self._last_end_time, one_min_before),
                                           IntervalType.LOOK_BACK,
                                           self._get_blink_rate(WindowType.PREVIOUS))
@@ -257,6 +259,7 @@ class BodyConcentrationCounter:
             return len(window)
         concent_count: int = count_time_in_interval(self._concentration_times)
         distract_count: int = count_time_in_interval(self._distraction_times)
+        print(f"concent: {concent_count}, distract: {distract_count}")
         return round(concent_count / (concent_count + distract_count), 2)
 
     def clear_windows(self, window_type: WindowType) -> None:

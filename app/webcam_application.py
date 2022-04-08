@@ -35,6 +35,7 @@ from util.image_type import ColorImage
 from util.path import to_abs_path
 from util.task_worker import TaskWorker
 from util.time import Timer
+from util.video_writer import VideoWriter
 
 
 class WebcamApplication(QObject):
@@ -94,6 +95,8 @@ class WebcamApplication(QObject):
         self._f_ready: bool = False
 
         self._webcam = cv2.VideoCapture(0)
+        # self._writer = VideoWriter("concent_live")
+        # atexit.register(self._writer.release)
         self._create_face_detectors()
         self._create_concentration_grader()
         self._create_guards()
@@ -302,14 +305,17 @@ class WebcamApplication(QObject):
 
         while self._f_ready:
             frame: ColorImage
-            _, frame = self._webcam.read()
+            ret, frame = self._webcam.read()
+            # self._writer.write(frame)
+            if not ret:
+                print("Stream ends...")
+                break
             # mirrors, so horizontally flip
             frame = cv2.flip(frame, flipCode=1)
             # separate detections and markings
             canvas: ColorImage = frame.copy()
             # Analyze the frame to update face landmarks.
             self._update_face_and_landmarks(canvas, frame)
-
             # Do applications!
             workers: List[TaskWorker] = []
             workers.append(TaskWorker(self._do_distance_measurement))

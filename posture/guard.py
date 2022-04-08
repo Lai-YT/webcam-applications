@@ -2,6 +2,7 @@
 # https://github.com/EE-Ind-Stud-Group/posture-detection
 
 import logging
+from datetime import datetime
 from typing import Optional, Tuple
 
 import cv2
@@ -18,7 +19,8 @@ from util.path import to_abs_path
 from util.time import Timer
 
 
-logging.basicConfig(filename=to_abs_path("./face_centroid.log"), format="%(message)s", level=logging.INFO)
+logging.basicConfig(filename=to_abs_path(f"./face-centroid-{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"),
+                    format="%(message)s", level=logging.INFO)
 
 class PostureGuard:
     """PostureGuard checks whether the face obtained by landmarks implies a
