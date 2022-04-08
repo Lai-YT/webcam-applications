@@ -18,7 +18,7 @@ class MonitorController(QObject):
 
     TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT", datetime: "TIMESTAMP"}
 
-    def __init__(self, monitor: Monitor, worker: ModelWoker) -> None:
+    def __init__(self, monitor: Monitor, model_worker: ModelWoker) -> None:
         super().__init__()
         self._monitor = monitor
         self._monitor.col_header = ColumnHeader((
@@ -27,6 +27,8 @@ class MonitorController(QObject):
             ("time", datetime),
             ("grade", float),
         ))
+        # Currently testing the "fetch" operation, so worker is ignored.
+        # self._model_worker = worker
 
         self._connect_database()
         self._table_name = "monitor"
@@ -39,9 +41,6 @@ class MonitorController(QObject):
         # NOTE: we've tried to listen to the "destoryed" signal of QMainWindow,
         # but such signal seems not guaranteed to always be emitted.
         atexit.register(self._conn.close)
-
-        # Currently testing the "fetch" operation, so worker is ignored.
-        # self._worker = worker
 
     def _connect_database(self) -> None:
         db = Path(to_abs_path("teacher/database/concentration_grade.db"))
@@ -64,7 +63,8 @@ class MonitorController(QObject):
             self._conn.execute(sql)
 
     def _connect_signal(self) -> None:
-        self.s_showed.connect(self.show_new_grade)
+        # self._worker.s_updated.connect(self.store_new_grade)
+        self.s_showed.connect(self._show_new_grade)
 
     def _fetch_grades_and_show(self) -> None:
         """Fetches grades from database and passes to monitor one by one."""
@@ -82,7 +82,7 @@ class MonitorController(QObject):
     def _show_grades_one_by_one(self, grades: List[sqlite3.Row]) -> None:
         for grade in grades:
             self.s_showed.emit(grade)
-            time.sleep(1)
+            time.sleep(0.5)
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
@@ -92,7 +92,7 @@ class MonitorController(QObject):
             self._conn.execute(sql, tuple(col.value for col in row))
 
     @pyqtSlot(dict)
-    def show_new_grade(self, grade: Mapping[str, Any]) -> None:
+    def _show_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Shows the new grade to the monitor.
 
         A new row is inserted if the "id" introduces a new student,

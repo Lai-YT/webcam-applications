@@ -1,5 +1,6 @@
 from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QAbstractItemView, QTableWidget, QTableWidgetItem, QMainWindow
 
 
@@ -122,6 +123,8 @@ class Monitor(QMainWindow):
     def update_row(self, row_no: int, row: Row) -> None:
         for col in row:
             self._table.setItem(row_no, col.no, QTableWidgetItem(str(col.value)))
+        # Sort rows in ascending order by grade.
+        self._table.sortItems(self._header.labels().index("grade"), Qt.DescendingOrder)
 
     def search_row_no(self, key: Tuple[str, Any]) -> int:
         """Searches with the key row by row.
