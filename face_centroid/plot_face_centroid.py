@@ -17,17 +17,18 @@ def get_center_of_group(points) -> Tuple[float, float]:
     x = [p[0] for p in points]
     y = [p[1] for p in points]
     l = len(points)
-    return (np.sum(x) / l, np.sum(y) / l)
+    return (float(np.sum(x)) / l, float(np.sum(y)) / l)
 
 
 def main(target: Path) -> None:
     # "all" keeps the order
-    centroids: Dict[str, List[float]] = {"hog": [], "mtcnn": [], "all": []}
+    centroids: Dict[str, List[Tuple[float, float]]] = {"hog": [], "mtcnn": [], "all": []}
     with target.open("r") as f:
         for line in f:
             line = line.rstrip("\n")
-            cat, centroid = line.split(" ", 1)
-            centroid = make_tuple(centroid)
+            cat, cents = line.split(" ", 1)
+            cents = make_tuple(cents)
+            centroid = (float(cents[0]), float(cents[1]))
             centroids[cat].append(centroid)
             centroids["all"].append(centroid)
 
@@ -62,7 +63,7 @@ def main(target: Path) -> None:
     # centroid of all points
     ax.scatter(*get_center_of_group(all_cents), color="m", edgecolor="k", label="all center")
 
-    count = Counter(clust.labels_)
+    count: Counter = Counter(clust.labels_)
     print(count)
     # label 0 is the biggest cluster
     ratio = count[0] / len(all_cents)
