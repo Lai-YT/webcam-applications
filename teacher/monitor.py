@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Tuple, TypeVar
+from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtWidgets import QAbstractItemView, QTableWidget, QTableWidgetItem, QMainWindow
 
@@ -67,7 +67,7 @@ class ColumnHeader:
         """Returns the corresponding value type of the labels in column order."""
         return tuple(value_type for _, value_type in self._headers)
 
-    def to_row(self, values: Dict[str, Any]) -> Row:
+    def to_row(self, values: Mapping[str, Any]) -> Row:
         """Packs the values into the desirable Row form.
 
         Arguments:
