@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Mapping
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, Qt, pyqtSignal, pyqtSlot
 
 from teacher.monitor import ColumnHeader, Monitor, Row
 from teacher.worker import ModelWoker
@@ -63,7 +63,7 @@ class MonitorController(QObject):
             self._conn.execute(sql)
 
     def _connect_signal(self) -> None:
-        # self._worker.s_updated.connect(self.store_new_grade)
+        # self._worker.s_updated.connect(self._store_new_grade)
         self.s_showed.connect(self._show_new_grade)
 
     def _fetch_grades_and_show(self) -> None:
@@ -84,7 +84,7 @@ class MonitorController(QObject):
             self.s_showed.emit(grade)
             time.sleep(1)
 
-    def store_new_grade(self, grade: Mapping[str, Any]) -> None:
+    def _store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
         sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES (?, ?, ?, ?);"
         row: Row = self._monitor.col_header.to_row(grade)
@@ -93,10 +93,11 @@ class MonitorController(QObject):
 
     @pyqtSlot(dict)
     def _show_new_grade(self, grade: Mapping[str, Any]) -> None:
-        """Shows the new grade to the monitor.
+        """Shows the new grade to the monitor and sorts rows in ascending order
+        with respect to label "grade".
 
         A new row is inserted if the "id" introduces a new student,
-        otherwise the students grade is updated to the same row.
+        otherwise the students grade is updated to the original row.
         """
         row_no = self._monitor.search_row_no(("id", grade["id"]))
         row: Row = self._monitor.col_header.to_row(grade)
@@ -104,6 +105,7 @@ class MonitorController(QObject):
             self._monitor.insert_row(row)
         else:
             self._monitor.update_row(row_no, row)
+        self._monitor.sort_rows_by_label("grade", Qt.AscendingOrder)
 
     @staticmethod
     def _row_not_exists(row: sqlite3.Row) -> bool:
