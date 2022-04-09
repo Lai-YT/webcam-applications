@@ -8,7 +8,6 @@ from typing import Any, List, Mapping
 from PyQt5.QtCore import QObject, Qt, pyqtSignal, pyqtSlot
 
 from teacher.monitor import ColumnHeader, Monitor, Row
-from teacher.worker import ModelWoker
 from util.path import to_abs_path
 from util.task_worker import TaskWorker
 
@@ -18,7 +17,7 @@ class MonitorController(QObject):
 
     TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT", datetime: "TIMESTAMP"}
 
-    def __init__(self, monitor: Monitor, model_worker: ModelWoker) -> None:
+    def __init__(self, monitor: Monitor) -> None:
         super().__init__()
         self._monitor = monitor
         self._monitor.col_header = ColumnHeader((
@@ -27,8 +26,6 @@ class MonitorController(QObject):
             ("time", datetime),
             ("grade", float),
         ))
-        # Currently testing the "fetch" operation, so worker is ignored.
-        # self._model_worker = worker
 
         self._connect_database()
         self._table_name = "monitor"
@@ -63,7 +60,6 @@ class MonitorController(QObject):
             self._conn.execute(sql)
 
     def _connect_signal(self) -> None:
-        # self._worker.s_updated.connect(self._store_new_grade)
         self.s_showed.connect(self._show_new_grade)
 
     def _fetch_grades_and_show(self) -> None:
