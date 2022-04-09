@@ -27,7 +27,7 @@ def post_grade(data):
             datum["time"] = datetime.now().strftime("%H:%M:%S")
             datum["grade"] = random.randint(60, 100) / 100
 
-            requests.post("http://127.0.0.1:5000/test", json=datum)
+            requests.post("http://127.0.0.1:5000", json=datum)
             # 1 ~ 2 sec delay between datum
             time.sleep(random.random() + 1)
         # 2 ~ 3 sec delay between data
