@@ -29,9 +29,9 @@ def post_grade(data):
 
             requests.post("http://127.0.0.1:5000", json=datum)
             # 1 ~ 2 sec delay between datum
-            time.sleep(0.5)
+            time.sleep(random.random() + 1)
         # 2 ~ 3 sec delay between data
-        time.sleep(0.5)
+        time.sleep(random.random() + 2)
 
 
 def main():
