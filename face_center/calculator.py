@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Iterable, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from sklearn import cluster
@@ -15,7 +15,7 @@ class CenterCalculator:
         # I defined the good concentrating cluster to be within a circle of radius 50.
         self._ms = cluster.MeanShift(bandwidth=50, cluster_all=False)
 
-    def fit_points(self, points: Iterable[Tuple[float, float]]) -> None:
+    def fit_points(self, points: List[Tuple[float, float]]) -> None:
         self._points = points
         self._center_of_points: Tuple[float, float] = self._center_of_all_points()
         self._ms.fit(self._points)
@@ -36,9 +36,9 @@ class CenterCalculator:
 
     @property
     def center_of_biggest_cluster(self) -> Tuple[float, float]:
-        return tuple(self._ms.cluster_centers_[CenterCalculator._LABEL_OF_BIGGEST_CLUSTER])
+        return tuple(self._ms.cluster_centers_[CenterCalculator._LABEL_OF_BIGGEST_CLUSTER])  # type: ignore
 
     @property
     def ratio_of_biggest_cluster(self) -> float:
-        count = Counter(self._ms.labels_)
+        count: Counter = Counter(self._ms.labels_)
         return count[0] / len(self._points)
