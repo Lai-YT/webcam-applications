@@ -24,14 +24,14 @@ DATA_2 = [
 def post_grade(data):
     for _ in range(3):  # each "id" will be sent 3 times
         for datum in data:
-            datum["time"] = datetime.now().strftime("%H:%M:%S")
+            datum["time"] = datetime.now().strftime("%Y-%m-%d, %H:%M:%S")
             datum["grade"] = random.randint(60, 100) / 100
 
             requests.post("http://127.0.0.1:5000", json=datum)
             # 1 ~ 2 sec delay between datum
-            time.sleep(random.random() + 1)
+            time.sleep(0.5)
         # 2 ~ 3 sec delay between data
-        time.sleep(random.random() + 2)
+        time.sleep(0.5)
 
 
 def main():

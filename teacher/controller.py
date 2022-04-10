@@ -30,8 +30,8 @@ class MonitorController(QObject):
         self._connect_database()
         self._table_name = "monitor"
         self._create_table_if_not_exist()
-        self._connect_signal()
-        self._fetch_grades_and_show()
+        # self._connect_signal()
+        # self._fetch_grades_and_show()
 
         # Have the connection of database and timer closed right before
         # the controller is destoryed.
@@ -80,7 +80,7 @@ class MonitorController(QObject):
             self.s_showed.emit(grade)
             time.sleep(1)
 
-    def _store_new_grade(self, grade: Mapping[str, Any]) -> None:
+    def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
         sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES (?, ?, ?, ?);"
         row: Row = self._monitor.col_header.to_row(grade)
@@ -88,7 +88,7 @@ class MonitorController(QObject):
             self._conn.execute(sql, tuple(col.value for col in row))
 
     @pyqtSlot(dict)
-    def _show_new_grade(self, grade: Mapping[str, Any]) -> None:
+    def show_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Shows the new grade to the monitor and sorts rows in ascending order
         with respect to label "grade".
 
