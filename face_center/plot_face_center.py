@@ -14,18 +14,16 @@ from face_center.calculator import CenterCalculator
 
 def main(target: Path) -> None:
     # "all" keeps the order
-    face_centers: Dict[str, List[Tuple[float, float]]] = {"hog": [], "mtcnn": [], "all": []}
+    face_centers: List[Tuple[float, float]] = []
     with target.open("r") as f:
         for line in f:
             line = line.rstrip("\n")
-            cat, center_str = line.split(" ", 1)
-            center_str = make_tuple(center_str)
+            center_str = make_tuple(line)
             center = (float(center_str[0]), float(center_str[1]))
-            face_centers[cat].append(center)
-            face_centers["all"].append(center)
+            face_centers.append(center)
 
     # make np array so easy compute
-    all_cents = np.array(face_centers["all"])
+    all_cents = np.array(face_centers)
     print(f"number of faces: {len(all_cents)}")
 
     calculator = CenterCalculator()

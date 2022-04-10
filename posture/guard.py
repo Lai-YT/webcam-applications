@@ -19,7 +19,7 @@ from util.path import to_abs_path
 from util.time import Timer
 
 
-logging.basicConfig(filename=to_abs_path(f"./face-centroid-{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"),
+logging.basicConfig(filename=to_abs_path(f"./face-center-{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"),
                     format="%(message)s", level=logging.INFO)
 
 class PostureGuard:
@@ -111,7 +111,7 @@ class PostureGuard:
             angle = self._hog_angle_calculator.calculate(landmarks)
             posture, detail = self._do_angle_check(angle)
             centroid = tuple((landmarks[30] + landmarks[33]) / 2)
-            logging.info(f"hog {centroid}")
+            logging.info(f"{centroid}")
         else:
             # layer 2: mtcnn
             faces = self._mtcnn_detector.detect_faces(
@@ -121,7 +121,7 @@ class PostureGuard:
                 angle = self._mtcnn_angle_calculator.calculate(faces[0])
                 posture, detail = self._do_angle_check(angle)
                 centroid = faces[0]["keypoints"]["nose"]
-                logging.info(f"mtcnn {centroid}")
+                logging.info(f"{centroid}")
             else:
                 # layer 3: self-trained model
                 posture, detail = self._do_model_predict(frame)

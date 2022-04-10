@@ -41,4 +41,4 @@ class CenterCalculator:
     @property
     def ratio_of_biggest_cluster(self) -> float:
         count = Counter(self._ms.labels_)
-        return count[0] / len(points)
+        return count[0] / len(self._points)
