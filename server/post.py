@@ -5,6 +5,7 @@ from threading import Thread
 
 import requests
 
+import server.main as flask_server
 from util.path import to_abs_path
 
 
@@ -20,14 +21,15 @@ DATA_2 = [
     {"id": 6, "time": "", "grade": -1},
 ]
 
+DATE_STR_FORMAT = "%Y-%m-%d, %H:%M:%S"
 
 def post_grade(data):
     for _ in range(3):  # each "id" will be sent 3 times
         for datum in data:
-            datum["time"] = datetime.now().strftime("%Y-%m-%d, %H:%M:%S")
+            datum["time"] = datetime.now().strftime(DATE_STR_FORMAT)
             datum["grade"] = random.randint(60, 100) / 100
 
-            requests.post("http://127.0.0.1:5000", json=datum)
+            requests.post(f"http://{flask_server.HOST}:{flask_server.PORT}", json=datum)
             # 1 ~ 2 sec delay between datum
             time.sleep(random.random() + 1)
         # 2 ~ 3 sec delay between data

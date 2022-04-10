@@ -17,9 +17,9 @@ def update_grade():
     elif request.method == "GET":
         # You still have to return the data so can be "GET",
         # otherwise can always only get an empty list.
-        retrieve_pack = data.copy()
+        ret_pack = data.copy()
         data.clear()
-        return json.dumps(retrieve_pack)
+        return json.dumps(ret_pack)
     return json.dumps(data)
 
 

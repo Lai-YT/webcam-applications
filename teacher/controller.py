@@ -70,8 +70,8 @@ class MonitorController(QObject):
 
     def _fetch_grades_from_database(self) -> List[sqlite3.Row]:
         """Fetches all grades from database."""
+        sql = f"SELECT * FROM {self._table_name} ORDER BY time;"
         with self._conn:
-            sql = f"SELECT * FROM {self._table_name} ORDER BY time;"
             grades = self._conn.execute(sql).fetchall()
         return grades
 

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import cluster
 
-'''centroid is about face, center is about centroid points'''
+# centroid is about face, center is about centroid points
 
 def get_center_of_group(points) -> Tuple[float, float]:
     x = [p[0] for p in points]
