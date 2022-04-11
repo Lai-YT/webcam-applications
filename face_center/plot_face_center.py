@@ -1,7 +1,7 @@
 import math
+import re
 import sys
 import time
-from ast import literal_eval as make_tuple
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -13,14 +13,12 @@ from face_center.calculator import CenterCalculator
 
 
 def main(target: Path) -> None:
-    # "all" keeps the order
     face_centers: List[Tuple[float, float]] = []
     with target.open("r") as f:
+        pattern = re.compile(r"[()\n]")  # no "(", ")" and "\n"
         for line in f:
-            line = line.rstrip("\n")
-            center_str = make_tuple(line)
-            center = (float(center_str[0]), float(center_str[1]))
-            face_centers.append(center)
+            x, y = map(float, pattern.sub("", line).split(", "))
+            face_centers.append((x, y))
 
     # make np array so easy compute
     all_cents = np.array(face_centers)
