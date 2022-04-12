@@ -1,4 +1,5 @@
-from typing import List, Optional, Sized, Tuple
+from collections import deque
+from typing import Deque, List, Optional, Sized, Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
@@ -270,3 +271,54 @@ class BodyConcentrationCounter:
         """
         self._distraction_times.clear(window_type)
         self._concentration_times.clear(window_type)
+
+
+class FaceCenterCounter:
+    def __init__(self, time_width: int) -> None:
+        self._time_width = time_width
+        self._face_centers: Deque[Tuple[int, Tuple[float, float]]] = deque()
+        self._prev_face_centers: Deque[Tuple[int, Tuple[float, float]]] = deque()
+
+    def add_face_center(self, center: Tuple[float, float]) -> None:
+        self._face_centers.append((get_current_time(), center))
+        self.catch_up_with_current_time()
+
+    def catch_up_with_current_time(self) -> None:
+        """Pops out the earliest time record until the window catches up with
+        the current time (doesn't exceed the time_width).
+        """
+        while self._window_overfilled():
+            self._prev_face_centers.append(self._face_centers.popleft())
+
+        while self._prev_window_overfilled():
+            self._prev_face_centers.popleft()
+
+    def clear_windows(self, window_type: WindowType) -> None:
+        if window_type is WindowType.CURRENT:
+            self._face_centers.clear()
+        if window_type is WindowType.PREVIOUS:
+            self._prev_face_centers.clear()
+
+    @property
+    def current(self) -> List[Tuple[float, float]]:
+        return [center for _, center in self._face_centers]
+
+    @property
+    def previous(self) -> List[Tuple[float, float]]:
+        return [center for _, center in self._prev_face_centers]
+
+    def _window_overfilled(self) -> bool:
+        return self._width_of_window() > self._time_width
+
+    def _width_of_window(self) -> int:
+        if not self._face_centers:
+            return 0
+        return get_current_time() - self._face_centers[0][0]
+
+    def _prev_window_overfilled(self) -> bool:
+        return self._width_of_prev_window() > self._time_width
+
+    def _width_of_prev_window(self) -> int:
+        if not self._prev_face_centers:
+            return 0
+        return get_current_time() - self._time_width - self._prev_face_centers[0][0]

@@ -1,3 +1,4 @@
+import math
 import time
 from functools import partial
 from typing import Optional, Tuple
@@ -10,16 +11,21 @@ from blink.detector import BlinkDetector
 from concentration.criterion import (
     BlinkRateIntervalDetector,
     BodyConcentrationCounter,
+    FaceCenterCounter,
     FaceExistenceRateCounter
 )
 from concentration.fuzzy.classes import Interval
 from concentration.fuzzy.grader import FuzzyGrader
 from concentration.interval import IntervalType
+from face_center.calculator import CenterCalculator
+from util.logger import setup_logger
 from util.heap import MinHeap
 from util.path import to_abs_path
 from util.time import ONE_MIN, get_current_time, to_date_time
 from util.time_window import WindowType
 
+
+logger = setup_logger("face center logger", to_abs_path("./center_info.log"))
 
 class ConcentrationGrader(QObject):
     """While grading, there are 3 criteria that we take into account:
@@ -55,7 +61,7 @@ class ConcentrationGrader(QObject):
 
         self._interval_detector = BlinkRateIntervalDetector(good_rate_range)
         self._interval_detector.s_interval_detected.connect(
-            self._push_interval_to_grade_in_heap)
+            self._push_interval_to_grade_into_heap)
 
         # Since the append of blinks is sparse, we need a timer to periodically
         # sync its windows up.
@@ -67,7 +73,11 @@ class ConcentrationGrader(QObject):
 
         self._face_existence_counter = FaceExistenceRateCounter(low_existence)
         self._face_existence_counter.s_low_existence_detected.connect(
-            partial(self._push_interval_to_grade_in_heap, interval_type=IntervalType.LOW_FACE))
+            partial(self._push_interval_to_grade_into_heap, interval_type=IntervalType.LOW_FACE))
+
+        self._face_center_counter = FaceCenterCounter(ONE_MIN)
+        self._center_calculator = CenterCalculator()
+        logger.info("Start up logger!")
 
         self._fuzzy_grader = FuzzyGrader()
 
@@ -107,9 +117,12 @@ class ConcentrationGrader(QObject):
     def add_body_distraction(self) -> None:
         self._body_concent_counter.add_distraction()
 
+    def add_face_center(self, center: Tuple[float, float]) -> None:
+        self._face_center_counter.add_face_center(center)
+
     @pyqtSlot(Interval, IntervalType)
     @pyqtSlot(Interval, IntervalType, int)
-    def _push_interval_to_grade_in_heap(
+    def _push_interval_to_grade_into_heap(
             self,
             interval: Interval,
             interval_type: IntervalType,
@@ -170,9 +183,9 @@ class ConcentrationGrader(QObject):
                 # NOTE: I assume the time asychronous problem is
                 # negligible since it's within a second.
                 continue
+            elif blink_rate is None:
+                raise TypeError("REAL_TIME interval without blink rate")
             else:
-                if blink_rate is None:
-                    raise TypeError("REAL_TIME interval without blink rate")
                 recorded = self._perform_face_existing_grading(interval, interval_type, blink_rate)
 
             if recorded:
@@ -231,6 +244,12 @@ class ConcentrationGrader(QObject):
                 interval.grade = self._fuzzy_grader.compute_grade(
                     (blink_rate*ONE_MIN) / (interval.end-interval.start), body_concent)
             self.s_concent_interval_refreshed.emit(interval)
+            if window_type is WindowType.CURRENT:
+                self._center_calculator.fit_points(self._face_center_counter.current)
+            else:
+                self._center_calculator.fit_points(self._face_center_counter.previous)
+            logger.info(f"{math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points):.2f}")
+            logger.info(f"{self._center_calculator.ratio_of_biggest_cluster:.2f}")
             self._clear_windows(window_type)
             return True
         # REAL_TIMEs
@@ -238,6 +257,13 @@ class ConcentrationGrader(QObject):
         if grade >= 0.6:
             interval.grade = grade
             self.s_concent_interval_refreshed.emit(interval)
+            if window_type is WindowType.CURRENT:
+                self._center_calculator.fit_points(self._face_center_counter.current)
+            else:
+                self._center_calculator.fit_points(self._face_center_counter.previous)
+            logger.info(f"{math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points):.2f}")
+            logger.info(f"{self._center_calculator.ratio_of_biggest_cluster:.2f}")
+
             self._clear_windows(window_type)
             return True
         return False
@@ -266,6 +292,9 @@ class ConcentrationGrader(QObject):
         # Directly take the body concentration as the final grade.
         interval.grade = body_concent
         self.s_concent_interval_refreshed.emit(interval)
+        self._center_calculator.fit_points(self._face_center_counter.current)
+        logger.info(f"{math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points):.2f}")
+        logger.info(f"{self._center_calculator.ratio_of_biggest_cluster:.2f}")
         self._clear_windows(WindowType.CURRENT)
         return True
 
@@ -277,5 +306,6 @@ class ConcentrationGrader(QObject):
         """
         self._body_concent_counter.clear_windows(window_type)
         self._interval_detector.clear_windows(window_type)
+        self._face_center_counter.clear_windows(window_type)
         if window_type is WindowType.CURRENT:
             self._face_existence_counter.clear_windows()
