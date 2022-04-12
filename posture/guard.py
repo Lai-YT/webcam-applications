@@ -107,6 +107,8 @@ class PostureGuard:
             angle = self._hog_angle_calculator.calculate(landmarks)
             posture, detail = self._do_angle_check(angle)
             center = tuple((landmarks[30] + landmarks[33]) / 2)
+            if len(center) != 2:
+                raise ValueError("center points should be 2-dimensional")
             if self._grader is not None:
                 self._grader.add_face_center(center)
         else:
@@ -118,6 +120,8 @@ class PostureGuard:
                 angle = self._mtcnn_angle_calculator.calculate(faces[0])
                 posture, detail = self._do_angle_check(angle)
                 center = tuple(map(float, faces[0]["keypoints"]["nose"]))
+                if len(center) != 2:
+                    raise ValueError("center points should be 2-dimensional")
                 if self._grader is not None:
                     self._grader.add_face_center(center)
             else:
