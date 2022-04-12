@@ -78,9 +78,6 @@ class TimeWindow:
     def __iter__(self) -> Iterator[int]:
         return iter(self._window)
 
-    def __reversed__(self) -> Iterator[int]:
-        return reversed(self._window)
-
     def __len__(self) -> int:
         """Returns how many time records there are in the window."""
         return len(self._window)
