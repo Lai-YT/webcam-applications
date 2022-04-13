@@ -15,6 +15,7 @@ class FuzzyGrader:
     def __init__(self) ->  None:
         self._create_membership_func_of_blink()
         self._create_membership_func_of_body()
+        self._create_membership_func_of_center()
         self._create_membership_func_of_grade()
 
         rules: List[ctrl.Rule] = self._create_fuzzy_rules()
@@ -24,10 +25,12 @@ class FuzzyGrader:
             self,
             blink_rate: float,
             body_concent: float,
+            center_dist: float,
             *, normalized: bool = True) -> float:
         """Computes the grade base on fuzzy logics.
 
         The grade is rounded to two decimal places.
+
         Arguments:
             blink_rate: The blink rate, which should be in range [0, 21].
             blink_concent: The body concentration value, which should be in range [0, 1].
@@ -35,11 +38,14 @@ class FuzzyGrader:
         """
         self._grader.input["blink"] = FuzzyGrader._map_blink_rate_to_membership_value(blink_rate)
         self._grader.input["body"] = FuzzyGrader._map_body_concent_to_membership_value(body_concent)
+        self._grader.input["center"] = center_dist
         self._grader.compute()
 
         grade: float = self._grader.output["grade"]
         if normalized:
             grade = FuzzyGrader._to_modified_grade(grade)
+        # if grade < 0.3:
+        #     print(grade, blink_rate, body_concent, center_dist)
         return round(grade, 2)
 
     def view_membership_func(self) -> None:
@@ -48,6 +54,7 @@ class FuzzyGrader:
         """
         self._blink.view()
         self._body.view()
+        self._center.view()
         self._grade.view()
 
     def view_grading_result(self) -> None:
@@ -64,6 +71,13 @@ class FuzzyGrader:
         self._body = ctrl.Antecedent(np.arange(11), "body")
         self._body["good"] = fuzz.trimf(self._body.universe, [0, 10, 10])
         self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 10])
+
+    def _create_membership_func_of_center(self) -> None:
+        """Only takes the distance betweeen centers into consideration."""
+        self._center = ctrl.Antecedent(np.arange(61), "center")
+        self._center["good"] = fuzz.trapmf(self._center.universe, [0, 0, 5, 10])
+        self._center["average"] = fuzz.trapmf(self._center.universe, [5, 10, 15, 40])
+        self._center["poor"] = fuzz.trapmf(self._center.universe, [15, 40, 60, 60])
 
     def _create_membership_func_of_grade(self, defuzzify_method: str = "centroid") -> None:
         """
@@ -86,9 +100,9 @@ class FuzzyGrader:
 
     def _create_fuzzy_rules(self) -> List[ctrl.Rule]:
         """Returns the fuzzy rule that control the grade."""
-        rule1 = ctrl.Rule(self._blink["poor"] | self._body["poor"], self._grade["low"])
-        rule2 = ctrl.Rule(self._blink["good"] | self._body["good"], self._grade["medium"])
-        rule3 = ctrl.Rule(self._blink["good"] & self._body["good"], self._grade["high"])
+        rule1 = ctrl.Rule(self._center["poor"] | self._body["poor"] | self._blink["poor"], self._grade["low"])
+        rule2 = ctrl.Rule(self._blink["average"] | self._center["average"], self._grade["medium"])
+        rule3 = ctrl.Rule(self._center["good"] & self._body["good"] & ~self._blink["poor"], self._grade["high"])
         return [rule1, rule2, rule3]
 
     @staticmethod
@@ -116,35 +130,59 @@ class FuzzyGrader:
 
     @staticmethod
     def _to_modified_grade(raw_grade: float) -> float:
-        """Normalizes the grade interval to [0, 1] and do linear modification
-           to fine-tune the grade distribution.
-
-        Modified grade is rounded to two decimal places.
-        Arguments:
-            raw_grade: The unnormalized grade in [2, 6].
-        """
-        normalized_grade = (raw_grade - 2) / 4
-
-        if normalized_grade > 0.75:
-            modified_grade = 0.6 + (normalized_grade - 0.75) * (0.4 / 0.25)
-        else:
-            modified_grade = normalized_grade * (0.6 / 0.75)
-
-        return round(modified_grade, 2)
+        return 0.1499 * raw_grade - 0.2999
+        # """Normalizes the grade interval to [0, 1] and do linear modification
+        #    to fine-tune the grade distribution.
+        #
+        # Modified grade is rounded to two decimal places.
+        #
+        # Arguments:
+        #     raw_grade: The unnormalized grade in [2, 6].
+        # """
+        # normalized_grade = (raw_grade - 2) / 4
+        #
+        # if normalized_grade > 0.75:
+        #     modified_grade = 0.6 + (normalized_grade - 0.75) * (0.4 / 0.25)
+        # else:
+        #     modified_grade = normalized_grade * (0.6 / 0.75)
+        #
+        # return round(modified_grade, 2)
 
 
 if __name__ == "__main__":
     fuzzy_grader = FuzzyGrader()
-    fuzzy_grader.view_membership_func()
-    # go for a single graph check
-    blink_rate = float(input("blink rate: "))
-    body_concent = float(input("body concent: "))
-    raw_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent,
-                                                  normalized=False)
-    norm_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent)
-    print(f"raw: {raw_grade}")
-    print(f"grade: {norm_grade}")
+    # fuzzy_grader.view_membership_func()
 
-    fuzzy_grader.view_grading_result()
+    import matplotlib.pyplot as plt
+    import numpy as np
 
-    input("(press any key to exit)")
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    x, y, z, c = [], [], [], []
+    for blink_rate in np.arange(0, 20):
+        for body_concent in np.linspace(0.2, 1, num=8):
+            for center_dist in np.linspace(0, 60, num=60):
+                x.append(blink_rate)
+                y.append(body_concent)
+                z.append(center_dist)
+                c.append(fuzzy_grader.compute_grade(blink_rate, body_concent, center_dist))
+    ax.set_xlabel("blink")
+    ax.set_ylabel("body")
+    ax.set_zlabel("center")
+
+    img = ax.scatter(x, y, z, c=c, cmap=plt.hot(), vmin=0, vmax=1)
+    fig.colorbar(img)
+    plt.show()
+    # # go for a single graph check
+    # blink_rate = float(input("blink rate: "))
+    # body_concent = float(input("body concent: "))
+    # center_dist = float(input("center dist: "))
+    # raw_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent, center_dist,
+    #                                               normalized=False)
+    # norm_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent, center_dist)
+    # print(f"raw: {raw_grade}")
+    # print(f"grade: {norm_grade}")
+    #
+    # fuzzy_grader.view_grading_result()
+    #
+    # input("(press any key to exit)")

@@ -231,39 +231,35 @@ class ConcentrationGrader(QObject):
         window_type = WindowType.CURRENT
         if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
             window_type = WindowType.PREVIOUS
-
+        # face center
+        if window_type is WindowType.CURRENT:
+            self._center_calculator.fit_points(self._face_center_counter.current)
+        else:
+            self._center_calculator.fit_points(self._face_center_counter.previous)
+        dist = math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points)
+        ratio = self._center_calculator.ratio_of_biggest_cluster
+        # body
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
             window_type, interval)
 
         # LOOK_BACK and EXTRUSIONs are always graded and recorded.
         if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
-            if interval_type is IntervalType.LOOK_BACK:
-                interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
-            elif interval_type is IntervalType.EXTRUSION:
+            if interval_type is IntervalType.EXTRUSION:
                 # Use an average-based BR.
-                interval.grade = self._fuzzy_grader.compute_grade(
-                    (blink_rate*ONE_MIN) / (interval.end-interval.start), body_concent)
+                blink_rate *= ONE_MIN / (interval.end-interval.start)
+            interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent, dist)
             self.s_concent_interval_refreshed.emit(interval)
-            if window_type is WindowType.CURRENT:
-                self._center_calculator.fit_points(self._face_center_counter.current)
-            else:
-                self._center_calculator.fit_points(self._face_center_counter.previous)
-            logger.info(f"{math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points):.2f}")
-            logger.info(f"{self._center_calculator.ratio_of_biggest_cluster:.2f}")
+            logger.info(f"{dist:.2f}")
+            logger.info(f"{ratio:.2f}")
             self._clear_windows(window_type)
             return True
         # REAL_TIMEs
-        grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent)
+        grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent, dist)
         if grade >= 0.6:
             interval.grade = grade
             self.s_concent_interval_refreshed.emit(interval)
-            if window_type is WindowType.CURRENT:
-                self._center_calculator.fit_points(self._face_center_counter.current)
-            else:
-                self._center_calculator.fit_points(self._face_center_counter.previous)
-            logger.info(f"{math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points):.2f}")
-            logger.info(f"{self._center_calculator.ratio_of_biggest_cluster:.2f}")
-
+            logger.info(f"{dist:.2f}")
+            logger.info(f"{ratio:.2f}")
             self._clear_windows(window_type)
             return True
         return False
@@ -289,12 +285,17 @@ class ConcentrationGrader(QObject):
         # low face existence check is always on the current window
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
             WindowType.CURRENT, interval)
-        # Directly take the body concentration as the final grade.
-        interval.grade = body_concent
-        self.s_concent_interval_refreshed.emit(interval)
+        # face center
         self._center_calculator.fit_points(self._face_center_counter.current)
-        logger.info(f"{math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points):.2f}")
-        logger.info(f"{self._center_calculator.ratio_of_biggest_cluster:.2f}")
+        dist = math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points)
+        ratio = self._center_calculator.ratio_of_biggest_cluster
+
+        # Choose a neutral middle value for blink rate
+        blink_rate = 10
+        interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent, dist)
+        self.s_concent_interval_refreshed.emit(interval)
+        logger.info(f"{dist:.2f}")
+        logger.info(f"{ratio:.2f}")
         self._clear_windows(WindowType.CURRENT)
         return True
 

@@ -26,7 +26,7 @@ The following image is about a distracted user, shows the position of face cente
 Status             | Ratio     | Distance
 -------------------|-----------|---------
 High Concentration | 0.9 ~ 1   | ~ 5
-Middle             | 0.7 ~ 0.9 | 10 ~ 40
+Middle             | 0.7 ~ 0.9 | 10 ~ 15
 High Distraction   | 0.5 ~ 5   | 15 ~ 55
 
 The values don't cover the whole range and even overlap because their boundaries aren't that clear.

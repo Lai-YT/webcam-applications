@@ -274,6 +274,7 @@ class BodyConcentrationCounter:
 
 
 class FaceCenterCounter:
+    # TODO: nearly a duplicated reimplementation of DoubleTimeWindow to carry extra data 
     def __init__(self, time_width: int) -> None:
         self._time_width = time_width
         self._face_centers: Deque[Tuple[int, Tuple[float, float]]] = deque()
