@@ -13,8 +13,6 @@ from util.task_worker import TaskWorker
 
 
 class MonitorController(QObject):
-    s_showed = pyqtSignal(sqlite3.Row)
-
     TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT", datetime: "TIMESTAMP"}
 
     def __init__(self, monitor: Monitor) -> None:
@@ -30,8 +28,6 @@ class MonitorController(QObject):
         self._connect_database()
         self._table_name = "monitor"
         self._create_table_if_not_exist()
-        # self._connect_signal()
-        # self._fetch_grades_and_show()
 
         # Have the connection of database and timer closed right before
         # the controller is destoryed.
@@ -59,27 +55,6 @@ class MonitorController(QObject):
         with self._conn:
             self._conn.execute(sql)
 
-    def _connect_signal(self) -> None:
-        self.s_showed.connect(self._show_new_grade)
-
-    def _fetch_grades_and_show(self) -> None:
-        """Fetches grades from database and passes to monitor one by one."""
-        grades = self._fetch_grades_from_database()
-        self._worker = TaskWorker(self._show_grades_one_by_one, grades)
-        self._worker.start()
-
-    def _fetch_grades_from_database(self) -> List[sqlite3.Row]:
-        """Fetches all grades from database."""
-        sql = f"SELECT * FROM {self._table_name} ORDER BY time;"
-        with self._conn:
-            grades = self._conn.execute(sql).fetchall()
-        return grades
-
-    def _show_grades_one_by_one(self, grades: List[sqlite3.Row]) -> None:
-        for grade in grades:
-            self.s_showed.emit(grade)
-            time.sleep(1)
-
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
         sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES (?, ?, ?, ?);"
@@ -87,7 +62,6 @@ class MonitorController(QObject):
         with self._conn:
             self._conn.execute(sql, tuple(col.value for col in row))
 
-    @pyqtSlot(dict)
     def show_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Shows the new grade to the monitor and sorts rows in ascending order
         with respect to label "grade".
