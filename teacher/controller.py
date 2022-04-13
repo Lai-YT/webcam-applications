@@ -1,15 +1,14 @@
 import atexit
 import sqlite3
-import time
+
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Mapping
+from typing import Any, Mapping
 
-from PyQt5.QtCore import QObject, Qt, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, Qt
 
 from teacher.monitor import ColumnHeader, Monitor, Row
 from util.path import to_abs_path
-from util.task_worker import TaskWorker
 
 
 class MonitorController(QObject):
@@ -28,6 +27,7 @@ class MonitorController(QObject):
         self._connect_database()
         self._table_name = "monitor"
         self._create_table_if_not_exist()
+        self._connect_signal()
 
         # Have the connection of database and timer closed right before
         # the controller is destoryed.
@@ -54,6 +54,9 @@ class MonitorController(QObject):
         sql = sql[:-1] + ");"
         with self._conn:
             self._conn.execute(sql)
+    
+    def _connect_signal(self):
+        self._monitor.s_button_clicked.connect(lambda id: print(id))
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""

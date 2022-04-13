@@ -1,7 +1,7 @@
 from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAbstractItemView, QTableWidget, QTableWidgetItem, QMainWindow
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtWidgets import QAbstractItemView, QTableWidget, QTableWidgetItem, QMainWindow, QPushButton
 
 
 T = TypeVar("T")
@@ -90,6 +90,8 @@ class ColumnHeader:
 
 
 class Monitor(QMainWindow):
+    s_button_clicked = pyqtSignal(int)
+
     def __init__(self, header = ColumnHeader([])) -> None:
         super().__init__()
         self.setWindowTitle("Teacher Monitor")
@@ -110,8 +112,10 @@ class Monitor(QMainWindow):
     @col_header.setter
     def col_header(self, new_header: ColumnHeader) -> None:
         self._header = new_header
-        self._table.setColumnCount(new_header.col_count)
+        self._table.setColumnCount(new_header.col_count + 1)
         self._table.setHorizontalHeaderLabels(new_header.labels())
+        # add button header
+        self._table.setHorizontalHeaderItem(new_header.col_count, QTableWidgetItem("history"))
 
     def insert_row(self, row: Row) -> None:
         """Inserts a new row to the bottom of the table."""
@@ -120,10 +124,19 @@ class Monitor(QMainWindow):
         row_no = self._table.rowCount() - 1
         self.update_row(row_no, row)
 
+        button = QPushButton("look back")
+        key_index = self._header.labels().index("id")
+        # send id to controller
+        button.clicked.connect(
+            lambda: self.s_button_clicked.emit(row[key_index].value)
+        )
+        # append button in row
+        self._table.setCellWidget(row_no, len(row), button)
+
     def update_row(self, row_no: int, row: Row) -> None:
         for col in row:
             self._table.setItem(row_no, col.no, QTableWidgetItem(str(col.value)))
-
+        
     def sort_rows_by_label(self, label: str, order: Qt.SortOrder) -> None:
         self._table.sortItems(self._header.labels().index(label), order)
 
