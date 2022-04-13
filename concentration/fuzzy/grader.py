@@ -25,7 +25,7 @@ class FuzzyGrader:
             self,
             blink_rate: float,
             body_concent: float,
-            center_dist: float,
+            center_value: float,
             *, normalized: bool = True) -> float:
         """Computes the grade base on fuzzy logics.
 
@@ -36,16 +36,16 @@ class FuzzyGrader:
             blink_concent: The body concentration value, which should be in range [0, 1].
             normalized: Normalize the grade into [0, 1] or not. True in default.
         """
-        self._grader.input["blink"] = FuzzyGrader._map_blink_rate_to_membership_value(blink_rate)
-        self._grader.input["body"] = FuzzyGrader._map_body_concent_to_membership_value(body_concent)
-        self._grader.input["center"] = center_dist
+        self._grader.input["blink"] = blink_rate
+        self._grader.input["body"] = body_concent
+        self._grader.input["center"] = center_value
         self._grader.compute()
 
         grade: float = self._grader.output["grade"]
         if normalized:
             grade = FuzzyGrader._to_modified_grade(grade)
-        # if grade < 0.3:
-        #     print(grade, blink_rate, body_concent, center_dist)
+        if grade < 0.6:
+            print(grade, blink_rate, body_concent, center_value)
         return round(grade, 2)
 
     def view_membership_func(self) -> None:
@@ -68,16 +68,16 @@ class FuzzyGrader:
 
     def _create_membership_func_of_body(self) -> None:
         # The greater the values is, the better the grade of body concentration is.
-        self._body = ctrl.Antecedent(np.arange(11), "body")
-        self._body["good"] = fuzz.trimf(self._body.universe, [0, 10, 10])
-        self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 10])
+        self._body = ctrl.Antecedent(np.arange(0, 2, 1), "body")
+        self._body["good"] = fuzz.trimf(self._body.universe, [0, 1, 1])
+        self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 1])
 
     def _create_membership_func_of_center(self) -> None:
         """Only takes the distance betweeen centers into consideration."""
-        self._center = ctrl.Antecedent(np.arange(61), "center")
-        self._center["good"] = fuzz.trapmf(self._center.universe, [0, 0, 5, 10])
-        self._center["average"] = fuzz.trapmf(self._center.universe, [5, 10, 15, 40])
-        self._center["poor"] = fuzz.trapmf(self._center.universe, [15, 40, 60, 60])
+        self._center = ctrl.Antecedent(np.arange(0, 1, 0.01), "center")
+        self._center["good"] = fuzz.trapmf(self._center.universe, [0, 0, 0.13, 0.2])
+        self._center["average"] = fuzz.trapmf(self._center.universe, [0.13, 0.2, 0.27, 0.63])
+        self._center["poor"] = fuzz.trapmf(self._center.universe, [0.27, 0.63, 1, 1])
 
     def _create_membership_func_of_grade(self, defuzzify_method: str = "centroid") -> None:
         """
@@ -100,36 +100,14 @@ class FuzzyGrader:
 
     def _create_fuzzy_rules(self) -> List[ctrl.Rule]:
         """Returns the fuzzy rule that control the grade."""
-        rule1 = ctrl.Rule(self._center["poor"] | self._body["poor"] | self._blink["poor"], self._grade["low"])
+        rule1 = ctrl.Rule(self._blink["poor"] | self._body["poor"] | self._center["poor"], self._grade["low"])
         rule2 = ctrl.Rule(self._blink["average"] | self._center["average"], self._grade["medium"])
-        rule3 = ctrl.Rule(self._center["good"] & self._body["good"] & ~self._blink["poor"], self._grade["high"])
+        rule3 = ctrl.Rule(~self._blink["poor"] & self._body["good"] & self._center["good"], self._grade["high"])
         return [rule1, rule2, rule3]
 
     @staticmethod
-    def _map_blink_rate_to_membership_value(blink_rate: float) -> float:
-        """Returns the membership value of the blink rate.
-
-        Arguments:
-            blink_rate
-        """
-        # they're equivalent
-        return blink_rate
-
-    # The body concentration (BC) sent by the ConcentrationGrader is between 0 and 1,
-    # maps them to the membership values (MV) through an easy function: MV = BC * 10
-    # since skfuzzy does better on generating membership functions with non-floating
-    # point intervals.
-    @staticmethod
-    def _map_body_concent_to_membership_value(body_concent: float) -> float:
-        """Returns the membership value of the body concentration.
-
-        Arguments:
-            body_concent
-        """
-        return body_concent * 10
-
-    @staticmethod
     def _to_modified_grade(raw_grade: float) -> float:
+        # (2.0, 8.67)
         return 0.1499 * raw_grade - 0.2999
         # """Normalizes the grade interval to [0, 1] and do linear modification
         #    to fine-tune the grade distribution.
@@ -151,7 +129,7 @@ class FuzzyGrader:
 
 if __name__ == "__main__":
     fuzzy_grader = FuzzyGrader()
-    # fuzzy_grader.view_membership_func()
+    fuzzy_grader.view_membership_func()
 
     import matplotlib.pyplot as plt
     import numpy as np
@@ -160,17 +138,17 @@ if __name__ == "__main__":
     ax = fig.add_subplot(111, projection='3d')
     x, y, z, c = [], [], [], []
     for blink_rate in np.arange(0, 20):
-        for body_concent in np.linspace(0.2, 1, num=8):
-            for center_dist in np.linspace(0, 60, num=60):
+        for body_concent in np.linspace(0.2, 1, num=16):
+            for center_value in np.linspace(0, 1, num=20):
                 x.append(blink_rate)
                 y.append(body_concent)
-                z.append(center_dist)
-                c.append(fuzzy_grader.compute_grade(blink_rate, body_concent, center_dist))
+                z.append(center_value)
+                c.append(fuzzy_grader.compute_grade(blink_rate, body_concent, center_value))
     ax.set_xlabel("blink")
     ax.set_ylabel("body")
     ax.set_zlabel("center")
 
-    img = ax.scatter(x, y, z, c=c, cmap=plt.hot(), vmin=0, vmax=1)
+    img = ax.scatter(x, y, z, c=c, cmap=plt.hot())#, vmin=0, vmax=1)
     fig.colorbar(img)
     plt.show()
     # # go for a single graph check

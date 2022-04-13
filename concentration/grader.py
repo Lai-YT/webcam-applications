@@ -246,15 +246,15 @@ class ConcentrationGrader(QObject):
         if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
             if interval_type is IntervalType.EXTRUSION:
                 # Use an average-based BR.
-                blink_rate *= ONE_MIN / (interval.end-interval.start)
-            interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent, dist)
+                blink_rate *= ONE_MIN / (interval.end - interval.start)
+            interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent, face_center_value_from_distance_and_ratio(dist, ratio))
             self.s_concent_interval_refreshed.emit(interval)
             logger.info(f"{dist:.2f}")
             logger.info(f"{ratio:.2f}")
             self._clear_windows(window_type)
             return True
         # REAL_TIMEs
-        grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent, dist)
+        grade: float = self._fuzzy_grader.compute_grade(blink_rate, body_concent, face_center_value_from_distance_and_ratio(dist, ratio))
         if grade >= 0.6:
             interval.grade = grade
             self.s_concent_interval_refreshed.emit(interval)
@@ -292,7 +292,7 @@ class ConcentrationGrader(QObject):
 
         # Choose a neutral middle value for blink rate
         blink_rate = 10
-        interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent, dist)
+        interval.grade = self._fuzzy_grader.compute_grade(blink_rate, body_concent, face_center_value_from_distance_and_ratio(dist, ratio))
         self.s_concent_interval_refreshed.emit(interval)
         logger.info(f"{dist:.2f}")
         logger.info(f"{ratio:.2f}")
@@ -310,3 +310,12 @@ class ConcentrationGrader(QObject):
         self._face_center_counter.clear_windows(window_type)
         if window_type is WindowType.CURRENT:
             self._face_existence_counter.clear_windows()
+
+
+def face_center_value_from_distance_and_ratio(center_dist: float, ratio: float) -> float:
+    """0 ~ 1, the lower the better."""
+    # left close, right open
+    DIST_RANGE = [(0, 10), (10, 15), (15, 60)]
+    RATE_RANGE = [(0.9, 1), (0.7, 0.9), (0, 0.7)]
+    center_dist = min(center_dist, 60)  # saturate
+    return (center_dist / 60 + (1 - ratio)) / 2
