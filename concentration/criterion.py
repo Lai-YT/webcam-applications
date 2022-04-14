@@ -302,11 +302,9 @@ class FaceCenterCounter:
         if window_type is WindowType.PREVIOUS:
             self._prev_face_centers.clear()
 
-    @property
     def current(self) -> List[Tuple[float, float]]:
         return [center for _, center in self._face_centers]
 
-    @property
     def previous(self) -> List[Tuple[float, float]]:
         return [center for _, center in self._prev_face_centers]
 

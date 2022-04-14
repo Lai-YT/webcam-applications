@@ -233,9 +233,9 @@ class ConcentrationGrader(QObject):
             window_type = WindowType.PREVIOUS
         # face center
         if window_type is WindowType.CURRENT:
-            self._center_calculator.fit_points(self._face_center_counter.current)
+            self._center_calculator.fit_points(self._face_center_counter.current())
         else:
-            self._center_calculator.fit_points(self._face_center_counter.previous)
+            self._center_calculator.fit_points(self._face_center_counter.previous())
         dist = math.dist(self._center_calculator.center_of_biggest_cluster,
                          self._center_calculator.center_of_points)
         ratio = self._center_calculator.ratio_of_biggest_cluster
@@ -292,7 +292,7 @@ class ConcentrationGrader(QObject):
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
             WindowType.CURRENT, interval)
         # face center
-        self._center_calculator.fit_points(self._face_center_counter.current)
+        self._center_calculator.fit_points(self._face_center_counter.current())
         dist = math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points)
         ratio = self._center_calculator.ratio_of_biggest_cluster
 
