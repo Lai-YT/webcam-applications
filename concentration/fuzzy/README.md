@@ -6,7 +6,7 @@
 - body concentration value
   - distance
   - posture
-- face center
+- face center value
   - distance
   - ratio
 
