@@ -1,9 +1,8 @@
 # The 3-layer posture detection refers to
 # https://github.com/EE-Ind-Stud-Group/posture-detection
 
-import logging
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional, Tuple, cast
 
 import cv2
 import mtcnn
@@ -18,9 +17,6 @@ from util.image_type import ColorImage
 from util.path import to_abs_path
 from util.time import Timer
 
-
-logging.basicConfig(filename=to_abs_path(f"./face-centroid-{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"),
-                    format="%(message)s", level=logging.INFO)
 
 class PostureGuard:
     """PostureGuard checks whether the face obtained by landmarks implies a
@@ -110,8 +106,13 @@ class PostureGuard:
             # layer 1: hog
             angle = self._hog_angle_calculator.calculate(landmarks)
             posture, detail = self._do_angle_check(angle)
-            centroid = tuple((landmarks[30] + landmarks[33]) / 2)
-            logging.info(f"hog {centroid}")
+            center = tuple((landmarks[30] + landmarks[33]) / 2)
+            if len(center) != 2:
+                raise ValueError("center points should be 2-dimensional")
+            # silence the type check after the length is checked to be 2
+            center = cast(Tuple[float, float], center)
+            if self._grader is not None:
+                self._grader.add_face_center(center)
         else:
             # layer 2: mtcnn
             faces = self._mtcnn_detector.detect_faces(
@@ -120,8 +121,12 @@ class PostureGuard:
             if faces:
                 angle = self._mtcnn_angle_calculator.calculate(faces[0])
                 posture, detail = self._do_angle_check(angle)
-                centroid = faces[0]["keypoints"]["nose"]
-                logging.info(f"mtcnn {centroid}")
+                center = tuple(map(float, faces[0]["keypoints"]["nose"]))
+                if len(center) != 2:
+                    raise ValueError("center points should be 2-dimensional")
+                center = cast(Tuple[float, float], center)
+                if self._grader is not None:
+                    self._grader.add_face_center(center)
             else:
                 # layer 3: self-trained model
                 posture, detail = self._do_model_predict(frame)

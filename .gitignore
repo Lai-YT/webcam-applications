@@ -19,7 +19,8 @@ venv/
 #img
 !black.jpg
 !white.jpg
-!concentration-with-face-centroid.png
+!concentration-with-face-center.png
+!fuzzy_mapping.png
 
 # image_filter
 !dark_room.jpg
