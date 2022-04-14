@@ -44,8 +44,8 @@ class FuzzyGrader:
         grade: float = self._grader.output["grade"]
         if normalized:
             grade = FuzzyGrader._to_modified_grade(grade)
-        if grade < 0.6:
-            print(grade, blink_rate, body_concent, center_value)
+        # if grade < 0.8:
+        #     print(grade, blink_rate, body_concent, center_value)
         return round(grade, 2)
 
     def view_membership_func(self) -> None:
@@ -73,11 +73,10 @@ class FuzzyGrader:
         self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 1])
 
     def _create_membership_func_of_center(self) -> None:
-        """Only takes the distance betweeen centers into consideration."""
         self._center = ctrl.Antecedent(np.arange(0, 1, 0.01), "center")
-        self._center["good"] = fuzz.trapmf(self._center.universe, [0, 0, 0.13, 0.2])
-        self._center["average"] = fuzz.trapmf(self._center.universe, [0.13, 0.2, 0.27, 0.63])
-        self._center["poor"] = fuzz.trapmf(self._center.universe, [0.27, 0.63, 1, 1])
+        self._center["good"] = fuzz.trapmf(self._center.universe, [0, 0, 0.2, 0.27])
+        self._center["average"] = fuzz.trapmf(self._center.universe, [0.2, 0.27, 0.34, 0.67])
+        self._center["poor"] = fuzz.trapmf(self._center.universe, [0.34, 0.67, 1, 1])
 
     def _create_membership_func_of_grade(self, defuzzify_method: str = "centroid") -> None:
         """
@@ -148,16 +147,36 @@ if __name__ == "__main__":
     ax.set_ylabel("body")
     ax.set_zlabel("center")
 
-    img = ax.scatter(x, y, z, c=c, cmap=plt.hot())#, vmin=0, vmax=1)
+    img = ax.scatter(x, y, z, c=c, cmap=plt.hot())
     fig.colorbar(img)
     plt.show()
+
+    # import matplotlib.pyplot as plt
+    # import numpy as np
+    #
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+    # BLINK_RATE = 5
+    # x, y, z = [], [], []
+    # for body_concent in np.linspace(0.2, 1, num=16):
+    #     for center_value in np.linspace(0, 1, num=20):
+    #         x.append(body_concent)
+    #         y.append(center_value)
+    #         z.append(fuzzy_grader.compute_grade(BLINK_RATE, body_concent, center_value))
+    # ax.set_xlabel("body")
+    # ax.set_ylabel("center")
+    # ax.set_zlabel("grade")
+    #
+    # img = ax.scatter(x, y, z)
+    # plt.show()
+    #
     # # go for a single graph check
     # blink_rate = float(input("blink rate: "))
     # body_concent = float(input("body concent: "))
-    # center_dist = float(input("center dist: "))
-    # raw_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent, center_dist,
+    # center_value = float(input("center value: "))
+    # raw_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent, center_value,
     #                                               normalized=False)
-    # norm_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent, center_dist)
+    # norm_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent, center_value)
     # print(f"raw: {raw_grade}")
     # print(f"grade: {norm_grade}")
     #

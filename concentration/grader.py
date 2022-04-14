@@ -324,8 +324,8 @@ def combine_face_center_value_from_distance_and_ratio(
         center_dist: float,
         ratio: float) -> float:
     """0 ~ 1, the lower the better."""
-    # left close, right open
-    DIST_RANGE = [(0, 10), (10, 15), (15, 60)]
-    RATE_RANGE = [(0.9, 1), (0.7, 0.9), (0, 0.7)]
+    # left close, right open; from "good" to "poor"
+    DIST_RANGE = [(0, 15), (15, 20), (20, 60)]
+    RATE_RANGE = [(0.85, 1), (0.65, 0.85), (0, 0.65)]
     center_dist = min(center_dist, 60)  # saturate
     return (center_dist / 60 + (1 - ratio)) / 2
