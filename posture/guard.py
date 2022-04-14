@@ -2,7 +2,7 @@
 # https://github.com/EE-Ind-Stud-Group/posture-detection
 
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional, Tuple, cast
 
 import cv2
 import mtcnn
@@ -107,7 +107,10 @@ class PostureGuard:
             angle = self._hog_angle_calculator.calculate(landmarks)
             posture, detail = self._do_angle_check(angle)
             center = tuple((landmarks[30] + landmarks[33]) / 2)
-            assert len(center) == 2, "center points should be 2-dimensional"
+            if len(center) != 2:
+                raise ValueError("center points should be 2-dimensional")
+            # silence the type check after the length is checked to be 2
+            center = cast(Tuple[float, float], center)
             if self._grader is not None:
                 self._grader.add_face_center(center)
         else:
@@ -119,7 +122,9 @@ class PostureGuard:
                 angle = self._mtcnn_angle_calculator.calculate(faces[0])
                 posture, detail = self._do_angle_check(angle)
                 center = tuple(map(float, faces[0]["keypoints"]["nose"]))
-                assert len(center) == 2, "center points should be 2-dimensional"
+                if len(center) != 2:
+                    raise ValueError("center points should be 2-dimensional")
+                center = cast(Tuple[float, float], center)
                 if self._grader is not None:
                     self._grader.add_face_center(center)
             else:
