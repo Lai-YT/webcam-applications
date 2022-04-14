@@ -1,7 +1,8 @@
 from collections import deque
-from typing import Deque, List, Optional, Sized, Tuple
+from typing import Deque, List, Optional, Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
+from more_itertools import SequenceView
 
 from concentration.fuzzy.classes import Interval
 from concentration.interval import IntervalType
@@ -87,13 +88,14 @@ class FaceExistenceRateCounter(QObject):
             s_low_existence_detected:
                 Emits when face existence is low and sends the start and end time.
         """
+        frame_times: SequenceView = self._frame_times.times()
         # Frame time is added every frame but face isn't,
         # so is used as the prerequisite for face existence check.
-        if (self._frame_times
-                and get_current_time() - self._frame_times[0] >= ONE_MIN
+        if (frame_times
+                and get_current_time() - frame_times[0] >= ONE_MIN
                 and self.is_low_face()):
             self.s_low_existence_detected.emit(
-                Interval(self._frame_times[0], self._frame_times[0] + ONE_MIN))
+                Interval(frame_times[0], frame_times[0] + ONE_MIN))
 
     def _get_face_existence_rate(self) -> float:
         """Returns the face existence rate of the minute.
@@ -218,7 +220,7 @@ class BlinkRateIntervalDetector(QObject):
         if window_type is WindowType.CURRENT:
             blink_rate = len(self._blink_times)
         elif window_type is WindowType.PREVIOUS:
-            blink_rate = len(self._blink_times.previous)
+            blink_rate = len(self._blink_times.prev_times())
         return blink_rate
 
 
@@ -252,11 +254,11 @@ class BodyConcentrationCounter:
         def count_time_in_interval(times: DoubleTimeWindow) -> int:
             # Assumes that the interval is synced up properly, so the count is
             # simply the length of the corresponding window.
-            window: Sized
+            window: SequenceView
             if window_type is WindowType.PREVIOUS:
-                window = times.previous
+                window = times.prev_times()
             else:
-                window = times
+                window = times.times()
             return len(window)
         concent_count: int = count_time_in_interval(self._concentration_times)
         distract_count: int = count_time_in_interval(self._distraction_times)
@@ -274,7 +276,7 @@ class BodyConcentrationCounter:
 
 
 class FaceCenterCounter:
-    # TODO: nearly a duplicated reimplementation of DoubleTimeWindow to carry extra data 
+    # TODO: nearly a duplicated reimplementation of DoubleTimeWindow to carry extra data
     def __init__(self, time_width: int) -> None:
         self._time_width = time_width
         self._face_centers: Deque[Tuple[int, Tuple[float, float]]] = deque()
