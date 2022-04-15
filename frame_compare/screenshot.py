@@ -1,14 +1,8 @@
-import sys
-from datetime import datetime
-from typing import Any
-
-import cv2
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication
 
 from util.image_convert import qpixmap_to_ndarray
 from util.image_type import ColorImage
-from util.path import to_abs_path
 
 
 def get_screenshot() -> ColorImage:
@@ -19,6 +13,14 @@ def get_screenshot() -> ColorImage:
 
 
 if __name__ == "__main__":
+    import sys
+    from datetime import datetime
+
+    import cv2
+
+    from util.path import to_abs_path
+
+
     app = QApplication(sys.argv)
 
     screenshot = get_screenshot()
