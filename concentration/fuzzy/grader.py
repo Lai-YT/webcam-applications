@@ -182,9 +182,10 @@ if __name__ == "__main__":
         blink_rate = float(input("blink rate: "))
         body_concent = float(input("body concent: "))
         center_value = float(input("center value: "))
-        raw_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent, center_value,
-                                                      normalized=False)
-        norm_grade: float = fuzzy_grader.compute_grade(blink_rate, body_concent, center_value)
+        raw_grade: float = fuzzy_grader.compute_grade(
+            blink_rate, body_concent, center_value, normalized=False)
+        norm_grade: float = fuzzy_grader.compute_grade(
+            blink_rate, body_concent, center_value)
         print(f"raw: {raw_grade}")
         print(f"grade: {norm_grade}")
 

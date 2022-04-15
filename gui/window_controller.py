@@ -1,11 +1,18 @@
+from datetime import datetime
 from typing import Dict, Tuple
 
 from PyQt5.QtCore import QObject
+import requests
 
+import concentration.fuzzy.parse as parse
+import server.main as flask_server
+import server.post as poster
 from app.app_type import ApplicationType
 from app.webcam_application import WebcamApplication
+from concentration.fuzzy.classes import Interval
 from gui.panel_controller import PanelController
 from gui.window import Window
+from util.path import to_abs_path
 from util.task_worker import TaskWorker
 
 
@@ -20,6 +27,7 @@ class WindowController(QObject):
         self._connect_app_and_information()
         self._connect_app_and_frame()
         self._connect_information_and_panel()
+        self._connect_grade_output_routines()
         self._start_app()
 
     def _start_app(self) -> None:
@@ -68,3 +76,26 @@ class WindowController(QObject):
                         if checked else
                         info_widget.hide(info)
                 )
+
+    def _connect_grade_output_routines(self) -> None:
+        self._json_file: str = to_abs_path("intervals.json")
+        parse.init_json(self._json_file)
+        self._app.s_concent_interval_refreshed.connect(self._write_grade_into_json)
+
+        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
+        self._app.s_concent_interval_refreshed.connect(self._send_grade_to_server)
+
+    def _send_grade_to_server(self, interval: Interval) -> None:
+        data = interval.__dict__
+        data["time"] = datetime.fromtimestamp(data["end"]).strftime(poster.DATE_STR_FORMAT)
+        # XXX: should be changed to a real student id
+        data["id"] = 100
+        try:
+            requests.post(self._server_url, json=data)
+        except requests.ConnectionError:
+            # Skip posting if the connection fails,
+            # which may be caused by server not running.
+            pass
+
+    def _write_grade_into_json(self, interval: Interval) -> None:
+        parse.append_to_json(self._json_file, interval.__dict__)

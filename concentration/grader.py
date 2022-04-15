@@ -6,7 +6,6 @@ from typing import Optional, Tuple
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal, pyqtSlot
 from nptyping import Int, NDArray
 
-import concentration.fuzzy.parse as parse
 from blink.detector import BlinkDetector
 from concentration.criterion import (
     BlinkRateIntervalDetector,
@@ -80,12 +79,6 @@ class ConcentrationGrader(QObject):
         logger.info("Start up logger!")
 
         self._fuzzy_grader = FuzzyGrader()
-
-        # method to record grades
-        self._json_file: str = to_abs_path("intervals.json")
-        parse.init_json(self._json_file)
-        self.s_concent_interval_refreshed.connect(
-            lambda interval: parse.append_to_json(self._json_file, interval.__dict__))
 
         # Min heaps that store the intervals to grade.
         # The in-times has the REAL_TIME and LOW_FACEs, which are in the current
