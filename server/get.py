@@ -1,8 +1,8 @@
-import requests
 import sys
 from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
+import requests
 
 import server.main as flask_server
 import server.post as poster

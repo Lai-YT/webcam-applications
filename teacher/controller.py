@@ -1,12 +1,14 @@
 import atexit
 import sqlite3
-
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping
 
-from PyQt5.QtCore import QObject, Qt
+import requests
+from PyQt5.QtCore import QObject, QTimer, Qt
 
+import server.main as flask_server
+import server.post as poster
 from teacher.monitor import ColumnHeader, Monitor, Row
 from util.path import to_abs_path
 
@@ -22,6 +24,11 @@ class MonitorController(QObject):
         self._table_name = "monitor"
         self._create_table_if_not_exist()
         self._connect_signal()
+
+        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}/"
+        self._fetch_timer = QTimer()
+        self._fetch_timer.timeout.connect(self._get_grades_from_server)
+        self._fetch_timer.start(1000)
 
         # Have the connection of database and timer closed right before
         # the controller is destoryed.
@@ -51,6 +58,20 @@ class MonitorController(QObject):
 
     def _connect_signal(self):
         self._monitor.s_button_clicked.connect(lambda id: print(id))
+
+    def _get_grades_from_server(self) -> None:
+        """Get new grades from the server and
+        (1) stores into the database (2) updates to the GUI.
+        """
+        r = requests.get(self._server_url)
+        for datum in r.json():
+            # Convert time string to datetime.
+            datum["time"] = datetime.strptime(datum["time"], poster.DATE_STR_FORMAT)
+            # Add grade status in data.
+            datum["status"] = "X" if datum["grade"] < 0.8 else "O"
+
+            self.store_new_grade(datum)
+            self.show_new_grade(datum)
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
