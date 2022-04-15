@@ -39,7 +39,7 @@ if __name__ == "__main__":
     webbrowser.open_new_tab("https://www.google.com/")
     time.sleep(3)  # time for loading
     google: GrayImage = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
-    
+
     diff = get_compare_slices(editor) - get_compare_slices(google)
     print("6 x 6 value diffs: ")
     print(diff)

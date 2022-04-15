@@ -17,12 +17,6 @@ class MonitorController(QObject):
     def __init__(self, monitor: Monitor) -> None:
         super().__init__()
         self._monitor = monitor
-        self._monitor.col_header = ColumnHeader((
-            ("status", str),
-            ("id", int),
-            ("time", datetime),
-            ("grade", float),
-        ))
 
         self._connect_database()
         self._table_name = "monitor"
@@ -54,7 +48,7 @@ class MonitorController(QObject):
         sql = sql[:-1] + ");"
         with self._conn:
             self._conn.execute(sql)
-    
+
     def _connect_signal(self):
         self._monitor.s_button_clicked.connect(lambda id: print(id))
 

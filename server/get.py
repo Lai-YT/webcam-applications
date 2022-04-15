@@ -7,13 +7,21 @@ from PyQt5.QtWidgets import QApplication
 import server.main as flask_server
 import server.post as poster
 from teacher.controller import MonitorController
-from teacher.monitor import Monitor
+from teacher.monitor import ColumnHeader, Monitor
 
 
 r = requests.get(f"http://{flask_server.HOST}:{flask_server.PORT}/")
 
 app = QApplication([])
-monitor = Monitor()
+monitor = Monitor(
+    ColumnHeader((
+        ("status", str),
+        ("id", int),
+        ("time", datetime),
+        ("grade", float),
+    )),
+    key_label="id"
+)
 controller = MonitorController(monitor)
 monitor.show()
 

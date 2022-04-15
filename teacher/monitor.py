@@ -1,7 +1,9 @@
 from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QAbstractItemView, QTableWidget, QTableWidgetItem, QMainWindow, QPushButton
+from PyQt5.QtWidgets import (
+    QAbstractItemView, QTableWidget, QTableWidgetItem, QMainWindow, QPushButton
+)
 
 
 T = TypeVar("T")
@@ -92,7 +94,7 @@ class ColumnHeader:
 class Monitor(QMainWindow):
     s_button_clicked = pyqtSignal(int)
 
-    def __init__(self, header = ColumnHeader([])) -> None:
+    def __init__(self, header: ColumnHeader, key_label: str = None) -> None:
         super().__init__()
         self.setWindowTitle("Teacher Monitor")
         self.resize(640, 480)
@@ -102,20 +104,19 @@ class Monitor(QMainWindow):
         self._table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.setCentralWidget(self._table)
 
-        # this is the setter
-        self.col_header = header
+        self._set_col_header(header)
+        self._key_label = key_label
 
     @property
     def col_header(self) -> ColumnHeader:
         return self._header
 
-    @col_header.setter
-    def col_header(self, new_header: ColumnHeader) -> None:
-        self._header = new_header
-        self._table.setColumnCount(new_header.col_count + 1)
-        self._table.setHorizontalHeaderLabels(new_header.labels())
+    def _set_col_header(self, header: ColumnHeader) -> None:
+        self._header = header
+        self._table.setColumnCount(header.col_count + 1)  # button
+        self._table.setHorizontalHeaderLabels(header.labels())
         # add button header
-        self._table.setHorizontalHeaderItem(new_header.col_count, QTableWidgetItem("history"))
+        self._table.setHorizontalHeaderItem(header.col_count, QTableWidgetItem("history"))
 
     def insert_row(self, row: Row) -> None:
         """Inserts a new row to the bottom of the table."""
@@ -125,7 +126,7 @@ class Monitor(QMainWindow):
         self.update_row(row_no, row)
 
         button = QPushButton("look back")
-        key_index = self._header.labels().index("id")
+        key_index = self._header.labels().index(self._key_label)
         # send id to controller
         button.clicked.connect(
             lambda: self.s_button_clicked.emit(row[key_index].value)
@@ -136,7 +137,7 @@ class Monitor(QMainWindow):
     def update_row(self, row_no: int, row: Row) -> None:
         for col in row:
             self._table.setItem(row_no, col.no, QTableWidgetItem(str(col.value)))
-        
+
     def sort_rows_by_label(self, label: str, order: Qt.SortOrder) -> None:
         self._table.sortItems(self._header.labels().index(label), order)
 
