@@ -12,9 +12,9 @@ from PyQt5.QtWidgets import (
 )
 
 import gui.img.icon
+from gui.config_widget import ConfigWidget
 from gui.frame_widget import FrameWidget
 from gui.information_widget import InformationWidget
-from gui.language import LanguageWidget
 from gui.panel_widget import PanelWidget
 
 
@@ -81,7 +81,7 @@ class Window(QMainWindow):
         middle, control panel at the right.
         """
         self.widgets: Dict[str, QWidget] = {}
-        self._create_info_and_lang_widget()
+        self._create_info_and_config_widget()
 
         # The number is the stretch of the widget.
         widgets: Dict[str, Tuple[QWidget, int]] = {
@@ -95,17 +95,17 @@ class Window(QMainWindow):
 
         self._make_panel_widget_scrollable()
 
-    def _create_info_and_lang_widget(self) -> None:
-        """Creates information widget at the left-hand side with language widget under."""
+    def _create_info_and_config_widget(self) -> None:
+        """Creates information widget at the left-hand side with config widget under."""
         info_and_lang_layout = QVBoxLayout()
 
         self.widgets["information"] = InformationWidget()
-        self.widgets["language"] = LanguageWidget()
+        self.widgets["config"] = ConfigWidget()
 
         # add both of them, information should occupy more space
         info_and_lang_layout.addWidget(self.widgets["information"], stretch=5)
         info_and_lang_layout.addWidget(
-            self.widgets["language"], stretch=1, alignment=Qt.AlignBottom)
+            self.widgets["config"], stretch=1, alignment=Qt.AlignBottom)
 
         self._general_layout.insertLayout(0, info_and_lang_layout, stretch=1)
 

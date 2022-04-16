@@ -37,8 +37,10 @@
     "time-state": "時間狀態：",
     "brightness": "螢幕亮度："
   },
-  "LanguageWidget": {
-    "title": "語言：",
+  "ConfigWidget": {
+    "id": "學號：",
+    "id_hint": "輸入您的學號",
+    "language": "語言：",
     "chinese": "中文",
     "english": "英文"
   }

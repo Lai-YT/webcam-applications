@@ -37,8 +37,10 @@
     "time-state": "Timer State:",
     "brightness": "Screen Brightness:"
   },
-  "LanguageWidget": {
-    "title": "Language:",
+  "ConfigWidget": {
+    "id": "Id:",
+    "id_hint": "enter your student id",
+    "language": "Language:",
     "chinese": "Chinese",
     "english": "English"
   }
