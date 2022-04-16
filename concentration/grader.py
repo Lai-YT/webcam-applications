@@ -1,5 +1,4 @@
 import math
-import time
 from functools import partial
 from typing import Optional, Tuple
 
@@ -20,7 +19,7 @@ from face_center.calculator import CenterCalculator
 from util.logger import setup_logger
 from util.heap import MinHeap
 from util.path import to_abs_path
-from util.time import ONE_MIN, get_current_time, to_date_time
+from util.time import ONE_MIN
 from util.time_window import WindowType
 
 

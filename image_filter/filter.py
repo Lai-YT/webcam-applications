@@ -9,7 +9,6 @@ import numpy.ma as ma
 from imutils import face_utils
 from nptyping import Float32, NDArray, UInt8
 
-from util.color import MAGENTA
 from util.image_type import ColorImage
 
 

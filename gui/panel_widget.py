@@ -1,9 +1,10 @@
+import json
 from enum import IntEnum
 from typing import Dict
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import (
-    QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QVBoxLayout, QWidget,
+    QFormLayout, QGroupBox, QHBoxLayout, QVBoxLayout, QWidget,
 )
 
 from app.app_type import ApplicationType
@@ -12,6 +13,8 @@ from gui.component import (
     ActionButton, CheckableGroupBox, HorizontalSlider, Label, LineEdit,
     OptionCheckBox, OptionRadioButton,
 )
+from gui.language import Language
+from util.path import to_abs_path
 
 
 class PanelWidget(QWidget):
@@ -33,6 +36,16 @@ class PanelWidget(QWidget):
         layout.addStretch(5)
         self.setLayout(layout)
 
+    def change_language(self, lang: Language) -> None:
+        """Passes the language change request to all panels."""
+        self._lang_file = to_abs_path(f"./gui/lang/{lang.name.lower()}.json")
+        lang_map = self._get_language_map()
+        for panel in self.panels.values():
+            panel.change_language(lang_map[type(panel).__name__])
+
+    def _get_language_map(self) -> Dict[str, Dict[str, str]]:
+        with open(self._lang_file, mode="r", encoding="utf-8") as f:
+            return json.load(f)
 
 class DistancePanel(CheckableGroupBox):
     """A view which contains the settings of distance measurement."""
@@ -44,6 +57,16 @@ class DistancePanel(CheckableGroupBox):
 
         self._create_settings()
         self._set_restrictions()
+
+    def change_language(self, lang_map: Dict[str, str]) -> None:
+        self.setTitle(lang_map["title"])
+        self._file_path_layout.itemAt(0).widget().setText(lang_map["reference"])
+        self.file_open.setText(lang_map["open"])
+        self._layout.itemAt(1, QFormLayout.LabelRole).widget().setText(lang_map["camera_dist"])
+        self._layout.itemAt(2, QFormLayout.LabelRole).widget().setText(lang_map["warn_dist"])
+        self.settings["camera_dist"].setPlaceholderText(lang_map["camera_restriction"])
+        self.settings["warn_dist"].setPlaceholderText(lang_map["warn_restriction"])
+        self.warning.setText(lang_map["warning"])
 
     def _create_settings(self) -> None:
         # the file path line and button are in their own layout
@@ -97,6 +120,14 @@ class TimePanel(CheckableGroupBox):
         self._create_settings()
         self._set_restrictions()
 
+    def change_language(self, lang_map: Dict[str, str]) -> None:
+        self.setTitle(lang_map["title"])
+        self._layout.itemAt(0, QFormLayout.LabelRole).widget().setText(lang_map["limit"])
+        self._layout.itemAt(1, QFormLayout.LabelRole).widget().setText(lang_map["break"])
+        self.settings["time_limit"].setPlaceholderText(lang_map["limit_restriction"])
+        self.settings["break_time"].setPlaceholderText(lang_map["break_restriction"])
+        self.warning.setText(lang_map["warning"])
+
     def _create_settings(self) -> None:
         settings = {
             "time_limit": "Time limit:",
@@ -142,6 +173,13 @@ class PosturePanel(CheckableGroupBox):
 
         self._create_settings()
 
+    def change_language(self, lang_map: Dict[str, str]) -> None:
+        self.setTitle(lang_map["title"])
+        self._layout.itemAt(0).widget().setTitle(lang_map["group_title"])
+        for tolerance in AngleTolerance:
+            self.angles[tolerance].setText(lang_map[tolerance.name.lower()])
+        self.warning.setText(lang_map["warning"])
+
     def _create_settings(self) -> None:
         group_box = QGroupBox("Allowed slope angle:")
         box_layout = QVBoxLayout()
@@ -172,6 +210,11 @@ class BrightnessPanel(CheckableGroupBox):
 
         self._create_slider()
         self._create_modes()
+
+    def change_language(self, lang_map: Dict[str, str]) -> None:
+        self.setTitle(lang_map["title"])
+        for mode in (BrightnessMode.WEBCAM, BrightnessMode.COLOR_SYSTEM):
+            self.modes[mode].setText(lang_map[mode.name.lower()])
 
     def _create_slider(self) -> None:
         self.slider = HorizontalSlider()

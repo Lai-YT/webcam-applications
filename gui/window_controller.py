@@ -1,3 +1,4 @@
+from configparser import ConfigParser
 from datetime import datetime
 from typing import Dict, Tuple
 
@@ -10,6 +11,7 @@ import server.post as poster
 from app.app_type import ApplicationType
 from app.webcam_application import WebcamApplication
 from concentration.fuzzy.classes import Interval
+from gui.language import Language
 from gui.panel_controller import PanelController
 from gui.window import Window
 from util.path import to_abs_path
@@ -27,7 +29,13 @@ class WindowController(QObject):
         self._connect_app_and_information()
         self._connect_app_and_frame()
         self._connect_information_and_panel()
+        self._connect_language_change()
         self._connect_grade_output_routines()
+
+        # language configuration is handled by windows since it's not part of app
+        self._LANGUAGE_CONFIG = to_abs_path("./gui/lang/language.ini")
+        self._init_language()
+
         self._start_app()
 
     def _start_app(self) -> None:
@@ -77,6 +85,28 @@ class WindowController(QObject):
                         info_widget.hide(info)
                 )
 
+    def _connect_language_change(self) -> None:
+        def change_language_of_widgets(lang_no: int) -> None:
+            new_lang = Language(lang_no)
+            for widget in self._window.widgets.values():
+                widget.change_language(new_lang)
+
+        def update_language_config(lang_no: int) -> None:
+            # Try to reduce the memory comsumption by delete-after-use since
+            # language usually aren't changed frequently.
+            new_lang = Language(lang_no)
+            self._load_language_config()
+            self._lang_config["GLOBAL"]["language"] = new_lang.name
+            self._store_language_config()
+            delattr(self, "_lang_config")
+
+        # index is designed to be as same as the value of enum Language
+        self._window.widgets["language"].combox.currentIndexChanged.connect(
+            change_language_of_widgets)
+
+        self._window.widgets["language"].combox.currentIndexChanged.connect(
+            update_language_config)
+
     def _connect_grade_output_routines(self) -> None:
         self._json_file: str = to_abs_path("intervals.json")
         parse.init_json(self._json_file)
@@ -101,3 +131,18 @@ class WindowController(QObject):
 
     def _write_grade_into_json(self, interval: Interval) -> None:
         parse.append_to_json(self._json_file, interval.__dict__)
+
+    def _init_language(self) -> None:
+        """Initializes language of window."""
+        self._load_language_config()
+        self._window.widgets["language"].combox.setCurrentIndex(
+            Language[self._lang_config.get("GLOBAL", "language")].value)
+        delattr(self, "_lang_config")
+
+    def _load_language_config(self) -> None:
+        self._lang_config = ConfigParser()
+        self._lang_config.read(self._LANGUAGE_CONFIG, encoding="utf-8")
+
+    def _store_language_config(self) -> None:
+        with open(self._LANGUAGE_CONFIG, "w", encoding="utf-8") as f:
+            self._lang_config.write(f)

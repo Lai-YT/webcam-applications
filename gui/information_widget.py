@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from typing import Dict
 
@@ -6,8 +7,10 @@ from PyQt5.QtWidgets import QFormLayout, QFrame, QWidget
 
 from distance.guard import DistanceState
 from gui.component import Label
+from gui.language import Language
 from gui.popup_widget import TimeState
 from posture.calculator import PostureLabel
+from util.path import to_abs_path
 
 
 class TextColor(Enum):
@@ -103,6 +106,15 @@ class InformationWidget(QWidget):
         row, _ = self._layout.getWidgetPosition(self.information[info])
         self._layout.itemAt(row, QFormLayout.LabelRole).widget().show()
         self._layout.itemAt(row, QFormLayout.FieldRole).widget().show()
+
+    def change_language(self, lang: Language) -> None:
+        lang_file = to_abs_path(f"./gui/lang/{lang.name.lower()}.json")
+        with open(lang_file, mode="r", encoding="utf-8") as f:
+            lang_map = json.load(f)[type(self).__name__]
+
+        for name, info in self.information.items():
+            row_no, _ = self._layout.getWidgetPosition(info)
+            self._layout.itemAt(row_no, QFormLayout.LabelRole).widget().setText(lang_map[name])
 
     def _create_information(self) -> None:
         """Creates the labels for information."""

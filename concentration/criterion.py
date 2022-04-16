@@ -6,8 +6,7 @@ from more_itertools import SequenceView
 
 from concentration.fuzzy.classes import Interval
 from concentration.interval import IntervalType
-from util.path import to_abs_path
-from util.time import HALF_MIN, ONE_MIN, get_current_time, to_date_time
+from util.time import HALF_MIN, ONE_MIN, get_current_time
 from util.time_window import DoubleTimeWindow, TimeWindow, WindowType
 
 

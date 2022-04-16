@@ -1,7 +1,6 @@
 # The 3-layer posture detection refers to
 # https://github.com/EE-Ind-Stud-Group/posture-detection
 
-from datetime import datetime
 from typing import Optional, Tuple, cast
 
 import cv2

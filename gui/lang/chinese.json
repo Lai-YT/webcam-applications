@@ -1,0 +1,45 @@
+{
+  "DistancePanel": {
+    "title": "距離量測",
+    "reference": "參考圖片",
+    "open": "開啟檔案...",
+    "camera_dist": "參考距離：",
+    "warn_dist": "最短允許距離：",
+    "warning": "開啟聲音警示",
+    "camera_restriction": "10 ~ 99.99 (公分)",
+    "warn_restriction": "30 ~ 59.99 (公分)"
+  },
+  "TimePanel": {
+    "title": "注視時間",
+    "limit": "時間限制：",
+    "break": "休息時長：",
+    "warning": "開啟聲音警示",
+    "limit_restriction": "1 ~ 59 (分鐘)",
+    "break_restriction": "1 ~ 59 (分鐘)"
+  },
+  "PosturePanel": {
+    "title": "姿勢偵測",
+    "group_title": "允許歪斜角度：",
+    "loose": "寬鬆 (25)",
+    "strict": "嚴格 (15)",
+    "warning": "開啟聲音警示"
+  },
+  "BrightnessPanel": {
+    "title": "亮度最佳化",
+    "webcam": "背景環境亮度 \n(需要前鏡頭)",
+    "color_system": "螢幕畫面顏色"
+  },
+  "InformationWidget": {
+    "distance": "臉部距離：",
+    "posture": "姿勢偵測：",
+    "posture-detail": "詳細內容：",
+    "time": "注視時間：",
+    "time-state": "時間狀態：",
+    "brightness": "螢幕亮度："
+  },
+  "LanguageWidget": {
+    "title": "語言：",
+    "chinese": "中文",
+    "english": "英文"
+  }
+}
