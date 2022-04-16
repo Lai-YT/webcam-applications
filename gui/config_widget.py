@@ -1,7 +1,7 @@
 import json
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtCore import QRegExp, Qt
+from PyQt5.QtGui import QFont, QIcon, QRegExpValidator
 from PyQt5.QtWidgets import QComboBox, QGridLayout, QWidget
 
 import gui.img.icon
@@ -28,6 +28,8 @@ class ConfigWidget(QWidget):
 
     def _create_student_id_line(self) -> None:
         self.id = LineEdit("enter your student id")
+        # 1 ~ 10 digits, uppercase letter and numbers are allowed
+        self.id.setValidator(QRegExpValidator(QRegExp(r"^[A-Z0-9]+$")))
         self.id.setMaxLength(10)
         self._layout.addWidget(Label("Id:"), 0, 0)
         self._layout.addWidget(self.id, 0, 1, alignment=Qt.AlignLeft)

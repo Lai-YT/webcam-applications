@@ -29,12 +29,13 @@ class WindowController(QObject):
         self._connect_app_and_information()
         self._connect_app_and_frame()
         self._connect_information_and_panel()
-        self._connect_language_change()
+        self._connect_config_change()
         self._connect_grade_output_routines()
 
-        # language configuration is handled by windows since it's not part of app
-        self._LANGUAGE_CONFIG = to_abs_path("./gui/lang/language.ini")
-        self._init_language()
+        # these configurations are handled by windows since they have not much
+        # to do with app.
+        self._CONFIG_FILE = to_abs_path("./gui/config.ini")
+        self._init_global_config()
 
         self._start_app()
 
@@ -85,20 +86,20 @@ class WindowController(QObject):
                         info_widget.hide(info)
                 )
 
-    def _connect_language_change(self) -> None:
+    def _connect_config_change(self) -> None:
+        # Try to reduce the memory comsumption by delete-after-use since
+        # config usually aren't changed frequently.
         def change_language_of_widgets(lang_no: int) -> None:
             new_lang = Language(lang_no)
             for widget in self._window.widgets.values():
                 widget.change_language(new_lang)
 
         def update_language_config(lang_no: int) -> None:
-            # Try to reduce the memory comsumption by delete-after-use since
-            # language usually aren't changed frequently.
             new_lang = Language(lang_no)
-            self._load_language_config()
-            self._lang_config["GLOBAL"]["language"] = new_lang.name
-            self._store_language_config()
-            del self._lang_config
+            self._load_global_config()
+            self._config["GLOBAL"]["language"] = new_lang.name
+            self._store_global_config()
+            del self._config
 
         # index is designed to be as same as the value of enum Language
         self._window.widgets["config"].combox.currentIndexChanged.connect(
@@ -106,6 +107,14 @@ class WindowController(QObject):
 
         self._window.widgets["config"].combox.currentIndexChanged.connect(
             update_language_config)
+
+        def update_id_config(id: str) -> None:
+            self._load_global_config()
+            self._config["GLOBAL"]["id"] = id
+            self._store_global_config()
+            del self._config
+
+        self._window.widgets["config"].id.textChanged.connect(update_id_config)
 
     def _connect_grade_output_routines(self) -> None:
         self._json_file: str = to_abs_path("intervals.json")
@@ -120,8 +129,7 @@ class WindowController(QObject):
         # Surprisingly, this changes the content of __dict__,
         # but doesn't really add attributes to interval.
         interval.time = datetime.fromtimestamp(interval.end).strftime(poster.DATE_STR_FORMAT)
-        # TODO: should be changed to a real student id
-        interval.id = 100
+        interval.id = self._window.widgets["config"].id.text()
         try:
             requests.post(self._server_url, json=interval.__dict__)
         except requests.ConnectionError:
@@ -132,19 +140,20 @@ class WindowController(QObject):
     def _write_grade_into_json(self, interval: Interval) -> None:
         parse.append_to_json(self._json_file, interval.__dict__)
 
-    def _init_language(self) -> None:
-        """Initializes language of window."""
-        self._load_language_config()
-        self._window.widgets["config"].combox.setCurrentIndex(
-            Language[self._lang_config.get("GLOBAL", "language")].value)
-        # NOTE: if index changed, self._lang_config is deleted by another method
-        if hasattr(self, "_lang_config"):
-            del self._lang_config
+    def _init_global_config(self) -> None:
+        """Initializes student id and language of window."""
+        self._load_global_config()
+        student_id = self._config.get("GLOBAL", "id")
+        lang = self._config.get("GLOBAL", "language")
+        del self._config
 
-    def _load_language_config(self) -> None:
-        self._lang_config = ConfigParser()
-        self._lang_config.read(self._LANGUAGE_CONFIG, encoding="utf-8")
+        self._window.widgets["config"].id.setText(student_id)
+        self._window.widgets["config"].combox.setCurrentIndex(Language[lang].value)
 
-    def _store_language_config(self) -> None:
-        with open(self._LANGUAGE_CONFIG, "w", encoding="utf-8") as f:
-            self._lang_config.write(f)
+    def _load_global_config(self) -> None:
+        self._config = ConfigParser()
+        self._config.read(self._CONFIG_FILE, encoding="utf-8")
+
+    def _store_global_config(self) -> None:
+        with open(self._CONFIG_FILE, "w", encoding="utf-8") as f:
+            self._config.write(f)

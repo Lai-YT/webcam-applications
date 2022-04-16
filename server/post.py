@@ -10,14 +10,14 @@ import server.main as flask_server
 
 # value of "time" and "grade" will be set later
 DATA_1 = [
-    {"id": 1, "time": "", "grade": -1},
-    {"id": 2, "time": "", "grade": -1},
-    {"id": 3, "time": "", "grade": -1},
+    {"id": "1", "time": "", "grade": -1},
+    {"id": "2", "time": "", "grade": -1},
+    {"id": "3", "time": "", "grade": -1},
 ]
 DATA_2 = [
-    {"id": 4, "time": "", "grade": -1},
-    {"id": 5, "time": "", "grade": -1},
-    {"id": 6, "time": "", "grade": -1},
+    {"id": "4", "time": "", "grade": -1},
+    {"id": "5", "time": "", "grade": -1},
+    {"id": "6", "time": "", "grade": -1},
 ]
 
 DATE_STR_FORMAT = "%Y-%m-%d, %H:%M:%S"
