@@ -98,7 +98,7 @@ class WindowController(QObject):
             self._load_language_config()
             self._lang_config["GLOBAL"]["language"] = new_lang.name
             self._store_language_config()
-            delattr(self, "_lang_config")
+            del self._lang_config
 
         # index is designed to be as same as the value of enum Language
         self._window.widgets["language"].combox.currentIndexChanged.connect(
@@ -137,7 +137,9 @@ class WindowController(QObject):
         self._load_language_config()
         self._window.widgets["language"].combox.setCurrentIndex(
             Language[self._lang_config.get("GLOBAL", "language")].value)
-        delattr(self, "_lang_config")
+        # NOTE: if index changed, self._lang_config is deleted by another method
+        if hasattr(self, "_lang_config"):
+            del self._lang_config
 
     def _load_language_config(self) -> None:
         self._lang_config = ConfigParser()
