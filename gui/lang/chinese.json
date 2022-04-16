@@ -1,0 +1,10 @@
+{
+  "TimePanel": {
+    "title": "專注時間",
+    "limit": "時間限制:",
+    "break": "休息時長:",
+    "warning": "開啟聲音警示",
+    "limit_restriction": "1 ~ 59 (分鐘)",
+    "break_restriction": "1 ~ 59 (分鐘)"
+  }
+}

@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QFormLayout, QFrame, QWidget
 
 from distance.guard import DistanceState
 from gui.component import Label
+from gui.language import Language
 from gui.popup_widget import TimeState
 from posture.calculator import PostureLabel
 
@@ -103,6 +104,9 @@ class InformationWidget(QWidget):
         row, _ = self._layout.getWidgetPosition(self.information[info])
         self._layout.itemAt(row, QFormLayout.LabelRole).widget().show()
         self._layout.itemAt(row, QFormLayout.FieldRole).widget().show()
+
+    def change_language(self, lang: Language) -> None:
+        pass
 
     def _create_information(self) -> None:
         """Creates the labels for information."""

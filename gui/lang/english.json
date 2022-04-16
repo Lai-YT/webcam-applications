@@ -1,0 +1,10 @@
+{
+  "TimePanel": {
+    "title": "Focus Timing",
+    "limit": "Time limit:",
+    "break": "Break time:",
+    "warning": "enable sound warning",
+    "limit_restriction": "1 ~ 59 (min)",
+    "break_restriction": "1 ~ 59 (min)"
+  }
+}

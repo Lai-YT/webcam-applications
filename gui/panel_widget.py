@@ -12,6 +12,8 @@ from gui.component import (
     ActionButton, CheckableGroupBox, HorizontalSlider, Label, LineEdit,
     OptionCheckBox, OptionRadioButton,
 )
+from gui.language import Language
+from util.path import to_abs_path
 
 
 class PanelWidget(QWidget):
@@ -33,6 +35,11 @@ class PanelWidget(QWidget):
         layout.addStretch(5)
         self.setLayout(layout)
 
+    def change_language(self, lang: Language) -> None:
+        """Passes the language change request to all panels."""
+        for panel in self.panels.values():
+            panel.change_language(lang)
+
 
 class DistancePanel(CheckableGroupBox):
     """A view which contains the settings of distance measurement."""
@@ -44,6 +51,10 @@ class DistancePanel(CheckableGroupBox):
 
         self._create_settings()
         self._set_restrictions()
+
+
+    def change_language(self, lang: Language) -> None:
+        pass
 
     def _create_settings(self) -> None:
         # the file path line and button are in their own layout
@@ -97,6 +108,10 @@ class TimePanel(CheckableGroupBox):
         self._create_settings()
         self._set_restrictions()
 
+    def change_language(self, lang: Language) -> None:
+        lang_file = to_abs_path(f"./gui/lang/{lang.name.lower()}.json")
+        print(lang_file)
+
     def _create_settings(self) -> None:
         settings = {
             "time_limit": "Time limit:",
@@ -142,6 +157,10 @@ class PosturePanel(CheckableGroupBox):
 
         self._create_settings()
 
+
+    def change_language(self, lang: Language) -> None:
+        pass
+
     def _create_settings(self) -> None:
         group_box = QGroupBox("Allowed slope angle:")
         box_layout = QVBoxLayout()
@@ -172,6 +191,9 @@ class BrightnessPanel(CheckableGroupBox):
 
         self._create_slider()
         self._create_modes()
+
+    def change_language(self, lang: Language) -> None:
+        pass
 
     def _create_slider(self) -> None:
         self.slider = HorizontalSlider()

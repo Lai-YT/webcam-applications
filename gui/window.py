@@ -17,7 +17,7 @@ import gui.img.icon
 from gui.component import Label
 from gui.frame_widget import FrameWidget
 from gui.information_widget import InformationWidget
-from gui.lang import Language
+from gui.language import Language
 from gui.panel_widget import PanelWidget
 
 
@@ -99,15 +99,11 @@ class Window(QMainWindow):
         self._make_panel_widget_scrollable()
 
     def _create_info_and_lang_widget(self) -> None:
+        """Creates information widget at the left-hand side and language widget under."""
         info_and_lang_layout = QVBoxLayout()
 
         self.widgets["information"] = InformationWidget()
-        self.widgets["language"] = QComboBox()
-        self.widgets["language"].setFont(QFont("Arial", 12))
-        self.widgets["language"].addItem(
-            QIcon(":us-flag.ico"), Language.ENGLISH.name.capitalize())
-        self.widgets["language"].addItem(
-            QIcon(":taiwan-flag.ico"), Language.CHINESE.name.capitalize())
+        self.widgets["language"] = LanguageComboBox()
         # create layout for lang combo box
         lang_layout = QGridLayout()
         lang_layout.addWidget(Label("Language:"), 0, 0)
@@ -127,3 +123,17 @@ class Window(QMainWindow):
         scroll_area.setWidget(self.widgets["panel"])
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self._general_layout.addWidget(scroll_area)
+
+
+class LanguageComboBox(QComboBox):
+    def __init__(self) -> None:
+        super().__init__()
+        self.setFont(QFont("Arial", 12))
+        self._add_languages()
+
+    def _add_languages(self) -> None:
+        self.addItem(QIcon(":us-flag.ico"), Language.ENGLISH.name.capitalize())
+        self.addItem(QIcon(":taiwan-flag.ico"), Language.CHINESE.name.capitalize())
+
+    def change_language(self, lang: Language) -> None:
+        pass

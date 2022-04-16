@@ -2,6 +2,8 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtWidgets import QLabel, QWidget
 
+from gui.language import Language
+
 
 class FrameWidget(QLabel):
     def __init__(self, parent: QWidget = None) -> None:
@@ -28,3 +30,7 @@ class FrameWidget(QLabel):
             self.frameGeometry().height() - 10,
             Qt.KeepAspectRatio
         ))
+
+    def change_language(self, lang: Language) -> None:
+        # frame widget has no text
+        pass

@@ -10,6 +10,7 @@ import server.post as poster
 from app.app_type import ApplicationType
 from app.webcam_application import WebcamApplication
 from concentration.fuzzy.classes import Interval
+from gui.language import Language
 from gui.panel_controller import PanelController
 from gui.window import Window
 from util.path import to_abs_path
@@ -27,6 +28,7 @@ class WindowController(QObject):
         self._connect_app_and_information()
         self._connect_app_and_frame()
         self._connect_information_and_panel()
+        self._connect_language_change()
         self._connect_grade_output_routines()
         self._start_app()
 
@@ -76,6 +78,14 @@ class WindowController(QObject):
                         if checked else
                         info_widget.hide(info)
                 )
+
+    def _connect_language_change(self) -> None:
+        def change_language_of_widgets(lang: str) -> None:
+            new_lang = Language[lang.upper()]
+            for widget in self._window.widgets.values():
+                widget.change_language(new_lang)
+
+        self._window.widgets["language"].currentTextChanged.connect(change_language_of_widgets)
 
     def _connect_grade_output_routines(self) -> None:
         self._json_file: str = to_abs_path("intervals.json")
