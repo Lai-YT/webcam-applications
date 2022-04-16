@@ -26,7 +26,7 @@ class LanguageWidget(QWidget):
         self._layout.addWidget(self.combox, alignment=Qt.AlignLeft)
         # This sufficiently large stretch makes the combobox stick to the label
         # no matter how the window is streched in width.
-        self._layout.setStretch(1, 15)
+        self._layout.setStretch(1, 10)
 
     def change_language(self, lang: Language) -> None:
         lang_file = to_abs_path(f"./gui/lang/{lang.name.lower()}.json")
