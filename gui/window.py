@@ -14,8 +14,10 @@ from PyQt5.QtWidgets import (
 )
 
 import gui.img.icon
+from gui.component import Label
 from gui.frame_widget import FrameWidget
 from gui.information_widget import InformationWidget
+from gui.lang import Language
 from gui.panel_widget import PanelWidget
 
 
@@ -101,14 +103,16 @@ class Window(QMainWindow):
 
         self.widgets["information"] = InformationWidget()
         self.widgets["language"] = QComboBox()
-        self.widgets["language"].addItem(QIcon(":us-flag.ico"), "English")
-        self.widgets["language"].addItem(QIcon(":taiwan-flag.ico"), "Chinese")
         self.widgets["language"].setFont(QFont("Arial", 12))
+        self.widgets["language"].addItem(
+            QIcon(":us-flag.ico"), Language.ENGLISH.name.capitalize())
+        self.widgets["language"].addItem(
+            QIcon(":taiwan-flag.ico"), Language.CHINESE.name.capitalize())
         # create layout for lang combo box
         lang_layout = QGridLayout()
         lang_layout.addWidget(Label("Language:"), 0, 0)
         lang_layout.addWidget(self.widgets["language"], 0, 1, Qt.AlignLeft)
-        # This sufficiently large strech makes the combobox stick to the label
+        # This sufficiently large stretch makes the combobox stick to the label
         # no matter how the window is streched in width.
         lang_layout.setColumnStretch(1, 15)
 
