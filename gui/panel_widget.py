@@ -4,7 +4,7 @@ from typing import Dict
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import (
-    QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QVBoxLayout, QWidget,
+    QFormLayout, QGroupBox, QHBoxLayout, QVBoxLayout, QWidget,
 )
 
 from app.app_type import ApplicationType

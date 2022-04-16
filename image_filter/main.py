@@ -1,9 +1,7 @@
 import cv2
 import dlib
 import imutils
-import matplotlib.pyplot as plt
 from imutils import face_utils
-from nptyping import Int, NDArray
 
 from image_filter.filter import ImageFilter, plot_mask_diff
 from util.color import CYAN, MAGENTA

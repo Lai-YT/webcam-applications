@@ -4,7 +4,6 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QCloseEvent, QIcon, QResizeEvent
 from PyQt5.QtWidgets import (
     QApplication,
-    QGridLayout,
     QHBoxLayout,
     QMainWindow,
     QScrollArea,
@@ -13,7 +12,6 @@ from PyQt5.QtWidgets import (
 )
 
 import gui.img.icon
-from gui.component import Label
 from gui.frame_widget import FrameWidget
 from gui.information_widget import InformationWidget
 from gui.language import LanguageWidget

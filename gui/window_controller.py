@@ -1,5 +1,5 @@
-from datetime import datetime
 from configparser import ConfigParser
+from datetime import datetime
 from typing import Dict, Tuple
 
 from PyQt5.QtCore import QObject

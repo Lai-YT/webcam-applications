@@ -11,7 +11,7 @@ from nptyping import Float, Int, NDArray
 from tensorflow.keras import models
 
 from util.color import BGR, GREEN
-from util.image_type import ColorImage, GrayImage
+from util.image_type import ColorImage
 
 
 class PostureLabel(Enum):

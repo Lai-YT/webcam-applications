@@ -9,7 +9,7 @@ from PyQt5.QtCore import QObject, QTimer, Qt
 
 import server.main as flask_server
 import server.post as poster
-from teacher.monitor import ColumnHeader, Monitor, Row
+from teacher.monitor import Monitor, Row
 from util.path import to_abs_path
 
 

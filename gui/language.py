@@ -22,7 +22,7 @@ class LanguageWidget(QWidget):
         self.setLayout(self._layout)
 
         self.combox = LanguageComboBox()
-        self._layout.addWidget(Label("language"))
+        self._layout.addWidget(Label("Language"))
         self._layout.addWidget(self.combox, alignment=Qt.AlignLeft)
         # This sufficiently large stretch makes the combobox stick to the label
         # no matter how the window is streched in width.

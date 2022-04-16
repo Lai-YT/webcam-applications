@@ -1,6 +1,6 @@
 from collections import deque
 from enum import Enum, auto
-from typing import Any, Callable, Deque, Iterator, Optional
+from typing import Any, Callable, Deque, Optional
 
 from more_itertools import SequenceView
 
