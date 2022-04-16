@@ -86,12 +86,14 @@ class WindowController(QObject):
         self._app.s_concent_interval_refreshed.connect(self._send_grade_to_server)
 
     def _send_grade_to_server(self, interval: Interval) -> None:
-        data = interval.__dict__
-        data["time"] = datetime.fromtimestamp(data["end"]).strftime(poster.DATE_STR_FORMAT)
-        # XXX: should be changed to a real student id
-        data["id"] = 100
+        # Same as adding keys into __dict__.
+        # Surprisingly, this changes the content of __dict__,
+        # but doesn't really add attributes to interval.
+        interval.time = datetime.fromtimestamp(interval.end).strftime(poster.DATE_STR_FORMAT)
+        # TODO: should be changed to a real student id
+        interval.id = 100
         try:
-            requests.post(self._server_url, json=data)
+            requests.post(self._server_url, json=interval.__dict__)
         except requests.ConnectionError:
             # Skip posting if the connection fails,
             # which may be caused by server not running.
