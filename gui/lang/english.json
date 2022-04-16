@@ -36,5 +36,10 @@
     "time": "Focus Time:",
     "time-state": "Timer State:",
     "brightness": "Screen Brightness:"
+  },
+  "LanguageWidget": {
+    "title": "Language:",
+    "chinese": "Chinese",
+    "english": "English"
   }
 }

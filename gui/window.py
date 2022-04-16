@@ -1,10 +1,9 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QCloseEvent, QFont, QIcon, QResizeEvent
+from PyQt5.QtGui import QCloseEvent, QIcon, QResizeEvent
 from PyQt5.QtWidgets import (
     QApplication,
-    QComboBox,
     QGridLayout,
     QHBoxLayout,
     QMainWindow,
@@ -17,7 +16,7 @@ import gui.img.icon
 from gui.component import Label
 from gui.frame_widget import FrameWidget
 from gui.information_widget import InformationWidget
-from gui.language import Language
+from gui.language import LanguageWidget
 from gui.panel_widget import PanelWidget
 
 
@@ -99,22 +98,16 @@ class Window(QMainWindow):
         self._make_panel_widget_scrollable()
 
     def _create_info_and_lang_widget(self) -> None:
-        """Creates information widget at the left-hand side and language widget under."""
+        """Creates information widget at the left-hand side with language widget under."""
         info_and_lang_layout = QVBoxLayout()
 
         self.widgets["information"] = InformationWidget()
-        self.widgets["language"] = LanguageComboBox()
-        # create layout for lang combo box
-        lang_layout = QGridLayout()
-        lang_layout.addWidget(Label("Language:"), 0, 0)
-        lang_layout.addWidget(self.widgets["language"], 0, 1, Qt.AlignLeft)
-        # This sufficiently large stretch makes the combobox stick to the label
-        # no matter how the window is streched in width.
-        lang_layout.setColumnStretch(1, 15)
+        self.widgets["language"] = LanguageWidget()
 
         # add both of them, information should occupy more space
         info_and_lang_layout.addWidget(self.widgets["information"], stretch=5)
-        info_and_lang_layout.addLayout(lang_layout, stretch=1)
+        info_and_lang_layout.addWidget(
+            self.widgets["language"], stretch=1, alignment=Qt.AlignBottom)
 
         self._general_layout.insertLayout(0, info_and_lang_layout, stretch=1)
 
@@ -123,17 +116,3 @@ class Window(QMainWindow):
         scroll_area.setWidget(self.widgets["panel"])
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self._general_layout.addWidget(scroll_area)
-
-
-class LanguageComboBox(QComboBox):
-    def __init__(self) -> None:
-        super().__init__()
-        self.setFont(QFont("Arial", 12))
-        self._add_languages()
-
-    def _add_languages(self) -> None:
-        self.addItem(QIcon(":us-flag.ico"), Language.ENGLISH.name.capitalize())
-        self.addItem(QIcon(":taiwan-flag.ico"), Language.CHINESE.name.capitalize())
-
-    def change_language(self, lang: Language) -> None:
-        pass

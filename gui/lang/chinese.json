@@ -36,5 +36,10 @@
     "time": "注視時間：",
     "time-state": "時間狀態：",
     "brightness": "螢幕亮度："
+  },
+  "LanguageWidget": {
+    "title": "語言：",
+    "chinese": "中文",
+    "english": "英文"
   }
 }

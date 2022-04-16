@@ -80,12 +80,13 @@ class WindowController(QObject):
                 )
 
     def _connect_language_change(self) -> None:
-        def change_language_of_widgets(lang: str) -> None:
-            new_lang = Language[lang.upper()]
+        def change_language_of_widgets(lang_no: int) -> None:
+            new_lang = Language(lang_no)
             for widget in self._window.widgets.values():
                 widget.change_language(new_lang)
-
-        self._window.widgets["language"].currentTextChanged.connect(change_language_of_widgets)
+        # index is designed to be as same as the value of enum Language
+        self._window.widgets["language"].combox.currentIndexChanged.connect(
+            change_language_of_widgets)
 
     def _connect_grade_output_routines(self) -> None:
         self._json_file: str = to_abs_path("intervals.json")
