@@ -11,8 +11,8 @@ from util.path import to_abs_path
 
 
 class Language(Enum):
-    CHINESE = 0
-    ENGLISH = 1
+    ENGLISH = 0
+    CHINESE = 1
 
 
 class LanguageWidget(QWidget):
@@ -20,7 +20,7 @@ class LanguageWidget(QWidget):
         super().__init__(parent)
         self._layout = QHBoxLayout()
         self.setLayout(self._layout)
-        
+
         self.combox = LanguageComboBox()
         self._layout.addWidget(Label("language"))
         self._layout.addWidget(self.combox, alignment=Qt.AlignLeft)
@@ -46,5 +46,5 @@ class LanguageComboBox(QComboBox):
 
     def _add_languages(self) -> None:
         # have the order match the value of enum Language
-        self.addItem(QIcon(":taiwan-flag.ico"), Language.CHINESE.name.capitalize())
         self.addItem(QIcon(":us-flag.ico"), Language.ENGLISH.name.capitalize())
+        self.addItem(QIcon(":taiwan-flag.ico"), Language.CHINESE.name.capitalize())
