@@ -1,4 +1,14 @@
 {
+  "DistancePanel": {
+    "title": "Distance Measurement",
+    "reference": "Reference",
+    "open": "Open File...",
+    "camera_dist": "Distance in reference:",
+    "warn_dist": "Shortest distance allowed:",
+    "warning": "enable sound warning",
+    "camera_restriction": "10 ~ 99.99 (cm)",
+    "warn_restriction": "30 ~ 59.99 (cm)"
+  },
   "TimePanel": {
     "title": "Focus Timing",
     "limit": "Time limit:",
@@ -6,5 +16,17 @@
     "warning": "enable sound warning",
     "limit_restriction": "1 ~ 59 (min)",
     "break_restriction": "1 ~ 59 (min)"
+  },
+  "PosturePanel": {
+    "title": "Posture Detection",
+    "group_title": "Allowed slope angle:",
+    "loose": "loose (25)",
+    "strict": "strict (15)",
+    "warning": "enable sound warning"
+  },
+  "BrightnessPanel": {
+    "title": "Brightness Optimization",
+    "webcam": "Webcam-based brightness detector \n(webcam required)",
+    "color_system": "Color-system mode"
   }
 }
