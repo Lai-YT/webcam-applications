@@ -42,6 +42,7 @@ class LanguageComboBox(QComboBox):
     def __init__(self) -> None:
         super().__init__()
         self.setFont(QFont("Arial", 12))
+        self.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self._add_languages()
 
     def _add_languages(self) -> None:
