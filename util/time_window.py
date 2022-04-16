@@ -2,6 +2,8 @@ from collections import deque
 from enum import Enum, auto
 from typing import Any, Callable, Deque, Iterator, Optional
 
+from more_itertools import SequenceView
+
 from util.time import get_current_time
 
 
@@ -68,18 +70,9 @@ class TimeWindow:
     def _has_time_catch_callback(self) -> bool:
         return self._time_catch_callback is not None
 
-    def __getitem__(self, index: int) -> int:
-        """Returns the index-th earliest time in the window.
-
-        Notice that the earliest time is with index 0.
-        """
-        return self._window[index]
-
-    def __iter__(self) -> Iterator[int]:
-        return iter(self._window)
-
-    def __reversed__(self) -> Iterator[int]:
-        return reversed(self._window)
+    def times(self) -> SequenceView:
+        """Returns a view of time records."""
+        return SequenceView(self._window)
 
     def __len__(self) -> int:
         """Returns how many time records there are in the window."""
@@ -139,10 +132,9 @@ class DoubleTimeWindow(TimeWindow):
 
         self._call_time_catch_callback_if_has()
 
-    @property
-    def previous(self) -> Deque[int]:
-        """Returns the previous time window."""
-        return self._prev_window.copy()
+    def prev_times(self) -> SequenceView:
+        """Returns a view of time records in previous window."""
+        return SequenceView(self._prev_window)
 
     # Override
     def clear(self, window_type: Optional[WindowType] = None) -> None:
@@ -164,6 +156,10 @@ class DoubleTimeWindow(TimeWindow):
         if not self._prev_window:
             return 0
         return get_current_time() - self._time_width - self._prev_window[0]
+
+    def __len__(self) -> int:
+        """Returns how many time records there are in the current and previous window."""
+        return len(self._window) + len(self._prev_window)
 
     # Override
     def __str__(self) -> str:

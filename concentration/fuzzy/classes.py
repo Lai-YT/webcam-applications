@@ -2,16 +2,6 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
-@dataclass
-class Grade:
-    """This data class stores the value of grade, and the corresponding blink
-    rate and body concentration value of it.
-    """
-    value: float
-    blink: Optional[int]  # None occurs when face existence is low.
-    body: float
-
-
 @dataclass(order=True)
 class Interval:
     """This data class stores the start time, end time (epoch) and grade of an

@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5 import QtWidgets
 
-from posture.train import PostureLabel
+from posture.calculator import PostureLabel
 
 
 class _ArialFont(QFont):
@@ -138,6 +138,16 @@ class ProgressDialog(QtWidgets.QProgressDialog):
         label = Label(font_size=14)
         label.setAlignment(Qt.AlignCenter)
         self.setLabel(label)
+
+
+class PullDownMenu(QtWidgets.QComboBox):
+    def __init__(self, font_size: int = 12) -> None:
+        super().__init__()
+        self.setFixedSize(120, 40)
+        self.setFont(_ArialFont(font_size))
+
+    def add_item(self, item: str) -> None:
+        self.addItem(item)
 
 
 class StatusBar(QtWidgets.QStatusBar):

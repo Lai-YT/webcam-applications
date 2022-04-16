@@ -1,11 +1,18 @@
+from datetime import datetime
 from typing import Dict, Tuple
 
-from PyQt5.QtCore import QObject, QThread, pyqtSlot
+from PyQt5.QtCore import QObject
+import requests
 
+import concentration.fuzzy.parse as parse
+import server.main as flask_server
+import server.post as poster
 from app.app_type import ApplicationType
 from app.webcam_application import WebcamApplication
-from intergrated_gui.panel_controller import PanelController
-from intergrated_gui.window import Window
+from concentration.fuzzy.classes import Interval
+from gui.panel_controller import PanelController
+from gui.window import Window
+from util.path import to_abs_path
 from util.task_worker import TaskWorker
 
 
@@ -20,20 +27,13 @@ class WindowController(QObject):
         self._connect_app_and_information()
         self._connect_app_and_frame()
         self._connect_information_and_panel()
+        self._connect_grade_output_routines()
         self._start_app()
 
     def _start_app(self) -> None:
         self._worker = TaskWorker(self._app.start)
-        self._thread = QThread()
-        self._worker.moveToThread(self._thread)
-        # Worker starts running after the thread is started.
-        self._thread.started.connect(self._worker.run)
-        # The job of thread and worker is finished after the App. calls stop.
-        self._app.s_stopped.connect(self._thread.quit)
-        self._app.s_stopped.connect(self._worker.deleteLater)
-        self._thread.finished.connect(self._thread.deleteLater)
-
-        self._thread.start()
+        self._app.s_stopped.connect(self._worker.quit)
+        self._worker.start()
 
     def _connect_app_and_information(self) -> None:
         information = self._window.widgets["information"]
@@ -76,3 +76,28 @@ class WindowController(QObject):
                         if checked else
                         info_widget.hide(info)
                 )
+
+    def _connect_grade_output_routines(self) -> None:
+        self._json_file: str = to_abs_path("intervals.json")
+        parse.init_json(self._json_file)
+        self._app.s_concent_interval_refreshed.connect(self._write_grade_into_json)
+
+        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
+        self._app.s_concent_interval_refreshed.connect(self._send_grade_to_server)
+
+    def _send_grade_to_server(self, interval: Interval) -> None:
+        # Same as adding keys into __dict__.
+        # Surprisingly, this changes the content of __dict__,
+        # but doesn't really add attributes to interval.
+        interval.time = datetime.fromtimestamp(interval.end).strftime(poster.DATE_STR_FORMAT)
+        # TODO: should be changed to a real student id
+        interval.id = 100
+        try:
+            requests.post(self._server_url, json=interval.__dict__)
+        except requests.ConnectionError:
+            # Skip posting if the connection fails,
+            # which may be caused by server not running.
+            pass
+
+    def _write_grade_into_json(self, interval: Interval) -> None:
+        parse.append_to_json(self._json_file, interval.__dict__)

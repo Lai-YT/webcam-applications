@@ -3,7 +3,7 @@ from configparser import ConfigParser
 from copy import deepcopy
 from operator import methodcaller
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import cv2
 import dlib
@@ -12,26 +12,30 @@ from PyQt5.QtGui import QImage
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
+from tensorflow.keras import models
 
 from app.app_type import ApplicationType
-from brightness.calcuator import BrightnessMode
+from brightness.calculator import BrightnessMode
 from brightness.controller import BrightnessController
 from concentration.fuzzy.classes import Interval
 from concentration.grader import ConcentrationGrader
-from distance.calculator import (DistanceCalculator,
-                                 draw_landmarks_used_by_distance_calculator)
+from distance.calculator import (
+    DistanceCalculator, draw_landmarks_used_by_distance_calculator
+)
 from distance.guard import DistanceGuard, DistanceState
 from focus_time.guard import TimeGuard
-from intergrated_gui.popup_widget import TimeState
-from posture.calculator import (AngleCalculator, PosturePredictor,
-                                draw_landmarks_used_by_angle_calculator)
+from gui.popup_widget import TimeState
+from posture.calculator import (
+    PostureLabel, PosturePredictor, draw_landmarks_used_by_angle_calculator
+)
 from posture.guard import PostureGuard
-from posture.train import ModelPath, ModelTrainer, PostureLabel
 from util.color import GREEN, MAGENTA
 from util.image_convert import ndarray_to_qimage
 from util.image_type import ColorImage
 from util.path import to_abs_path
+from util.task_worker import TaskWorker
 from util.time import Timer
+from util.video_writer import VideoWriter
 
 
 class WebcamApplication(QObject):
@@ -68,7 +72,7 @@ class WebcamApplication(QObject):
             Emits after the WebcamApplication stops running.
     """
 
-    SETTINGS_FILE = (Path(__file__).parent / "settings.ini").resolve()
+    SETTINGS_FILE = to_abs_path("./app/settings.ini")
 
     # Signals used to communicate with controller.
     s_frame_refreshed = pyqtSignal(QImage)
@@ -91,6 +95,8 @@ class WebcamApplication(QObject):
         self._f_ready: bool = False
 
         self._webcam = cv2.VideoCapture(0)
+        # self._writer = VideoWriter("concent_live")
+        # atexit.register(self._writer.release)
         self._create_face_detectors()
         self._create_concentration_grader()
         self._create_guards()
@@ -114,7 +120,7 @@ class WebcamApplication(QObject):
         self._landmarks: NDArray[(68, 2), Int[32]] = None
         self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
         self._shape_predictor = dlib.shape_predictor(
-            to_abs_path("posture/trained_models/shape_predictor_68_face_landmarks.dat")
+            to_abs_path("dlib_model/shape_predictor_68_face_landmarks.dat")
         )
 
     def _create_brightness_controller(self) -> None:
@@ -133,7 +139,7 @@ class WebcamApplication(QObject):
         self._concentration_grader.s_concent_interval_refreshed.connect(
             self.s_concent_interval_refreshed
         )
-        self._stop_grading_if_all_related_app_disabled_else_keep_grading()
+        self._keep_grading_if_related_apps_enabled()
 
     def _create_guards(self) -> None:
         self._create_distance_guard()
@@ -175,10 +181,10 @@ class WebcamApplication(QObject):
         settings = self._settings[ApplicationType.POSTURE_DETECTION.name]
 
         self._posture_detect = settings.getboolean("ENABLED")
-        model: str = settings["MODEL_PATH"]
         self._posture_guard = PostureGuard(
-            PosturePredictor(ModelTrainer.load_model(ModelPath[model])),
-            AngleCalculator(),
+            PosturePredictor(
+                models.load_model(to_abs_path("posture/models/self_trained_model"))
+            ),
             settings.getfloat("ANGLE"),
             settings.getboolean("WARNING"),
             self._concentration_grader
@@ -214,7 +220,7 @@ class WebcamApplication(QObject):
         if enabled is not None:
             settings["ENABLED"] = str(enabled)
             self._distance_measure = enabled
-            self._stop_grading_if_all_related_app_disabled_else_keep_grading()
+            self._keep_grading_if_related_apps_enabled()
 
     def set_focus_time(
             self, *,
@@ -242,21 +248,14 @@ class WebcamApplication(QObject):
                 self._time_guard.show()
             else:
                 self._time_guard.hide()
-            self._stop_grading_if_all_related_app_disabled_else_keep_grading()
 
     def set_posture_detect(
             self, *,
             enabled: Optional[bool] = None,
-            model_path: Optional[ModelPath] = None,
             warn_angle: Optional[float] = None,
             warning_enabled: Optional[bool] = None) -> None:
         settings = self._settings[ApplicationType.POSTURE_DETECTION.name]
 
-        if model_path is not None:
-            settings["MODEL_PATH"] = model_path.name  # is enum
-            self._posture_guard.set_predictor(
-                PosturePredictor(ModelTrainer.load_model(model_path))
-            )
         if warn_angle is not None:
             settings["LIMIT"] = str(warn_angle)
             self._posture_guard.set_warn_angle(warn_angle)
@@ -266,7 +265,7 @@ class WebcamApplication(QObject):
         if enabled is not None:
             settings["ENABLED"] = str(enabled)
             self._posture_detect = enabled
-            self._stop_grading_if_all_related_app_disabled_else_keep_grading()
+            self._keep_grading_if_related_apps_enabled()
 
     def set_brightness_optimization(
             self, *,
@@ -306,7 +305,11 @@ class WebcamApplication(QObject):
 
         while self._f_ready:
             frame: ColorImage
-            _, frame = self._webcam.read()
+            ret, frame = self._webcam.read()
+            # self._writer.write(frame)
+            if not ret:
+                print("Stream ends...")
+                break
             # mirrors, so horizontally flip
             frame = cv2.flip(frame, flipCode=1)
             # separate detections and markings
@@ -314,26 +317,13 @@ class WebcamApplication(QObject):
             # Analyze the frame to update face landmarks.
             self._update_face_and_landmarks(canvas, frame)
             # Do applications!
-            if self._distance_measure and self._has_face():
-                dist_info = self._distance_guard.warn_if_too_close(self._landmarks)
-                self.s_distance_refreshed.emit(*dist_info)
-            if self._posture_detect:
-                draw_landmarks_used_by_angle_calculator(canvas, self._landmarks)
-                post_info = self._posture_guard.check_posture(frame, self._landmarks)
-                self.s_posture_refreshed.emit(*post_info)
-            if self._focus_time:
-                # If the landmarks doesn't contain a face, ths user is
-                # considered not focusing on the screen, so the timer is paused.
-                if not self._has_face():
-                    self._timer.pause()
-                else:
-                    self._timer.start()
-                time_info = self._time_guard.break_time_if_too_long(self._timer)
-                self.s_time_refreshed.emit(*time_info)
-            if self._brightness_optimize:
-                # Optimize brightness after passing required images.
-                bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
-                self.s_brightness_refreshed.emit(bright)
+            workers: List[TaskWorker] = []
+            workers.append(TaskWorker(self._do_distance_measurement))
+            workers.append(TaskWorker(self._do_posture_detection, canvas, frame))
+            workers.append(TaskWorker(self._do_focus_timing))
+            workers.append(TaskWorker(self._do_brightness_optimization, frame))
+            for worker in workers:
+                worker.start()
 
             # Do concentration gradings!
             self._concentration_grader.add_frame()
@@ -352,18 +342,47 @@ class WebcamApplication(QObject):
         """Stops the execution loop by changing the flag."""
         self._f_ready = False
 
-    def _stop_grading_if_all_related_app_disabled_else_keep_grading(self) -> None:
-        all_disabled = not any(
+    def _do_distance_measurement(self) -> None:
+        if self._distance_measure and self._has_face():
+            dist_info = self._distance_guard.warn_if_too_close(self._landmarks)
+            self.s_distance_refreshed.emit(*dist_info)
+
+    def _do_posture_detection(self, canvas, frame) -> None:
+        if self._posture_detect:
+            draw_landmarks_used_by_angle_calculator(canvas, self._landmarks)
+            post_info = self._posture_guard.check_posture(frame, self._landmarks)
+            self.s_posture_refreshed.emit(*post_info)
+
+    def _do_focus_timing(self) -> None:
+        if self._focus_time:
+            # If the landmarks doesn't contain a face, ths user is
+            # considered not focusing on the screen, so the timer is paused.
+            if not self._has_face():
+                self._timer.pause()
+            else:
+                self._timer.start()
+            time_info = self._time_guard.break_time_if_too_long(self._timer)
+            self.s_time_refreshed.emit(*time_info)
+
+    def _do_brightness_optimization(self, frame) -> None:
+        if self._brightness_optimize:
+            # Optimize brightness after passing required images.
+            bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
+            self.s_brightness_refreshed.emit(bright)
+
+    def _keep_grading_if_related_apps_enabled(self) -> None:
+        # Need both distance measurement and posture detection to have
+        # the concentration grader work.
+        relate_enabled = all(
             [self._settings.getboolean(app_type.name, "ENABLED")
              for app_type in (ApplicationType.DISTANCE_MEASUREMENT,
-                              ApplicationType.FOCUS_TIMING,
                               ApplicationType.POSTURE_DETECTION)]
         )
 
-        if all_disabled:
-            self._concentration_grader.stop_grading()
-        else:
+        if relate_enabled:
             self._concentration_grader.start_grading()
+        else:
+            self._concentration_grader.stop_grading()
 
     def _update_face_and_landmarks(self, canvas: ColorImage, frame: ColorImage) -> None:
         """

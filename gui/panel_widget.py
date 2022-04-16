@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import (
 )
 
 from app.app_type import ApplicationType
-from brightness.calcuator import BrightnessMode
-from intergrated_gui.component import (
+from brightness.calculator import BrightnessMode
+from gui.component import (
     ActionButton, CheckableGroupBox, HorizontalSlider, Label, LineEdit,
     OptionCheckBox, OptionRadioButton,
 )
@@ -160,9 +160,6 @@ class PosturePanel(CheckableGroupBox):
         self.warning = OptionCheckBox("enable sound warning")
         self.warning.setChecked(True)
         self._layout.addWidget(self.warning)
-
-        self.custom = OptionCheckBox("use customized model")
-        self._layout.addWidget(self.custom)
 
 
 class BrightnessPanel(CheckableGroupBox):

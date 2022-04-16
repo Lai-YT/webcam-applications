@@ -20,7 +20,7 @@ class TimeWindowTestCase(unittest.TestCase):
             time.sleep(1)
 
         self.assertEqual(len(self.time_window), len(times))
-        for t, ans_t in zip(times, self.time_window):
+        for t, ans_t in zip(times, self.time_window.times()):
             self.assertLessEqual(abs(t - ans_t), 1)
 
     def test_append_time_exceed(self) -> None:
@@ -31,7 +31,7 @@ class TimeWindowTestCase(unittest.TestCase):
             time.sleep(25)
             if len(times) > 3:
                 times.pop(0)
-            for t, ans_t in zip(times, self.time_window):
+            for t, ans_t in zip(times, self.time_window.times()):
                 self.assertLessEqual(abs(t - ans_t), 1)
 
     def test_time_catch_callback(self) -> None:
@@ -64,13 +64,8 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
             self.time_window.append_time()
             time.sleep(4.5)
 
-        self.assertEqual(len(self.time_window), 14)
-        self.assertEqual(len(self.time_window.previous), 2)
-
-    def test_window_modified_with_property(self) -> None:
-        self.time_window.previous.append(0)
-
-        self.assertEqual(len(self.time_window.previous), 0)
+        self.assertEqual(len(self.time_window), 16)
+        self.assertEqual(len(self.time_window.prev_times()), 2)
 
     def test_append_time_not_exceed(self) -> None:
         times = []
@@ -80,8 +75,7 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
             time.sleep(1)
 
         self.assertEqual(len(self.time_window), len(times))
-        self.assertEqual(len(self.time_window.previous), 0)
-        for t, ans_t in zip(times, self.time_window):
+        for t, ans_t in zip(times, self.time_window.times()):
             self.assertLessEqual(abs(t - ans_t), 1)
 
     def test_append_time_exceed(self) -> None:
@@ -93,9 +87,9 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
             time.sleep(4.5)
             if len(times) - sep_pos > 14:
                 sep_pos += 1
-            for t, ans_t in zip(times[sep_pos:], self.time_window):
+            for t, ans_t in zip(times[sep_pos:], self.time_window.times()):
                 self.assertLessEqual(abs(t - ans_t), 1)
-            for t, ans_t in zip(times[:sep_pos], self.time_window.previous):
+            for t, ans_t in zip(times[:sep_pos], self.time_window.prev_times()):
                 self.assertLessEqual(abs(t - ans_t), 1)
 
     def test_time_catch_callback(self) -> None:
@@ -114,11 +108,9 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
 
         self.time_window.clear(WindowType.PREVIOUS)
         self.assertEqual(len(self.time_window), 14)
-        self.assertEqual(len(self.time_window.previous), 0)
 
         self.time_window.clear(WindowType.CURRENT)
         self.assertEqual(len(self.time_window), 0)
-        self.assertEqual(len(self.time_window.previous), 0)
 
     def test_clear_both(self) -> None:
         for _ in range(16):
@@ -127,7 +119,6 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
 
         self.time_window.clear()
         self.assertEqual(len(self.time_window), 0)
-        self.assertEqual(len(self.time_window.previous), 0)
 
 
 if __name__ == "__main__":

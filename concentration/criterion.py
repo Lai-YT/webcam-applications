@@ -1,6 +1,8 @@
-from typing import List, Optional, Sized, Tuple
+from collections import deque
+from typing import Deque, List, Optional, Tuple
 
 from PyQt5.QtCore import QObject, pyqtSignal
+from more_itertools import SequenceView
 
 from concentration.fuzzy.classes import Interval
 from concentration.interval import IntervalType
@@ -86,13 +88,14 @@ class FaceExistenceRateCounter(QObject):
             s_low_existence_detected:
                 Emits when face existence is low and sends the start and end time.
         """
+        frame_times: SequenceView = self._frame_times.times()
         # Frame time is added every frame but face isn't,
         # so is used as the prerequisite for face existence check.
-        if (self._frame_times
-                and get_current_time() - self._frame_times[0] >= ONE_MIN
+        if (frame_times
+                and get_current_time() - frame_times[0] >= ONE_MIN
                 and self.is_low_face()):
             self.s_low_existence_detected.emit(
-                Interval(self._frame_times[0], self._frame_times[0] + ONE_MIN))
+                Interval(frame_times[0], frame_times[0] + ONE_MIN))
 
     def _get_face_existence_rate(self) -> float:
         """Returns the face existence rate of the minute.
@@ -159,7 +162,7 @@ class BlinkRateIntervalDetector(QObject):
                 Interval(self._last_end_time, one_min_before),
                 IntervalType.EXTRUSION,
                 self._get_blink_rate(WindowType.PREVIOUS))
-
+            print(f"EXTRUSION: {extrude_interval[2]}")
             return extrude_interval
         return None
 
@@ -195,10 +198,12 @@ class BlinkRateIntervalDetector(QObject):
         curr_blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
         if (now_time - self._last_end_time >= ONE_MIN
                 and self._good_rate_range[0] <= curr_blink_rate <= self._good_rate_range[1]):
+            print(f"REAL_TIME: {curr_blink_rate}")
             self.s_interval_detected.emit(Interval(one_min_before, now_time),
                                           IntervalType.REAL_TIME, curr_blink_rate)
         # Make each 60 seconds of the previous a look back interval.
         if one_min_before - self._last_end_time >= ONE_MIN:
+            print(f"LOOK_BACK: {self._get_blink_rate(WindowType.PREVIOUS)}")
             self.s_interval_detected.emit(Interval(self._last_end_time, one_min_before),
                                           IntervalType.LOOK_BACK,
                                           self._get_blink_rate(WindowType.PREVIOUS))
@@ -215,7 +220,7 @@ class BlinkRateIntervalDetector(QObject):
         if window_type is WindowType.CURRENT:
             blink_rate = len(self._blink_times)
         elif window_type is WindowType.PREVIOUS:
-            blink_rate = len(self._blink_times.previous)
+            blink_rate = len(self._blink_times.prev_times())
         return blink_rate
 
 
@@ -249,14 +254,15 @@ class BodyConcentrationCounter:
         def count_time_in_interval(times: DoubleTimeWindow) -> int:
             # Assumes that the interval is synced up properly, so the count is
             # simply the length of the corresponding window.
-            window: Sized
+            window: SequenceView
             if window_type is WindowType.PREVIOUS:
-                window = times.previous
+                window = times.prev_times()
             else:
-                window = times
+                window = times.times()
             return len(window)
         concent_count: int = count_time_in_interval(self._concentration_times)
         distract_count: int = count_time_in_interval(self._distraction_times)
+        print(f"concent: {concent_count}, distract: {distract_count}")
         return round(concent_count / (concent_count + distract_count), 2)
 
     def clear_windows(self, window_type: WindowType) -> None:
@@ -267,3 +273,53 @@ class BodyConcentrationCounter:
         """
         self._distraction_times.clear(window_type)
         self._concentration_times.clear(window_type)
+
+
+class FaceCenterCounter:
+    # TODO: nearly a duplicated reimplementation of DoubleTimeWindow to carry extra data
+    def __init__(self, time_width: int) -> None:
+        self._time_width = time_width
+        self._face_centers: Deque[Tuple[int, Tuple[float, float]]] = deque()
+        self._prev_face_centers: Deque[Tuple[int, Tuple[float, float]]] = deque()
+
+    def add_face_center(self, center: Tuple[float, float]) -> None:
+        self._face_centers.append((get_current_time(), center))
+        self.catch_up_with_current_time()
+
+    def catch_up_with_current_time(self) -> None:
+        """Pops out the earliest time record until the window catches up with
+        the current time (doesn't exceed the time_width).
+        """
+        while self._window_overfilled():
+            self._prev_face_centers.append(self._face_centers.popleft())
+
+        while self._prev_window_overfilled():
+            self._prev_face_centers.popleft()
+
+    def clear_windows(self, window_type: WindowType) -> None:
+        if window_type is WindowType.CURRENT:
+            self._face_centers.clear()
+        if window_type is WindowType.PREVIOUS:
+            self._prev_face_centers.clear()
+
+    def current(self) -> List[Tuple[float, float]]:
+        return [center for _, center in self._face_centers]
+
+    def previous(self) -> List[Tuple[float, float]]:
+        return [center for _, center in self._prev_face_centers]
+
+    def _window_overfilled(self) -> bool:
+        return self._width_of_window() > self._time_width
+
+    def _width_of_window(self) -> int:
+        if not self._face_centers:
+            return 0
+        return get_current_time() - self._face_centers[0][0]
+
+    def _prev_window_overfilled(self) -> bool:
+        return self._width_of_prev_window() > self._time_width
+
+    def _width_of_prev_window(self) -> int:
+        if not self._prev_face_centers:
+            return 0
+        return get_current_time() - self._time_width - self._prev_face_centers[0][0]
