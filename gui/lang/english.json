@@ -28,5 +28,13 @@
     "title": "Brightness Optimization",
     "webcam": "Webcam-based brightness detector \n(webcam required)",
     "color_system": "Color-system mode"
+  },
+  "InformationWidget": {
+    "distance": "Face Distance:",
+    "posture": "Posture Detect:",
+    "posture-detail": "Detail:",
+    "time": "Focus Time:",
+    "time-state": "Timer State:",
+    "brightness": "Screen Brightness:"
   }
 }

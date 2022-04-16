@@ -10,7 +10,7 @@
     "warn_restriction": "30 ~ 59.99 (公分)"
   },
   "TimePanel": {
-    "title": "專注時間",
+    "title": "注視時間",
     "limit": "時間限制：",
     "break": "休息時長：",
     "warning": "開啟聲音警示",
@@ -28,5 +28,13 @@
     "title": "亮度最佳化",
     "webcam": "背景環境亮度 \n(需要前鏡頭)",
     "color_system": "螢幕畫面顏色"
+  },
+  "InformationWidget": {
+    "distance": "臉部距離：",
+    "posture": "姿勢偵測：",
+    "posture-detail": "詳細內容：",
+    "time": "注視時間：",
+    "time-state": "時間狀態：",
+    "brightness": "螢幕亮度："
   }
 }
