@@ -2,7 +2,7 @@ from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (
-    QAbstractItemView, QTableWidget, QTableWidgetItem, QMainWindow, QPushButton
+    QTreeWidget, QTreeWidgetItem, QMainWindow, QPushButton
 )
 
 
@@ -92,16 +92,14 @@ class ColumnHeader:
 
 
 class Monitor(QMainWindow):
-    s_button_clicked = pyqtSignal(int)
+    s_button_clicked = pyqtSignal(str)
 
     def __init__(self, header: ColumnHeader, key_label: str = None) -> None:
         super().__init__()
         self.setWindowTitle("Teacher Monitor")
         self.resize(640, 480)
 
-        self._table = QTableWidget(0, header.col_count)
-        # read-only
-        self._table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self._table = QTreeWidget()
         self.setCentralWidget(self._table)
 
         self._set_col_header(header)
@@ -113,30 +111,33 @@ class Monitor(QMainWindow):
 
     def _set_col_header(self, header: ColumnHeader) -> None:
         self._header = header
-        self._table.setColumnCount(header.col_count + 1)  # button
-        self._table.setHorizontalHeaderLabels(header.labels())
-        # add button header
-        self._table.setHorizontalHeaderItem(header.col_count, QTableWidgetItem("history"))
+        self._table.setColumnCount(header.col_count)
+        self._table.setHeaderLabels(list(header.labels()))
 
     def insert_row(self, row: Row) -> None:
         """Inserts a new row to the bottom of the table."""
-        self._table.insertRow(self._table.rowCount())
+        content = [str(col.value) for col in row]
+        new_item = QTreeWidgetItem(self._table, content)
+        self._table.addTopLevelItem(new_item)
 
-        row_no = self._table.rowCount() - 1
-        self.update_row(row_no, row)
-
-        button = QPushButton("look back")
         key_index = self._header.labels().index(self._key_label)
-        # send id to controller
-        button.clicked.connect(
-            lambda: self.s_button_clicked.emit(row[key_index].value)
+        # NOTE: this signal is emitted more than once on a single expansion click
+        self._table.itemExpanded.connect(
+            lambda item: self.s_button_clicked.emit(item.text(key_index))
         )
-        # append button in row
-        self._table.setCellWidget(row_no, len(row), button)
 
     def update_row(self, row_no: int, row: Row) -> None:
+        # A copy of the top level item is made before updating,
+        # then the copy is inserted as the record (child).
+        # NOTE: QTreeWidgetItem.clone() can't be used because it aslo clones the children.
+        item = self._table.topLevelItem(row_no)
+        content_copy = [item.text(i) for i in range(item.columnCount())]
+        item_copy = QTreeWidgetItem(item, content_copy)
+        # update top level
         for col in row:
-            self._table.setItem(row_no, col.no, QTableWidgetItem(str(col.value)))
+            item.setText(col.no, str(col.value))
+        # insert item record
+        item.insertChild(0, item_copy)
 
     def sort_rows_by_label(self, label: str, order: Qt.SortOrder) -> None:
         self._table.sortItems(self._header.labels().index(label), order)
@@ -149,7 +150,7 @@ class Monitor(QMainWindow):
         """
         label, value = key
         col_no = self._header.labels().index(label)
-        for row_no in range(self._table.rowCount()):
-            if self._table.item(row_no, col_no).text() == str(value):
+        for row_no in range(self._table.topLevelItemCount()):
+            if self._table.topLevelItem(row_no).text(col_no) == str(value):
                 return row_no
         return -1
