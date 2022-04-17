@@ -92,7 +92,7 @@ class ColumnHeader:
 
 
 class Monitor(QMainWindow):
-    s_button_clicked = pyqtSignal(int)
+    s_button_clicked = pyqtSignal(str)
 
     def __init__(self, header: ColumnHeader, key_label: str = None) -> None:
         super().__init__()
@@ -118,17 +118,20 @@ class Monitor(QMainWindow):
 
     def insert_row(self, row: Row) -> None:
         """Inserts a new row to the bottom of the table."""
-        self._table.addTopLevelItem(QTreeWidgetItem())
+        new_item = QTreeWidgetItem()
+        self._table.addTopLevelItem(new_item)
         self.update_row(self._table.topLevelItemCount() - 1, row)
 
-        # button = QPushButton("look back")
-        # key_index = self._header.labels().index(self._key_label)
-        # # send id to controller
-        # button.clicked.connect(
-        #     lambda: self.s_button_clicked.emit(row[key_index].value)
-        # )
-        # # append button in row
-        # self._table.setCellWidget(row_no, len(row), button)
+        button = QPushButton("look back")
+        key_index = self._header.labels().index(self._key_label)
+        # send key value to controller
+        # Since the signal carries a "str" regardless of the type of key value,
+        # always convert to str to prevent type error or surprisingly result.
+        button.clicked.connect(
+            lambda: self.s_button_clicked.emit(str(row[key_index].value))
+        )
+        # append button in row
+        self._table.setItemWidget(new_item, len(row), button)
 
     def update_row(self, row_no: int, row: Row) -> None:
         item = self._table.topLevelItem(row_no)
