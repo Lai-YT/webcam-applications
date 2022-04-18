@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Tuple
 import cv2
 import dlib
 import numpy as np
+from PyQt5.QtCore import QObject, QTimer, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QImage
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from imutils import face_utils
 from nptyping import Int, NDArray
 from tensorflow.keras import models
@@ -29,6 +29,7 @@ from posture.calculator import (
     PostureLabel, PosturePredictor, draw_landmarks_used_by_angle_calculator
 )
 from posture.guard import PostureGuard
+from screenshot_compare import get_compare_slices, get_screenshot
 from util.color import GREEN, MAGENTA
 from util.image_convert import ndarray_to_qimage
 from util.image_type import ColorImage
@@ -47,15 +48,6 @@ class WebcamApplication(QObject):
         brightness optimization
 
     Signals:
-        s_distance_refreshed:
-            Emits everytime distance measurement has a new result.
-            Sends the new distance.
-        s_time_refreshed:
-            Emits everytime the timer is updated.
-            Sends the time and its state.
-        s_posture_refreshed:
-            Emits everytime posture detection has a new result.
-            Sends the label of posture and few detection details.
         s_brightness_refreshed:
             Emits everytime the brightness of screen is updated.
             Sends the new brightness value.
@@ -63,6 +55,18 @@ class WebcamApplication(QObject):
             Emits everytime a new grade is published.
             Sends the interval dataclass which contains the start time,
             end time and grade.
+        s_distance_refreshed:
+            Emits everytime distance measurement has a new result.
+            Sends the new distance.
+        s_posture_refreshed:
+            Emits everytime posture detection has a new result.
+            Sends the label of posture and few detection details.
+        s_screenshot_refreshed:
+            Emits everytime a new screenshot is ready to be compared with others.
+            Sends the sequence of frame data.
+        s_time_refreshed:
+            Emits everytime the timer is updated.
+            Sends the time and its state.
         s_frame_refreshed:
             Emits every time a new frame is captured.
             Sends the new frame.
@@ -75,12 +79,14 @@ class WebcamApplication(QObject):
     SETTINGS_FILE = to_abs_path("./app/settings.ini")
 
     # Signals used to communicate with controller.
-    s_frame_refreshed = pyqtSignal(QImage)
-    s_distance_refreshed = pyqtSignal(float, DistanceState)
-    s_time_refreshed = pyqtSignal(int, TimeState)
-    s_posture_refreshed = pyqtSignal(PostureLabel, str)
     s_brightness_refreshed = pyqtSignal(int)
     s_concent_interval_refreshed = pyqtSignal(Interval)
+    s_distance_refreshed = pyqtSignal(float, DistanceState)
+    s_frame_refreshed = pyqtSignal(QImage)
+    s_posture_refreshed = pyqtSignal(PostureLabel, str)
+    s_screenshot_refreshed = pyqtSignal(np.ndarray)
+    s_time_refreshed = pyqtSignal(int, TimeState)
+
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 
@@ -101,6 +107,10 @@ class WebcamApplication(QObject):
         self._create_concentration_grader()
         self._create_guards()
         self._create_brightness_controller()
+
+        self._screenshot_timer = QTimer()
+        self._screenshot_timer.timeout.connect(self._send_data_of_screenshot_compare)
+        self._screenshot_timer.start(5000)
 
     def _load_settings(self) -> None:
         self._settings = ConfigParser()
@@ -369,6 +379,11 @@ class WebcamApplication(QObject):
             # Optimize brightness after passing required images.
             bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
             self.s_brightness_refreshed.emit(bright)
+
+    def _send_data_of_screenshot_compare(self) -> None:
+        data: NDArray[(36,), Int[16]] = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
+        self.s_screenshot_refreshed.emit(data)
+        print(data)
 
     def _keep_grading_if_related_apps_enabled(self) -> None:
         # Need both distance measurement and posture detection to have

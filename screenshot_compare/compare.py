@@ -1,5 +1,5 @@
 import numpy as np
-from nptyping import Float64, NDArray
+from nptyping import Float64, Int16, NDArray
 
 from util.image_type import GrayImage
 
@@ -40,10 +40,13 @@ if __name__ == "__main__":
     time.sleep(3)  # time for loading
     google: GrayImage = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
 
-    diff = get_compare_slices(editor) - get_compare_slices(google)
+    # don't need that much precision
+    diff: NDArray[(36,), Int16] = (
+        get_compare_slices(editor) - get_compare_slices(google)
+    ).astype(np.int16)
     print("6 x 6 value diffs: ")
     print(diff)
-    print(f"square sum: {sum(np.square(diff, dtype=np.int32, casting='unsafe'))}")
+    print(f"square sum: {sum(np.square(diff))}")
 
     fig, axs = plt.subplots(1, 2)
     axs[0].hist(editor.ravel(), range=(0, 255), bins=128)
