@@ -1,3 +1,4 @@
+import atexit
 from configparser import ConfigParser
 from datetime import datetime
 from typing import Dict, Tuple
@@ -32,10 +33,11 @@ class WindowController(QObject):
         self._connect_config_change()
         self._connect_grade_output_routines()
 
-        # these configurations are handled by windows since they have not much
+        # These configurations are handled by windows since they have not much
         # to do with app.
         self._CONFIG_FILE = to_abs_path("./gui/config.ini")
         self._init_global_config()
+        atexit.register(self._store_global_config)
 
         self._start_app()
 
@@ -87,32 +89,12 @@ class WindowController(QObject):
                 )
 
     def _connect_config_change(self) -> None:
-        # Try to reduce the memory comsumption by delete-after-use since
-        # config usually aren't changed frequently.
-        def change_language_of_widgets(lang_no: int) -> None:
-            new_lang = Language(lang_no)
-            for widget in self._window.widgets.values():
-                widget.change_language(new_lang)
-
-        def update_language_config(lang_no: int) -> None:
-            new_lang = Language(lang_no)
-            self._load_global_config()
-            self._config["GLOBAL"]["language"] = new_lang.name
-            self._store_global_config()
-            del self._config
-
         # index is designed to be as same as the value of enum Language
         self._window.widgets["config"].combox.currentIndexChanged.connect(
-            change_language_of_widgets)
-
-        self._window.widgets["config"].combox.currentIndexChanged.connect(
-            update_language_config)
+            self._change_language_of_widgets)
 
         def update_id_config(id: str) -> None:
-            self._load_global_config()
-            self._config["GLOBAL"]["id"] = id
-            self._store_global_config()
-            del self._config
+            self._student_id = id
 
         self._window.widgets["config"].id.textChanged.connect(update_id_config)
 
@@ -129,7 +111,7 @@ class WindowController(QObject):
         # Surprisingly, this changes the content of __dict__,
         # but doesn't really add attributes to interval.
         interval.time = datetime.fromtimestamp(interval.end).strftime(poster.DATE_STR_FORMAT)
-        interval.id = self._window.widgets["config"].id.text()
+        interval.id = self._student_id
         try:
             requests.post(self._server_url, json=interval.__dict__)
         except requests.ConnectionError:
@@ -140,20 +122,32 @@ class WindowController(QObject):
     def _write_grade_into_json(self, interval: Interval) -> None:
         parse.append_to_json(self._json_file, interval.__dict__)
 
+    def _change_language_of_widgets(self, lang_no: int) -> None:
+        self._lang = Language(lang_no)
+        for widget in self._window.widgets.values():
+            widget.change_language(self._lang)
+
     def _init_global_config(self) -> None:
         """Initializes student id and language of window."""
+        # Try to reduce the memory comsumption by delete-after-use.
         self._load_global_config()
-        student_id = self._config.get("GLOBAL", "id")
-        lang = self._config.get("GLOBAL", "language")
+        self._student_id = self._config.get("GLOBAL", "id")
+        self._lang = Language[self._config.get("GLOBAL", "language")]
         del self._config
 
-        self._window.widgets["config"].id.setText(student_id)
-        self._window.widgets["config"].combox.setCurrentIndex(Language[lang].value)
+        self._window.widgets["config"].id.setText(self._student_id)
+        self._window.widgets["config"].combox.setCurrentIndex(self._lang.value)
 
     def _load_global_config(self) -> None:
         self._config = ConfigParser()
         self._config.read(self._CONFIG_FILE, encoding="utf-8")
 
     def _store_global_config(self) -> None:
+        """Writes the current global configurations back into the config file."""
+        self._load_global_config()
+
+        self._config["GLOBAL"]["language"] = self._lang.name
+        self._config["GLOBAL"]["id"] = self._student_id
+
         with open(self._CONFIG_FILE, "w", encoding="utf-8") as f:
             self._config.write(f)
