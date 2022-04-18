@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Dict, Tuple
 
 from PyQt5.QtCore import QObject
+import numpy as np
 import requests
 
 import concentration.fuzzy.parse as parse
@@ -31,7 +32,10 @@ class WindowController(QObject):
         self._connect_app_and_frame()
         self._connect_information_and_panel()
         self._connect_config_change()
+
+        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
         self._connect_grade_output_routines()
+        self._connect_slices_post()
 
         # These configurations are handled by windows since they have not much
         # to do with app.
@@ -103,17 +107,18 @@ class WindowController(QObject):
         parse.init_json(self._json_file)
         self._app.s_concent_interval_refreshed.connect(self._write_grade_into_json)
 
-        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
         self._app.s_concent_interval_refreshed.connect(self._send_grade_to_server)
 
+    def _connect_slices_post(self) -> None:
+        self._app.s_screenshot_refreshed.connect(self._send_slices_to_server)
+
     def _send_grade_to_server(self, interval: Interval) -> None:
-        # Same as adding keys into __dict__.
-        # Surprisingly, this changes the content of __dict__,
-        # but doesn't really add attributes to interval.
-        interval.time = datetime.fromtimestamp(interval.end).strftime(poster.DATE_STR_FORMAT)
-        interval.id = self._student_id
+        grade = interval.__dict__
+        # add new key info
+        grade["time"] = datetime.fromtimestamp(interval.end).strftime(poster.DATE_STR_FORMAT)
+        grade["id"] = self._student_id
         try:
-            requests.post(self._server_url, json=interval.__dict__)
+            requests.post(f"{self._server_url}/grade", json=grade)
         except requests.ConnectionError:
             # Skip posting if the connection fails,
             # which may be caused by server not running.
@@ -121,6 +126,18 @@ class WindowController(QObject):
 
     def _write_grade_into_json(self, interval: Interval) -> None:
         parse.append_to_json(self._json_file, interval.__dict__)
+
+    def _send_slices_to_server(self, slices: np.ndarray) -> None:
+        data = {
+            "id": self._student_id,
+            "slices": slices.tolist(),  # ndarray is not JSON serializable
+        }
+        try:
+            requests.post(f"{self._server_url}/screenshot", json=data)
+        except requests.ConnectionError:
+            # Skip posting if the connection fails,
+            # which may be caused by server not running.
+            pass
 
     def _change_language_of_widgets(self, lang_no: int) -> None:
         self._lang = Language(lang_no)
