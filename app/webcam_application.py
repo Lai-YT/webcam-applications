@@ -4,8 +4,7 @@ from configparser import ConfigParser
 from datetime import datetime, timedelta
 from copy import deepcopy
 from operator import methodcaller
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import cv2
 import dlib
