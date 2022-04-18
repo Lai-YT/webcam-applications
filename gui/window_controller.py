@@ -97,8 +97,8 @@ class WindowController(QObject):
         self._window.widgets["config"].combox.currentIndexChanged.connect(
             self._change_language_of_widgets)
 
-        def update_id_config(id: str) -> None:
-            self._student_id = id
+        def update_id_config(student_id: str) -> None:
+            self._student_id = student_id
 
         self._window.widgets["config"].id.textChanged.connect(update_id_config)
 
