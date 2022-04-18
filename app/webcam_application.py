@@ -300,7 +300,7 @@ class WebcamApplication(QObject):
         Arguments:
             refresh: Refresh speed in millisecond. 1ms in default.
         """
-        screenshot_worker = TaskWorker(self._send_data_of_screenshot_compare)
+        screenshot_worker = TaskWorker(self._send_slices_of_screenshot)
         self.s_stopped.connect(screenshot_worker.quit)
         self.s_stopped.connect(screenshot_worker.deleteLater)
         screenshot_worker.start()
@@ -383,8 +383,8 @@ class WebcamApplication(QObject):
             bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
             self.s_brightness_refreshed.emit(bright)
 
-    def _send_data_of_screenshot_compare(self) -> None:
-        """Sends the data of screenshot precisely on every XX:XX:00 and XX:XX:30."""
+    def _send_slices_of_screenshot(self) -> None:
+        """Sends the slices of screenshot precisely on every XX:XX:00 and XX:XX:30."""
         def _do_real_data_send() -> None:
             data: NDArray[(36,), Int[16]] = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
             self.s_screenshot_refreshed.emit(data)
@@ -402,8 +402,10 @@ class WebcamApplication(QObject):
 
         # How long we might be busy waiting and checking to approach the precise
         # time, better be longer than the task time.
+        # NOTE: the current time might be so close to the next fire time, smaller
+        # than gap, so no gap in the first task to prevent negative sleep time.
         BUSY_CHECK_GAP = 2
-        sleep = (next_fire - now).seconds - BUSY_CHECK_GAP
+        sleep = (next_fire - now).seconds
 
         while True:
             # sleep for most of the time
