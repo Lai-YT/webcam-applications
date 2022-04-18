@@ -9,18 +9,26 @@ PORT = 5000
 # Create flask instance.
 app = Flask(__name__)
 
-data = []
-@app.route("/", methods=["POST", "GET"])
+grade = []
+@app.route("/grade", methods=["POST", "GET"])
 def update_grade():
     if request.method == "POST":
-        data.append(request.get_json())
+        grade.append(request.get_json())
     elif request.method == "GET":
-        # You still have to return the data so can be "GET",
+        # You still have to return the grade so can be "GET",
         # otherwise can always only get an empty list.
-        ret_pack = data.copy()
-        data.clear()
+        ret_pack = grade.copy()
+        grade.clear()
         return json.dumps(ret_pack)
-    return json.dumps(data)
+    return json.dumps(grade)
+
+
+screenshots = []
+@app.route("/screenshot", methods=["POST", "GET"])
+def update_screenshot():
+    if request.method == "POST":
+        screenshots.append(request.get_json())
+    return json.dumps(screenshots)
 
 
 if __name__ == "__main__":
