@@ -1,5 +1,7 @@
 import atexit
+import time
 from configparser import ConfigParser
+from datetime import datetime, timedelta
 from copy import deepcopy
 from operator import methodcaller
 from pathlib import Path
@@ -8,7 +10,7 @@ from typing import Dict, List, Optional, Tuple
 import cv2
 import dlib
 import numpy as np
-from PyQt5.QtCore import QObject, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QImage
 from imutils import face_utils
 from nptyping import Int, NDArray
@@ -107,10 +109,6 @@ class WebcamApplication(QObject):
         self._create_concentration_grader()
         self._create_guards()
         self._create_brightness_controller()
-
-        self._screenshot_timer = QTimer()
-        self._screenshot_timer.timeout.connect(self._send_data_of_screenshot_compare)
-        self._screenshot_timer.start(5000)
 
     def _load_settings(self) -> None:
         self._settings = ConfigParser()
@@ -302,6 +300,11 @@ class WebcamApplication(QObject):
         Arguments:
             refresh: Refresh speed in millisecond. 1ms in default.
         """
+        screenshot_worker = TaskWorker(self._send_data_of_screenshot_compare)
+        self.s_stopped.connect(screenshot_worker.quit)
+        self.s_stopped.connect(screenshot_worker.deleteLater)
+        screenshot_worker.start()
+
         # Set the flag to True so can start capturing.
         # Loop breaks if someone calls stop() and sets the flag to False.
         self._f_ready = True
@@ -381,9 +384,38 @@ class WebcamApplication(QObject):
             self.s_brightness_refreshed.emit(bright)
 
     def _send_data_of_screenshot_compare(self) -> None:
-        data: NDArray[(36,), Int[16]] = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
-        self.s_screenshot_refreshed.emit(data)
-        print(data)
+        """Sends the data of screenshot precisely on every XX:XX:00 and XX:XX:30."""
+        def _do_real_data_send() -> None:
+            data: NDArray[(36,), Int[16]] = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
+            self.s_screenshot_refreshed.emit(data)
+
+        # time alignment tech.: https://stackoverflow.com/a/47510198
+        now = datetime.now()
+
+        # Align to the next XX:XX:30 or XX:XX:00 for the first start:
+        #   if is now more than 30, sleep until the next 00;
+        #   else is now more than 00 but not yet 30, sleep until the next 30.
+        second = 0
+        if now.second >= 30:
+            second = 30
+        next_fire = now.replace(second=second, microsecond=0) + timedelta(seconds=30)
+
+        # How long we might be busy waiting and checking to approach the precise
+        # time, better be longer than the task time.
+        BUSY_CHECK_GAP = 2
+        sleep = (next_fire - now).seconds - BUSY_CHECK_GAP
+
+        while True:
+            # sleep for most of the time
+            time.sleep(sleep)
+            # wait until the precise time is reached
+            while datetime.now() < next_fire:
+                pass
+
+            _do_real_data_send()
+
+            next_fire += timedelta(seconds=30)  # advance 30 seconds
+            sleep = 30 - BUSY_CHECK_GAP
 
     def _keep_grading_if_related_apps_enabled(self) -> None:
         # Need both distance measurement and posture detection to have
