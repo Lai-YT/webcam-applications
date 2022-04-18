@@ -1,15 +1,16 @@
 import atexit
+import time
 from configparser import ConfigParser
+from datetime import datetime, timedelta
 from copy import deepcopy
 from operator import methodcaller
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import cv2
 import dlib
 import numpy as np
-from PyQt5.QtGui import QImage
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QImage
 from imutils import face_utils
 from nptyping import Int, NDArray
 from tensorflow.keras import models
@@ -29,6 +30,7 @@ from posture.calculator import (
     PostureLabel, PosturePredictor, draw_landmarks_used_by_angle_calculator
 )
 from posture.guard import PostureGuard
+from screenshot_compare import get_compare_slices, get_screenshot
 from util.color import GREEN, MAGENTA
 from util.image_convert import ndarray_to_qimage
 from util.image_type import ColorImage
@@ -47,15 +49,6 @@ class WebcamApplication(QObject):
         brightness optimization
 
     Signals:
-        s_distance_refreshed:
-            Emits everytime distance measurement has a new result.
-            Sends the new distance.
-        s_time_refreshed:
-            Emits everytime the timer is updated.
-            Sends the time and its state.
-        s_posture_refreshed:
-            Emits everytime posture detection has a new result.
-            Sends the label of posture and few detection details.
         s_brightness_refreshed:
             Emits everytime the brightness of screen is updated.
             Sends the new brightness value.
@@ -63,6 +56,18 @@ class WebcamApplication(QObject):
             Emits everytime a new grade is published.
             Sends the interval dataclass which contains the start time,
             end time and grade.
+        s_distance_refreshed:
+            Emits everytime distance measurement has a new result.
+            Sends the new distance.
+        s_posture_refreshed:
+            Emits everytime posture detection has a new result.
+            Sends the label of posture and few detection details.
+        s_screenshot_refreshed:
+            Emits everytime a new screenshot is ready to be compared with others.
+            Sends the sequence of frame data.
+        s_time_refreshed:
+            Emits everytime the timer is updated.
+            Sends the time and its state.
         s_frame_refreshed:
             Emits every time a new frame is captured.
             Sends the new frame.
@@ -75,12 +80,14 @@ class WebcamApplication(QObject):
     SETTINGS_FILE = to_abs_path("./app/settings.ini")
 
     # Signals used to communicate with controller.
-    s_frame_refreshed = pyqtSignal(QImage)
-    s_distance_refreshed = pyqtSignal(float, DistanceState)
-    s_time_refreshed = pyqtSignal(int, TimeState)
-    s_posture_refreshed = pyqtSignal(PostureLabel, str)
     s_brightness_refreshed = pyqtSignal(int)
     s_concent_interval_refreshed = pyqtSignal(Interval)
+    s_distance_refreshed = pyqtSignal(float, DistanceState)
+    s_frame_refreshed = pyqtSignal(QImage)
+    s_posture_refreshed = pyqtSignal(PostureLabel, str)
+    s_screenshot_refreshed = pyqtSignal(np.ndarray)
+    s_time_refreshed = pyqtSignal(int, TimeState)
+
     s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 
@@ -292,6 +299,11 @@ class WebcamApplication(QObject):
         Arguments:
             refresh: Refresh speed in millisecond. 1ms in default.
         """
+        screenshot_worker = TaskWorker(self._send_slices_of_screenshot)
+        self.s_stopped.connect(screenshot_worker.quit)
+        self.s_stopped.connect(screenshot_worker.deleteLater)
+        screenshot_worker.start()
+
         # Set the flag to True so can start capturing.
         # Loop breaks if someone calls stop() and sets the flag to False.
         self._f_ready = True
@@ -369,6 +381,44 @@ class WebcamApplication(QObject):
             # Optimize brightness after passing required images.
             bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
             self.s_brightness_refreshed.emit(bright)
+
+    def _send_slices_of_screenshot(self) -> None:
+        """Sends the slices of screenshot precisely on every XX:XX:00 and XX:XX:30."""
+        def _do_real_data_send() -> None:
+            data: ColorImage = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
+            # don't need that much precision
+            slices: NDArray[(36,), Int[32]] = get_compare_slices(data).astype(np.int16)
+            self.s_screenshot_refreshed.emit(slices)
+
+        # time alignment tech.: https://stackoverflow.com/a/47510198
+        now = datetime.now()
+
+        # Align to the next XX:XX:30 or XX:XX:00 for the first start:
+        #   if is now more than 30, sleep until the next 00;
+        #   else is now more than 00 but not yet 30, sleep until the next 30.
+        second = 0
+        if now.second >= 30:
+            second = 30
+        next_fire = now.replace(second=second, microsecond=0) + timedelta(seconds=30)
+
+        # How long we might be busy waiting and checking to approach the precise
+        # time, better be longer than the task time.
+        # NOTE: the current time might be so close to the next fire time, smaller
+        # than gap, so no gap in the first task to prevent negative sleep time.
+        BUSY_CHECK_GAP = 2
+        sleep = (next_fire - now).seconds
+
+        while True:
+            # sleep for most of the time
+            time.sleep(sleep)
+            # wait until the precise time is reached
+            while datetime.now() < next_fire:
+                pass
+
+            _do_real_data_send()
+
+            next_fire += timedelta(seconds=30)  # advance 30 seconds
+            sleep = 30 - BUSY_CHECK_GAP
 
     def _keep_grading_if_related_apps_enabled(self) -> None:
         # Need both distance measurement and posture detection to have

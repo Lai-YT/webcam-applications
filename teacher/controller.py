@@ -25,7 +25,7 @@ class MonitorController(QObject):
         self._create_table_if_not_exist()
         self._connect_signal()
 
-        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}/"
+        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
         self._fetch_timer = QTimer()
         self._fetch_timer.timeout.connect(self._get_grades_from_server)
         self._fetch_timer.start(1000)
@@ -63,7 +63,7 @@ class MonitorController(QObject):
         """Get new grades from the server and
         (1) stores into the database (2) updates to the GUI.
         """
-        r = requests.get(self._server_url)
+        r = requests.get(f"{self._server_url}/grade")
         for datum in r.json():
             # Convert time string to datetime.
             datum["time"] = datetime.strptime(datum["time"], poster.DATE_STR_FORMAT)

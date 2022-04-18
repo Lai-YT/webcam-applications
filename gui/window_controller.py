@@ -1,8 +1,10 @@
+import atexit
 from configparser import ConfigParser
 from datetime import datetime
 from typing import Dict, Tuple
 
 from PyQt5.QtCore import QObject
+import numpy as np
 import requests
 
 import concentration.fuzzy.parse as parse
@@ -30,12 +32,16 @@ class WindowController(QObject):
         self._connect_app_and_frame()
         self._connect_information_and_panel()
         self._connect_config_change()
-        self._connect_grade_output_routines()
 
-        # these configurations are handled by windows since they have not much
+        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
+        self._connect_grade_output_routines()
+        self._connect_slices_post()
+
+        # These configurations are handled by windows since they have not much
         # to do with app.
         self._CONFIG_FILE = to_abs_path("./gui/config.ini")
         self._init_global_config()
+        atexit.register(self._store_global_config)
 
         self._start_app()
 
@@ -87,32 +93,12 @@ class WindowController(QObject):
                 )
 
     def _connect_config_change(self) -> None:
-        # Try to reduce the memory comsumption by delete-after-use since
-        # config usually aren't changed frequently.
-        def change_language_of_widgets(lang_no: int) -> None:
-            new_lang = Language(lang_no)
-            for widget in self._window.widgets.values():
-                widget.change_language(new_lang)
-
-        def update_language_config(lang_no: int) -> None:
-            new_lang = Language(lang_no)
-            self._load_global_config()
-            self._config["GLOBAL"]["language"] = new_lang.name
-            self._store_global_config()
-            del self._config
-
         # index is designed to be as same as the value of enum Language
         self._window.widgets["config"].combox.currentIndexChanged.connect(
-            change_language_of_widgets)
-
-        self._window.widgets["config"].combox.currentIndexChanged.connect(
-            update_language_config)
+            self._change_language_of_widgets)
 
         def update_id_config(id: str) -> None:
-            self._load_global_config()
-            self._config["GLOBAL"]["id"] = id
-            self._store_global_config()
-            del self._config
+            self._student_id = id
 
         self._window.widgets["config"].id.textChanged.connect(update_id_config)
 
@@ -121,17 +107,18 @@ class WindowController(QObject):
         parse.init_json(self._json_file)
         self._app.s_concent_interval_refreshed.connect(self._write_grade_into_json)
 
-        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
         self._app.s_concent_interval_refreshed.connect(self._send_grade_to_server)
 
+    def _connect_slices_post(self) -> None:
+        self._app.s_screenshot_refreshed.connect(self._send_slices_to_server)
+
     def _send_grade_to_server(self, interval: Interval) -> None:
-        # Same as adding keys into __dict__.
-        # Surprisingly, this changes the content of __dict__,
-        # but doesn't really add attributes to interval.
-        interval.time = datetime.fromtimestamp(interval.end).strftime(poster.DATE_STR_FORMAT)
-        interval.id = self._window.widgets["config"].id.text()
+        grade = interval.__dict__
+        # add new key info
+        grade["time"] = datetime.fromtimestamp(interval.end).strftime(poster.DATE_STR_FORMAT)
+        grade["id"] = self._student_id
         try:
-            requests.post(self._server_url, json=interval.__dict__)
+            requests.post(f"{self._server_url}/grade", json=grade)
         except requests.ConnectionError:
             # Skip posting if the connection fails,
             # which may be caused by server not running.
@@ -140,20 +127,44 @@ class WindowController(QObject):
     def _write_grade_into_json(self, interval: Interval) -> None:
         parse.append_to_json(self._json_file, interval.__dict__)
 
+    def _send_slices_to_server(self, slices: np.ndarray) -> None:
+        data = {
+            "id": self._student_id,
+            "slices": slices.tolist(),  # ndarray is not JSON serializable
+        }
+        try:
+            requests.post(f"{self._server_url}/screenshot", json=data)
+        except requests.ConnectionError:
+            # Skip posting if the connection fails,
+            # which may be caused by server not running.
+            pass
+
+    def _change_language_of_widgets(self, lang_no: int) -> None:
+        self._lang = Language(lang_no)
+        for widget in self._window.widgets.values():
+            widget.change_language(self._lang)
+
     def _init_global_config(self) -> None:
         """Initializes student id and language of window."""
+        # Try to reduce the memory comsumption by delete-after-use.
         self._load_global_config()
-        student_id = self._config.get("GLOBAL", "id")
-        lang = self._config.get("GLOBAL", "language")
+        self._student_id = self._config.get("GLOBAL", "id")
+        self._lang = Language[self._config.get("GLOBAL", "language")]
         del self._config
 
-        self._window.widgets["config"].id.setText(student_id)
-        self._window.widgets["config"].combox.setCurrentIndex(Language[lang].value)
+        self._window.widgets["config"].id.setText(self._student_id)
+        self._window.widgets["config"].combox.setCurrentIndex(self._lang.value)
 
     def _load_global_config(self) -> None:
         self._config = ConfigParser()
         self._config.read(self._CONFIG_FILE, encoding="utf-8")
 
     def _store_global_config(self) -> None:
+        """Writes the current global configurations back into the config file."""
+        self._load_global_config()
+
+        self._config["GLOBAL"]["language"] = self._lang.name
+        self._config["GLOBAL"]["id"] = self._student_id
+
         with open(self._CONFIG_FILE, "w", encoding="utf-8") as f:
             self._config.write(f)

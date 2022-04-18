@@ -28,7 +28,7 @@ def post_grade(data):
             datum["time"] = datetime.now().strftime(DATE_STR_FORMAT)
             datum["grade"] = random.randint(60, 100) / 100
 
-            requests.post(f"http://{flask_server.HOST}:{flask_server.PORT}", json=datum)
+            requests.post(f"http://{flask_server.HOST}:{flask_server.PORT}/grade", json=datum)
             # 1 ~ 2 sec delay between datum
             time.sleep(random.random() + 1)
         # 2 ~ 3 sec delay between data

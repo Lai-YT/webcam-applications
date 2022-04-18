@@ -3,7 +3,7 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt

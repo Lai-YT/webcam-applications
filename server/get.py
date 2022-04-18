@@ -10,7 +10,7 @@ from teacher.controller import MonitorController
 from teacher.monitor import ColumnHeader, Monitor
 
 
-r = requests.get(f"http://{flask_server.HOST}:{flask_server.PORT}/")
+r = requests.get(f"http://{flask_server.HOST}:{flask_server.PORT}/grade")
 
 app = QApplication([])
 monitor = Monitor(
