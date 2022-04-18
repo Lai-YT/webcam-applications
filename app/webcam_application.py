@@ -386,8 +386,10 @@ class WebcamApplication(QObject):
     def _send_slices_of_screenshot(self) -> None:
         """Sends the slices of screenshot precisely on every XX:XX:00 and XX:XX:30."""
         def _do_real_data_send() -> None:
-            data: NDArray[(36,), Int[16]] = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
-            self.s_screenshot_refreshed.emit(data)
+            data: ColorImage = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
+            # don't need that much precision
+            slices: NDArray[(36,), Int[32]] = get_compare_slices(data).astype(np.int16)
+            self.s_screenshot_refreshed.emit(slices)
 
         # time alignment tech.: https://stackoverflow.com/a/47510198
         now = datetime.now()
