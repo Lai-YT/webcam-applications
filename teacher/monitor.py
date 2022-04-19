@@ -1,7 +1,6 @@
 from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem
 
 from util.color import RED
@@ -115,8 +114,12 @@ class Monitor(QMainWindow):
         self._table.setColumnCount(header.col_count)
         self._table.setHeaderLabels(list(header.labels()))
 
-    def insert_row(self, row: Row) -> None:
-        """Inserts a new row to the bottom of the table."""
+    def insert_row(self, row: Row) -> QTreeWidgetItem:
+        """Inserts a new row to the bottom of the table.
+
+        Returns:
+            The inserted widget item (row).
+        """
         content = [str(col.value) for col in row]
         new_item = QTreeWidgetItem(self._table, content)
         self._table.addTopLevelItem(new_item)
@@ -126,8 +129,13 @@ class Monitor(QMainWindow):
         self._table.itemExpanded.connect(
             lambda item: self.s_button_clicked.emit(item.text(key_index))
         )
+        return new_item
 
-    def update_row(self, row_no: int, row: Row) -> None:
+    def update_row(self, row_no: int, row: Row) -> QTreeWidgetItem:
+        """
+        Returns:
+            The updated widget item (row).
+        """
         # A copy of the top level item is made before updating,
         # then the copy is inserted as the record (child).
         # NOTE: QTreeWidgetItem.clone() can't be used because it aslo clones the children.
@@ -139,13 +147,7 @@ class Monitor(QMainWindow):
             item.setText(col.no, str(col.value))
         # insert item record
         item.insertChild(0, item_copy)
-
-    def set_background(self, row_no: int, label: str, color: Qt.GlobalColor) -> None:
-        """Sets the background of the specific label at row_no to color."""
-        item = self._table.topLevelItem(row_no)
-        col_no = self._header.labels().index(label)
-        # a bit dense on the background style so text are clear
-        item.setBackground(col_no, QBrush(color, Qt.Dense4Pattern))
+        return item
 
     def sort_rows_by_label(self, label: str, order: Qt.SortOrder) -> None:
         self._table.sortItems(self._header.labels().index(label), order)

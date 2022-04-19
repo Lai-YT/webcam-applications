@@ -6,6 +6,8 @@ from typing import Any, Mapping
 
 import requests
 from PyQt5.QtCore import QObject, QTimer, Qt
+from PyQt5.QtGui import QBrush
+from PyQt5.QtWidgets import QTreeWidgetItem
 
 import server.main as flask_server
 import server.post as poster
@@ -89,14 +91,14 @@ class MonitorController(QObject):
         row_no = self._monitor.search_row_no(("id", grade["id"]))
         row: Row = self._monitor.col_header.to_row(grade)
         if row_no == -1:  # row not found
-            self._monitor.insert_row(row)
+            row_item = self._monitor.insert_row(row)
         else:
-            self._monitor.update_row(row_no, row)
+            row_item = self._monitor.update_row(row_no, row)
         self._monitor.sort_rows_by_label("grade", Qt.AscendingOrder)
 
-        self._set_background_by_grade(grade["id"], grade["grade"])
+        self._set_background_by_grade(row_item, grade["grade"])
 
-    def _set_background_by_grade(self, student_id: str, grade: float) -> None:
+    def _set_background_by_grade(self, row_item: QTreeWidgetItem, grade: float) -> None:
         """Sets the background of label "grade" to green if grade is higher than
         0.8, else to red.
 
@@ -105,9 +107,8 @@ class MonitorController(QObject):
         color: Qt.GlobalColor = Qt.green
         if grade < 0.8:
             color = Qt.red
-        self._monitor.set_background(
-            row_no=self._monitor.search_row_no(("id", student_id)),
-            label="grade", color=color)
+        col_no = self._monitor.col_header.labels().index("grade")
+        row_item.setBackground(col_no, QBrush(color, Qt.Dense4Pattern))
 
     @staticmethod
     def _row_not_exists(row: sqlite3.Row) -> bool:
