@@ -11,7 +11,6 @@ app = QApplication([])
 
 monitor = Monitor(
     ColumnHeader((
-        ("status", str),
         ("id", str),
         ("time", datetime),
         ("grade", float),

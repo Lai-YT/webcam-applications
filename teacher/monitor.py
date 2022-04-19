@@ -1,7 +1,10 @@
 from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem
+
+from util.color import RED
 
 
 T = TypeVar("T")
@@ -136,6 +139,13 @@ class Monitor(QMainWindow):
             item.setText(col.no, str(col.value))
         # insert item record
         item.insertChild(0, item_copy)
+
+    def set_background(self, row_no: int, label: str, color: Qt.GlobalColor) -> None:
+        """Sets the background of the specific label at row_no to color."""
+        item = self._table.topLevelItem(row_no)
+        col_no = self._header.labels().index(label)
+        # a bit dense on the background style so text are clear
+        item.setBackground(col_no, QBrush(color, Qt.Dense4Pattern))
 
     def sort_rows_by_label(self, label: str, order: Qt.SortOrder) -> None:
         self._table.sortItems(self._header.labels().index(label), order)

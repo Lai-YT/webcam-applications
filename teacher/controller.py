@@ -67,15 +67,14 @@ class MonitorController(QObject):
         for datum in r.json():
             # Convert time string to datetime.
             datum["time"] = datetime.strptime(datum["time"], poster.DATE_STR_FORMAT)
-            # Add grade status in data.
-            datum["status"] = "X" if datum["grade"] < 0.8 else "O"
 
             self.store_new_grade(datum)
             self.show_new_grade(datum)
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
-        sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES (?, ?, ?, ?);"
+        holder = ", ".join(["?"] * self._monitor.col_header.col_count)
+        sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES ({holder});"
         row: Row = self._monitor.col_header.to_row(grade)
         with self._conn:
             self._conn.execute(sql, tuple(col.value for col in row))
@@ -94,6 +93,21 @@ class MonitorController(QObject):
         else:
             self._monitor.update_row(row_no, row)
         self._monitor.sort_rows_by_label("grade", Qt.AscendingOrder)
+
+        self._set_background_by_grade(grade["id"], grade["grade"])
+
+    def _set_background_by_grade(self, student_id: str, grade: float) -> None:
+        """Sets the background of label "grade" to green if grade is higher than
+        0.8, else to red.
+
+        Which implies the status of the specific student.
+        """
+        color: Qt.GlobalColor = Qt.green
+        if grade < 0.8:
+            color = Qt.red
+        self._monitor.set_background(
+            row_no=self._monitor.search_row_no(("id", student_id)),
+            label="grade", color=color)
 
     @staticmethod
     def _row_not_exists(row: sqlite3.Row) -> bool:
