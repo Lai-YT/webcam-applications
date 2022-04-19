@@ -112,8 +112,12 @@ class Monitor(QMainWindow):
         self._table.setColumnCount(header.col_count)
         self._table.setHeaderLabels(list(header.labels()))
 
-    def insert_row(self, row: Row) -> None:
-        """Inserts a new row to the bottom of the table."""
+    def insert_row(self, row: Row) -> QTreeWidgetItem:
+        """Inserts a new row to the bottom of the table.
+
+        Returns:
+            The inserted widget item (row).
+        """
         content = [str(col.value) for col in row]
         new_item = QTreeWidgetItem(self._table, content)
         self._table.addTopLevelItem(new_item)
@@ -123,8 +127,13 @@ class Monitor(QMainWindow):
         self._table.itemExpanded.connect(
             lambda item: self.s_button_clicked.emit(item.text(key_index))
         )
+        return new_item
 
-    def update_row(self, row_no: int, row: Row) -> None:
+    def update_row(self, row_no: int, row: Row) -> QTreeWidgetItem:
+        """
+        Returns:
+            The updated widget item (row).
+        """
         # A copy of the top level item is made before updating,
         # then the copy is inserted as the record (child).
         # NOTE: QTreeWidgetItem.clone() can't be used because it aslo clones the children.
@@ -136,6 +145,7 @@ class Monitor(QMainWindow):
             item.setText(col.no, str(col.value))
         # insert item record
         item.insertChild(0, item_copy)
+        return item
 
     def sort_rows_by_label(self, label: str, order: Qt.SortOrder) -> None:
         self._table.sortItems(self._header.labels().index(label), order)
