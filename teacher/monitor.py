@@ -3,8 +3,6 @@ from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem
 
-from util.color import RED
-
 
 T = TypeVar("T")
 
