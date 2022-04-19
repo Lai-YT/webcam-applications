@@ -92,6 +92,8 @@ class ColumnHeader:
 class Monitor(QMainWindow):
     s_button_clicked = pyqtSignal(str)
 
+    _MAX_HISTORY_NUM: int = 5
+
     def __init__(self, header: ColumnHeader, key_label: str = None) -> None:
         super().__init__()
         self.setWindowTitle("Teacher Monitor")
@@ -125,17 +127,23 @@ class Monitor(QMainWindow):
         )
 
     def update_row(self, row_no: int, row: Row) -> None:
-        # A copy of the top level item is made before updating,
-        # then the copy is inserted as the record (child).
-        # NOTE: QTreeWidgetItem.clone() can't be used because it aslo clones the children.
         item = self._table.topLevelItem(row_no)
-        content_copy = [item.text(i) for i in range(item.columnCount())]
-        item_copy = QTreeWidgetItem(item, content_copy)
         # update top level
         for col in row:
             item.setText(col.no, str(col.value))
-        # insert item record
-        item.insertChild(0, item_copy)
+
+    def add_history_of_row(self, row_no: int, hist_row: Row) -> None:
+        """Adds history from the top to the row specified with row number.
+
+        At most _MAX_HISTORY_NUM histories can be shown.
+        """
+        item = self._table.topLevelItem(row_no)
+        content = [str(col.value) for col in hist_row]
+        # 0 is from top
+        item.insertChild(0, QTreeWidgetItem(item, content))
+
+        while item.childCount() > Monitor._MAX_HISTORY_NUM:
+            item.removeChild(item.child(Monitor._MAX_HISTORY_NUM))
 
     def sort_rows_by_label(self, label: str, order: Qt.SortOrder) -> None:
         self._table.sortItems(self._header.labels().index(label), order)
