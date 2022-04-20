@@ -6,6 +6,8 @@ from typing import Any, Mapping
 
 import requests
 from PyQt5.QtCore import QObject, QTimer, Qt
+from PyQt5.QtGui import QBrush
+from PyQt5.QtWidgets import QTreeWidgetItem
 
 import server.main as flask_server
 import server.post as poster
@@ -67,15 +69,14 @@ class MonitorController(QObject):
         for datum in r.json():
             # Convert time string to datetime.
             datum["time"] = datetime.strptime(datum["time"], poster.DATE_STR_FORMAT)
-            # Add grade status in data.
-            datum["status"] = "X" if datum["grade"] < 0.8 else "O"
 
             self.store_new_grade(datum)
             self.show_new_grade(datum)
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
-        sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES (?, ?, ?, ?);"
+        holder = ", ".join(["?"] * self._monitor.col_header.col_count)
+        sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES ({holder});"
         row: Row = self._monitor.col_header.to_row(grade)
         with self._conn:
             self._conn.execute(sql, tuple(col.value for col in row))
@@ -90,10 +91,24 @@ class MonitorController(QObject):
         row_no = self._monitor.search_row_no(("id", grade["id"]))
         row: Row = self._monitor.col_header.to_row(grade)
         if row_no == -1:  # row not found
-            self._monitor.insert_row(row)
+            row_item = self._monitor.insert_row(row)
         else:
-            self._monitor.update_row(row_no, row)
+            row_item = self._monitor.update_row(row_no, row)
         self._monitor.sort_rows_by_label("grade", Qt.AscendingOrder)
+
+        self._set_background_by_grade(row_item, grade["grade"])
+
+    def _set_background_by_grade(self, row_item: QTreeWidgetItem, grade: float) -> None:
+        """Sets the background of label "grade" to green if grade is higher than
+        0.8, else to red.
+
+        Which implies the status of the specific student.
+        """
+        color: Qt.GlobalColor = Qt.green
+        if grade < 0.8:
+            color = Qt.red
+        col_no = self._monitor.col_header.labels().index("grade")
+        row_item.setBackground(col_no, QBrush(color, Qt.Dense4Pattern))
 
     @staticmethod
     def _row_not_exists(row: sqlite3.Row) -> bool:
