@@ -2,7 +2,7 @@ import atexit
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, List, Mapping
 
 import requests
 from PyQt5.QtCore import QObject, QTimer, Qt
@@ -72,6 +72,11 @@ class MonitorController(QObject):
 
             self.store_new_grade(datum)
             self.show_new_grade(datum)
+
+    def _get_history_from_database(self, student_id: int, amount: int) -> List[sqlite3.Row]:
+        sql = f"SELECT * FROM {self._table_name} WHERE id={student_id} ORDER BY time LIMIT {amount};"
+        with self._conn:
+            return self._conn.execute(sql).fetchall()
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""

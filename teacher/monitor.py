@@ -92,7 +92,7 @@ class ColumnHeader:
 class Monitor(QMainWindow):
     s_button_clicked = pyqtSignal(str)
 
-    _MAX_HISTORY_NUM: int = 5
+    MAX_HISTORY_NUM: int = 5
 
     def __init__(self, header: ColumnHeader, key_label: str = None) -> None:
         super().__init__()
@@ -148,15 +148,15 @@ class Monitor(QMainWindow):
     def add_history_of_row(self, row_no: int, hist_row: Row) -> None:
         """Adds history from the top to the row specified with row number.
 
-        At most _MAX_HISTORY_NUM histories can be shown.
+        At most MAX_HISTORY_NUM histories can be shown.
         """
         item = self._table.topLevelItem(row_no)
         content = [str(col.value) for col in hist_row]
         # 0 is from top
         item.insertChild(0, QTreeWidgetItem(item, content))
 
-        while item.childCount() > Monitor._MAX_HISTORY_NUM:
-            item.removeChild(item.child(Monitor._MAX_HISTORY_NUM))
+        while item.childCount() > Monitor.MAX_HISTORY_NUM:
+            item.removeChild(item.child(Monitor.MAX_HISTORY_NUM))
         return item
 
     def sort_rows_by_label(self, label: str, order: Qt.SortOrder) -> None:
