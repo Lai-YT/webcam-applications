@@ -98,32 +98,35 @@ class FuzzyGrader:
         self._grade["low"] = fuzz.trimf(self._grade.universe, [0, 0, 6])
 
     def _create_fuzzy_rules(self) -> List[ctrl.Rule]:
-        """Returns the fuzzy rule that control the grade."""
-        rule1 = ctrl.Rule(self._blink["poor"] | self._body["poor"] | self._center["poor"], self._grade["low"])
-        rule2 = ctrl.Rule(self._blink["average"] | self._center["average"], self._grade["medium"])
-        rule3 = ctrl.Rule(~self._blink["poor"] & self._body["good"] & self._center["good"], self._grade["high"])
+        """Returns the fuzzy rule that controls the grade."""
+        rule1 = ctrl.Rule(
+            # at least two poors to lead to poor
+            antecedent=(self._blink["poor"] & self._body["poor"])
+                        | (self._body["poor"] & self._center["poor"])
+                        | (self._center["poor"] & self._blink["poor"]),
+            consequent=self._grade["low"]
+        )
+        rule2 = ctrl.Rule(
+            # medium if not all good
+            antecedent=~(self._blink["good"]
+                         & self._body["good"]
+                         & self._center["good"]),
+            consequent=self._grade["medium"]
+        )
+        rule3 = ctrl.Rule(
+            # two goods are suffcient for a high grade
+            # NOTE: blink is a loose constraint, good & average is both enough
+            antecedent=(~self._blink["poor"] & self._body["good"])
+                        | (self._body["good"] & self._center["good"])
+                        | (self._center["good"] & ~self._blink["poor"]),
+            consequent=self._grade["high"]
+        )
         return [rule1, rule2, rule3]
 
     @staticmethod
     def _to_modified_grade(raw_grade: float) -> float:
-        # (2.0, 8.67)
-        return 0.1499 * raw_grade - 0.2999
-        # """Normalizes the grade interval to [0, 1] and do linear modification
-        #    to fine-tune the grade distribution.
-        #
-        # Modified grade is rounded to two decimal places.
-        #
-        # Arguments:
-        #     raw_grade: The unnormalized grade in [2, 6].
-        # """
-        # normalized_grade = (raw_grade - 2) / 4
-        #
-        # if normalized_grade > 0.75:
-        #     modified_grade = 0.6 + (normalized_grade - 0.75) * (0.4 / 0.25)
-        # else:
-        #     modified_grade = normalized_grade * (0.6 / 0.75)
-        #
-        # return round(modified_grade, 2)
+        # (4.33, 8.67)
+        return 0.2304 * raw_grade - 0.9977
 
 
 if __name__ == "__main__":
@@ -145,7 +148,7 @@ if __name__ == "__main__":
         ax = fig.add_subplot(111, projection='3d')
         x, y, z, c = [], [], [], []
         for blink_rate in np.arange(0, 20):
-            for body_concent in np.linspace(0.2, 1, num=16):
+            for body_concent in np.linspace(0, 1, num=20):
                 for center_value in np.linspace(0, 1, num=20):
                     x.append(blink_rate)
                     y.append(body_concent)
@@ -166,7 +169,7 @@ if __name__ == "__main__":
         # ax = fig.add_subplot(111, projection='3d')
         # BLINK_RATE = 5
         # x, y, z = [], [], []
-        # for body_concent in np.linspace(0.2, 1, num=16):
+        # for body_concent in np.linspace(0, 1, num=20):
         #     for center_value in np.linspace(0, 1, num=20):
         #         x.append(body_concent)
         #         y.append(center_value)
