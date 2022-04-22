@@ -103,8 +103,8 @@ class FuzzyGrader:
         rule1 = ctrl.Rule(
             # at least two poors to lead to poor
             antecedent=(self._blink["poor"] & self._body["poor"])
-                        | (self._body["poor"] & self._center["poor"])
-                        | (self._center["poor"] & self._blink["poor"]),
+                       | (self._body["poor"] & self._center["poor"])
+                       | (self._center["poor"] & self._blink["poor"]),
             consequent=self._grade["low"]
         )
         rule2 = ctrl.Rule(
@@ -118,8 +118,8 @@ class FuzzyGrader:
             # two goods are suffcient for a high grade
             # NOTE: blink is a loose constraint, good & average is both enough
             antecedent=(~self._blink["poor"] & self._body["good"])
-                        | (self._body["good"] & self._center["good"])
-                        | (self._center["good"] & ~self._blink["poor"]),
+                       | (self._body["good"] & self._center["good"])
+                       | (self._center["good"] & ~self._blink["poor"]),
             consequent=self._grade["high"]
         )
         return [rule1, rule2, rule3]
