@@ -44,8 +44,6 @@ class FuzzyGrader:
         grade: float = self._grader.output["grade"]
         if normalized:
             grade = FuzzyGrader._to_modified_grade(grade)
-        # if grade < 0.8:
-        #     print(grade, blink_rate, body_concent, center_value)
         return round(grade, 2)
 
     def view_membership_func(self) -> None:
@@ -126,8 +124,16 @@ class FuzzyGrader:
 
     @staticmethod
     def _to_modified_grade(raw_grade: float) -> float:
-        # (4.0, 8.0)
-        return 0.25 * raw_grade - 1
+        # The lowest possible raw grade 4.0 is directly converted to 0.4, while
+        # the highest is expanded to 1.
+        # The advantage over expanding both sides to 0 and 1 is that since
+        # there's always a gap between the lowest raw grade and 0, the expansion
+        # on the lower side pulls down relatively high grades.
+        # For example, blink 5, body 0.8 and center 0.2 is a good combination
+        # with raw grade 6.33, but has the only 0.58 after modification when we
+        # do expansion on both sides; 0.73 when expansion only on higher side,
+        # which better shows the concentration..
+        return 0.15 * raw_grade - 0.2
 
 
 if __name__ == "__main__":
