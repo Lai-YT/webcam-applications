@@ -68,9 +68,10 @@ class FuzzyGrader:
 
     def _create_membership_func_of_body(self) -> None:
         # The greater the values is, the better the grade of body concentration is.
-        self._body = ctrl.Antecedent(np.arange(2), "body")
-        self._body["good"] = fuzz.trimf(self._body.universe, [0, 1, 1])
-        self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 1])
+        self._body = ctrl.Antecedent(np.arange(0, 1.1, 0.1), "body")
+        self._body["good"] = fuzz.trimf(self._body.universe, [0.4, 1, 1])
+        self._body["average"] = fuzz.trimf(self._body.universe, [0, 0.4, 1])
+        self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 0.4])
 
     def _create_membership_func_of_center(self) -> None:
         self._center = ctrl.Antecedent(np.arange(0, 1, 0.01), "center")
@@ -93,9 +94,9 @@ class FuzzyGrader:
         self._grade = ctrl.Consequent(np.arange(11), "grade")
         self._grade.defuzzify_method = defuzzify_method
 
-        self._grade["high"] = fuzz.trimf(self._grade.universe, [6, 10, 10])
-        self._grade["medium"] = fuzz.trimf(self._grade.universe, [0, 6, 10])
-        self._grade["low"] = fuzz.trimf(self._grade.universe, [0, 0, 6])
+        self._grade["high"] = fuzz.trimf(self._grade.universe, [4, 10, 10])
+        self._grade["medium"] = fuzz.trimf(self._grade.universe, [0, 4, 10])
+        self._grade["low"] = fuzz.trimf(self._grade.universe, [0, 0, 4])
 
     def _create_fuzzy_rules(self) -> List[ctrl.Rule]:
         """Returns the fuzzy rule that controls the grade."""
@@ -125,8 +126,8 @@ class FuzzyGrader:
 
     @staticmethod
     def _to_modified_grade(raw_grade: float) -> float:
-        # (4.33, 8.67)
-        return 0.2304 * raw_grade - 0.9977
+        # (4.0, 8.0)
+        return 0.25 * raw_grade - 1
 
 
 if __name__ == "__main__":
