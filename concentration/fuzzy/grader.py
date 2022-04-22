@@ -124,14 +124,15 @@ class FuzzyGrader:
 
     @staticmethod
     def _to_modified_grade(raw_grade: float) -> float:
+        """Modify the raw grade into [0, 1]."""
         # The lowest possible raw grade 4.0 is directly converted to 0.4, while
         # the highest is expanded to 1.
         # The advantage over expanding both sides to 0 and 1 is that since
         # there's always a gap between the lowest raw grade and 0, the expansion
         # on the lower side pulls down relatively high grades.
         # For example, blink 5, body 0.8 and center 0.2 is a good combination
-        # with raw grade 6.33, but has the only 0.58 after modification when we
-        # do expansion on both sides; 0.73 when expansion only on higher side,
+        # with raw grade 6.33, but has only 0.58 after modification if we do
+        # expansion on both sides; 0.73 when expansion only on higher side,
         # which better shows the concentration..
         return 0.15 * raw_grade - 0.2
 
@@ -153,6 +154,7 @@ if __name__ == "__main__":
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
+
         x, y, z, c = [], [], [], []
         for blink_rate in np.arange(0, 20):
             for body_concent in np.linspace(0, 1, num=20):
@@ -167,13 +169,7 @@ if __name__ == "__main__":
 
         img = ax.scatter(x, y, z, c=c, cmap=plt.hot())
         fig.colorbar(img)
-        plt.show()
 
-        # import matplotlib.pyplot as plt
-        # import numpy as np
-        #
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111, projection='3d')
         # BLINK_RATE = 5
         # x, y, z = [], [], []
         # for body_concent in np.linspace(0, 1, num=20):
@@ -186,7 +182,8 @@ if __name__ == "__main__":
         # ax.set_zlabel("grade")
         #
         # img = ax.scatter(x, y, z)
-        # plt.show()
+
+        plt.show()
     elif sys.argv[1] == "input":
         # go for a single graph check
         blink_rate = float(input("blink rate: "))
