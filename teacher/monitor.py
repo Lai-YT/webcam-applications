@@ -27,6 +27,9 @@ class Col:
     def value(self) -> T:
         return self._value
 
+    def __repr__(self) -> str:
+        return f"Col(no={self._no}, label={self._label}, value={self._value})"
+
 
 class Row(List[Col]):
     """Rows should only be constructed by ColumnHeaders to have the Cols in the
@@ -90,7 +93,13 @@ class ColumnHeader:
 
 
 class Monitor(QMainWindow):
-    s_button_clicked = pyqtSignal(str)
+    """
+    Signals:
+        s_item_clicked:
+            Emits when any of the items (row) is clicked. Sends the key value
+            of that item and the label of the column that is clicked.
+    """
+    s_item_clicked = pyqtSignal(str, str)
 
     MAX_HISTORY_NUM: int = 5
 
@@ -104,6 +113,11 @@ class Monitor(QMainWindow):
 
         self._set_col_header(header)
         self._key_label = key_label
+
+        self._table.itemClicked.connect(
+            lambda item, col_no: self.s_item_clicked.emit(
+                *self._map_item_and_column_to_key_and_label(item, col_no))
+        )
 
     @property
     def col_header(self) -> ColumnHeader:
@@ -123,12 +137,6 @@ class Monitor(QMainWindow):
         content = [str(col.value) for col in row]
         new_item = QTreeWidgetItem(self._table, content)
         self._table.addTopLevelItem(new_item)
-
-        key_index = self._header.labels().index(self._key_label)
-        # NOTE: this signal is emitted more than once on a single expansion click
-        self._table.itemExpanded.connect(
-            lambda item: self.s_button_clicked.emit(item.text(key_index))
-        )
         return new_item
 
     def update_row(self, row_no: int, row: Row) -> QTreeWidgetItem:
@@ -174,3 +182,8 @@ class Monitor(QMainWindow):
             if self._table.topLevelItem(row_no).text(col_no) == str(value):
                 return row_no
         return -1
+
+    def _map_item_and_column_to_key_and_label(
+            self, item: QTreeWidgetItem, col_no: int) -> Tuple[str, str]:
+        key_index = self._header.labels().index(self._key_label)
+        return item.text(key_index), self._header.labels()[col_no]

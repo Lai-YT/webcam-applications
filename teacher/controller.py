@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Mapping
 
+import matplotlib.pyplot as plt
 import requests
 from PyQt5.QtCore import QObject, QTimer, Qt
 from PyQt5.QtGui import QBrush
@@ -59,7 +60,19 @@ class MonitorController(QObject):
             self._conn.execute(sql)
 
     def _connect_signal(self):
-        self._monitor.s_button_clicked.connect(lambda id: print(id))
+        def print_history_if_grade_clicked(student_id, label):
+            if label == "grade":
+                grade = []
+                time = []
+                for row in self._get_history_from_database(student_id, 5):
+                    grade.append(row["grade"])
+                    time.append(row["time"].timestamp())
+                print(time)
+                ax = plt.subplot()
+                ax.stem(time, grade)
+                ax.set(ylim=(0, 1))
+                plt.show()
+        self._monitor.s_item_clicked.connect(print_history_if_grade_clicked)
 
     def _get_grades_from_server(self) -> None:
         """Get new grades from the server and
