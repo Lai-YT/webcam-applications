@@ -23,7 +23,7 @@ class ColumnHeaderTestCase(unittest.TestCase):
     def test_labels(self) -> None:
         """Get labels in order from the header."""
         labels = ("name", "budget", "list")
-        self.assertEqual(labels, self.col_header.labels())
+        self.assertEqual(labels, tuple(self.col_header.labels()))
 
     def test_to_row(self) -> None:
         data = {
