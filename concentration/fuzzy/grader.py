@@ -34,6 +34,7 @@ class FuzzyGrader:
         Arguments:
             blink_rate: The blink rate, which should be in range [0, 21].
             blink_concent: The body concentration value, which should be in range [0, 1].
+            center_value: The face center value, which should be in range [0, 1].
             normalized: Normalize the grade into [0, 1] or not. True in default.
         """
         self._grader.input["blink"] = blink_rate
@@ -43,7 +44,7 @@ class FuzzyGrader:
 
         grade: float = self._grader.output["grade"]
         if normalized:
-            grade = FuzzyGrader._to_modified_grade(grade)
+            grade = FuzzyGrader._normalize_grade(grade)
         return round(grade, 2)
 
     def view_membership_func(self) -> None:
@@ -66,10 +67,9 @@ class FuzzyGrader:
 
     def _create_membership_func_of_body(self) -> None:
         # The greater the values is, the better the grade of body concentration is.
-        self._body = ctrl.Antecedent(np.arange(0, 1.1, 0.1), "body")
-        self._body["good"] = fuzz.trimf(self._body.universe, [0.4, 1, 1])
-        self._body["average"] = fuzz.trimf(self._body.universe, [0, 0.4, 1])
-        self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 0.4])
+        self._body = ctrl.Antecedent(np.arange(2), "body")
+        self._body["good"] = fuzz.trimf(self._body.universe, [0, 1, 1])
+        self._body["poor"] = fuzz.trimf(self._body.universe, [0, 0, 1])
 
     def _create_membership_func_of_center(self) -> None:
         self._center = ctrl.Antecedent(np.arange(0, 1, 0.01), "center")
@@ -92,9 +92,9 @@ class FuzzyGrader:
         self._grade = ctrl.Consequent(np.arange(11), "grade")
         self._grade.defuzzify_method = defuzzify_method
 
-        self._grade["high"] = fuzz.trimf(self._grade.universe, [4, 10, 10])
-        self._grade["medium"] = fuzz.trimf(self._grade.universe, [0, 4, 10])
-        self._grade["low"] = fuzz.trimf(self._grade.universe, [0, 0, 4])
+        self._grade["high"] = fuzz.trimf(self._grade.universe, [6, 10, 10])
+        self._grade["medium"] = fuzz.trimf(self._grade.universe, [0, 6, 10])
+        self._grade["low"] = fuzz.trimf(self._grade.universe, [0, 0, 6])
 
     def _create_fuzzy_rules(self) -> List[ctrl.Rule]:
         """Returns the fuzzy rule that controls the grade."""
@@ -123,18 +123,20 @@ class FuzzyGrader:
         return [rule1, rule2, rule3]
 
     @staticmethod
-    def _to_modified_grade(raw_grade: float) -> float:
-        """Modify the raw grade into [0, 1]."""
-        # The lowest possible raw grade 4.0 is directly converted to 0.4, while
-        # the highest is expanded to 1.
+    def _normalize_grade(raw_grade: float) -> float:
+        """Normalizes the raw grade into [0, 1].
+
+        The lowest possible raw grade 4.33 is expanded to 0.4 (not 0), and
+        the highest 8.67 is expanded to 1.
+        """
         # The advantage over expanding both sides to 0 and 1 is that since
         # there's always a gap between the lowest raw grade and 0, the expansion
         # on the lower side pulls down relatively high grades.
         # For example, blink 5, body 0.8 and center 0.2 is a good combination
-        # with raw grade 6.33, but has only 0.58 after modification if we do
-        # expansion on both sides; 0.73 when expansion only on higher side,
-        # which better shows the concentration..
-        return 0.15 * raw_grade - 0.2
+        # with raw grade 6.77, but has only 0.56 after normalization if we do
+        # expansion on both sides; 0.74 when expansion only on higher side,
+        # which better shows the concentration.
+        return 0.1382 * raw_grade - 0.1986
 
 
 if __name__ == "__main__":
