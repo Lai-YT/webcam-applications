@@ -76,7 +76,9 @@ class MonitorController(QObject):
             row_no = self._monitor.search_row_no(("id", student_id))
             id_index = self._monitor.col_header.labels().index("id")
             for row in self._get_history_from_database(student_id, Monitor.MAX_HISTORY_NUM):
-                hist_item = self._monitor.add_history_of_row(row_no, self._monitor.col_header.to_row(row))
+                hist_item = self._monitor.add_history_of_row(
+                    row_no, self._monitor.col_header.to_row(row)  # type: ignore
+                )  # sqlite3.Row does support mapping
                 # all ids are the same, duplicate, so omit that
                 hist_item.setText(id_index, "")
                 self._set_background_by_grade(hist_item, row["grade"])

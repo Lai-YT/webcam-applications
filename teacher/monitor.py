@@ -176,7 +176,7 @@ class Monitor(QMainWindow):
         Notice that all values are with type: str, not their original types.
         """
         item = self._table.topLevelItem(row_no)
-        row = []
+        row = RowContent()
         for i in range(item.columnCount()):
             row.append(Col(i, self._header.labels()[i], item.text(i)))
         return row

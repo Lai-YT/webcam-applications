@@ -1,6 +1,6 @@
 import unittest
 
-from teacher.monitor import Col, ColumnHeader, Row
+from teacher.monitor import Col, ColumnHeader, RowContent
 
 
 class ColTestCase(unittest.TestCase):
@@ -36,7 +36,7 @@ class ColumnHeaderTestCase(unittest.TestCase):
             Col(1, "budget", 100_000),
             Col(2, "list", ["shoes", ["computer", "headphone"]]),
         ]
-        row: Row = self.col_header.to_row(data)
+        row: RowContent = self.col_header.to_row(data)
 
         self.assertTrue(len(row), len(expected_row))
         # we can't simply compare Cols with "==" since __eq__ isn't implemented
@@ -75,7 +75,7 @@ class ColumnHeaderTestCase(unittest.TestCase):
             Col(1, "budget", 100_000),
             Col(2, "list", ["shoes", ["computer", "headphone"]]),
         ]
-        row: Row = self.col_header.to_row(data)
+        row: RowContent = self.col_header.to_row(data)
 
         self.assertTrue(len(row), len(expected_row))
         for col, expected_col in zip(row, expected_row):
