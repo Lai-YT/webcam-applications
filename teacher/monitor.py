@@ -2,6 +2,7 @@ from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem
+from more_itertools import SequenceView
 
 
 T = TypeVar("T")
@@ -57,6 +58,10 @@ class ColumnHeader:
             ("id", int), ("name", str), ("class no.", int)
         """
         self._headers = tuple(headers)
+        # store separatly so we don't iterate them again and again when getters
+        # are called, which is more efficient
+        self._labels = tuple(label for label, _ in self._headers)
+        self._types = tuple(value_type for _, value_type in self._headers)
 
     @property
     def col_count(self) -> int:
@@ -65,11 +70,11 @@ class ColumnHeader:
 
     def labels(self) -> Tuple[str, ...]:
         """Returns the labels of the header in column order."""
-        return tuple(label for label, _ in self._headers)
+        return self._labels
 
     def types(self) -> Tuple[type, ...]:
         """Returns the corresponding value type of the labels in column order."""
-        return tuple(value_type for _, value_type in self._headers)
+        return self._types
 
     def to_row(self, values: Mapping[str, Any]) -> Row:
         """Packs the values into the desirable Row form.
