@@ -220,9 +220,16 @@ class Monitor(QMainWindow):
         return -1
 
     def _connect_signals(self) -> None:
+        def get_parent_if_is_child(item: QTreeWidgetItem) -> QTreeWidgetItem:
+            # since the id of history is omitted, get parent to obtain the real id
+            if item.parent() is not None:
+                return item.parent()
+            return item
         self._table.itemClicked.connect(
             lambda item, col_no: self.s_item_clicked.emit(
-                *self._map_item_and_column_to_key_and_label(item, col_no)
+                *self._map_item_and_column_to_key_and_label(
+                    get_parent_if_is_child(item), col_no
+                )
             )
         )
         self._table.itemCollapsed.connect(
