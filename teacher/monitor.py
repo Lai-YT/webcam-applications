@@ -96,10 +96,18 @@ class Monitor(QMainWindow):
     """
     Signals:
         s_item_clicked:
-            Emits when any of the items (row) is clicked. Sends the key value
+            Emits when any of the items (row) are clicked. Sends the key value
             of that item and the label of the column that is clicked.
+        s_item_collapsed:
+            Emits when any of the items (row) are collapsed. Sends the key value
+            of that item.
+        s_item_expanded:
+            Emits when any of the items (row) are expanded. Sends the key value
+            of that item.
     """
     s_item_clicked = pyqtSignal(str, str)
+    s_item_collapsed = pyqtSignal(str)
+    s_item_expanded = pyqtSignal(str)
 
     MAX_HISTORY_NUM: int = 5
 
@@ -116,7 +124,18 @@ class Monitor(QMainWindow):
 
         self._table.itemClicked.connect(
             lambda item, col_no: self.s_item_clicked.emit(
-                *self._map_item_and_column_to_key_and_label(item, col_no))
+                *self._map_item_and_column_to_key_and_label(item, col_no)
+            )
+        )
+        self._table.itemExpanded.connect(
+            lambda item: self.s_item_expanded.emit(
+                item.text(self._header.labels().index(self._key_label))
+            )
+        )
+        self._table.itemCollapsed.connect(
+            lambda item: self.s_item_collapsed.emit(
+                item.text(self._header.labels().index(self._key_label))
+            )
         )
 
     @property
@@ -136,6 +155,9 @@ class Monitor(QMainWindow):
         """
         content = [str(col.value) for col in row]
         new_item = QTreeWidgetItem(self._table, content)
+        # Since we lazily add children after the item is expanded, we have to
+        # show the expansion indicator even there are no child.
+        new_item.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
         self._table.addTopLevelItem(new_item)
         return new_item
 
@@ -144,28 +166,40 @@ class Monitor(QMainWindow):
         Returns:
             The updated widget item (row).
         """
-        # A copy of the top level item is made before updating,
-        # then the copy is inserted as the record (child).
-        # NOTE: QTreeWidgetItem.clone() can't be used because it aslo clones the children.
         item = self._table.topLevelItem(row_no)
-        # update top level
         for col in row:
             item.setText(col.no, str(col.value))
         return item
 
-    def add_history_of_row(self, row_no: int, hist_row: Row) -> None:
-        """Adds history from the top to the row specified with row number.
+    def get_row_content(self, row_no: int) -> Row:
+        """Returns text of columns of the row specified by row number."""
+        item = self._table.topLevelItem(row_no)
+        row = []
+        for i in range(item.columnCount()):
+            row.append(Col(i, self._header.labels()[i], item.text(i)))
+        return row
+
+    def add_history_of_row(self, row_no: int, hist_row: Row) -> QTreeWidgetItem:
+        """Adds history from the top to the row specified by row number.
 
         At most MAX_HISTORY_NUM histories can be shown.
+
+        Returns:
+            The added history item (row).
         """
         item = self._table.topLevelItem(row_no)
-        content = [str(col.value) for col in hist_row]
+        hist_item = QTreeWidgetItem(item, [str(col.value) for col in hist_row])
         # 0 is from top
-        item.insertChild(0, QTreeWidgetItem(item, content))
+        item.insertChild(0, hist_item)
 
         while item.childCount() > Monitor.MAX_HISTORY_NUM:
             item.removeChild(item.child(Monitor.MAX_HISTORY_NUM))
-        return item
+        return hist_item
+
+    def remove_histories_of_row(self, row_no: int) -> None:
+        """Removes histories from the top to the row specified by row number."""
+        item = self._table.topLevelItem(row_no)
+        item.takeChildren()
 
     def sort_rows_by_label(self, label: str, order: Qt.SortOrder) -> None:
         self._table.sortItems(self._header.labels().index(label), order)

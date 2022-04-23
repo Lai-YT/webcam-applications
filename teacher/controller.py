@@ -60,19 +60,29 @@ class MonitorController(QObject):
             self._conn.execute(sql)
 
     def _connect_signal(self):
-        def print_history_if_grade_clicked(student_id, label):
+        def plot_history_if_grade_clicked(student_id: str, label: str) -> None:
             if label == "grade":
                 grade = []
                 time = []
                 for row in self._get_history_from_database(student_id, 5):
                     grade.append(row["grade"])
                     time.append(row["time"].timestamp())
-                print(time)
                 ax = plt.subplot()
                 ax.stem(time, grade)
                 ax.set(ylim=(0, 1))
                 plt.show()
-        self._monitor.s_item_clicked.connect(print_history_if_grade_clicked)
+        self._monitor.s_item_clicked.connect(plot_history_if_grade_clicked)
+        def show_history(student_id: str) -> None:
+            row_no = self._monitor.search_row_no(("id", student_id))
+            for row in self._get_history_from_database(student_id, Monitor.MAX_HISTORY_NUM):
+                hist_item = self._monitor.add_history_of_row(row_no, self._monitor.col_header.to_row(row))
+                self._set_background_by_grade(hist_item, row["grade"])
+        self._monitor.s_item_expanded.connect(show_history)
+        self._monitor.s_item_collapsed.connect(
+            lambda student_id: self._monitor.remove_histories_of_row(
+                self._monitor.search_row_no(("id", student_id))
+            )
+        )
 
     def _get_grades_from_server(self) -> None:
         """Get new grades from the server and
