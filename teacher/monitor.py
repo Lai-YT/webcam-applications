@@ -32,9 +32,9 @@ class Col:
         return f"Col(no={self._no}, label={self._label}, value={self._value})"
 
 
-class Row(List[Col]):
-    """Rows should only be constructed by ColumnHeaders to have the Cols in the
-    right order which fits the Monitor.
+class RowContent(List[Col]):
+    """RowContents should only be constructed by ColumnHeaders to have the Cols
+    in the right order which fits the Monitor.
 
     Inherits List[Col] to provide expressive signature.
     """
@@ -60,24 +60,32 @@ class ColumnHeader:
         self._headers = tuple(headers)
         # store separatly so we don't iterate them again and again when getters
         # are called, which is more efficient
-        self._labels = tuple(label for label, _ in self._headers)
-        self._types = tuple(value_type for _, value_type in self._headers)
+        self._labels = SequenceView([label for label, _ in self._headers])
+        self._types = SequenceView([value_type for _, value_type in self._headers])
 
     @property
     def col_count(self) -> int:
         """Returns the number of columns (labels)."""
         return len(self._headers)
 
-    def labels(self) -> Tuple[str, ...]:
-        """Returns the labels of the header in column order."""
+    def labels(self) -> SequenceView:
+        """Returns the labels of the header in column order.
+
+        Returns:
+            A read-only view with underlaying type: Tuple[str, ...].
+        """
         return self._labels
 
-    def types(self) -> Tuple[type, ...]:
-        """Returns the corresponding value type of the labels in column order."""
+    def types(self) -> SequenceView:
+        """Returns the corresponding value type of the labels in column order.
+
+        Returns:
+            A read-only view with underlaying type: Tuple[type, ...].
+        """
         return self._types
 
-    def to_row(self, values: Mapping[str, Any]) -> Row:
-        """Packs the values into the desirable Row form.
+    def to_row(self, values: Mapping[str, Any]) -> RowContent:
+        """Packs the values into the desirable RowContent form.
 
         Arguments:
             values: Should have all the labels as keys. Extra keys will be ignored.
@@ -86,7 +94,7 @@ class ColumnHeader:
             KeyError: Missing label.
             TypeError: Value of the wrong type.
         """
-        row = Row()
+        row = RowContent()
         for col_no, (label, value_type) in enumerate(self._headers):
             try:
                 if not isinstance(values[label], value_type):
@@ -114,7 +122,7 @@ class Monitor(QMainWindow):
     s_item_collapsed = pyqtSignal(str)
     s_item_expanded = pyqtSignal(str)
 
-    MAX_HISTORY_NUM: int = 5
+    MAX_HISTORY_NUM: int = 5  # make this larger if you would like to show more
 
     def __init__(self, header: ColumnHeader, key_label: str = None) -> None:
         super().__init__()
@@ -127,21 +135,7 @@ class Monitor(QMainWindow):
         self._set_col_header(header)
         self._key_label = key_label
 
-        self._table.itemClicked.connect(
-            lambda item, col_no: self.s_item_clicked.emit(
-                *self._map_item_and_column_to_key_and_label(item, col_no)
-            )
-        )
-        self._table.itemExpanded.connect(
-            lambda item: self.s_item_expanded.emit(
-                item.text(self._header.labels().index(self._key_label))
-            )
-        )
-        self._table.itemCollapsed.connect(
-            lambda item: self.s_item_collapsed.emit(
-                item.text(self._header.labels().index(self._key_label))
-            )
-        )
+        self._connect_signals()
 
     @property
     def col_header(self) -> ColumnHeader:
@@ -152,7 +146,7 @@ class Monitor(QMainWindow):
         self._table.setColumnCount(header.col_count)
         self._table.setHeaderLabels(list(header.labels()))
 
-    def insert_row(self, row: Row) -> QTreeWidgetItem:
+    def insert_row(self, row: RowContent) -> QTreeWidgetItem:
         """Inserts a new row to the bottom of the table.
 
         Returns:
@@ -166,7 +160,7 @@ class Monitor(QMainWindow):
         self._table.addTopLevelItem(new_item)
         return new_item
 
-    def update_row(self, row_no: int, row: Row) -> QTreeWidgetItem:
+    def update_row(self, row_no: int, row: RowContent) -> QTreeWidgetItem:
         """
         Returns:
             The updated widget item (row).
@@ -176,15 +170,18 @@ class Monitor(QMainWindow):
             item.setText(col.no, str(col.value))
         return item
 
-    def get_row_content(self, row_no: int) -> Row:
-        """Returns text of columns of the row specified by row number."""
+    def get_row_content(self, row_no: int) -> RowContent:
+        """Returns text of columns of the row specified by row number.
+
+        Notice that all values are with type: str, not their original types.
+        """
         item = self._table.topLevelItem(row_no)
         row = []
         for i in range(item.columnCount()):
             row.append(Col(i, self._header.labels()[i], item.text(i)))
         return row
 
-    def add_history_of_row(self, row_no: int, hist_row: Row) -> QTreeWidgetItem:
+    def add_history_of_row(self, row_no: int, hist_row: RowContent) -> QTreeWidgetItem:
         """Adds history from the top to the row specified by row number.
 
         At most MAX_HISTORY_NUM histories can be shown.
@@ -222,6 +219,22 @@ class Monitor(QMainWindow):
                 return row_no
         return -1
 
+    def _connect_signals(self) -> None:
+        self._table.itemClicked.connect(
+            lambda item, col_no: self.s_item_clicked.emit(
+                *self._map_item_and_column_to_key_and_label(item, col_no)
+            )
+        )
+        self._table.itemCollapsed.connect(
+            lambda item: self.s_item_collapsed.emit(
+                item.text(self._header.labels().index(self._key_label))
+            )
+        )
+        self._table.itemExpanded.connect(
+            lambda item: self.s_item_expanded.emit(
+                item.text(self._header.labels().index(self._key_label))
+            )
+        )
     def _map_item_and_column_to_key_and_label(
             self, item: QTreeWidgetItem, col_no: int) -> Tuple[str, str]:
         key_index = self._header.labels().index(self._key_label)
