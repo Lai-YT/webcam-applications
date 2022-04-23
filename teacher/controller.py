@@ -74,8 +74,11 @@ class MonitorController(QObject):
         self._monitor.s_item_clicked.connect(plot_history_if_grade_clicked)
         def show_history(student_id: str) -> None:
             row_no = self._monitor.search_row_no(("id", student_id))
+            id_index = self._monitor.col_header.labels().index("id")
             for row in self._get_history_from_database(student_id, Monitor.MAX_HISTORY_NUM):
                 hist_item = self._monitor.add_history_of_row(row_no, self._monitor.col_header.to_row(row))
+                # all ids are the same, duplicate, so omit that
+                hist_item.setText(id_index, "")
                 self._set_background_by_grade(hist_item, row["grade"])
         self._monitor.s_item_expanded.connect(show_history)
         self._monitor.s_item_collapsed.connect(
