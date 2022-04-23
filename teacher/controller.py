@@ -2,8 +2,9 @@ import atexit
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, List, Mapping
 
+import matplotlib.pyplot as plt
 import requests
 from PyQt5.QtCore import QObject, QTimer, Qt
 from PyQt5.QtGui import QBrush
@@ -11,7 +12,7 @@ from PyQt5.QtWidgets import QTreeWidgetItem
 
 import server.main as flask_server
 import server.post as poster
-from teacher.monitor import Monitor, Row
+from teacher.monitor import Monitor, RowContent
 from util.path import to_abs_path
 
 
@@ -25,7 +26,7 @@ class MonitorController(QObject):
         self._connect_database()
         self._table_name = "monitor"
         self._create_table_if_not_exist()
-        self._connect_signal()
+        self._connect_signals()
 
         self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
         self._fetch_timer = QTimer()
@@ -58,8 +59,35 @@ class MonitorController(QObject):
         with self._conn:
             self._conn.execute(sql)
 
-    def _connect_signal(self):
-        self._monitor.s_button_clicked.connect(lambda id: print(id))
+    def _connect_signals(self):
+        def plot_history_if_grade_clicked(student_id: str, label: str) -> None:
+            if label == "grade":
+                grade = []
+                time = []
+                for row in self._get_history_from_database(student_id, 5):
+                    grade.append(row["grade"])
+                    time.append(row["time"].timestamp())
+                ax = plt.subplot()
+                ax.stem(time, grade)
+                ax.set(ylim=(0, 1))
+                plt.show()
+        self._monitor.s_item_clicked.connect(plot_history_if_grade_clicked)
+        def show_history(student_id: str) -> None:
+            row_no = self._monitor.search_row_no(("id", student_id))
+            id_index = self._monitor.col_header.labels().index("id")
+            for row in self._get_history_from_database(student_id, Monitor.MAX_HISTORY_NUM):
+                hist_item = self._monitor.add_history_of_row(
+                    row_no, self._monitor.col_header.to_row(row)  # type: ignore
+                )  # sqlite3.Row does support mapping
+                # all ids are the same, duplicate, so omit that
+                hist_item.setText(id_index, "")
+                self._set_background_by_grade(hist_item, row["grade"])
+        self._monitor.s_item_expanded.connect(show_history)
+        self._monitor.s_item_collapsed.connect(
+            lambda student_id: self._monitor.remove_histories_of_row(
+                self._monitor.search_row_no(("id", student_id))
+            )
+        )
 
     def _get_grades_from_server(self) -> None:
         """Get new grades from the server and
@@ -73,11 +101,16 @@ class MonitorController(QObject):
             self.store_new_grade(datum)
             self.show_new_grade(datum)
 
+    def _get_history_from_database(self, student_id: str, amount: int) -> List[sqlite3.Row]:
+        sql = f"SELECT * FROM {self._table_name} WHERE id=? ORDER BY time LIMIT {amount};"
+        with self._conn:
+            return self._conn.execute(sql, (student_id,)).fetchall()
+
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
         holder = ", ".join(["?"] * self._monitor.col_header.col_count)
-        sql = f"INSERT INTO {self._table_name} {self._monitor.col_header.labels()} VALUES ({holder});"
-        row: Row = self._monitor.col_header.to_row(grade)
+        sql = f"INSERT INTO {self._table_name} {tuple(self._monitor.col_header.labels())} VALUES ({holder});"
+        row: RowContent = self._monitor.col_header.to_row(grade)
         with self._conn:
             self._conn.execute(sql, tuple(col.value for col in row))
 
@@ -86,10 +119,10 @@ class MonitorController(QObject):
         with respect to label "grade".
 
         A new row is inserted if the "id" introduces a new student,
-        otherwise the students grade is updated to the original row.
+        otherwise the student's grade is updated to the original row.
         """
         row_no = self._monitor.search_row_no(("id", grade["id"]))
-        row: Row = self._monitor.col_header.to_row(grade)
+        row: RowContent = self._monitor.col_header.to_row(grade)
         if row_no == -1:  # row not found
             row_item = self._monitor.insert_row(row)
         else:
@@ -109,7 +142,3 @@ class MonitorController(QObject):
             color = Qt.red
         col_no = self._monitor.col_header.labels().index("grade")
         row_item.setBackground(col_no, QBrush(color, Qt.Dense4Pattern))
-
-    @staticmethod
-    def _row_not_exists(row: sqlite3.Row) -> bool:
-        return row[0] == 0
