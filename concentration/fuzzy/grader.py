@@ -142,8 +142,11 @@ class FuzzyGrader:
 if __name__ == "__main__":
     import sys
 
-    if len(sys.argv) != 2 or sys.argv[1] not in ("membership", "distribution", "input"):
-        raise RuntimeError(f"\n\t usage: python {__file__} membership | distribution | input")
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    if len(sys.argv) != 2 or sys.argv[1] not in ("membership", "distribution", "distribution-slice", "input"):
+        raise RuntimeError(f"\n\t usage: python {__file__} membership | distribution | distribution-slice | input")
 
     fuzzy_grader = FuzzyGrader()
 
@@ -151,9 +154,7 @@ if __name__ == "__main__":
         fuzzy_grader.view_membership_func()
         input("(press any key to exit)")
     elif sys.argv[1] == "distribution":
-        import matplotlib.pyplot as plt
-        import numpy as np
-
+        # show distribution over all possible values, which makes the plot 4D
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
 
@@ -171,23 +172,27 @@ if __name__ == "__main__":
 
         img = ax.scatter(x, y, z, c=c, cmap=plt.hot())
         fig.colorbar(img)
+        plt.show()
+    elif sys.argv[1] == "distribution-slice":
+        # show distribution under specific blink rate, which makes the plot 3D
+        fixed_blink_rate = int(input("fixed blink rate: "))
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        x, y, z = [], [], []
+        for body_concent in np.linspace(0, 1, num=20):
+            for center_value in np.linspace(0, 1, num=20):
+                x.append(body_concent)
+                y.append(center_value)
+                z.append(fuzzy_grader.compute_grade(fixed_blink_rate, body_concent, center_value))
+        ax.set_xlabel("body")
+        ax.set_ylabel("center")
+        ax.set_zlabel("grade")
 
-        # BLINK_RATE = 5
-        # x, y, z = [], [], []
-        # for body_concent in np.linspace(0, 1, num=20):
-        #     for center_value in np.linspace(0, 1, num=20):
-        #         x.append(body_concent)
-        #         y.append(center_value)
-        #         z.append(fuzzy_grader.compute_grade(BLINK_RATE, body_concent, center_value))
-        # ax.set_xlabel("body")
-        # ax.set_ylabel("center")
-        # ax.set_zlabel("grade")
-        #
-        # img = ax.scatter(x, y, z)
-
+        img = ax.scatter(x, y, z)
         plt.show()
     elif sys.argv[1] == "input":
-        # go for a single graph check
+        # compute for a single case of grade
         blink_rate = float(input("blink rate: "))
         body_concent = float(input("body concent: "))
         center_value = float(input("center value: "))
