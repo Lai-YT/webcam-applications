@@ -41,7 +41,7 @@ class SoundRepeatGuard(SoundGuard):
 
     def _repeat_sound_if(self, condition: bool) -> None:
         """Plays the sound repeatedly if the warning is enabled and condition is met."""
-        if not (self._warning_enabled and cond):
+        if not (self._warning_enabled and condition):
             return
 
         # If this is a new start of a slumped posture interval,
