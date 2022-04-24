@@ -235,17 +235,13 @@ class BodyConcentrationCounter:
     def add_distraction(self) -> None:
         self._distraction_times.append_time()
 
-    def get_concentration_ratio(
-            self,
-            window_type: WindowType,
-            interval: Interval) -> float:
+    def get_concentration_ratio(self, window_type: WindowType) -> float:
         """Returns the amount of body concentration in the interval.
 
         The result is rounded to two decimal places.
 
         Arguments:
             window_type: The window to get concentration from.
-            interval: The interval dataclass which contains start and end time.
         """
         def count_time_in_interval(times: DoubleTimeWindow) -> int:
             # Assumes that the interval is synced up properly, so the count is

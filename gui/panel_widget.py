@@ -19,6 +19,9 @@ from util.path import to_abs_path
 
 class PanelWidget(QWidget):
     """A widget which contains the views of applications."""
+
+    SOUND_ENABLE_TEXT = "enable sound warning"
+
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
 
@@ -46,6 +49,7 @@ class PanelWidget(QWidget):
     def _get_language_map(self) -> Dict[str, Dict[str, str]]:
         with open(self._lang_file, mode="r", encoding="utf-8") as f:
             return json.load(f)
+
 
 class DistancePanel(CheckableGroupBox):
     """A view which contains the settings of distance measurement."""
@@ -92,7 +96,7 @@ class DistancePanel(CheckableGroupBox):
             self._layout.addRow(description, self.settings[name])
 
         # sound warning is enabled in default
-        self.warning = OptionCheckBox("enable sound warning")
+        self.warning = OptionCheckBox(PanelWidget.SOUND_ENABLE_TEXT)
         self.warning.setChecked(True)
         self._layout.addRow(self.warning)
 
@@ -139,7 +143,7 @@ class TimePanel(CheckableGroupBox):
             self._layout.addRow(description, self.settings[name])
 
         # sound warning is enabled in default
-        self.warning = OptionCheckBox("enable sound warning")
+        self.warning = OptionCheckBox(PanelWidget.SOUND_ENABLE_TEXT)
         self.warning.setChecked(True)
         self._layout.addRow(self.warning)
 
@@ -195,7 +199,7 @@ class PosturePanel(CheckableGroupBox):
         self.angles[AngleTolerance.LOOSE].setChecked(True)
 
         # sound warning is enabled in default
-        self.warning = OptionCheckBox("enable sound warning")
+        self.warning = OptionCheckBox(PanelWidget.SOUND_ENABLE_TEXT)
         self.warning.setChecked(True)
         self._layout.addWidget(self.warning)
 

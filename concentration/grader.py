@@ -233,7 +233,7 @@ class ConcentrationGrader(QObject):
         ratio = self._center_calculator.ratio_of_biggest_cluster
         # body
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
-            window_type, interval)
+            window_type)
 
         # LOOK_BACK and EXTRUSIONs are always graded and recorded.
         if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
@@ -282,7 +282,7 @@ class ConcentrationGrader(QObject):
         """
         # low face existence check is always on the current window
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
-            WindowType.CURRENT, interval)
+            WindowType.CURRENT)
         # face center
         self._center_calculator.fit_points(self._face_center_counter.current())
         dist = math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points)
@@ -316,8 +316,8 @@ def combine_face_center_value_from_distance_and_ratio(
         center_dist: float,
         ratio: float) -> float:
     """0 ~ 1, the lower the better."""
-    # left close, right open; from "good" to "poor"
-    DIST_RANGE = [(0, 15), (15, 20), (20, 60)]
-    RATE_RANGE = [(0.85, 1), (0.65, 0.85), (0, 0.65)]
+    # from "good" to "poor"
+    # DIST RANGE: [0, 15), [15, 20), [20, 60)
+    # RATE RANGE: [0.85, 1), [0.65, 0.85), [0, 0.65)
     center_dist = min(center_dist, 60)  # saturate
     return (center_dist / 60 + (1 - ratio)) / 2

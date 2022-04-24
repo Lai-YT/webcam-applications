@@ -14,6 +14,15 @@ from util.image_type import ColorImage
 
 np.set_printoptions(threshold=sys.maxsize)
 
+
+class ImageUnrefreshedError(ValueError):
+    def __init__(self, message: Optional[str] = None) -> None:
+        self.message = message
+        if not self.message:
+            self.message = "please refresh the image first"
+        super().__init__(self.message)
+
+
 class ImageFilter:
     """Handles processes which filters the brightness of the image."""
 
@@ -71,7 +80,7 @@ class ImageFilter:
 
     def _get_filtered_brightness(self, mask: bool = True) -> float:
         if self._value is None:
-            raise ValueError("please refresh the image first")
+            raise ImageUnrefreshedError
         if mask:
             masked_arr = self._get_value_with_face_masked()
             # truncate masked constants
@@ -88,7 +97,7 @@ class ImageFilter:
         # an image, passing the size of self._image leads to size error because
         # its size is three times larger than the "value" channel of hsv.
         if self._face is None or self._value is None:
-            raise ValueError("please refresh the image first")
+            raise ImageUnrefreshedError
         if self._face.is_empty():
             # all-pass for a no face image
             face_mask = np.zeros(self._value.shape, dtype=np.bool8)
@@ -117,7 +126,7 @@ class ImageFilter:
     def _get_weighted_value(self) -> NDArray[(Any, Any), Float32]:
         """Weights the value by area."""
         if self._face is None or self._value is None:
-            raise ValueError("please refresh the image first")
+            raise ImageUnrefreshedError
 
         fx, fy, fw, fh = face_utils.rect_to_bb(self._face)
 
