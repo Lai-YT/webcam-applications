@@ -6,18 +6,17 @@ from typing import Optional, Tuple, cast
 import cv2
 import mtcnn
 from nptyping import Float, Int, NDArray
-from playsound import playsound
 
 from concentration.grader import ConcentrationGrader
 from posture.calculator import (
     HogAngleCalculator, MtcnnAngleCalculator, PostureLabel, PosturePredictor
 )
+from sounds.sound_guard import SoundRepeatGuard
 from util.image_type import ColorImage
 from util.path import to_abs_path
-from util.time import Timer
 
 
-class PostureGuard:
+class PostureGuard(SoundRepeatGuard):
     """PostureGuard checks whether the face obtained by landmarks implies a
     good or slump posture.
     """
@@ -40,19 +39,17 @@ class PostureGuard:
                 one of the overall concentration grading components. The result
                 will be send to the grader.
         """
-        super().__init__()
+        super().__init__(
+            sound_file=to_abs_path("sounds/posture_slump.wav"),
+            interval=8,
+            warning_enabled=warning_enabled
+        )
         self._predictor: PosturePredictor = predictor
         self._hog_angle_calculator = HogAngleCalculator()
         self._mtcnn_angle_calculator = MtcnnAngleCalculator()
         self._mtcnn_detector = mtcnn.MTCNN()
         self._warn_angle: float = warn_angle
         self._grader: Optional[ConcentrationGrader] = grader
-        self._warning_enabled: bool = warning_enabled
-
-        self._wavfile: str = to_abs_path("sounds/posture_slump.wav")
-        self._warning_repeat_timer = Timer()
-        # To avoid double play due to a near time check (less than 1 sec).
-        self._f_played: bool = False
 
     def set_predictor(self, predictor: PosturePredictor) -> None:
         """
@@ -67,13 +64,6 @@ class PostureGuard:
             warn_angle: Face slope angle larger than this is considered to be a slump posture.
         """
         self._warn_angle = warn_angle
-
-    def set_warning_enabled(self, enabled: bool) -> None:
-        """
-        Arguments:
-            enabled: Whether there's sound that warns the user when a slump posture occurs.
-        """
-        self._warning_enabled = enabled
 
     def check_posture(
             self,
@@ -132,20 +122,7 @@ class PostureGuard:
                 # XXX: this is a hack to have all layers produce an angle
                 angle = 5 if posture is PostureLabel.GOOD else 100
 
-        # sound warning logic
-        if self._warning_enabled and posture is not PostureLabel.GOOD:
-            # If this is a new start of a slumped posture interval,
-            # play sound then start another interval.
-            if not self._f_played:
-                self._f_played = True
-                self._warning_repeat_timer.start()
-                playsound(self._wavfile, block=False)
-            # Only after certain interval can the sound be repeated.
-            # Note that the sound file is about 3 sec, take 5 sec as the delay.
-            elif self._warning_repeat_timer.time() > 8:
-                # Reset the timer and flag, so can be caught as a new start of interval.
-                self._f_played = False
-                self._warning_repeat_timer.reset()
+            self._repeat_sound_if(posture is not PostureLabel.GOOD)
 
         self._send_concentration_info(angle)
 

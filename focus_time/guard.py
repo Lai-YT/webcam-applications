@@ -4,12 +4,13 @@ from playsound import playsound
 
 from gui.popup_shower import TimeShower
 from gui.popup_widget import TimeState
+from sounds.sound_guard import SoundGuard
 from util.path import to_abs_path
 from util.time import Timer, min_to_sec
 
 
 # FIXME: Negative time occurs under unknown condition
-class TimeGuard:
+class TimeGuard(SoundGuard):
     """TimeGuard checks whether the time held by a Timer exceeds time limit
     and interacts with a TimeShower to show the corresponding TimerWidget.
     """
@@ -28,11 +29,10 @@ class TimeGuard:
                 Whether there's sound that plays when it's time to take a break
                 and end a break. Enabled in default.
         """
-        super().__init__()
+        super().__init__(warning_enabled)
 
         self._time_limit = min_to_sec(time_limit)
         self._break_time = min_to_sec(break_time)
-        self._warning_enabled: bool = warning_enabled
 
         self._f_break_started: bool = False
         self._end_break_sound: str = to_abs_path("sounds/break_over.wav")
@@ -53,15 +53,6 @@ class TimeGuard:
             break_time: How long the break should be (minutes).
         """
         self._break_time = min_to_sec(break_time)
-
-    def set_warning_enabled(self, enabled: bool) -> None:
-        """
-        Arguments:
-            enabled:
-                Whether there's sound that plays when it's time to take a break
-                and end a break.
-        """
-        self._warning_enabled = enabled
 
     def break_time_if_too_long(self, timer: Timer) -> Tuple[int, TimeState]:
         """The timer widget switches to break mode if the time held by timer
