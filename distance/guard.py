@@ -2,12 +2,11 @@ from enum import Enum, auto
 from typing import Optional, Tuple
 
 from nptyping import Int, NDArray
-from playsound import playsound
 
 from concentration.grader import ConcentrationGrader
 from distance.calculator import DistanceCalculator
+from sounds.sound_guard import SoundRepeatGuard
 from util.path import to_abs_path
-from util.time import Timer
 
 
 class DistanceState(Enum):
@@ -19,7 +18,7 @@ class DistanceState(Enum):
     WARNING = auto()
 
 
-class DistanceGuard:
+class DistanceGuard(SoundRepeatGuard):
     """DistanceGuard checks whether the face obtained by the landmarks are at
     a short distance.
     """
@@ -42,17 +41,14 @@ class DistanceGuard:
                 one of the overall concentration grading components. The result
                 will be send to the grader.
         """
-        super().__init__()
-
+        super().__init__(
+            sound_file=to_abs_path("sounds/too_close.wav"),
+            interval=8,
+            warning_enabled=warning_enabled
+        )
         self._calculator: DistanceCalculator = calculator
         self._warn_dist: float = warn_dist
         self._grader: Optional[ConcentrationGrader] = grader
-        self._warning_enabled: bool = warning_enabled
-
-        self._wavfile: str = to_abs_path("sounds/too_close.wav")
-        self._warning_repeat_timer = Timer()
-        # To avoid double play due to a near time check (less than 1 sec).
-        self._f_played: bool = False
 
     def set_calculator(self, calculator: DistanceCalculator) -> None:
         """
@@ -68,15 +64,6 @@ class DistanceGuard:
         """
         self._warn_dist = warn_dist
 
-    def set_warning_enabled(self, enabled: bool) -> None:
-        """
-        Arguments:
-            enabled:
-                Whether there's sound that warns the user when the distance
-                is too close.
-        """
-        self._warning_enabled = enabled
-
     def warn_if_too_close(
             self,
             landmarks: NDArray[(68, 2), Int[32]]) -> Tuple[float, DistanceState]:
@@ -88,20 +75,7 @@ class DistanceGuard:
         """
         distance: float = self._calculator.calculate(landmarks)
 
-        # warning logic...
-        if self._warning_enabled and distance < self._warn_dist:
-            # If this is a new start of a too-close interval,
-            # play sound and start another interval.
-            if not self._f_played:
-                self._f_played = True
-                self._warning_repeat_timer.start()
-                playsound(self._wavfile, block=False)
-            # Only after certain interval can the sound be repeated.
-            # Note that the sound file is about 3 sec, take 5 sec as the delay.
-            elif self._warning_repeat_timer.time() > 8:
-                # Reset the timer and flag, so can be caught as a new start of interval.
-                self._f_played = False
-                self._warning_repeat_timer.reset()
+        self._repeat_sound_if(distance < self._warn_dist)
 
         # default state
         state = DistanceState.NORMAL
