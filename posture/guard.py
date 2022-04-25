@@ -1,17 +1,15 @@
 # The 3-layer posture detection refers to
 # https://github.com/EE-Ind-Stud-Group/posture-detection
 
-from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple, cast
+from typing import Optional, Tuple
 
 import cv2
 import mtcnn
-from nptyping import Float, Int, NDArray
+from nptyping import Int, NDArray
 
 from concentration.grader import ConcentrationGrader
-from posture.calculator import (
-    HogAngleCalculator, MtcnnAngleCalculator, PostureLabel, PosturePredictor
-)
+from posture.calculator import PostureLabel, PosturePredictor
+from posture.layer import AngleLayer, DetectionLayer, HogLayer, ModelLayer, MtcnnLayer
 from sounds.sound_guard import SoundRepeatGuard
 from util.image_type import ColorImage
 from util.path import to_abs_path
@@ -45,11 +43,10 @@ class PostureGuard(SoundRepeatGuard):
             interval=8,
             warning_enabled=warning_enabled
         )
-        self._hog_layer = _HogLayer(warn_angle)
-        self._mtcnn_layer = _MtcnnLayer(warn_angle)
-        self._model_layer = _ModelLayer(predictor)
+        self._hog_layer = HogLayer(warn_angle)
+        self._mtcnn_layer = MtcnnLayer(warn_angle)
+        self._model_layer = ModelLayer(predictor)
         self._mtcnn_detector = mtcnn.MTCNN()
-        self._warn_angle: float = warn_angle
         self._grader: Optional[ConcentrationGrader] = grader
 
     def set_predictor(self, predictor: PosturePredictor) -> None:
@@ -89,8 +86,7 @@ class PostureGuard(SoundRepeatGuard):
         # it as the first layer; last, when the above 2 detections both fail on
         # face detection, we use our model.
 
-        # Get posture label...
-        layer: _DetectionLayer
+        layer: DetectionLayer
         if landmarks.any():
             # layer 1
             self._hog_layer.detect(landmarks)
@@ -109,7 +105,7 @@ class PostureGuard(SoundRepeatGuard):
                 layer = self._model_layer
 
         angle: float
-        if isinstance(layer, _AngleLayer) and self._grader is not None:
+        if isinstance(layer, AngleLayer) and self._grader is not None:
             self._grader.add_face_center(layer.center)
             angle = layer.angle
         else:  # is model layer
@@ -138,124 +134,3 @@ class PostureGuard(SoundRepeatGuard):
             self._grader.add_body_distraction()
         else:
             self._grader.add_body_concentration()
-
-
-class _DetectionLayer(ABC):
-    """All detection layers have a detect method and its posture detection
-    result and detail as properties.
-    """
-    class UndetectedError(ValueError):
-        """A getter is called before detection is performed."""
-        def __init__(self) -> None:
-            self.message = "please detect first"
-            super().__init__(self.message)
-
-    def __init__(self) -> None:
-        self._posture: Optional[PostureLabel] = None
-        self._detail: Optional[str] = None
-
-    @property
-    def posture(self) -> PostureLabel:
-        if self._posture is None:
-            raise _DetectionLayer.UndetectedError
-        return self._posture
-
-    @property
-    def detail(self) -> str:
-        """The detail of the posture detection."""
-        if self._detail is None:
-            raise _DetectionLayer.UndetectedError
-        return self._detail
-
-    @abstractmethod
-    def detect(self, target: Any) -> None:
-        pass
-
-
-class _AngleLayer(_DetectionLayer):
-    def __init__(self, warn_angle: float) -> None:
-        self._warn_angle = warn_angle
-        self._angle: Optional[float] = None
-        self._center: Optional[Tuple[float, float]] = None
-
-    @property
-    def angle(self) -> float:
-        if self._angle is None:
-            raise _DetectionLayer.UndetectedError
-        return self._angle
-
-    @property
-    def center(self) -> Tuple[float, float]:
-        """The center, precisely nose, of face."""
-        if self._center is None:
-            raise _DetectionLayer.UndetectedError
-        return self._center
-
-    def set_warn_angle(self, warn_angle: float) -> None:
-        """
-        Arguments:
-            warn_angle: Face slope angle larger than this is considered to be a slump posture.
-        """
-        self._warn_angle = warn_angle
-
-    def _do_angle_check(self) -> None:
-        """Determines whether the posture is GOOD or SLUMP with angle
-        and tells the detail.
-        """
-        self._posture = PostureLabel.GOOD
-        # calls property for NoneType check
-        if abs(self.angle) >= self._warn_angle:
-            self._posture = PostureLabel.SLUMP
-        self._detail = f"by angle: {round(self.angle, 1)} degrees"
-
-
-class _HogLayer(_AngleLayer):
-    def __init__(self, warn_angle: float) -> None:
-        super().__init__(warn_angle)
-        self._hog_angle_calculator = HogAngleCalculator()
-
-    def detect(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
-        self._angle = self._hog_angle_calculator.calculate(landmarks)
-        self._do_angle_check()
-        center = tuple((landmarks[30] + landmarks[33]) / 2)
-        if len(center) != 2:
-            raise ValueError("landmarks should be 2-dimensional")
-        # silence the type check after the length is checked to be 2
-        self._center = cast(Tuple[float, float], center)
-
-
-class _MtcnnLayer(_AngleLayer):
-    def __init__(self, warn_angle: float) -> None:
-        super().__init__(warn_angle)
-        self._mtcnn_angle_calculator = MtcnnAngleCalculator()
-
-    def detect(self, face: Dict) -> None:
-        self._angle = self._mtcnn_angle_calculator.calculate(face)
-        self._do_angle_check()
-        center = tuple(map(float, face["keypoints"]["nose"]))
-        if len(center) != 2:
-            raise ValueError("face points should be 2-dimensional")
-        self._center = cast(Tuple[float, float], center)
-
-
-class _ModelLayer(_DetectionLayer):
-    def __init__(self, predictor: PosturePredictor) -> None:
-        super().__init__()
-        self._predictor: PosturePredictor = predictor
-        self._mtcnn_angle_calculator = MtcnnAngleCalculator()
-
-    def set_predictor(self, predictor: PosturePredictor) -> None:
-        """
-        Arguments:
-            predictor: Used to predict the label of image.
-        """
-        self._predictor = predictor
-
-    def detect(self, frame: ColorImage) -> None:
-        """
-        Arguments:
-            frame: The image contains posture to be detected.
-        """
-        conf: Float[32]
-        self._posture, conf = self._predictor.predict(frame)
-        self._detail = f"by model: {conf:.0%}"
