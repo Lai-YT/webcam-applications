@@ -143,7 +143,7 @@ class MonitorController(QObject):
                 row_no, self._monitor.col_header.to_row(row)  # type: ignore
             )  # sqlite3.Row does support mapping
             # all ids are the same, duplicate, so omit that
-            hist_item.setText(id_index, "")
+            hist_item.setText(id_index, "hist_{}".format(student_id))
             self._set_background_by_grade(hist_item, row["grade"])
 
     def _plot_histories(self, student_id: str) -> None:
