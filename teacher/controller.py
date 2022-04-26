@@ -6,7 +6,7 @@ from typing import Any, List, Mapping
 
 import matplotlib.pyplot as plt
 import requests
-from PyQt5.QtCore import QObject, QTimer, Qt
+from PyQt5.QtCore import QObject, QTimer, Qt, pyqtSlot
 from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import QTreeWidgetItem
 
@@ -60,34 +60,16 @@ class MonitorController(QObject):
             self._conn.execute(sql)
 
     def _connect_signals(self):
-        def plot_history_if_grade_clicked(student_id: str, label: str) -> None:
-            if label == "grade":
-                grade = []
-                time = []
-                for row in self._get_history_from_database(student_id, 5):
-                    grade.append(row["grade"])
-                    time.append(row["time"].timestamp())
-                ax = plt.subplot()
-                ax.stem(time, grade)
-                ax.set(ylim=(0, 1))
-                plt.show()
-        self._monitor.s_item_clicked.connect(plot_history_if_grade_clicked)
-        def show_history(student_id: str) -> None:
-            row_no = self._monitor.search_row_no(("id", student_id))
-            id_index = self._monitor.col_header.labels().index("id")
-            for row in self._get_history_from_database(student_id, Monitor.MAX_HISTORY_NUM):
-                hist_item = self._monitor.add_history_of_row(
-                    row_no, self._monitor.col_header.to_row(row)  # type: ignore
-                )  # sqlite3.Row does support mapping
-                # all ids are the same, duplicate, so omit that
-                hist_item.setText(id_index, "")
-                self._set_background_by_grade(hist_item, row["grade"])
-        self._monitor.s_item_expanded.connect(show_history)
+        self._monitor.s_item_clicked.connect(
+            lambda student_id, label: self._plot_histories(student_id)
+                                      if label == "grade" else None
+        )
         self._monitor.s_item_collapsed.connect(
             lambda student_id: self._monitor.remove_histories_of_row(
                 self._monitor.search_row_no(("id", student_id))
             )
         )
+        self._monitor.s_item_expanded.connect(self._show_histories_on_monitor)
 
     def _get_grades_from_server(self) -> None:
         """Get new grades from the server and
@@ -101,7 +83,13 @@ class MonitorController(QObject):
             self.store_new_grade(datum)
             self.show_new_grade(datum)
 
-    def _get_history_from_database(self, student_id: str, amount: int) -> List[sqlite3.Row]:
+    def _get_histories_from_database(self, student_id: str, amount: int) -> List[sqlite3.Row]:
+        """Gets histories of the student specified by id from the database.
+
+        Arguments:
+            student_id: The id of the student.
+            amount: The number of histories to get.
+        """
         sql = f"SELECT * FROM {self._table_name} WHERE id=? ORDER BY time LIMIT ?;"
         with self._conn:
             return self._conn.execute(sql, (student_id, amount)).fetchall()
@@ -142,3 +130,29 @@ class MonitorController(QObject):
             color = Qt.red
         col_no = self._monitor.col_header.labels().index("grade")
         row_item.setBackground(col_no, QBrush(color, Qt.Dense4Pattern))
+
+    @pyqtSlot(str)
+    def _show_histories_on_monitor(self, student_id: str) -> None:
+        """Shows Monitor.MAX_HISTORY_NUM latest histories of the student
+        specified by id on the monitor.
+        """
+        row_no = self._monitor.search_row_no(("id", student_id))
+        id_index = self._monitor.col_header.labels().index("id")
+        for row in self._get_histories_from_database(student_id, Monitor.MAX_HISTORY_NUM):
+            hist_item = self._monitor.add_history_of_row(
+                row_no, self._monitor.col_header.to_row(row)  # type: ignore
+            )  # sqlite3.Row does support mapping
+            # all ids are the same, duplicate, so omit that
+            hist_item.setText(id_index, "")
+            self._set_background_by_grade(hist_item, row["grade"])
+
+    def _plot_histories(self, student_id: str) -> None:
+        grade = []
+        time = []
+        for row in self._get_histories_from_database(student_id, 5):
+            grade.append(row["grade"])
+            time.append(row["time"].timestamp())
+        ax = plt.subplot()
+        ax.stem(time, grade)
+        ax.set(ylim=(0, 1))
+        plt.show()

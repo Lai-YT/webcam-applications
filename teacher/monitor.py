@@ -220,15 +220,10 @@ class Monitor(QMainWindow):
         return -1
 
     def _connect_signals(self) -> None:
-        def get_parent_if_is_child(item: QTreeWidgetItem) -> QTreeWidgetItem:
-            # since the id of history is omitted, get parent to obtain the real id
-            if item.parent() is not None:
-                return item.parent()
-            return item
         self._table.itemClicked.connect(
             lambda item, col_no: self.s_item_clicked.emit(
                 *self._map_item_and_column_to_key_and_label(
-                    get_parent_if_is_child(item), col_no
+                    _get_parent_if_is_child(item), col_no
                 )
             )
         )
@@ -242,7 +237,16 @@ class Monitor(QMainWindow):
                 item.text(self._header.labels().index(self._key_label))
             )
         )
+
     def _map_item_and_column_to_key_and_label(
             self, item: QTreeWidgetItem, col_no: int) -> Tuple[str, str]:
         key_index = self._header.labels().index(self._key_label)
         return item.text(key_index), self._header.labels()[col_no]
+
+
+# helper function
+def _get_parent_if_is_child(item: QTreeWidgetItem) -> QTreeWidgetItem:
+    # since the id of history is omitted, get parent to obtain the real id
+    if item.parent() is not None:
+        return item.parent()
+    return item
