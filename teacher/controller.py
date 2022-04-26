@@ -102,9 +102,9 @@ class MonitorController(QObject):
             self.show_new_grade(datum)
 
     def _get_history_from_database(self, student_id: str, amount: int) -> List[sqlite3.Row]:
-        sql = f"SELECT * FROM {self._table_name} WHERE id=? ORDER BY time LIMIT {amount};"
+        sql = f"SELECT * FROM {self._table_name} WHERE id=? ORDER BY time LIMIT ?;"
         with self._conn:
-            return self._conn.execute(sql, (student_id,)).fetchall()
+            return self._conn.execute(sql, (student_id, amount)).fetchall()
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
