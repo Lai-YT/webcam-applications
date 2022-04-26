@@ -84,13 +84,13 @@ class MonitorController(QObject):
             self.show_new_grade(datum)
 
     def _get_histories_from_database(self, student_id: str, amount: int) -> List[sqlite3.Row]:
-        """Gets histories of the student specified by id from the database.
+        """Gets latest histories of the student specified by id from the database.
 
         Arguments:
             student_id: The id of the student.
             amount: The number of histories to get.
         """
-        sql = f"SELECT * FROM {self._table_name} WHERE id=? ORDER BY time LIMIT ?;"
+        sql = f"SELECT * FROM {self._table_name} WHERE id=? ORDER BY time DESC LIMIT ?;"
         with self._conn:
             return self._conn.execute(sql, (student_id, amount)).fetchall()
 
