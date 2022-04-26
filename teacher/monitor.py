@@ -1,7 +1,7 @@
 from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem
+from PyQt5.QtWidgets import QHeaderView, QMainWindow, QTreeWidget, QTreeWidgetItem
 from more_itertools import SequenceView
 
 
@@ -158,6 +158,7 @@ class Monitor(QMainWindow):
         # show the expansion indicator even there are no child.
         new_item.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
         self._table.addTopLevelItem(new_item)
+        self._table.header().setSectionResizeMode(1, QHeaderView.Stretch)
         return new_item
 
     def update_row(self, row_no: int, row: RowContent) -> QTreeWidgetItem:
