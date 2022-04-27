@@ -127,7 +127,7 @@ class Monitor(QMainWindow):
     def __init__(self, header: ColumnHeader, key_label: str = None) -> None:
         super().__init__()
         self.setWindowTitle("Teacher Monitor")
-        self.resize(640, 480)
+        self.setMinimumSize(640, 480)
 
         self._table = QTreeWidget()
         self.setCentralWidget(self._table)
