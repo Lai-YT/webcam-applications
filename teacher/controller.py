@@ -92,7 +92,8 @@ class MonitorController(QObject):
         """
         sql = f"SELECT * FROM {self._table_name} WHERE id=? ORDER BY time DESC LIMIT ?;"
         with self._conn:
-            return self._conn.execute(sql, (student_id, amount)).fetchall()
+            # Fetch one more grade and remove the current one.
+            return self._conn.execute(sql, (student_id, amount + 1)).fetchall()[1:]
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
@@ -143,7 +144,7 @@ class MonitorController(QObject):
                 row_no, self._monitor.col_header.to_row(row)  # type: ignore
             )  # sqlite3.Row does support mapping
             # all ids are the same, duplicate, so omit that
-            hist_item.setText(id_index, "hist_{}".format(student_id))
+            hist_item.setText(id_index, "")
             self._set_background_by_grade(hist_item, row["grade"])
 
     def _plot_histories(self, student_id: str) -> None:
