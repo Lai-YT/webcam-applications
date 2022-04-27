@@ -145,6 +145,7 @@ class Monitor(QMainWindow):
         self._header = header
         self._table.setColumnCount(header.col_count)
         self._table.setHeaderLabels(list(header.labels()))
+        self._table.header().setSectionResizeMode(1, QHeaderView.Stretch)
 
     def insert_row(self, row: RowContent) -> QTreeWidgetItem:
         """Inserts a new row to the bottom of the table.
@@ -158,7 +159,6 @@ class Monitor(QMainWindow):
         # show the expansion indicator even there are no child.
         new_item.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
         self._table.addTopLevelItem(new_item)
-        self._table.header().setSectionResizeMode(1, QHeaderView.Stretch)
         return new_item
 
     def update_row(self, row_no: int, row: RowContent) -> QTreeWidgetItem:
