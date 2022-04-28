@@ -93,7 +93,7 @@ class MonitorController(QObject):
         sql = f"SELECT * FROM {self._table_name} WHERE id=? ORDER BY time DESC LIMIT ?;"
         with self._conn:
             # Fetch one more grade and remove the current one.
-            return self._conn.execute(sql, (student_id, amount + 1)).fetchall()[1:]
+            return self._conn.execute(sql, (student_id, amount)).fetchall()
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
@@ -139,7 +139,7 @@ class MonitorController(QObject):
         """
         row_no = self._monitor.search_row_no(("id", student_id))
         id_index = self._monitor.col_header.labels().index("id")
-        for row in self._get_histories_from_database(student_id, Monitor.MAX_HISTORY_NUM):
+        for row in self._get_histories_from_database(student_id, Monitor.MAX_HISTORY_NUM + 1)[1:]:
             hist_item = self._monitor.add_history_of_row(
                 row_no, self._monitor.col_header.to_row(row)  # type: ignore
             )  # sqlite3.Row does support mapping
@@ -148,7 +148,7 @@ class MonitorController(QObject):
     def _plot_histories(self, student_id: str) -> None:
         grade = []
         time = []
-        hist_rows = self._get_histories_from_database(student_id, 5)
+        hist_rows = self._get_histories_from_database(student_id, 6)
         init_time = hist_rows[-1]["time"].timestamp() # earliest grade
         for row in hist_rows:
             grade.append(row["grade"])
