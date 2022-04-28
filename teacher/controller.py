@@ -1,10 +1,12 @@
 import atexit
+import math
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Mapping
 
 import matplotlib.pyplot as plt
+import numpy as np
 import requests
 from PyQt5.QtCore import QObject, QTimer, Qt, pyqtSlot
 from PyQt5.QtGui import QBrush
@@ -14,6 +16,7 @@ import server.main as flask_server
 import server.post as poster
 from teacher.monitor import Monitor, RowContent
 from util.path import to_abs_path
+from util.time import to_date_time
 
 
 class MonitorController(QObject):
@@ -86,13 +89,14 @@ class MonitorController(QObject):
     def _get_histories_from_database(self, student_id: str, amount: int) -> List[sqlite3.Row]:
         """Gets latest histories of the student specified by id from the database.
 
+        Histories are in descending order with repect to their time.
+
         Arguments:
             student_id: The id of the student.
             amount: The number of histories to get.
         """
         sql = f"SELECT * FROM {self._table_name} WHERE id=? ORDER BY time DESC LIMIT ?;"
         with self._conn:
-            # Fetch one more grade and remove the current one.
             return self._conn.execute(sql, (student_id, amount)).fetchall()
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
@@ -139,6 +143,7 @@ class MonitorController(QObject):
         """
         row_no = self._monitor.search_row_no(("id", student_id))
         id_index = self._monitor.col_header.labels().index("id")
+        # Fetch one more grade and remove the current one.
         for row in self._get_histories_from_database(student_id, Monitor.MAX_HISTORY_NUM + 1)[1:]:
             hist_item = self._monitor.add_history_of_row(
                 row_no, self._monitor.col_header.to_row(row)  # type: ignore
@@ -146,15 +151,21 @@ class MonitorController(QObject):
             self._set_background_by_grade(hist_item, row["grade"])
 
     def _plot_histories(self, student_id: str) -> None:
-        grade = []
-        time = []
+        grades = []
+        times = []
         hist_rows = self._get_histories_from_database(student_id, 6)
-        init_time = hist_rows[-1]["time"].timestamp() # earliest grade
+        init_time = hist_rows[-1]["time"].timestamp()  # earliest grade
         for row in hist_rows:
-            grade.append(row["grade"])
-            time.append((row["time"].timestamp() - init_time) / 60)
+            grades.append(row["grade"])
+            times.append((row["time"].timestamp() - init_time) / 60)
         ax = plt.subplot()
-        ax.stem(time, grade)
-        ax.set_xlabel("Time from init (minute)")
-        ax.set(ylim=(0, 1))
+        ax.stem(times, grades)
+        ax.set_title(f"Concentration grade of id: {student_id} from {to_date_time(init_time)}")
+        ax.set_ylabel("grade")
+        ax.set_xlabel("time (min)")
+        ax.set_xticks(range(math.ceil(times[0]) + 1))
+        # show the real "stop" point by showing "stop + step"
+        ax.set_yticks(np.arange(0, 1 + 0.2, 0.2))
+        ax.set_yticks(np.arange(0.1, 0.9 + 0.2, 0.2), minor=True)
+        ax.set_ylim(0, 1.1)  # more than 1 to not truncate the circle on the top
         plt.show()
