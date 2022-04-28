@@ -143,17 +143,18 @@ class MonitorController(QObject):
             hist_item = self._monitor.add_history_of_row(
                 row_no, self._monitor.col_header.to_row(row)  # type: ignore
             )  # sqlite3.Row does support mapping
-            # all ids are the same, duplicate, so omit that
-            hist_item.setText(id_index, "")
             self._set_background_by_grade(hist_item, row["grade"])
 
     def _plot_histories(self, student_id: str) -> None:
         grade = []
         time = []
-        for row in self._get_histories_from_database(student_id, 5):
+        hist_rows = self._get_histories_from_database(student_id, 5)
+        init_time = hist_rows[-1]["time"].timestamp() # earliest grade
+        for row in hist_rows:
             grade.append(row["grade"])
-            time.append(row["time"].timestamp())
+            time.append((row["time"].timestamp() - init_time) / 60)
         ax = plt.subplot()
         ax.stem(time, grade)
+        ax.set_xlabel("Time from init (minute)")
         ax.set(ylim=(0, 1))
         plt.show()

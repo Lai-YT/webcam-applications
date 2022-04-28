@@ -129,7 +129,7 @@ class Monitor(QMainWindow):
         self.setWindowTitle("Teacher Monitor")
         self.setMinimumSize(640, 480)
 
-        self._table = QTreeWidget()
+        self._table = QTreeWidget() # root
         self.setCentralWidget(self._table)
 
         self._set_col_header(header)
@@ -145,6 +145,7 @@ class Monitor(QMainWindow):
         self._header = header
         self._table.setColumnCount(header.col_count)
         self._table.setHeaderLabels(list(header.labels()))
+        # Resize header section to keep time from being blocked.
         self._table.header().setSectionResizeMode(1, QHeaderView.Stretch)
 
     def insert_row(self, row: RowContent) -> QTreeWidgetItem:
@@ -223,9 +224,7 @@ class Monitor(QMainWindow):
     def _connect_signals(self) -> None:
         self._table.itemClicked.connect(
             lambda item, col_no: self.s_item_clicked.emit(
-                *self._map_item_and_column_to_key_and_label(
-                    _get_parent_if_is_child(item), col_no
-                )
+                *self._map_item_and_column_to_key_and_label(item, col_no)
             )
         )
         self._table.itemCollapsed.connect(
@@ -243,11 +242,3 @@ class Monitor(QMainWindow):
             self, item: QTreeWidgetItem, col_no: int) -> Tuple[str, str]:
         key_index = self._header.labels().index(self._key_label)
         return item.text(key_index), self._header.labels()[col_no]
-
-
-# helper function
-def _get_parent_if_is_child(item: QTreeWidgetItem) -> QTreeWidgetItem:
-    # since the id of history is omitted, get parent to obtain the real id
-    if item.parent() is not None:
-        return item.parent()
-    return item
