@@ -39,8 +39,8 @@ class AngleCalculator(ABC):
             p1 (a subscriptable object that contains 2 int elements)
             p2 (a subscriptable object that contains 2 int elements)
         """
-        x1 ,y1 = p1
-        x2 ,y2 = p2
+        x1, y1 = p1
+        x2, y2 = p2
         with warnings.catch_warnings():
             # RuntimeWarning: divide by zero encountered in long_scalars
             # Ignore possible warning when 90.0
