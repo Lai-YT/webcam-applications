@@ -193,8 +193,8 @@ class Monitor(QMainWindow):
         """
         item = self._table.topLevelItem(row_no)
         hist_item = QTreeWidgetItem(item, [str(col.value) for col in hist_row])
-        # 0 is from top
-        item.insertChild(0, hist_item)
+        # desc time order
+        item.insertChild(item.childCount(), hist_item)
 
         while item.childCount() > Monitor.MAX_HISTORY_NUM:
             item.removeChild(item.child(Monitor.MAX_HISTORY_NUM))
