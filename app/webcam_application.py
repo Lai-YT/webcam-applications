@@ -387,19 +387,17 @@ class WebcamApplication(QObject):
         def _do_real_data_send() -> None:
             data: ColorImage = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
             # don't need that much precision
-            slices: NDArray[(36,), Int[32]] = get_compare_slices(data).astype(np.int16)
+            slices: NDArray[(36,), Int[16]] = get_compare_slices(data).astype(np.int16)
             self.s_screenshot_refreshed.emit(slices)
 
         # time alignment tech.: https://stackoverflow.com/a/47510198
         now = datetime.now()
 
-        # Align to the next XX:XX:30 or XX:XX:00 for the first start:
-        #   if is now more than 30, sleep until the next 00;
-        #   else is now more than 00 but not yet 30, sleep until the next 30.
-        second = 0
-        if now.second >= 30:
-            second = 30
-        next_fire = now.replace(second=second, microsecond=0) + timedelta(seconds=30)
+        # Align to the next multiple of 5 minute:
+        #   get the largest multiple smaller than now and
+        #   set the fire time to the smallest multiple greater than now.
+        minute = (now.minute // 5) * 5
+        next_fire = now.replace(minute=minute, second=0, microsecond=0) + timedelta(minutes=5)
 
         # How long we might be busy waiting and checking to approach the precise
         # time, better be longer than the task time.
@@ -417,8 +415,8 @@ class WebcamApplication(QObject):
 
             _do_real_data_send()
 
-            next_fire += timedelta(seconds=30)  # advance 30 seconds
-            sleep = 30 - BUSY_CHECK_GAP
+            next_fire += timedelta(minutes=5)  # advance 5 minutes
+            sleep = 5 * 60 - BUSY_CHECK_GAP
 
     def _keep_grading_if_related_apps_enabled(self) -> None:
         # Need both distance measurement and posture detection to have
