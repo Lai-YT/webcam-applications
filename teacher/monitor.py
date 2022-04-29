@@ -106,7 +106,8 @@ class ColumnHeader:
 
 
 class Monitor(QMainWindow):
-    """
+    """A Teacher-end view for grade display.
+
     Signals:
         s_item_clicked:
             Emits when any of the items (row) are clicked. Sends the key value
