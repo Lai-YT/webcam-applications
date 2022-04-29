@@ -161,7 +161,6 @@ class MonitorController(QObject):
         specified by id on the monitor.
         """
         row_no = self._monitor.search_row_no(("id", student_id))
-        id_index = self._monitor.col_header.labels().index("id")
         # Fetch one more grade and remove the current one.
         for row in self._get_histories_from_database(student_id, Monitor.MAX_HISTORY_NUM + 1)[1:]:
             hist_item = self._monitor.add_history_of_row(
