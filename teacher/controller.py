@@ -10,14 +10,14 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
-from PyQt5.QtCore import QObject, QTimer, Qt, pyqtSlot
+from PyQt5.QtCore import QObject, QTimer, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import QTreeWidgetItem
 
 import server.main as flask_server
 import server.post as poster
 from screenshot_compare import get_compare_slices, get_screenshot
-from teacher.monitor import Monitor, RowContent
+from teacher.monitor import Col, Monitor, RowContent
 from util.path import to_abs_path
 from util.task_worker import TaskWorker
 from util.time import to_date_time
@@ -27,6 +27,10 @@ class MonitorController(QObject):
     """Data logic, server communitcation and database managemnt are mixed into
     the controller for simplicity.
     """
+
+    # private signal for thread communitcation;
+    # sends the student id with the screenshot slice comparison result
+    _s_screen_diff_compared = pyqtSignal(str, int)
 
     TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT", datetime: "TIMESTAMP"}
 
@@ -86,6 +90,8 @@ class MonitorController(QObject):
             )
         )
         self._monitor.s_item_expanded.connect(self._show_histories_on_monitor)
+
+        self._s_screen_diff_compared.connect(self._show_diff_of_screenshot_to_monitor)
 
     def _get_grades_from_server(self) -> None:
         """Get new grades from the server and
@@ -189,10 +195,8 @@ class MonitorController(QObject):
 
     def _get_screenshot_slices_periodically(self) -> None:
         now = datetime.now()
-
         minute = (now.minute // 5) * 5
         next_fire = now.replace(minute=minute, second=0, microsecond=0) + timedelta(minutes=5)
-
         BUSY_CHECK_GAP = 2
         sleep = (next_fire - now).seconds
 
@@ -200,22 +204,38 @@ class MonitorController(QObject):
             time.sleep(sleep)
             while datetime.now() < next_fire:
                 pass
-
             self._screenshot_slices = get_compare_slices(cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY))
 
             next_fire += timedelta(minutes=5)
             sleep = 5 * 60 - BUSY_CHECK_GAP
 
+    def _compare_screenshot_slices(self) -> None:
+        """Compares the slices of students with teacher's."""
+        for data in self._get_screenshot_slices_from_server():
+            slices = data["slices"]
+            diff: int = sum(np.square(
+                (slices - self._screenshot_slices).astype(np.int16)
+            ))
+            self._s_screen_diff_compared.emit(data["id"], diff)
+
+    @pyqtSlot(str, int)
+    def _show_diff_of_screenshot_to_monitor(self, student_id: str, diff: int) -> None:
+        """Shows the difference of screen to the corresponding student's screen label."""
+        row_no = self._monitor.search_row_no(("id", student_id))
+        row = RowContent([Col(no=self._monitor.col_header.col_count, label="screen", value=diff)])
+        if row_no == -1:  # row not found
+            self._monitor.insert_row(row)
+        else:
+            self._monitor.update_row(row_no, row)
+
     def _compare_screenshot_slices_periodically(self) -> None:
         now = datetime.now()
-
         # generate a time offset to make sure screenshot are gotten
         minute = (now.minute // 5) * 5 + 1
         next_fire = (
             now.replace(minute=minute, second=0, microsecond=0)
-            + timedelta(minutes=5)  # an extra delta to make sure the 1st screenshot is gotten
+            + timedelta(minutes=5 * 2)  # an extra delta to make sure the 1st screenshot is gotten
         )
-
         BUSY_CHECK_GAP = 2
         sleep = (next_fire - now).seconds
 
@@ -223,10 +243,7 @@ class MonitorController(QObject):
             time.sleep(sleep)
             while datetime.now() < next_fire:
                 pass
-
-            for data in self._get_screenshot_slices_from_server():
-                slices = data["slices"]
-                print(sum(np.square(slices - self._screenshot_slices)))
+            self._compare_screenshot_slices()
 
             next_fire += timedelta(minutes=5)
             sleep = 5 * 60 - BUSY_CHECK_GAP

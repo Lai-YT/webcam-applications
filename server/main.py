@@ -28,6 +28,10 @@ screenshots = []
 def update_screenshot():
     if request.method == "POST":
         screenshots.append(request.get_json())
+    elif request.method == "GET":
+        ret_pack = screenshots.copy()
+        screenshots.clear()
+        return json.dumps(ret_pack)
     return json.dumps(screenshots)
 
 

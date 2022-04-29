@@ -144,8 +144,9 @@ class Monitor(QMainWindow):
 
     def _set_col_header(self, header: ColumnHeader) -> None:
         self._header = header
-        self._table.setColumnCount(header.col_count)
-        self._table.setHeaderLabels(list(header.labels()))
+        # XXX: this a hack to create a column out of ColumnHeader's control and limitation 
+        self._table.setColumnCount(header.col_count + 1)
+        self._table.setHeaderLabels(list(header.labels()) + ["screen"])
         # Resize header section to keep time from being blocked.
         self._table.header().setSectionResizeMode(1, QHeaderView.Stretch)
 
