@@ -140,8 +140,17 @@ class MonitorController(QObject):
         else:
             row_item = self._monitor.update_row(row_no, row)
         self._monitor.sort_rows_by_label("grade", Qt.AscendingOrder)
-
         self._set_background_by_grade(row_item, grade["grade"])
+
+        # FIXME: method call on private attribute
+        for i in range(self._monitor._table.topLevelItemCount()):
+            item = self._monitor._table.topLevelItem(i)
+            # Search all expanded items and refresh histories.
+            if item.isExpanded():
+                self._monitor.remove_histories_of_row(i)
+                self._show_histories_on_monitor(
+                    item.text(self._monitor.col_header.labels().index("id"))
+                )
 
     def _set_background_by_grade(self, row_item: QTreeWidgetItem, grade: float) -> None:
         """Sets the background of label "grade" to green if grade is higher than
