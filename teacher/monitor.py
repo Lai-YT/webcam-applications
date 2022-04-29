@@ -182,7 +182,9 @@ class Monitor(QMainWindow):
         item = self._table.topLevelItem(row_no)
         row = RowContent()
         for i in range(item.columnCount()):
-            row.append(Col(i, self._header.labels()[i], item.text(i)))
+            # True number of columns may be different from those defined in
+            # ColumnHeader, so get text from headerItem.text() instead of _header.labels().
+            row.append(Col(i, self._table.headerItem().text(i), item.text(i)))
         return row
 
     def add_history_of_row(self, row_no: int, hist_row: RowContent) -> QTreeWidgetItem:
@@ -246,4 +248,4 @@ class Monitor(QMainWindow):
     def _map_item_and_column_to_key_and_label(
             self, item: QTreeWidgetItem, col_no: int) -> Tuple[str, str]:
         key_index = self._header.labels().index(self._key_label)
-        return item.text(key_index), self._header.labels()[col_no]
+        return item.text(key_index), self._table.headerItem().text(col_no)
