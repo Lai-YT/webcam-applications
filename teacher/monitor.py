@@ -195,6 +195,8 @@ class Monitor(QMainWindow):
         """
         item = self._table.topLevelItem(row_no)
         hist_item = QTreeWidgetItem(item, [str(col.value) for col in hist_row])
+        hist_item.setTextAlignment(1, Qt.AlignCenter)
+        hist_item.setTextAlignment(2, Qt.AlignCenter)
         # desc time order
         item.insertChild(item.childCount(), hist_item)
 
