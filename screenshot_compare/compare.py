@@ -1,10 +1,13 @@
+import math
+from typing import Union
+
 import numpy as np
-from nptyping import Float64, Int16, NDArray
+from nptyping import Float, Int, NDArray
 
 from util.image_type import GrayImage
 
 
-def get_compare_slices(image: GrayImage) -> NDArray[(36,), Float64]:
+def get_compare_slices(image: GrayImage) -> NDArray[(36,), Float[64]]:
     """Takes 6 x 6 equally spaced slices and gets their means of pixel values as
     comparison components.
 
@@ -22,6 +25,21 @@ def get_compare_slices(image: GrayImage) -> NDArray[(36,), Float64]:
     return np.array(slices, dtype=np.float64)
 
 
+def compare_similarity_of_slices(
+        slices1: NDArray[(36,), Float],
+        slices2: NDArray[(36,), Float]) -> float:
+    """Calculates how similar these 2 set of slices are by the RMS value of differece.
+
+    Returns:
+        the ratio of similarity between [0, 1], percisely 1 - RMS / 255,
+        1 means they are the same.
+    """
+    # make sure no overflow
+    diff = slices1.astype(np.float64) - slices2.astype(np.float64)
+    rms = math.sqrt(sum(np.square(diff)) / 36)
+    return 1 - rms / 255
+
+
 if __name__ == "__main__":
     import time
     import webbrowser
@@ -30,7 +48,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from PyQt5.QtWidgets import QApplication
 
-    from frame_compare.screenshot import get_screenshot
+    from screenshot_compare import get_screenshot
 
 
     app = QApplication([])
@@ -40,13 +58,14 @@ if __name__ == "__main__":
     time.sleep(3)  # time for loading
     google: GrayImage = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
 
-    # don't need that much precision
-    diff: NDArray[(36,), Int16] = (
+    diff: NDArray[(36,), Float[64]] = (
         get_compare_slices(editor) - get_compare_slices(google)
-    ).astype(np.int16)
+    )
     print("6 x 6 value diffs: ")
     print(diff)
-    print(f"square sum: {sum(np.square(diff))}")
+    rms = math.sqrt(sum(np.square(diff)) / 36)
+    print(f"RMS: {rms}")
+    print(f"{1 - rms / 255:.1%}")
 
     fig, axs = plt.subplots(1, 2)
     axs[0].hist(editor.ravel(), range=(0, 255), bins=128)

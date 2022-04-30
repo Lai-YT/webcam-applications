@@ -3,6 +3,7 @@ import math
 import sqlite3
 import time
 from datetime import datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Mapping
 
@@ -16,7 +17,9 @@ from PyQt5.QtWidgets import QTreeWidgetItem
 
 import server.main as flask_server
 import server.post as poster
-from screenshot_compare import get_compare_slices, get_screenshot
+from screenshot_compare import (
+    compare_similarity_of_slices, get_compare_slices, get_screenshot
+)
 from teacher.monitor import Col, Monitor, RowContent
 from util.path import to_abs_path
 from util.task_worker import TaskWorker
@@ -29,8 +32,8 @@ class MonitorController(QObject):
     """
 
     # private signal for thread communitcation;
-    # sends the student id with the screenshot slice comparison result
-    _s_screen_diff_compared = pyqtSignal(str, int)
+    # sends the student id with the similarity of screenshot slice
+    _s_screen_similarity_refreshed = pyqtSignal(str, float)
 
     TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT", datetime: "TIMESTAMP"}
 
@@ -49,7 +52,7 @@ class MonitorController(QObject):
         self._fetch_timer.start(1000)
 
         self._screenshot_worker = TaskWorker(self._get_screenshot_slices_periodically)
-        self._compare_worker = TaskWorker(self._compare_screenshot_slices_periodically)
+        self._compare_worker = TaskWorker(self._compare_screenshot_similarity_periodically)
         self._screenshot_worker.start()
         self._compare_worker.start()
 
@@ -91,7 +94,7 @@ class MonitorController(QObject):
         )
         self._monitor.s_item_expanded.connect(self._show_histories_on_monitor)
 
-        self._s_screen_diff_compared.connect(self._show_diff_of_screenshot_to_monitor)
+        self._s_screen_similarity_refreshed.connect(self._show_diff_of_screenshot_to_monitor)
 
     def _get_grades_from_server(self) -> None:
         """Get new grades from the server and
@@ -217,32 +220,35 @@ class MonitorController(QObject):
             next_fire += timedelta(minutes=5)
             sleep = 5 * 60 - BUSY_CHECK_GAP
 
-    def _compare_screenshot_slices(self) -> None:
+    def _compare_screenshot_similarity(self) -> None:
         """Compares the slices of students with teacher's."""
         for data in self._get_screenshot_slices_from_server():
             slices = data["slices"]
-            diff: int = sum(np.square(
-                (slices - self._screenshot_slices).astype(np.int16)
-            ))
-            self._s_screen_diff_compared.emit(data["id"], diff)
+            similarity: float = compare_similarity_of_slices(
+                np.array(slices), self._screenshot_slices
+            )
+            self._s_screen_similarity_refreshed.emit(data["id"], similarity)
 
-    @pyqtSlot(str, int)
-    def _show_diff_of_screenshot_to_monitor(self, student_id: str, diff: int) -> None:
-        """Shows the difference of screen to the corresponding student's screen label."""
+    @pyqtSlot(str, float)
+    def _show_diff_of_screenshot_to_monitor(self, student_id: str, similarity: float) -> None:
+        """Shows the similarity of screen to the corresponding student's screen label."""
         row_no = self._monitor.search_row_no(("id", student_id))
-        row = RowContent([Col(no=self._monitor.col_header.col_count, label="screen", value=diff)])
+        row = RowContent([Col(no=self._monitor.col_header.col_count,
+                              label="screen",
+                              # round to 2 decimal places
+                              value=Decimal(f"{similarity:.2f}"))])
         if row_no == -1:  # row not found
             self._monitor.insert_row(row)
         else:
             self._monitor.update_row(row_no, row)
 
-    def _compare_screenshot_slices_periodically(self) -> None:
+    def _compare_screenshot_similarity_periodically(self) -> None:
         now = datetime.now()
         # generate a time offset to make sure screenshot are gotten
         minute = (now.minute // 5) * 5 + 1
         next_fire = (
             now.replace(minute=minute, second=0, microsecond=0)
-            + timedelta(minutes=5 * 2)  # an extra delta to make sure the 1st screenshot is gotten
+            + timedelta(minutes=5)  # an extra delta to make sure the 1st screenshot is gotten
         )
         BUSY_CHECK_GAP = 2
         sleep = (next_fire - now).seconds
@@ -251,7 +257,7 @@ class MonitorController(QObject):
             time.sleep(sleep)
             while datetime.now() < next_fire:
                 pass
-            self._compare_screenshot_slices()
+            self._compare_screenshot_similarity()
 
             next_fire += timedelta(minutes=5)
             sleep = 5 * 60 - BUSY_CHECK_GAP
