@@ -5,7 +5,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import cv2
-import numpy as np
 from nptyping import Int, NDArray
 
 from util.color import BGR, GREEN

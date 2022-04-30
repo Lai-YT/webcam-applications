@@ -6,7 +6,7 @@ from nptyping import Int, NDArray
 
 from concentration.grader import ConcentrationGrader
 from posture.calculator import PostureLabel
-from posture.layer import AngleLayer, DetectionLayer, HogLayer, MtcnnLayer
+from posture.layer import AngleLayer, HogLayer, MtcnnLayer
 from sounds.sound_guard import SoundRepeatGuard
 from util.image_type import ColorImage
 from util.path import to_abs_path

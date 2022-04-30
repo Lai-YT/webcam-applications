@@ -6,7 +6,6 @@ from nptyping import Int, NDArray
 from posture.calculator import (
     HogAngleCalculator, MtcnnAngleCalculator, PostureLabel
 )
-from util.image_type import ColorImage
 
 
 class DetectionLayer(ABC):
@@ -42,7 +41,7 @@ class DetectionLayer(ABC):
 
 
 class AngleLayer(DetectionLayer):
-    """A layer that detects face to get angle and center of face.""" 
+    """A layer that detects face to get angle and center of face."""
     def __init__(self, warn_angle: float) -> None:
         self._warn_angle = warn_angle
         self._angle: Optional[float] = None
