@@ -1,14 +1,12 @@
-import numpy as np
 import math
 import warnings
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import cv2
-import tensorflow as tf
-from nptyping import Float, Int, NDArray
-from tensorflow.keras import models
+import numpy as np
+from nptyping import Int, NDArray
 
 from util.color import BGR, GREEN
 from util.image_type import ColorImage
@@ -143,20 +141,3 @@ def draw_landmarks_used_by_angle_calculator(
     # make lines transparent
     canvas_ = cv2.addWeighted(canvas_, 0.4, canvas, 0.6, 0)
     return canvas_
-
-
-class PosturePredictor:
-    def __init__(self, model: models.Sequential) -> None:
-        self._model = model
-
-    def predict(self, frame: ColorImage) -> Tuple[PostureLabel, Float[32]]:
-        """Returns the posture label and confidence of this predict.
-
-        Arguments:
-            frame: The image contains posture to be predicted.
-        """
-        frame_exp = tf.expand_dims(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), 0)
-        predictions = self._model(frame_exp)
-        score = tf.nn.softmax(predictions[0])
-
-        return PostureLabel(np.argmax(score)), np.max(score)
