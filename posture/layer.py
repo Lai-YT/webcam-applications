@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple, cast
 
-from nptyping import Float, Int, NDArray
+from nptyping import Int, NDArray
 
 from posture.calculator import (
-    HogAngleCalculator, MtcnnAngleCalculator, PostureLabel, PosturePredictor
+    HogAngleCalculator, MtcnnAngleCalculator, PostureLabel
 )
-from util.image_type import ColorImage
 
 
 class DetectionLayer(ABC):
@@ -42,6 +41,7 @@ class DetectionLayer(ABC):
 
 
 class AngleLayer(DetectionLayer):
+    """A layer that detects face to get angle and center of face."""
     def __init__(self, warn_angle: float) -> None:
         self._warn_angle = warn_angle
         self._angle: Optional[float] = None
@@ -105,26 +105,3 @@ class MtcnnLayer(AngleLayer):
         if len(center) != 2:
             raise ValueError("face points should be 2-dimensional")
         self._center = cast(Tuple[float, float], center)
-
-
-class ModelLayer(DetectionLayer):
-    def __init__(self, predictor: PosturePredictor) -> None:
-        super().__init__()
-        self._predictor: PosturePredictor = predictor
-        self._mtcnn_angle_calculator = MtcnnAngleCalculator()
-
-    def set_predictor(self, predictor: PosturePredictor) -> None:
-        """
-        Arguments:
-            predictor: Used to predict the label of image.
-        """
-        self._predictor = predictor
-
-    def detect(self, frame: ColorImage) -> None:
-        """
-        Arguments:
-            frame: The image contains posture to be detected.
-        """
-        conf: Float[32]
-        self._posture, conf = self._predictor.predict(frame)
-        self._detail = f"by model: {conf:.0%}"

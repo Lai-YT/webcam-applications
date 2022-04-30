@@ -1,9 +1,10 @@
 import atexit
 import time
 from configparser import ConfigParser
-from datetime import datetime, timedelta
 from copy import deepcopy
+from datetime import datetime, timedelta
 from operator import methodcaller
+from threading import Barrier
 from typing import List, Optional, Tuple
 
 import cv2
@@ -13,7 +14,6 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QImage
 from imutils import face_utils
 from nptyping import Int, NDArray
-from tensorflow.keras import models
 
 from app.app_type import ApplicationType
 from brightness.calculator import BrightnessMode
@@ -26,9 +26,7 @@ from distance.calculator import (
 from distance.guard import DistanceGuard, DistanceState
 from focus_time.guard import TimeGuard
 from gui.popup_widget import TimeState
-from posture.calculator import (
-    PostureLabel, PosturePredictor, draw_landmarks_used_by_angle_calculator
-)
+from posture.calculator import PostureLabel, draw_landmarks_used_by_angle_calculator
 from posture.guard import PostureGuard
 from screenshot_compare import get_compare_slices, get_screenshot
 from util.color import GREEN, MAGENTA
@@ -189,9 +187,6 @@ class WebcamApplication(QObject):
 
         self._posture_detect = settings.getboolean("ENABLED")
         self._posture_guard = PostureGuard(
-            PosturePredictor(
-                models.load_model(to_abs_path("posture/models/self_trained_model"))
-            ),
             settings.getfloat("ANGLE"),
             settings.getboolean("WARNING"),
             self._concentration_grader
@@ -328,7 +323,12 @@ class WebcamApplication(QObject):
             canvas: ColorImage = frame.copy()
             # Analyze the frame to update face landmarks.
             self._update_face_and_landmarks(canvas, frame)
+
             # Do applications!
+            # The barrier is used to make sure all tasks are finished before the
+            # next loop starts; otherwise slow tasks may be deleted since they
+            # are out of scope. 4 tasks + 1 main loop = 5 parties
+            self._task_barrier = Barrier(parties=5, timeout=5)
             workers: List[TaskWorker] = []
             workers.append(TaskWorker(self._do_distance_measurement))
             workers.append(TaskWorker(self._do_posture_detection, canvas, frame))
@@ -342,6 +342,9 @@ class WebcamApplication(QObject):
             if self._has_face():
                 self._concentration_grader.add_face()
                 self._concentration_grader.detect_blink(self._landmarks)
+
+            # wait until all tasks are finished
+            self._task_barrier.wait()
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
             cv2.waitKey(refresh)
@@ -358,12 +361,14 @@ class WebcamApplication(QObject):
         if self._distance_measure and self._has_face():
             dist_info = self._distance_guard.warn_if_too_close(self._landmarks)
             self.s_distance_refreshed.emit(*dist_info)
+        self._task_barrier.wait()
 
     def _do_posture_detection(self, canvas, frame) -> None:
         if self._posture_detect:
             draw_landmarks_used_by_angle_calculator(canvas, self._landmarks)
             post_info = self._posture_guard.check_posture(frame, self._landmarks)
             self.s_posture_refreshed.emit(*post_info)
+        self._task_barrier.wait()
 
     def _do_focus_timing(self) -> None:
         if self._focus_time:
@@ -375,12 +380,14 @@ class WebcamApplication(QObject):
                 self._timer.start()
             time_info = self._time_guard.break_time_if_too_long(self._timer)
             self.s_time_refreshed.emit(*time_info)
+        self._task_barrier.wait()
 
     def _do_brightness_optimization(self, frame) -> None:
         if self._brightness_optimize:
             # Optimize brightness after passing required images.
             bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
             self.s_brightness_refreshed.emit(bright)
+        self._task_barrier.wait()
 
     def _send_slices_of_screenshot(self) -> None:
         """Sends the slices of screenshot precisely on every XX:XX:00 and XX:XX:30."""
