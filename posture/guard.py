@@ -74,7 +74,7 @@ class PostureGuard(SoundRepeatGuard):
         # so it's used as the first layer; then when the angle is too large that
         # HOG fails, MTCNN takes over. It's robust but so slow that we can't have
         # it as the first layer; last, when the above 2 detections both fail on
-        # face detection, we said that the user isn't concentrating since he/she
+        # face detection, we say that the user isn't concentrating since he/she
         # isn't even in front of the screen.
 
         layer: AngleLayer
@@ -89,7 +89,7 @@ class PostureGuard(SoundRepeatGuard):
                 self._mtcnn_layer.detect(faces[0])
                 layer = self._mtcnn_layer
             else:  # no face
-                # a sufficienly large angle to be send as distraction
+                # a sufficienly large angle to be sent as distraction
                 self._send_concentration_info(100)
                 # No face won't trigger sound warning since it's usually because
                 # of the user not in front of the screen, not really because of
