@@ -1,13 +1,23 @@
 import math
-from typing import Union
 
+import cv2
 import numpy as np
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QApplication
 from nptyping import Float, Int, NDArray
 
-from util.image_type import GrayImage
+from util.image_convert import qpixmap_to_ndarray
+from util.image_type import ColorImage, GrayImage
 
 
-def get_compare_slices(image: GrayImage) -> NDArray[(36,), Float[64]]:
+def get_screenshot() -> ColorImage:
+    screenshot: QPixmap = QApplication.primaryScreen().grabWindow(
+        QApplication.desktop().winId()
+    )
+    return qpixmap_to_ndarray(screenshot)
+
+
+def get_compare_slices(image: ColorImage) -> NDArray[(36,), Float[64]]:
     """Takes 6 x 6 equally spaced slices and gets their means of pixel values as
     comparison components.
 
@@ -17,11 +27,12 @@ def get_compare_slices(image: GrayImage) -> NDArray[(36,), Float[64]]:
         An numpy array with 36 values, value range from 0 ~ 255, each in type
         Float64, which allows you to make basic operations without overflowing.
     """
-    h, w = image.shape
+    gray_image: GrayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    h, w = gray_image.shape
     h //= 12
     w //= 12
     # 144 slices in total, take 36 of them
-    slices = [np.mean(image[h*i:h*(i+1), w*j:w*(j+1)]) for i in range(0, 12, 2) for j in range(0, 12, 2)]
+    slices = [np.mean(gray_image[h*i:h*(i+1), w*j:w*(j+1)]) for i in range(0, 12, 2) for j in range(0, 12, 2)]
     return np.array(slices, dtype=np.float64)
 
 
@@ -44,19 +55,15 @@ if __name__ == "__main__":
     import time
     import webbrowser
 
-    import cv2
     import matplotlib.pyplot as plt
-    from PyQt5.QtWidgets import QApplication
-
-    from screenshot_compare import get_screenshot
 
 
     app = QApplication([])
-    editor: GrayImage = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
+    editor: ColorImage = get_screenshot()
     # open a new google website to create really different screenshots
     webbrowser.open_new_tab("https://www.google.com/")
     time.sleep(3)  # time for loading
-    google: GrayImage = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
+    google: ColorImage = get_screenshot()
 
     diff: NDArray[(36,), Float[64]] = (
         get_compare_slices(editor) - get_compare_slices(google)

@@ -7,7 +7,6 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Mapping
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
@@ -17,7 +16,7 @@ from PyQt5.QtWidgets import QTreeWidgetItem
 
 import server.main as flask_server
 import server.post as poster
-from screenshot_compare import (
+from screenshot.compare import (
     compare_similarity_of_slices, get_compare_slices, get_screenshot
 )
 from teacher.monitor import Col, Monitor, RowContent
@@ -223,7 +222,7 @@ class MonitorController(QObject):
             time.sleep(sleep)
             while datetime.now() < next_fire:
                 pass
-            self._screenshot_slices = get_compare_slices(cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY))
+            self._screenshot_slices = get_compare_slices(get_screenshot())
 
             next_fire += timedelta(minutes=5)
             sleep = 5 * 60 - BUSY_CHECK_GAP
@@ -256,7 +255,7 @@ class MonitorController(QObject):
         minute = (now.minute // 5) * 5 + 1
         next_fire = (
             now.replace(minute=minute, second=0, microsecond=0)
-            + timedelta(minutes=5)  # an extra delta to make sure the 1st screenshot is gotten
+            + timedelta(minutes=5 * 2)  # an extra delta to make sure the 1st screenshot of teacher is gotten
         )
         BUSY_CHECK_GAP = 2
         sleep = (next_fire - now).seconds

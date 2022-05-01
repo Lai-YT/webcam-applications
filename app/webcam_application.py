@@ -28,7 +28,7 @@ from focus_time.guard import TimeGuard
 from gui.popup_widget import TimeState
 from posture.calculator import PostureLabel, draw_landmarks_used_by_angle_calculator
 from posture.guard import PostureGuard
-from screenshot_compare import get_compare_slices, get_screenshot
+from screenshot.compare import get_compare_slices, get_screenshot
 from util.color import GREEN, MAGENTA
 from util.image_convert import ndarray_to_qimage
 from util.image_type import ColorImage
@@ -392,7 +392,7 @@ class WebcamApplication(QObject):
     def _send_slices_of_screenshot(self) -> None:
         """Sends the slices of screenshot precisely on every XX:XX:00 and XX:XX:30."""
         def _do_real_data_send() -> None:
-            data: ColorImage = cv2.cvtColor(get_screenshot(), cv2.COLOR_BGR2GRAY)
+            data: ColorImage = get_screenshot()
             # don't need that much precision
             slices: NDArray[(36,), Int[16]] = get_compare_slices(data).astype(np.int16)
             self.s_screenshot_refreshed.emit(slices)
