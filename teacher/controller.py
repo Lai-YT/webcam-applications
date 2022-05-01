@@ -34,8 +34,6 @@ class MonitorController(QObject):
     # sends the student id with the similarity of screenshot slice
     _s_screen_similarity_refreshed = pyqtSignal(str, float)
 
-    TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT", datetime: "TIMESTAMP"}
-
     def __init__(self, monitor: Monitor) -> None:
         super().__init__()
         self._monitor = monitor
@@ -73,11 +71,11 @@ class MonitorController(QObject):
 
     def _create_table_if_not_exist(self) -> None:
         """Creates table if database is empty."""
-        sql = f"CREATE TABLE IF NOT EXISTS {self._table_name} ("
-        for label, value_type in zip(self._monitor.col_header.labels(),
-                                     self._monitor.col_header.types()):
-            sql += f"{label} {MonitorController.TO_SQL_TYPE[value_type]},"
-        sql = sql[:-1] + ");"
+        sql = f"""CREATE TABLE IF NOT EXISTS {self._table_name} (
+            id TEXT,
+            time TIMESTAMP,
+            grade FLOAT
+        );"""
         with self._conn:
             self._conn.execute(sql)
 
@@ -123,8 +121,7 @@ class MonitorController(QObject):
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
-        holder = ", ".join(["?"] * self._monitor.col_header.col_count)
-        sql = f"INSERT INTO {self._table_name} {tuple(self._monitor.col_header.labels())} VALUES ({holder});"
+        sql = f"INSERT INTO {self._table_name} (id, time, grade) VALUES (?, ?, ?);"
         row: RowContent = self._monitor.col_header.to_row(grade)
         with self._conn:
             self._conn.execute(sql, tuple(col.value for col in row))
@@ -241,7 +238,7 @@ class MonitorController(QObject):
     def _show_similarity_of_screenshot_to_monitor(self, student_id: str, similarity: float) -> None:
         """Shows the similarity of screen to the corresponding student's screen label."""
         row_no = self._monitor.search_row_no(("id", student_id))
-        row = RowContent([Col(no=self._monitor.col_header.col_count,
+        row = RowContent([Col(no=self._monitor.col_header.labels().index("screen"),
                               label="screen",
                               # round to 2 decimal places
                               value=Decimal(f"{similarity:.2f}"))])
@@ -252,7 +249,7 @@ class MonitorController(QObject):
         color: Qt.GlobalColor = Qt.green
         if similarity < 0.6:
             color = Qt.red
-        col_no = self._monitor.col_header.col_count
+        col_no = self._monitor.col_header.labels().index("screen")
         row_item.setBackground(col_no, QBrush(color, Qt.Dense4Pattern))
 
     def _compare_screenshot_similarity_periodically(self) -> None:

@@ -98,7 +98,6 @@ class ColumnHeader:
             values: Should have all the labels as keys. Extra keys will be ignored.
 
         Raises:
-            KeyError: Missing label.
             TypeError: Value of the wrong type.
         """
         row = RowContent()
@@ -106,8 +105,10 @@ class ColumnHeader:
             try:
                 if not isinstance(values[label], value_type):
                     raise TypeError(f'label "{label}" should have type "{value_type.__name__}" but got "{type(values[label]).__name__}"')
-            except KeyError:
-                raise KeyError(f'label "{label}" is missing') from None
+            except (KeyError, IndexError):
+                # sqlite3 raise IndexError when key not exist
+                # Missing label is allowed.
+                continue
             row.append(Col(col_no, label, values[label]))
         return row
 
@@ -160,9 +161,8 @@ class Monitor(QMainWindow):
 
     def _set_col_header(self, header: ColumnHeader) -> None:
         self._header = header
-        # XXX: this is a hack to create a column out of ColumnHeader's control and limitation
-        self._table.setColumnCount(header.col_count + 1)
-        self._table.setHeaderLabels(list(header.labels()) + ["screen"])
+        self._table.setColumnCount(header.col_count)
+        self._table.setHeaderLabels(header.labels())
         # Resize header section to keep time from being blocked.
         self._table.header().setSectionResizeMode(1, QHeaderView.Stretch)
 
@@ -217,9 +217,7 @@ class Monitor(QMainWindow):
         item = self._table.topLevelItem(row_no)
         row = RowContent()
         for i in range(item.columnCount()):
-            # True number of columns may be different from those defined in
-            # ColumnHeader, so get text from headerItem.text() instead of _header.labels().
-            row.append(Col(i, self._table.headerItem().text(i), item.text(i)))
+            row.append(Col(i, self._header.labels()[i], item.text(i)))
         return row
 
     def add_history_of_row(self, row_no: int, hist_row: RowContent) -> QTreeWidgetItem:
@@ -283,4 +281,4 @@ class Monitor(QMainWindow):
     def _map_item_and_column_to_key_and_label(
             self, item: QTreeWidgetItem, col_no: int) -> Tuple[str, str]:
         key_index = self._header.labels().index(self._key_label)
-        return item.text(key_index), self._table.headerItem().text(col_no)
+        return item.text(key_index), self._header.labels()[col_no]  # always in English
