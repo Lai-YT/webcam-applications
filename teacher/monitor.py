@@ -1,3 +1,4 @@
+import json
 from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -8,6 +9,7 @@ from more_itertools import SequenceView
 
 from gui.component import Label
 from gui.language import Language, LanguageComboBox
+from util.path import to_abs_path
 
 
 T = TypeVar("T")
@@ -135,16 +137,7 @@ class Monitor(QMainWindow):
         self.setWindowTitle("Teacher Monitor")
         self.setMinimumSize(640, 480)
 
-        self._layout = QGridLayout()
-        central_widget = QWidget()
-        central_widget.setLayout(self._layout)
-        self.setCentralWidget(central_widget)
-
-        self._table = QTreeWidget()
-        self._layout.addWidget(self._table, 0, 0, -1, 0)
-        self._create_language_combox()
-        self._layout.setColumnStretch(1, 10)
-
+        self._create_widgets()
         self._set_col_header(header)
         self._key_label = key_label
 
@@ -153,6 +146,17 @@ class Monitor(QMainWindow):
     @property
     def col_header(self) -> ColumnHeader:
         return self._header
+
+    def _create_widgets(self) -> None:
+        self._layout = QGridLayout()
+        central_widget = QWidget()
+        central_widget.setLayout(self._layout)
+        self.setCentralWidget(central_widget)
+
+        self._table = QTreeWidget()
+        self._layout.addWidget(self._table, 0, 0, 1, -1)
+        self._create_language_combox()
+        self._layout.setColumnStretch(1, 10)
 
     def _set_col_header(self, header: ColumnHeader) -> None:
         self._header = header
@@ -168,14 +172,15 @@ class Monitor(QMainWindow):
         self._layout.addWidget(Label("Language:", 10), 1, 0)
         self._layout.addWidget(self.combox, 1, 1, alignment=Qt.AlignLeft)
 
-    # def change_language(self, lang: Language) -> None:
-    #     lang_file = to_abs_path(f"./teacher/lang/{lang.name.lower()}.json")
-    #     with open(lang_file, mode="r", encoding="utf-8") as f:
-    #         lang_map = json.load(f)[type(self).__name__]
-    #
-    #     self._layout.itemAtPosition(1, 0).widget().setText(lang_map["language"])
-    #     for lang_ in Language:
-    #         self.combox.setItemText(lang_.value, lang_map[lang_.name.lower()])
+    def change_language(self, lang_no: int) -> None:
+        lang = Language(lang_no)
+        lang_file = to_abs_path(f"./teacher/lang/{lang.name.lower()}.json")
+        with open(lang_file, mode="r", encoding="utf-8") as f:
+            lang_map = json.load(f)[type(self).__name__]
+
+        self._layout.itemAtPosition(1, 0).widget().setText(lang_map["language"])
+        for lang_ in Language:
+            self.combox.setItemText(lang_.value, lang_map[lang_.name.lower()])
 
     def insert_row(self, row: RowContent) -> QTreeWidgetItem:
         """Inserts a new row to the bottom of the table.
