@@ -93,7 +93,7 @@ class MonitorController(QObject):
         )
         self._monitor.s_item_expanded.connect(self._show_histories_on_monitor)
 
-        self._s_screen_similarity_refreshed.connect(self._show_diff_of_screenshot_to_monitor)
+        self._s_screen_similarity_refreshed.connect(self._show_similarity_of_screenshot_to_monitor)
 
     def _get_grades_from_server(self) -> None:
         """Get new grades from the server and
@@ -184,7 +184,7 @@ class MonitorController(QObject):
         # We assume that a single course takes 50 minutes, so at most 50
         # histories will be plotted and history farther than 50 minutes from now
         # will be ignored.
-        histories: List[sqlite3.row] = list(filter(
+        histories: List[sqlite3.Row] = list(filter(
             lambda row: row["time"] > datetime.now() - timedelta(minutes=50),
             self._get_histories_from_database(student_id, 50)
         ))
@@ -237,7 +237,7 @@ class MonitorController(QObject):
             self._s_screen_similarity_refreshed.emit(data["id"], similarity)
 
     @pyqtSlot(str, float)
-    def _show_diff_of_screenshot_to_monitor(self, student_id: str, similarity: float) -> None:
+    def _show_similarity_of_screenshot_to_monitor(self, student_id: str, similarity: float) -> None:
         """Shows the similarity of screen to the corresponding student's screen label."""
         row_no = self._monitor.search_row_no(("id", student_id))
         row = RowContent([Col(no=self._monitor.col_header.col_count,
@@ -245,9 +245,14 @@ class MonitorController(QObject):
                               # round to 2 decimal places
                               value=Decimal(f"{similarity:.2f}"))])
         if row_no == -1:  # row not found
-            self._monitor.insert_row(row)
+            row_item = self._monitor.insert_row(row)
         else:
-            self._monitor.update_row(row_no, row)
+            row_item = self._monitor.update_row(row_no, row)
+        color: Qt.GlobalColor = Qt.green
+        if similarity < 0.6:
+            color = Qt.red
+        col_no = self._monitor.col_header.col_count
+        row_item.setBackground(col_no, QBrush(color, Qt.Dense4Pattern))
 
     def _compare_screenshot_similarity_periodically(self) -> None:
         now = datetime.now()
