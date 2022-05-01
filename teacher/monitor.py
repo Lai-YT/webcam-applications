@@ -177,7 +177,10 @@ class Monitor(QMainWindow):
         lang_file = to_abs_path(f"./teacher/lang/{lang.name.lower()}.json")
         with open(lang_file, mode="r", encoding="utf-8") as f:
             lang_map = json.load(f)[type(self).__name__]
-
+        # header of table
+        for i, label in enumerate(lang_map["header"]):
+            self._table.headerItem().setText(i, label)
+        # language combox
         self._layout.itemAtPosition(1, 0).widget().setText(lang_map["language"])
         for lang_ in Language:
             self.combox.setItemText(lang_.value, lang_map[lang_.name.lower()])

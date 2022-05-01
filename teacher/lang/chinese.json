@@ -2,6 +2,12 @@
   "Monitor": {
     "language": "語言：",
     "chinese": "中文",
-    "english": "英文"
+    "english": "英文",
+    "header": [
+      "學號",
+      "結算時間",
+      "專心程度",
+      "畫面相似度"
+    ]
   }
 }

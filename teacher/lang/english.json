@@ -2,6 +2,12 @@
   "Monitor": {
     "language": "Language: ",
     "chinese": "Chinese",
-    "english": "English"
+    "english": "English",
+    "header": [
+      "id",
+      "time",
+      "grade",
+      "screen"
+    ]
   }
 }

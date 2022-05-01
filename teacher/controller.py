@@ -94,8 +94,7 @@ class MonitorController(QObject):
         self._monitor.s_item_expanded.connect(self._show_histories_on_monitor)
         self._s_screen_similarity_refreshed.connect(self._show_similarity_of_screenshot_to_monitor)
         # index is designed to be as same as the value of enum Language
-        self._monitor.combox.currentIndexChanged.connect(
-            self._monitor.change_language)
+        self._monitor.combox.currentIndexChanged.connect(self._monitor.change_language)
 
     def _get_grades_from_server(self) -> None:
         """Get new grades from the server and
