@@ -174,8 +174,7 @@ class Monitor(QMainWindow):
         self._layout.itemAtPosition(1, 0).widget().setFont(QFont("Microsoft JhengHei UI", 9))
         self._layout.addWidget(self.combox, 1, 1, alignment=Qt.AlignLeft)
 
-    def change_language(self, lang_no: int) -> None:
-        lang = Language(lang_no)
+    def change_language(self, lang: Language) -> None:
         lang_file = to_abs_path(f"./teacher/lang/{lang.name.lower()}.json")
         with open(lang_file, mode="r", encoding="utf-8") as f:
             lang_map = json.load(f)[type(self).__name__]
