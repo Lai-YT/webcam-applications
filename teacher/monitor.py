@@ -1,8 +1,13 @@
 from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QHeaderView, QMainWindow, QTreeWidget, QTreeWidgetItem
+from PyQt5.QtWidgets import (
+    QGridLayout, QHeaderView, QMainWindow, QTreeWidget, QTreeWidgetItem, QWidget
+)
 from more_itertools import SequenceView
+
+from gui.component import Label
+from gui.language import Language, LanguageComboBox
 
 
 T = TypeVar("T")
@@ -130,8 +135,15 @@ class Monitor(QMainWindow):
         self.setWindowTitle("Teacher Monitor")
         self.setMinimumSize(640, 480)
 
-        self._table = QTreeWidget() # root
-        self.setCentralWidget(self._table)
+        self._layout = QGridLayout()
+        central_widget = QWidget()
+        central_widget.setLayout(self._layout)
+        self.setCentralWidget(central_widget)
+
+        self._table = QTreeWidget()
+        self._layout.addWidget(self._table, 0, 0, -1, 0)
+        self._create_language_combox()
+        self._layout.setColumnStretch(1, 10)
 
         self._set_col_header(header)
         self._key_label = key_label
@@ -149,6 +161,21 @@ class Monitor(QMainWindow):
         self._table.setHeaderLabels(list(header.labels()) + ["screen"])
         # Resize header section to keep time from being blocked.
         self._table.header().setSectionResizeMode(1, QHeaderView.Stretch)
+
+    def _create_language_combox(self) -> None:
+        self.combox = LanguageComboBox()
+        self.combox.setStyleSheet("font-size: 14px;")
+        self._layout.addWidget(Label("Language:", 10), 1, 0)
+        self._layout.addWidget(self.combox, 1, 1, alignment=Qt.AlignLeft)
+
+    # def change_language(self, lang: Language) -> None:
+    #     lang_file = to_abs_path(f"./teacher/lang/{lang.name.lower()}.json")
+    #     with open(lang_file, mode="r", encoding="utf-8") as f:
+    #         lang_map = json.load(f)[type(self).__name__]
+    #
+    #     self._layout.itemAtPosition(1, 0).widget().setText(lang_map["language"])
+    #     for lang_ in Language:
+    #         self.combox.setItemText(lang_.value, lang_map[lang_.name.lower()])
 
     def insert_row(self, row: RowContent) -> QTreeWidgetItem:
         """Inserts a new row to the bottom of the table.
