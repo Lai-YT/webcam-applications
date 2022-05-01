@@ -223,14 +223,21 @@ class ConcentrationGrader(QObject):
         window_type = WindowType.CURRENT
         if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
             window_type = WindowType.PREVIOUS
+
         # face center
-        if window_type is WindowType.CURRENT:
-            self._center_calculator.fit_points(self._face_center_counter.current())
-        else:
-            self._center_calculator.fit_points(self._face_center_counter.previous())
-        dist = math.dist(self._center_calculator.center_of_biggest_cluster,
-                         self._center_calculator.center_of_points)
-        ratio = self._center_calculator.ratio_of_biggest_cluster
+        try:
+            if window_type is WindowType.CURRENT:
+                self._center_calculator.fit_points(self._face_center_counter.current())
+            else:
+                self._center_calculator.fit_points(self._face_center_counter.previous())
+            dist = math.dist(self._center_calculator.center_of_biggest_cluster,
+                             self._center_calculator.center_of_points)
+            ratio = self._center_calculator.ratio_of_biggest_cluster
+        except ZeroDivisionError:
+            # Not even a single face in the interval:
+            #   sufficiently bad result to lead to a poor face center value
+            dist = 500
+            ratio = 0
         # body
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
             window_type)
@@ -284,10 +291,15 @@ class ConcentrationGrader(QObject):
         body_concent: float = self._body_concent_counter.get_concentration_ratio(
             WindowType.CURRENT)
         # face center
-        self._center_calculator.fit_points(self._face_center_counter.current())
-        dist = math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points)
-        ratio = self._center_calculator.ratio_of_biggest_cluster
-
+        try:
+            self._center_calculator.fit_points(self._face_center_counter.current())
+            dist = math.dist(self._center_calculator.center_of_biggest_cluster, self._center_calculator.center_of_points)
+            ratio = self._center_calculator.ratio_of_biggest_cluster
+        except ZeroDivisionError:
+            # Not even a single face in the interval:
+            #   sufficiently bad result to lead to a poor face center value
+            dist = 500
+            ratio = 0
         # Choose a neutral middle value for blink rate
         blink_rate = 10
         interval.grade = self._fuzzy_grader.compute_grade(
