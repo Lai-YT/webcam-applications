@@ -2,12 +2,13 @@ import json
 from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
-    QGridLayout, QHeaderView, QMainWindow, QTreeWidget, QTreeWidgetItem, QWidget
+    QGridLayout, QHeaderView, QLabel, QMainWindow, QTreeWidget, QTreeWidgetItem,
+    QWidget,
 )
 from more_itertools import SequenceView
 
-from gui.component import Label
 from gui.language import Language, LanguageComboBox
 from util.path import to_abs_path
 
@@ -168,8 +169,9 @@ class Monitor(QMainWindow):
 
     def _create_language_combox(self) -> None:
         self.combox = LanguageComboBox()
-        self.combox.setStyleSheet("font-size: 14px;")
-        self._layout.addWidget(Label("Language:", 10), 1, 0)
+        self.combox.setFont(QFont("Microsoft JhengHei UI", 9))
+        self._layout.addWidget(QLabel("Language:"), 1, 0)
+        self._layout.itemAtPosition(1, 0).widget().setFont(QFont("Microsoft JhengHei UI", 9))
         self._layout.addWidget(self.combox, 1, 1, alignment=Qt.AlignLeft)
 
     def change_language(self, lang_no: int) -> None:
