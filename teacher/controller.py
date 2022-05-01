@@ -181,23 +181,31 @@ class MonitorController(QObject):
             self._set_background_by_grade(hist_item, row["grade"])
 
     def _plot_histories(self, student_id: str) -> None:
-        grades = []
-        times = []
-        hist_rows = self._get_histories_from_database(student_id, 6)
-        init_time = hist_rows[-1]["time"].timestamp()  # earliest grade
-        for row in hist_rows:
+        """Plots at most 50 histories of the latest 50 minutes."""
+        # We assume that a single course takes 50 minutes, so at most 50
+        # histories will be plotted and history farther than 50 minutes from now
+        # will be ignored.
+        histories: List[sqlite3.row] = list(filter(
+            lambda row: row["time"] > datetime.now() - timedelta(minutes=50),
+            self._get_histories_from_database(student_id, 50)
+        ))
+        time_of_earliest_grade: int = histories[-1]["time"].timestamp()
+        grades: List[float] = []
+        times: List[float] = []
+        for row in histories:
             grades.append(row["grade"])
-            times.append((row["time"].timestamp() - init_time) / 60)
+            # convert to min
+            times.append((row["time"].timestamp() - time_of_earliest_grade) / 60)
         ax = plt.subplot()
         ax.stem(times, grades)
-        ax.set_title(f"Concentration grade of id: {student_id} from {to_date_time(init_time)}")
+        ax.set_title(f"Concentration grade of id: {student_id} from {to_date_time(time_of_earliest_grade)}")
         ax.set_ylabel("grade")
         ax.set_xlabel("time (min)")
         ax.set_xticks(range(math.ceil(times[0]) + 1))
         # show the real "stop" point by showing "stop + step"
         ax.set_yticks(np.arange(0, 1 + 0.2, 0.2))
         ax.set_yticks(np.arange(0.1, 0.9 + 0.2, 0.2), minor=True)
-        ax.set_ylim(0, 1.1)  # more than 1 to not truncate the circle on the top
+        ax.set_ylim(0, 1.1)  # more than 1 so not truncate the circle on the top
         plt.show()
 
     def _get_screenshot_slices_from_server(self) -> Dict:
