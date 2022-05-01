@@ -14,6 +14,7 @@ monitor = Monitor(
         ("id", str),
         ("time", datetime),
         ("grade", float),
+        ("screen", float),
     )),
     key_label="id"
 )

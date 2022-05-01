@@ -1,12 +1,11 @@
 import json
 
 from PyQt5.QtCore import QRegExp, Qt
-from PyQt5.QtGui import QFont, QIcon, QRegExpValidator
-from PyQt5.QtWidgets import QComboBox, QGridLayout, QWidget
+from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtWidgets import QGridLayout, QWidget
 
-import gui.img.icon
 from gui.component import Label, LineEdit
-from gui.language import Language
+from gui.language import Language, LanguageComboBox
 from util.path import to_abs_path
 
 
@@ -49,16 +48,3 @@ class ConfigWidget(QWidget):
         self._layout.itemAtPosition(1, 0).widget().setText(lang_map["language"])
         for lang_ in Language:
             self.combox.setItemText(lang_.value, lang_map[lang_.name.lower()])
-
-
-class LanguageComboBox(QComboBox):
-    def __init__(self) -> None:
-        super().__init__()
-        self.setFont(QFont("Arial", 12))
-        self.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-        self._add_languages()
-
-    def _add_languages(self) -> None:
-        # have the order match the value of enum Language
-        self.addItem(QIcon(":us-flag.ico"), Language.ENGLISH.name.capitalize())
-        self.addItem(QIcon(":taiwan-flag.ico"), Language.CHINESE.name.capitalize())

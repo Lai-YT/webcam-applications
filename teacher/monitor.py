@@ -1,8 +1,16 @@
+import json
 from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QHeaderView, QMainWindow, QTreeWidget, QTreeWidgetItem
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (
+    QGridLayout, QHeaderView, QLabel, QMainWindow, QTreeWidget, QTreeWidgetItem,
+    QWidget,
+)
 from more_itertools import SequenceView
+
+from gui.language import Language, LanguageComboBox
+from util.path import to_abs_path
 
 
 T = TypeVar("T")
@@ -91,7 +99,6 @@ class ColumnHeader:
             values: Should have all the labels as keys. Extra keys will be ignored.
 
         Raises:
-            KeyError: Missing label.
             TypeError: Value of the wrong type.
         """
         row = RowContent()
@@ -99,8 +106,10 @@ class ColumnHeader:
             try:
                 if not isinstance(values[label], value_type):
                     raise TypeError(f'label "{label}" should have type "{value_type.__name__}" but got "{type(values[label]).__name__}"')
-            except KeyError:
-                raise KeyError(f'label "{label}" is missing') from None
+            except (KeyError, IndexError):
+                # sqlite3 raise IndexError when key not exist
+                # Missing label is allowed.
+                continue
             row.append(Col(col_no, label, values[label]))
         return row
 
@@ -130,9 +139,7 @@ class Monitor(QMainWindow):
         self.setWindowTitle("Teacher Monitor")
         self.setMinimumSize(640, 480)
 
-        self._table = QTreeWidget() # root
-        self.setCentralWidget(self._table)
-
+        self._create_widgets()
         self._set_col_header(header)
         self._key_label = key_label
 
@@ -142,13 +149,42 @@ class Monitor(QMainWindow):
     def col_header(self) -> ColumnHeader:
         return self._header
 
+    def _create_widgets(self) -> None:
+        self._layout = QGridLayout()
+        central_widget = QWidget()
+        central_widget.setLayout(self._layout)
+        self.setCentralWidget(central_widget)
+
+        self._table = QTreeWidget()
+        self._layout.addWidget(self._table, 0, 0, 1, -1)
+        self._create_language_combox()
+        self._layout.setColumnStretch(1, 10)
+
     def _set_col_header(self, header: ColumnHeader) -> None:
         self._header = header
-        # XXX: this is a hack to create a column out of ColumnHeader's control and limitation
-        self._table.setColumnCount(header.col_count + 1)
-        self._table.setHeaderLabels(list(header.labels()) + ["screen"])
+        self._table.setColumnCount(header.col_count)
+        self._table.setHeaderLabels(header.labels())
         # Resize header section to keep time from being blocked.
         self._table.header().setSectionResizeMode(1, QHeaderView.Stretch)
+
+    def _create_language_combox(self) -> None:
+        self.combox = LanguageComboBox()
+        self.combox.setFont(QFont("Microsoft JhengHei UI", 9))
+        self._layout.addWidget(QLabel("Language:"), 1, 0)
+        self._layout.itemAtPosition(1, 0).widget().setFont(QFont("Microsoft JhengHei UI", 9))
+        self._layout.addWidget(self.combox, 1, 1, alignment=Qt.AlignLeft)
+
+    def change_language(self, lang: Language) -> None:
+        lang_file = to_abs_path(f"./teacher/lang/{lang.name.lower()}.json")
+        with open(lang_file, mode="r", encoding="utf-8") as f:
+            lang_map = json.load(f)[type(self).__name__]
+        # header of table
+        for i, label in enumerate(lang_map["header"]):
+            self._table.headerItem().setText(i, label)
+        # language combox
+        self._layout.itemAtPosition(1, 0).widget().setText(lang_map["language"])
+        for lang_ in Language:
+            self.combox.setItemText(lang_.value, lang_map[lang_.name.lower()])
 
     def insert_row(self, row: RowContent) -> QTreeWidgetItem:
         """Inserts a new row to the bottom of the table.
@@ -182,9 +218,7 @@ class Monitor(QMainWindow):
         item = self._table.topLevelItem(row_no)
         row = RowContent()
         for i in range(item.columnCount()):
-            # True number of columns may be different from those defined in
-            # ColumnHeader, so get text from headerItem.text() instead of _header.labels().
-            row.append(Col(i, self._table.headerItem().text(i), item.text(i)))
+            row.append(Col(i, self._header.labels()[i], item.text(i)))
         return row
 
     def add_history_of_row(self, row_no: int, hist_row: RowContent) -> QTreeWidgetItem:
@@ -248,4 +282,4 @@ class Monitor(QMainWindow):
     def _map_item_and_column_to_key_and_label(
             self, item: QTreeWidgetItem, col_no: int) -> Tuple[str, str]:
         key_index = self._header.labels().index(self._key_label)
-        return item.text(key_index), self._table.headerItem().text(col_no)
+        return item.text(key_index), self._header.labels()[col_no]  # always in English

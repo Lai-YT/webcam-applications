@@ -53,15 +53,6 @@ class ColumnHeaderTestCase(unittest.TestCase):
         }
         self.assertRaises(TypeError, self.col_header.to_row, data)
 
-    def test_to_row_missing_label(self) -> None:
-        """KeyError should be raised when label is missing."""
-        data = {
-            "name": "Willy",
-            # the "budget" label is missing
-            "list": ["shoes", ["computer", "headphone"]],
-        }
-        self.assertRaises(KeyError, self.col_header.to_row, data)
-
     def test_to_row_extra_label(self) -> None:
         """Extra labels should be ignored."""
         data = {

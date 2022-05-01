@@ -1,0 +1,13 @@
+{
+  "Monitor": {
+    "language": "Language: ",
+    "chinese": "Chinese",
+    "english": "English",
+    "header": [
+      "id",
+      "time",
+      "grade",
+      "screen"
+    ]
+  }
+}

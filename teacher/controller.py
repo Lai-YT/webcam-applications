@@ -2,6 +2,7 @@ import atexit
 import math
 import sqlite3
 import time
+from configparser import ConfigParser
 from datetime import datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -16,6 +17,7 @@ from PyQt5.QtWidgets import QTreeWidgetItem
 
 import server.main as flask_server
 import server.post as poster
+from gui.language import Language
 from screenshot.compare import (
     compare_similarity_of_slices, get_compare_slices, get_screenshot
 )
@@ -33,8 +35,6 @@ class MonitorController(QObject):
     # private signal for thread communitcation;
     # sends the student id with the similarity of screenshot slice
     _s_screen_similarity_refreshed = pyqtSignal(str, float)
-
-    TO_SQL_TYPE = {int: "INT", str: "TEXT", float: "FLOAT", datetime: "TIMESTAMP"}
 
     def __init__(self, monitor: Monitor) -> None:
         super().__init__()
@@ -55,6 +55,10 @@ class MonitorController(QObject):
         self._screenshot_worker.start()
         self._compare_worker.start()
 
+        self._CONFIG_FILE = to_abs_path("./teacher/config.ini")
+        self._init_global_config()
+        atexit.register(self._store_global_config)
+
         # Have the connection of database and timer closed right before
         # the controller is destoryed.
         # NOTE: we've tried to listen to the "destoryed" signal of QMainWindow,
@@ -73,11 +77,11 @@ class MonitorController(QObject):
 
     def _create_table_if_not_exist(self) -> None:
         """Creates table if database is empty."""
-        sql = f"CREATE TABLE IF NOT EXISTS {self._table_name} ("
-        for label, value_type in zip(self._monitor.col_header.labels(),
-                                     self._monitor.col_header.types()):
-            sql += f"{label} {MonitorController.TO_SQL_TYPE[value_type]},"
-        sql = sql[:-1] + ");"
+        sql = f"""CREATE TABLE IF NOT EXISTS {self._table_name} (
+            id TEXT,
+            time TIMESTAMP,
+            grade FLOAT
+        );"""
         with self._conn:
             self._conn.execute(sql)
 
@@ -92,8 +96,9 @@ class MonitorController(QObject):
             )
         )
         self._monitor.s_item_expanded.connect(self._show_histories_on_monitor)
-
         self._s_screen_similarity_refreshed.connect(self._show_similarity_of_screenshot_to_monitor)
+        # index is designed to be as same as the value of enum Language
+        self._monitor.combox.currentIndexChanged.connect(self._change_language_of_monitor)
 
     def _get_grades_from_server(self) -> None:
         """Get new grades from the server and
@@ -122,8 +127,7 @@ class MonitorController(QObject):
 
     def store_new_grade(self, grade: Mapping[str, Any]) -> None:
         """Stores new grade into the database."""
-        holder = ", ".join(["?"] * self._monitor.col_header.col_count)
-        sql = f"INSERT INTO {self._table_name} {tuple(self._monitor.col_header.labels())} VALUES ({holder});"
+        sql = f"INSERT INTO {self._table_name} (id, time, grade) VALUES (?, ?, ?);"
         row: RowContent = self._monitor.col_header.to_row(grade)
         with self._conn:
             self._conn.execute(sql, tuple(col.value for col in row))
@@ -240,7 +244,7 @@ class MonitorController(QObject):
     def _show_similarity_of_screenshot_to_monitor(self, student_id: str, similarity: float) -> None:
         """Shows the similarity of screen to the corresponding student's screen label."""
         row_no = self._monitor.search_row_no(("id", student_id))
-        row = RowContent([Col(no=self._monitor.col_header.col_count,
+        row = RowContent([Col(no=self._monitor.col_header.labels().index("screen"),
                               label="screen",
                               # round to 2 decimal places
                               value=Decimal(f"{similarity:.2f}"))])
@@ -251,7 +255,7 @@ class MonitorController(QObject):
         color: Qt.GlobalColor = Qt.green
         if similarity < 0.6:
             color = Qt.red
-        col_no = self._monitor.col_header.col_count
+        col_no = self._monitor.col_header.labels().index("screen")
         row_item.setBackground(col_no, QBrush(color, Qt.Dense4Pattern))
 
     def _compare_screenshot_similarity_periodically(self) -> None:
@@ -273,3 +277,29 @@ class MonitorController(QObject):
 
             next_fire += timedelta(minutes=5)
             sleep = 5 * 60 - BUSY_CHECK_GAP
+
+    def _change_language_of_monitor(self, lang_no: int) -> None:
+        self._lang = Language(lang_no)
+        self._monitor.change_language(self._lang)
+
+    def _init_global_config(self) -> None:
+        """Initializes the language of window."""
+        # Try to reduce the memory comsumption by delete-after-use.
+        self._load_global_config()
+        self._lang = Language[self._config.get("GLOBAL", "language")]
+        del self._config
+
+        self._monitor.combox.setCurrentIndex(self._lang.value)
+
+    def _load_global_config(self) -> None:
+        self._config = ConfigParser()
+        self._config.read(self._CONFIG_FILE, encoding="utf-8")
+
+    def _store_global_config(self) -> None:
+        """Writes the current global configurations back into the config file."""
+        self._load_global_config()
+
+        self._config["GLOBAL"]["language"] = self._lang.name
+
+        with open(self._CONFIG_FILE, "w", encoding="utf-8") as f:
+            self._config.write(f)

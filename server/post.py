@@ -9,15 +9,42 @@ import server.main as flask_server
 
 
 # value of "time" and "grade" will be set later
-DATA_1 = [
-    {"id": "1", "time": "", "grade": -1},
-    {"id": "2", "time": "", "grade": -1},
-    {"id": "3", "time": "", "grade": -1},
-]
-DATA_2 = [
-    {"id": "4", "time": "", "grade": -1},
-    {"id": "5", "time": "", "grade": -1},
-    {"id": "6", "time": "", "grade": -1},
+DATA = [
+    [
+        {"id": "1", "time": "", "grade": -1},
+        {"id": "2", "time": "", "grade": -1},
+        {"id": "3", "time": "", "grade": -1},
+        {"id": "4", "time": "", "grade": -1},
+        {"id": "5", "time": "", "grade": -1},
+        {"id": "6", "time": "", "grade": -1},
+    ],
+    [
+        {"id": "7", "time": "", "grade": -1},
+        {"id": "8", "time": "", "grade": -1},
+        {"id": "9", "time": "", "grade": -1},
+        {"id": "10", "time": "", "grade": -1},
+        {"id": "11", "time": "", "grade": -1},
+        {"id": "12", "time": "", "grade": -1},
+    ],
+    [
+        {"id": "10", "time": "", "grade": -1},
+        {"id": "11", "time": "", "grade": -1},
+        {"id": "12", "time": "", "grade": -1},
+        {"id": "13", "time": "", "grade": -1},
+        {"id": "14", "time": "", "grade": -1},
+        {"id": "15", "time": "", "grade": -1},
+        {"id": "16", "time": "", "grade": -1},
+        {"id": "17", "time": "", "grade": -1},
+        {"id": "18", "time": "", "grade": -1},
+    ],
+    [
+        {"id": "19", "time": "", "grade": -1},
+        {"id": "20", "time": "", "grade": -1},
+        {"id": "21", "time": "", "grade": -1},
+        {"id": "22", "time": "", "grade": -1},
+        {"id": "23", "time": "", "grade": -1},
+        {"id": "24", "time": "", "grade": -1},
+    ]
 ]
 
 DATE_STR_FORMAT = "%Y-%m-%d, %H:%M:%S"
@@ -37,7 +64,7 @@ def post_grade(data):
 
 def main():
     threads = []
-    for i, data in zip(range(2), (DATA_1, DATA_2)):
+    for i, data in enumerate(DATA):
         thread = Thread(target=post_grade, args=(data,))
         threads.append(thread)
         thread.start()
