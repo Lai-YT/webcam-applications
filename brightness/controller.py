@@ -1,12 +1,10 @@
-import dlib
 from typing import Dict, Optional
 
+import dlib
 import screen_brightness_control as sbc
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication
 
 from brightness.calculator import BrightnessCalculator, BrightnessMode
-from util.image_convert import qpixmap_to_ndarray
+from screenshot.compare import get_screenshot
 from util.image_type import ColorImage
 
 
@@ -59,10 +57,7 @@ class BrightnessController:
         """Takes a screenshot of the current screen and sets it as the frame of
         COLOR_SYSTEM mode.
         """
-        screenshot: QPixmap = (
-            QApplication.primaryScreen().grabWindow(QApplication.desktop().winId()))
-
-        self._frames[BrightnessMode.COLOR_SYSTEM] = qpixmap_to_ndarray(screenshot)
+        self._frames[BrightnessMode.COLOR_SYSTEM] = get_screenshot()
 
     def optimize_brightness(self, frame: ColorImage, face: Optional[dlib.rectangle]) -> int:
         """Sets brightness of screen to a suggested brightness with respect to
