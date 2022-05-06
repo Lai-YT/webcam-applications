@@ -137,7 +137,7 @@ class Monitor(QMainWindow):
     def __init__(self, header: ColumnHeader, key_label: str = None) -> None:
         super().__init__()
         self.setWindowTitle("Teacher Monitor")
-        self.setMinimumSize(640, 480)
+        self.setMinimumSize(768, 576)  # (640, 480) * 1.2
 
         self._create_widgets()
         self._set_col_header(header)

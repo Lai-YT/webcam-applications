@@ -48,7 +48,7 @@ class MonitorController(QObject):
         self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
         self._fetch_timer = QTimer()
         self._fetch_timer.timeout.connect(self._get_grades_from_server)
-        self._fetch_timer.start(1000)
+        self._fetch_timer.start(30 * 1000) # 30 sec
 
         self._screenshot_worker = TaskWorker(self._get_screenshot_slices_periodically)
         self._compare_worker = TaskWorker(self._compare_screenshot_similarity_periodically)
