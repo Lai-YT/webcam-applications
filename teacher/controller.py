@@ -45,7 +45,7 @@ class MonitorController(QObject):
         self._create_table_if_not_exist()
         self._connect_signals()
 
-        self._server_url = f"https://c4e073bfe7648e.lhrtunnel.link"
+        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
         self._fetch_timer = QTimer()
         self._fetch_timer.timeout.connect(self._get_grades_from_server)
         self._fetch_timer.start(30 * 1000) # 30 sec
