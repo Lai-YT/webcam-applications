@@ -19,7 +19,7 @@ The shorter the distance is, the denser the points are, and so the more concentr
 The 2 numbers calculated above, *ratio* and *distance*, are the indices we used to indicate how concentrating the user may be.
 
 The following image is about a distracted user, shows the position of face center points, clusters and indices.
-<img src="./concentration-with-face-center.png" alt="clusters and centers" width="750" height="380">
+<img src="./assets/concentration-with-face-center.png" alt="clusters and centers" width="750" height="380">
 
 ## Typical index values
 

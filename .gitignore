@@ -15,15 +15,8 @@ venv/
 *.jpg
 *.png
 *.log
+!**/assets/*
 
-#img
-!concentration-with-face-center.png
-!fuzzy_mapping.png
-
-# image_filter
-!dark_room.jpg
-!dark_room_with_lightspot.jpg
-!dark_room_with_lightspot1.jpg
 
 train_sample/
 train/
