@@ -1,5 +1,6 @@
 import atexit
 import math
+import random
 import sqlite3
 import time
 from configparser import ConfigParser
@@ -50,10 +51,10 @@ class MonitorController(QObject):
         self._fetch_timer.timeout.connect(self._get_grades_from_server)
         self._fetch_timer.start(1000)
 
-        self._screenshot_worker = TaskWorker(self._get_screenshot_slices_periodically)
-        self._compare_worker = TaskWorker(self._compare_screenshot_similarity_periodically)
+        self._screenshot_worker = TaskWorker(self._screen_similarity_demo)
+        # self._compare_worker = TaskWorker(self._compare_screenshot_similarity_periodically)
         self._screenshot_worker.start()
-        self._compare_worker.start()
+        # self._compare_worker.start()
 
         self._CONFIG_FILE = to_abs_path("./teacher/config.ini")
         self._init_global_config()
@@ -188,8 +189,10 @@ class MonitorController(QObject):
         # We assume that a single course takes 50 minutes, so at most 50
         # histories will be plotted and history farther than 50 minutes from now
         # will be ignored.
+        REF_TIME = datetime(2022, 5, 5, 11, 00)
+
         histories: List[sqlite3.Row] = list(filter(
-            lambda row: row["time"] > datetime.now() - timedelta(minutes=50),
+            lambda row: row["time"] > REF_TIME - timedelta(minutes=50),
             self._get_histories_from_database(student_id, 50)
         ))
         time_of_earliest_grade: int = histories[-1]["time"].timestamp()
@@ -198,9 +201,10 @@ class MonitorController(QObject):
         for row in histories:
             grades.append(row["grade"])
             # convert to min
-            times.append((row["time"].timestamp() - time_of_earliest_grade) / 60)
+            # the 1st grade is of the first minute, so start from 1
+            times.append(1 + (row["time"].timestamp() - time_of_earliest_grade) / 60)
         ax = plt.subplot()
-        ax.stem(times, grades)
+        ax.plot(times, grades)
         ax.set_title(f"Concentration grade of id: {student_id} from {to_date_time(time_of_earliest_grade)}")
         ax.set_ylabel("grade")
         ax.set_xlabel("time (min)")
@@ -210,6 +214,18 @@ class MonitorController(QObject):
         ax.set_yticks(np.arange(0.1, 0.9 + 0.2, 0.2), minor=True)
         ax.set_ylim(0, 1.1)  # more than 1 so not truncate the circle on the top
         plt.show()
+
+    def _screen_similarity_demo(self) -> None:
+        STUDENT_IDS = [
+            "108AB0001", "108AB0002", "108AB0003", "108AB0004", "108AB0005", "108AB0006",
+            "108AB0007", "108AB0008", "108AB0009", "108AB0010", "108AB0011", "108AB0012",
+            "108AB0013", "108AB0014", "108AB0015", "108AB0016", "108AB0017", "108AB0018",
+            "108AB0019", "108AB0020", "108AB0021", "108AB0022", "108AB0023", "108AB0024",
+        ]
+        time.sleep(3)
+        for student_id in STUDENT_IDS:
+            similarity, = random.randint(50, 100) / 100,
+            self._s_screen_similarity_refreshed.emit(student_id, similarity)
 
     def _get_screenshot_slices_from_server(self) -> Dict:
         r = requests.get(f"{self._server_url}/screenshot")
