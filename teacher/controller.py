@@ -45,7 +45,7 @@ class MonitorController(QObject):
         self._create_table_if_not_exist()
         self._connect_signals()
 
-        self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
+        self._server_url = f"https://c4e073bfe7648e.lhrtunnel.link"
         self._fetch_timer = QTimer()
         self._fetch_timer.timeout.connect(self._get_grades_from_server)
         self._fetch_timer.start(30 * 1000) # 30 sec
@@ -198,9 +198,9 @@ class MonitorController(QObject):
         for row in histories:
             grades.append(row["grade"])
             # convert to min
-            times.append((row["time"].timestamp() - time_of_earliest_grade) / 60)
+            times.append(1 + (row["time"].timestamp() - time_of_earliest_grade) / 60)
         ax = plt.subplot()
-        ax.stem(times, grades)
+        ax.plot(times, grades)
         ax.set_title(f"Concentration grade of id: {student_id} from {to_date_time(time_of_earliest_grade)}")
         ax.set_ylabel("grade")
         ax.set_xlabel("time (min)")
