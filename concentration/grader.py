@@ -16,14 +16,15 @@ from concentration.fuzzy.classes import Interval
 from concentration.fuzzy.grader import FuzzyGrader
 from concentration.interval import IntervalType
 from face_center.calculator import CenterCalculator
-from util.logger import setup_logger
 from util.heap import MinHeap
+from util.logger import setup_logger
 from util.path import to_abs_path
 from util.time import ONE_MIN
 from util.time_window import WindowType
 
 
-logger = setup_logger("face center logger", to_abs_path("./center_info.log"))
+logger = setup_logger("log-of-grader", to_abs_path("log-of-grade.log"))
+
 
 class ConcentrationGrader(QObject):
     """While grading, there are 3 criteria that we take into account:
@@ -75,7 +76,6 @@ class ConcentrationGrader(QObject):
 
         self._face_center_counter = FaceCenterCounter(ONE_MIN)
         self._center_calculator = CenterCalculator()
-        logger.info("Start up logger!")
 
         self._fuzzy_grader = FuzzyGrader()
 
@@ -244,16 +244,17 @@ class ConcentrationGrader(QObject):
 
         # LOOK_BACK and EXTRUSIONs are always graded and recorded.
         if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
+            msg = f"{IntervalType.LOOK_BACK}: body_concent({body_concent:.2f}) + blink_rate({blink_rate})"
             adjusted_br: float = blink_rate
             if interval_type is IntervalType.EXTRUSION:
                 # Use an average-based BR.
                 adjusted_br = blink_rate * ONE_MIN / (interval.end - interval.start)
+                msg = f"{IntervalType.EXTRUSION}: body_concent({body_concent:.2f}) + blink_rate({adjusted_br:.2f})"
             interval.grade = self._fuzzy_grader.compute_grade(
                 adjusted_br, body_concent,
                 combine_face_center_value_from_distance_and_ratio(dist, ratio))
+            logger.info(msg + f" + dist({dist:3.2f}) + ratio({ratio:.2f}) => grade({interval.grade:.2f})")
             self.s_concent_interval_refreshed.emit(interval)
-            logger.info(f"{dist:.2f}")
-            logger.info(f"{ratio:.2f}")
             self._clear_windows(window_type)
             return True
         # REAL_TIMEs
@@ -262,11 +263,11 @@ class ConcentrationGrader(QObject):
             combine_face_center_value_from_distance_and_ratio(dist, ratio))
         if grade >= 0.6:
             interval.grade = grade
+            logger.info(f"REAL_TIME: body_concent({body_concent:.2f}) + blink_rate({blink_rate}) + dist({dist:3.2f}) + ratio({ratio:.2f}) => grade({grade:.2f})")
             self.s_concent_interval_refreshed.emit(interval)
-            logger.info(f"{dist:.2f}")
-            logger.info(f"{ratio:.2f}")
             self._clear_windows(window_type)
             return True
+        logger.info(f"REJECT: body_concent({body_concent:.2f}) + blink_rate({blink_rate}) + dist({dist:3.2f}) + ratio({ratio:.2f}) => grade({grade:.2f})")
         return False
 
     def _perform_low_face_grading(self, interval: Interval) -> bool:
@@ -305,9 +306,8 @@ class ConcentrationGrader(QObject):
         interval.grade = self._fuzzy_grader.compute_grade(
             blink_rate, body_concent,
             combine_face_center_value_from_distance_and_ratio(dist, ratio))
+        logger.info(f"LOW_FACE: body_concent({body_concent:.2f}) + blink_rate({blink_rate}) + dist({dist:3.2f}) + ratio({ratio:.2f}) => grade({interval.grade:.2f})")
         self.s_concent_interval_refreshed.emit(interval)
-        logger.info(f"{dist:.2f}")
-        logger.info(f"{ratio:.2f}")
         self._clear_windows(WindowType.CURRENT)
         return True
 
