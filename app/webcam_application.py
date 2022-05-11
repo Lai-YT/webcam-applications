@@ -337,14 +337,13 @@ class WebcamApplication(QObject):
             for worker in workers:
                 worker.start()
 
+            # wait until all tasks are finished
+            self._task_barrier.wait()
+
             # Do concentration gradings!
             self._concentration_grader.add_frame()
             if self._has_face():
-                self._concentration_grader.add_face()
                 self._concentration_grader.detect_blink(self._landmarks)
-
-            # wait until all tasks are finished
-            self._task_barrier.wait()
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
             cv2.waitKey(refresh)

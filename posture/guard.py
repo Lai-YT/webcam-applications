@@ -98,6 +98,7 @@ class PostureGuard(SoundRepeatGuard):
 
         if self._grader is not None:
             self._grader.add_face_center(layer.center)
+            self._grader.add_face()
 
         self._repeat_sound_if(layer.posture is not PostureLabel.GOOD)
         self._send_concentration_info(layer.angle)
