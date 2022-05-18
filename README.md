@@ -2,6 +2,11 @@
 
 # A system of student engagement analysis and self-adjusting eye protection
 
+## Student-end
+
+The **GUI view** of the *Student-end*. \
+<img src="./gui/assets/student-view.png" alt="Student view" width=640 height=366>
+
 ## Teacher-end
 
 The **monitor view** of the *Teacher-end*. \
