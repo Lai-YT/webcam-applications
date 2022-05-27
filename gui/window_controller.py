@@ -86,16 +86,16 @@ class WindowController(QObject):
         for panel, infos in relations.items():
             for info in infos:
                 panel_widget.panels[panel].toggled.connect(
-                    lambda checked, info=info:
-                        info_widget.show(info)
-                        if checked else
-                        info_widget.hide(info)
+                    lambda checked, info=info: info_widget.show(info)
+                    if checked
+                    else info_widget.hide(info)
                 )
 
     def _connect_config_change(self) -> None:
         # index is designed to be as same as the value of enum Language
         self._window.widgets["config"].combox.currentIndexChanged.connect(
-            self._change_language_of_widgets)
+            self._change_language_of_widgets
+        )
 
         def update_id_config(student_id: str) -> None:
             self._student_id = student_id
@@ -115,7 +115,9 @@ class WindowController(QObject):
     def _send_grade_to_server(self, interval: Interval) -> None:
         grade = interval.__dict__
         # add new key info
-        grade["time"] = datetime.fromtimestamp(interval.end).strftime(poster.DATE_STR_FORMAT)
+        grade["time"] = datetime.fromtimestamp(interval.end).strftime(
+            poster.DATE_STR_FORMAT
+        )
         grade["id"] = self._student_id
         try:
             requests.post(f"{self._server_url}/grade", json=grade)

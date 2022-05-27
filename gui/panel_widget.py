@@ -4,14 +4,23 @@ from typing import Dict
 
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import (
-    QFormLayout, QGroupBox, QHBoxLayout, QVBoxLayout, QWidget,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QVBoxLayout,
+    QWidget,
 )
 
 from app.app_type import ApplicationType
 from brightness.calculator import BrightnessMode
 from gui.component import (
-    ActionButton, CheckableGroupBox, HorizontalSlider, Label, LineEdit,
-    OptionCheckBox, OptionRadioButton,
+    ActionButton,
+    CheckableGroupBox,
+    HorizontalSlider,
+    Label,
+    LineEdit,
+    OptionCheckBox,
+    OptionRadioButton,
 )
 from gui.language import Language
 from util.path import to_abs_path
@@ -53,6 +62,7 @@ class PanelWidget(QWidget):
 
 class DistancePanel(CheckableGroupBox):
     """A view which contains the settings of distance measurement."""
+
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Distance Measurement", parent)
 
@@ -66,8 +76,12 @@ class DistancePanel(CheckableGroupBox):
         self.setTitle(lang_map["title"])
         self._file_path_layout.itemAt(0).widget().setText(lang_map["reference"])
         self.file_open.setText(lang_map["open"])
-        self._layout.itemAt(1, QFormLayout.LabelRole).widget().setText(lang_map["camera_dist"])
-        self._layout.itemAt(2, QFormLayout.LabelRole).widget().setText(lang_map["warn_dist"])
+        self._layout.itemAt(1, QFormLayout.LabelRole).widget().setText(
+            lang_map["camera_dist"]
+        )
+        self._layout.itemAt(2, QFormLayout.LabelRole).widget().setText(
+            lang_map["warn_dist"]
+        )
         self.settings["camera_dist"].setPlaceholderText(lang_map["camera_restriction"])
         self.settings["warn_dist"].setPlaceholderText(lang_map["warn_restriction"])
         self.warning.setText(lang_map["warning"])
@@ -115,6 +129,7 @@ class DistancePanel(CheckableGroupBox):
 
 class TimePanel(CheckableGroupBox):
     """A view which contains the settings of focus timing."""
+
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Focus Timing", parent)
 
@@ -126,8 +141,12 @@ class TimePanel(CheckableGroupBox):
 
     def change_language(self, lang_map: Dict[str, str]) -> None:
         self.setTitle(lang_map["title"])
-        self._layout.itemAt(0, QFormLayout.LabelRole).widget().setText(lang_map["limit"])
-        self._layout.itemAt(1, QFormLayout.LabelRole).widget().setText(lang_map["break"])
+        self._layout.itemAt(0, QFormLayout.LabelRole).widget().setText(
+            lang_map["limit"]
+        )
+        self._layout.itemAt(1, QFormLayout.LabelRole).widget().setText(
+            lang_map["break"]
+        )
         self.settings["time_limit"].setPlaceholderText(lang_map["limit_restriction"])
         self.settings["break_time"].setPlaceholderText(lang_map["break_restriction"])
         self.warning.setText(lang_map["warning"])
@@ -163,12 +182,15 @@ class AngleTolerance(IntEnum):
     """An IntEnum used to represent the angle options of PosturePanel.
     The int value is the angle allowed.
     """
+
     # Add member or modify value to provide more choices.
-    LOOSE  = 25
+    LOOSE = 25
     STRICT = 15
+
 
 class PosturePanel(CheckableGroupBox):
     """A view which contains the settings of posture detection."""
+
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Posture Detection", parent)
 
@@ -206,6 +228,7 @@ class PosturePanel(CheckableGroupBox):
 
 class BrightnessPanel(CheckableGroupBox):
     """A view which contains which the settings of brightness optimization."""
+
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__("Brightness Optimization", parent)
 
@@ -227,8 +250,9 @@ class BrightnessPanel(CheckableGroupBox):
     def _create_modes(self) -> None:
         # name | description
         modes: Dict[BrightnessMode, str] = {
-            BrightnessMode.WEBCAM: ("Webcam-based brightness detector \n"
-                                    "(webcam required)"),
+            BrightnessMode.WEBCAM: (
+                "Webcam-based brightness detector \n(webcam required)"
+            ),
             BrightnessMode.COLOR_SYSTEM: "Color-system mode",
         }
         self.modes: Dict[BrightnessMode, OptionCheckBox] = {}

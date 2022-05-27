@@ -15,6 +15,7 @@ from util.path import to_abs_path
 
 class TextColor(Enum):
     """If info state has to be warned, set info text in red."""
+
     BLACK = "black"
     RED = "red"
 
@@ -23,6 +24,7 @@ class InformationWidget(QWidget):
     """Provides update methods to show the results of applications on
     their corresponding labels.
     """
+
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
 
@@ -114,7 +116,9 @@ class InformationWidget(QWidget):
 
         for name, info in self.information.items():
             row_no, _ = self._layout.getWidgetPosition(info)
-            self._layout.itemAt(row_no, QFormLayout.LabelRole).widget().setText(lang_map[name])
+            self._layout.itemAt(row_no, QFormLayout.LabelRole).widget().setText(
+                lang_map[name]
+            )
 
     def _create_information(self) -> None:
         """Creates the labels for information."""
@@ -135,4 +139,6 @@ class InformationWidget(QWidget):
             # the label might grow and affect size of other widget.
             self.information[name] = Label(font_size=font_size, wrap=True)
             self.information[name].setFrameStyle(QFrame.WinPanel | QFrame.Raised)
-            self._layout.addRow(Label(description, font_size=font_size), self.information[name])
+            self._layout.addRow(
+                Label(description, font_size=font_size), self.information[name]
+            )

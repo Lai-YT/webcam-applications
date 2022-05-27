@@ -9,4 +9,4 @@ from nptyping import NDArray, UInt8
 # Their integer types are both numpy.uint8
 
 ColorImage = NDArray[(Any, Any, 3), UInt8]
-GrayImage  = NDArray[(Any, Any), UInt8]
+GrayImage = NDArray[(Any, Any), UInt8]

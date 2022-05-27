@@ -25,11 +25,13 @@ class FrameWidget(QLabel):
         # NOTE: If simply use self.frameGeometry().width(), the image will grow.
         #   Because the image is always as big as the widget and PyQt will
         #   always give us a bigger widget, unstoppable.
-        self.setPixmap(QPixmap.fromImage(frame).scaled(
-            self.frameGeometry().width()  - 10,
-            self.frameGeometry().height() - 10,
-            Qt.KeepAspectRatio
-        ))
+        self.setPixmap(
+            QPixmap.fromImage(frame).scaled(
+                self.frameGeometry().width() - 10,
+                self.frameGeometry().height() - 10,
+                Qt.KeepAspectRatio,
+            )
+        )
 
     def change_language(self, lang: Language) -> None:
         # frame widget has no text

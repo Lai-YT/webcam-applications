@@ -8,6 +8,7 @@ class TaskWorker(QThread):
     """Takes a task function and arbitrary number of that function's parameters
     and runs the task function in a new thread.
     """
+
     def __init__(self, task_callback: Callable, *args, **kwargs) -> None:
         super().__init__()
         self._task_callback = partial(task_callback, *args, **kwargs)

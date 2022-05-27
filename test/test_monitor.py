@@ -13,9 +13,7 @@ class ColTestCase(unittest.TestCase):
 
 class ColumnHeaderTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.col_header = ColumnHeader((
-            ("name", str), ("budget", int), ("list", list)
-        ))
+        self.col_header = ColumnHeader((("name", str), ("budget", int), ("list", list)))
 
     def test_col_count(self) -> None:
         self.assertEqual(self.col_header.col_count, 3)
@@ -41,8 +39,10 @@ class ColumnHeaderTestCase(unittest.TestCase):
         self.assertTrue(len(row), len(expected_row))
         # we can't simply compare Cols with "==" since __eq__ isn't implemented
         for col, expected_col in zip(row, expected_row):
-            self.assertEqual((col.no, col.label, col.value),
-                             (expected_col.no, expected_col.label, expected_col.value))
+            self.assertEqual(
+                (col.no, col.label, col.value),
+                (expected_col.no, expected_col.label, expected_col.value),
+            )
 
     def test_to_row_wrong_type(self) -> None:
         """TypeError should be raised when value doesn't match the declared type."""
@@ -70,8 +70,10 @@ class ColumnHeaderTestCase(unittest.TestCase):
 
         self.assertTrue(len(row), len(expected_row))
         for col, expected_col in zip(row, expected_row):
-            self.assertEqual((col.no, col.label, col.value),
-                             (expected_col.no, expected_col.label, expected_col.value))
+            self.assertEqual(
+                (col.no, col.label, col.value),
+                (expected_col.no, expected_col.label, expected_col.value),
+            )
 
 
 if __name__ == "__main__":

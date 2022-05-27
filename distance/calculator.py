@@ -14,7 +14,9 @@ class DistanceCalculator:
     so can calculate the distance when the face width changes relatively.
     """
 
-    def __init__(self, landmarks: NDArray[(68, 2), Int[32]], camera_dist: float) -> None:
+    def __init__(
+        self, landmarks: NDArray[(68, 2), Int[32]], camera_dist: float
+    ) -> None:
         """
         Arguments:
             landmarks: (x, y) coordinates of the 68 face landmarks in the reference image.
@@ -50,7 +52,9 @@ class DistanceCalculator:
 
 
 # outer util method
-def draw_landmarks_used_by_distance_calculator(canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]], color: BGR = MAGENTA) -> ColorImage:
+def draw_landmarks_used_by_distance_calculator(
+    canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]], color: BGR = MAGENTA
+) -> ColorImage:
     """Returns the canvas with 2 side points of the zygomatic bone connected by a transparent line.
 
     Arguments:

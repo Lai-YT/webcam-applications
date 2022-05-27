@@ -12,6 +12,7 @@ from posture.calculator import PostureLabel
 
 class _ArialFont(QFont):
     """A QFont class with the first argument of constructor be "Arial"."""
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__("Arial", *args, **kwargs)
 
@@ -24,15 +25,19 @@ class ActionButton(QtWidgets.QPushButton):
 
 class CaptureMessageBox(QtWidgets.QMessageBox):
     """Displays the result of capturing the image of posture model."""
+
     def __init__(
-            self,
-            label: PostureLabel,
-            number_of_images: int,
-            parent: QtWidgets.QWidget = None) -> None:
+        self,
+        label: PostureLabel,
+        number_of_images: int,
+        parent: QtWidgets.QWidget = None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Finish")
         self.setIcon(QtWidgets.QMessageBox.Information)
-        self.setText(f"You've captured {number_of_images} images of label '{label.name}.'")
+        self.setText(
+            f"You've captured {number_of_images} images of label '{label.name}.'"
+        )
         self.setFont(_ArialFont(12))
 
 
@@ -45,9 +50,7 @@ class CheckableGroupBox(QtWidgets.QGroupBox):
 
 
 class HorizontalSlider(QtWidgets.QSlider):
-    def __init__(self,
-                 min_val: int = 0,
-                 max_val: int = 100, cur_val: int = 30) -> None:
+    def __init__(self, min_val: int = 0, max_val: int = 100, cur_val: int = 30) -> None:
         super().__init__(Qt.Horizontal)
         self.setRange(min_val, max_val)
         self.setValue(cur_val)
@@ -61,8 +64,7 @@ class LCDClock(QtWidgets.QLCDNumber):
 
 
 class Label(QtWidgets.QLabel):
-    def __init__(self, text: str = "",
-                 font_size: int = 12, wrap: bool = False) -> None:
+    def __init__(self, text: str = "", font_size: int = 12, wrap: bool = False) -> None:
         super().__init__(text)
         self.setFont(_ArialFont(font_size))
         self.setWordWrap(wrap)
@@ -76,6 +78,7 @@ class LineEdit(QtWidgets.QLineEdit):
     """Placeholder text is easily set with constructor.
     Also provides simple color setting method.
     """
+
     def __init__(self, place_hold_text: str = "", font_size: int = 12) -> None:
         super().__init__()
         self.setPlaceholderText(place_hold_text)
@@ -88,6 +91,7 @@ class LineEdit(QtWidgets.QLineEdit):
 
 class LoadingBar(QtWidgets.QProgressBar):
     """The min and max range are both set to 0 to provide a loading effect."""
+
     def __init__(self) -> None:
         super().__init__()
         self.setRange(0, 0)
@@ -97,8 +101,8 @@ class MessageLabel(Label):
     """MessageLabel is used to display warning or status.
     Also provides simple color setting method.
     """
-    def __init__(self, text: str = "",
-                 font_size: int = 10, color: str = "red") -> None:
+
+    def __init__(self, text: str = "", font_size: int = 10, color: str = "red") -> None:
         super().__init__(text, font_size)
         self.set_color(color)
 
@@ -121,6 +125,7 @@ class OptionRadioButton(QtWidgets.QRadioButton):
 
 class ProgressDialog(QtWidgets.QProgressDialog):
     """A modal to show the progress."""
+
     def __init__(self, maximum: int, parent: QtWidgets.QWidget = None) -> None:
         super().__init__(parent)
         # Block input to other windows.
@@ -167,8 +172,8 @@ class StatusBar(QtWidgets.QStatusBar):
 
 class FailMessageBox(QtWidgets.QMessageBox):
     """The is a critical message box that shows an error (failed progress)."""
-    def __init__(self, fail_message: str,
-                 parent: QtWidgets.QWidget = None) -> None:
+
+    def __init__(self, fail_message: str, parent: QtWidgets.QWidget = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Fail")
         self.setIcon(QtWidgets.QMessageBox.Critical)

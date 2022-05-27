@@ -56,8 +56,7 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
         self.time_window = DoubleTimeWindow(60)
 
     def test_str(self) -> None:
-        self.assertEqual(str(self.time_window),
-                         "DoubleTimeWindow{previous([]), ([])}")
+        self.assertEqual(str(self.time_window), "DoubleTimeWindow{previous([]), ([])}")
 
     def test_len(self) -> None:
         for _ in range(16):

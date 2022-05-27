@@ -20,6 +20,7 @@ from gui.panel_widget import PanelWidget
 
 class Window(QMainWindow):
     """The main GUI view of the applications."""
+
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Webcam application")
@@ -36,7 +37,9 @@ class Window(QMainWindow):
         self._clean_up_callback: Optional[Callable[[], Any]] = None
 
     def _set_minimum_window_size(self) -> None:
-        self._screen_size: QSize = QApplication.instance().primaryScreen().availableSize()
+        self._screen_size: QSize = (
+            QApplication.instance().primaryScreen().availableSize()
+        )
         # Limit the size to stay in comfort
         self.setMinimumSize(self._screen_size / 2)
 
@@ -68,8 +71,10 @@ class Window(QMainWindow):
         # otherwise hide it to keep the window clean.
         # (also prevents the frame from distortion under unbalanced window size)
         new_size: QSize = event.size()
-        if (new_size.width() < self._screen_size.width() * 0.8
-                or new_size.height() < self._screen_size.height() * 0.8):
+        if (
+            new_size.width() < self._screen_size.width() * 0.8
+            or new_size.height() < self._screen_size.height() * 0.8
+        ):
             self.widgets["frame"].hide()
         else:
             self.widgets["frame"].show()
@@ -105,7 +110,8 @@ class Window(QMainWindow):
         # add both of them, information should occupy more space
         info_and_lang_layout.addWidget(self.widgets["information"], stretch=5)
         info_and_lang_layout.addWidget(
-            self.widgets["config"], stretch=1, alignment=Qt.AlignBottom)
+            self.widgets["config"], stretch=1, alignment=Qt.AlignBottom
+        )
 
         self._general_layout.insertLayout(0, info_and_lang_layout, stretch=1)
 

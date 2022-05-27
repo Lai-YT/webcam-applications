@@ -13,9 +13,10 @@ from util.image_type import ColorImage
 
 class PostureLabel(Enum):
     """Posture can be good or slump."""
+
     # The values should start from 0 and be consecutive
     # since they're also used to represent the result of prediction.
-    GOOD:  int = 0
+    GOOD: int = 0
     SLUMP: int = 1
 
 
@@ -54,21 +55,33 @@ class AngleCalculator(ABC):
 class HogAngleCalculator(AngleCalculator):
 
     # For dlib’s 68-point facial landmark detector
-    NOSE_BRIDGE_IDXS:   List[int] = [27, 30]
-    LEFT_EYESIDE_IDXS:  List[int] = [36, 39]
+    NOSE_BRIDGE_IDXS: List[int] = [27, 30]
+    LEFT_EYESIDE_IDXS: List[int] = [36, 39]
     RIGHT_EYESIDE_IDXS: List[int] = [42, 45]
-    MOUTHSIDE_IDXS:     List[int] = [48, 54]
+    MOUTHSIDE_IDXS: List[int] = [48, 54]
 
     # Override
     def calculate(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:
         # average the eyes and mouth, they're all horizontal parts
         horizontal: float = (
-            (AngleCalculator.angle_between(landmarks[self.RIGHT_EYESIDE_IDXS[0]], landmarks[self.RIGHT_EYESIDE_IDXS[1]])
-             + AngleCalculator.angle_between(landmarks[self.LEFT_EYESIDE_IDXS[0]], landmarks[self.LEFT_EYESIDE_IDXS[1]])
-            ) / 2
-            + AngleCalculator.angle_between(landmarks[self.MOUTHSIDE_IDXS[0]], landmarks[self.MOUTHSIDE_IDXS[1]])
+            (
+                AngleCalculator.angle_between(
+                    landmarks[self.RIGHT_EYESIDE_IDXS[0]],
+                    landmarks[self.RIGHT_EYESIDE_IDXS[1]],
+                )
+                + AngleCalculator.angle_between(
+                    landmarks[self.LEFT_EYESIDE_IDXS[0]],
+                    landmarks[self.LEFT_EYESIDE_IDXS[1]],
+                )
+            )
+            / 2
+            + AngleCalculator.angle_between(
+                landmarks[self.MOUTHSIDE_IDXS[0]], landmarks[self.MOUTHSIDE_IDXS[1]]
+            )
         ) / 2
-        vertical: float = AngleCalculator.angle_between(landmarks[self.NOSE_BRIDGE_IDXS[0]], landmarks[self.NOSE_BRIDGE_IDXS[1]])
+        vertical: float = AngleCalculator.angle_between(
+            landmarks[self.NOSE_BRIDGE_IDXS[0]], landmarks[self.NOSE_BRIDGE_IDXS[1]]
+        )
         # Under normal situations (not so close to the middle line):
         # If skews right, horizontal is positive, vertical is negative, e.g., 15 and -75;
         # if skews left, horizontal is negative, vertical is positive, e.g., -15 and 75.
@@ -81,8 +94,8 @@ class HogAngleCalculator(AngleCalculator):
         # And again, we take their average.
         angle: float = (
             (horizontal + (vertical + 90.0)) / 2
-            if vertical < 0 else
-            (horizontal + (vertical - 90.0)) / 2
+            if vertical < 0
+            else (horizontal + (vertical - 90.0)) / 2
         )
         self._cache = angle
         return angle
@@ -110,16 +123,17 @@ class MtcnnAngleCalculator(AngleCalculator):
         # only horizontal values are extractable from MTCNN faces
         horizontal: float = (
             AngleCalculator.angle_between(landmarks["right_eye"], landmarks["left_eye"])
-            + AngleCalculator.angle_between(landmarks["mouth_right"], landmarks["mouth_left"])
+            + AngleCalculator.angle_between(
+                landmarks["mouth_right"], landmarks["mouth_left"]
+            )
         ) / 2
         self._cache = horizontal
         return horizontal
 
 
 def draw_landmarks_used_by_angle_calculator(
-        canvas: ColorImage,
-        landmarks: NDArray[(68, 2), Int[32]],
-        color: BGR = GREEN) -> ColorImage:
+    canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]], color: BGR = GREEN
+) -> ColorImage:
     """Returns the canvas with the eye sides, mouth side and nose bridge connected by transparent lines.
 
     Arguments:
@@ -130,13 +144,21 @@ def draw_landmarks_used_by_angle_calculator(
     canvas_ = canvas.copy()
 
     facemarks_idxs: List[List[int]] = [
-        HogAngleCalculator.LEFT_EYESIDE_IDXS, HogAngleCalculator.RIGHT_EYESIDE_IDXS,
-        HogAngleCalculator.NOSE_BRIDGE_IDXS, HogAngleCalculator.MOUTHSIDE_IDXS
+        HogAngleCalculator.LEFT_EYESIDE_IDXS,
+        HogAngleCalculator.RIGHT_EYESIDE_IDXS,
+        HogAngleCalculator.NOSE_BRIDGE_IDXS,
+        HogAngleCalculator.MOUTHSIDE_IDXS,
     ]
     # connect sides with line
     for facemark in facemarks_idxs:
-        cv2.line(canvas_, landmarks[facemark[0]], landmarks[facemark[1]],
-                 color, 2, cv2.LINE_AA)
+        cv2.line(
+            canvas_,
+            landmarks[facemark[0]],
+            landmarks[facemark[1]],
+            color,
+            2,
+            cv2.LINE_AA,
+        )
     # make lines transparent
     canvas_ = cv2.addWeighted(canvas_, 0.4, canvas, 0.6, 0)
     return canvas_

@@ -25,4 +25,3 @@
 #
 # Resolves: #123
 # See also: #456, #789
-

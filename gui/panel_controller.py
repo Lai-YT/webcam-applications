@@ -36,7 +36,9 @@ class PanelController(QObject):
         app_type = ApplicationType.DISTANCE_MEASUREMENT
         panel = self._panel_widget.panels[app_type]
 
-        panel.settings["camera_dist"].setText(settings.get(app_type.name, "REFERENCE_DISTANCE"))
+        panel.settings["camera_dist"].setText(
+            settings.get(app_type.name, "REFERENCE_DISTANCE")
+        )
         panel.settings["warn_dist"].setText(settings.get(app_type.name, "LIMIT"))
         panel.file_path.setText(settings.get(app_type.name, "REFERENCE_IMAGE_PATH"))
         panel.warning.setChecked(settings.getboolean(app_type.name, "WARNING"))
@@ -104,8 +106,9 @@ class PanelController(QObject):
     def _choose_file_path(self) -> None:
         panel = self._panel_widget.panels[ApplicationType.DISTANCE_MEASUREMENT]
         root = panel.file_path.text() if panel.file_path.text() else "C:\\"
-        filename, *_ =  QFileDialog.getOpenFileName(
-            panel, "Open File", root, "Images (*.png *.jpg)")
+        filename, *_ = QFileDialog.getOpenFileName(
+            panel, "Open File", root, "Images (*.png *.jpg)"
+        )
         # the choose may be cancelled
         if filename:
             panel.file_path.setText(filename)
@@ -113,9 +116,7 @@ class PanelController(QObject):
     def _connect_time_signals(self) -> None:
         panel = self._panel_widget.panels[ApplicationType.FOCUS_TIMING]
 
-        panel.toggled.connect(
-            lambda checked: self._app.set_focus_time(enabled=checked)
-        )
+        panel.toggled.connect(lambda checked: self._app.set_focus_time(enabled=checked))
         limit = panel.settings["time_limit"]
         limit.editingFinished.connect(
             lambda: self._app.set_focus_time(time_limit=int(limit.text()))
@@ -154,8 +155,10 @@ class PanelController(QObject):
             """Returns the brightness mode determined by the combination of
             checked buttons.
             """
-            if (panel.modes[BrightnessMode.WEBCAM].isChecked()
-                    and panel.modes[BrightnessMode.COLOR_SYSTEM].isChecked()):
+            if (
+                panel.modes[BrightnessMode.WEBCAM].isChecked()
+                and panel.modes[BrightnessMode.COLOR_SYSTEM].isChecked()
+            ):
                 return BrightnessMode.BOTH
             if panel.modes[BrightnessMode.WEBCAM].isChecked():
                 return BrightnessMode.WEBCAM
@@ -171,5 +174,7 @@ class PanelController(QObject):
         )
         for mode in (BrightnessMode.WEBCAM, BrightnessMode.COLOR_SYSTEM):
             panel.modes[mode].toggled.connect(
-                lambda: self._app.set_brightness_optimization(mode=get_brightness_mode())
+                lambda: self._app.set_brightness_optimization(
+                    mode=get_brightness_mode()
+                )
             )

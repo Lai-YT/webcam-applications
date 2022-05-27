@@ -9,6 +9,7 @@ class SoundGuard:
     Only setter is implemented, all methods about sound playing needs to be
     customized.
     """
+
     def __init__(self, warning_enabled: bool) -> None:
         self._warning_enabled: bool = warning_enabled
 
@@ -23,6 +24,7 @@ class SoundGuard:
 
 class SoundRepeatGuard(SoundGuard):
     """A SoundGuard that implements the repeated sound playing method."""
+
     def __init__(self, sound_file: str, interval: int, warning_enabled: bool) -> None:
         """
         Arguments:

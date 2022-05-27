@@ -4,6 +4,7 @@ from typing import Generic, List, Optional, TypeVar
 
 T = TypeVar("T")
 
+
 class MinHeap(Generic[T]):
     def __init__(self, items: Optional[List[T]] = None) -> None:
         if not items:

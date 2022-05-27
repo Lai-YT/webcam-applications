@@ -14,11 +14,10 @@ class TimeGuard(SoundGuard):
     """TimeGuard checks whether the time held by a Timer exceeds time limit
     and interacts with a TimeShower to show the corresponding TimerWidget.
     """
+
     def __init__(
-            self,
-            time_limit: int,
-            break_time: int,
-            warning_enabled: bool = True) -> None:
+        self, time_limit: int, break_time: int, warning_enabled: bool = True
+    ) -> None:
         """
         All arguments can be set later with their corresponding setters.
 
