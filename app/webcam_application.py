@@ -328,33 +328,26 @@ class WebcamApplication(QObject):
             if not ret:
                 print("Stream ends...")
                 break
-            # mirrors, so horizontally flip
-            frame = cv2.flip(frame, flipCode=1)
-            # separate detections and markings
-            canvas: ColorImage = frame.copy()
-            # Analyze the frame to update face landmarks.
+            frame = cv2.flip(frame, flipCode=1)  # mirrors; horizontally flip
+            canvas: ColorImage = frame.copy()  # separate detections and markings
             self._update_face_and_landmarks(canvas, frame)
 
-            # Do applications!
             # The barrier is used to make sure all tasks are finished before the
             # next loop starts; otherwise slow tasks may be deleted since they
-            # are out of scope. 4 tasks + 1 main loop = 5 parties
-            self._task_barrier = Barrier(parties=5, timeout=5)
-            workers: List[TaskWorker] = []
-            workers.append(TaskWorker(self._do_distance_measurement))
-            workers.append(TaskWorker(self._do_posture_detection, canvas, frame))
-            workers.append(TaskWorker(self._do_focus_timing))
-            workers.append(TaskWorker(self._do_brightness_optimization, frame))
+            # are out of scope. 5 tasks + 1 main loop = 6 parties
+            self._task_barrier = Barrier(parties=6, timeout=5)
+            workers: List[TaskWorker] = [
+                TaskWorker(self._do_distance_measurement),
+                TaskWorker(self._do_posture_detection, canvas, frame),
+                TaskWorker(self._do_focus_timing),
+                TaskWorker(self._do_brightness_optimization, frame),
+                TaskWorker(self._do_blink_detection),
+            ]
             for worker in workers:
                 worker.start()
-
-            # wait until all tasks are finished
             self._task_barrier.wait()
 
-            # Do concentration gradings!
             self._concentration_grader.add_frame()
-            if self._has_face():
-                self._concentration_grader.detect_blink(self._landmarks)
 
             self.s_frame_refreshed.emit(ndarray_to_qimage(canvas))
             cv2.waitKey(refresh)
@@ -399,6 +392,11 @@ class WebcamApplication(QObject):
                 frame, self._face
             )
             self.s_brightness_refreshed.emit(bright)
+        self._task_barrier.wait()
+
+    def _do_blink_detection(self) -> None:
+        if self._has_face():
+            self._concentration_grader.detect_blink(self._landmarks)
         self._task_barrier.wait()
 
     def _send_slices_of_screenshot(self) -> None:
