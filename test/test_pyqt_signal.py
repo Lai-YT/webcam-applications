@@ -27,7 +27,7 @@ class PyQtSignalTestCase(unittest.TestCase):
             self.sender.send("1")
 
         for i in range(1_000_000):
-            self.assertEqual(contents[i*4:(i+1)*4], ["0", "1", "0", "1"])
+            self.assertEqual(contents[i * 4 : (i + 1) * 4], ["0", "1", "0", "1"])
 
 
 if __name__ == "__main__":

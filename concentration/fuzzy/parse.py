@@ -45,6 +45,7 @@ def read_intervals_from_json(filename: str) -> List[Interval]:
     Arguments:
         filename: The json file which contains the intervals.
     """
+
     def to_good_interval_object(raw_interval: Dict[str, Union[int, float]]) -> Interval:
         """Converts the dict of start and grade into Interval object."""
         return Interval(**raw_interval)  # type: ignore

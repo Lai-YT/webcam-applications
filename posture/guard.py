@@ -16,11 +16,13 @@ class PostureGuard(SoundRepeatGuard):
     """PostureGuard checks whether the face obtained by landmarks implies a
     good or slump posture.
     """
+
     def __init__(
-            self,
-            warn_angle: float,
-            warning_enabled: bool = True,
-            grader: Optional[ConcentrationGrader] = None) -> None:
+        self,
+        warn_angle: float,
+        warning_enabled: bool = True,
+        grader: Optional[ConcentrationGrader] = None,
+    ) -> None:
         """
         Arguments:
             warn_angle:
@@ -35,7 +37,7 @@ class PostureGuard(SoundRepeatGuard):
         super().__init__(
             sound_file=to_abs_path("sounds/posture_slump.wav"),
             interval=8,
-            warning_enabled=warning_enabled
+            warning_enabled=warning_enabled,
         )
         self._hog_layer = HogLayer(warn_angle)
         self._mtcnn_layer = MtcnnLayer(warn_angle)
@@ -51,9 +53,8 @@ class PostureGuard(SoundRepeatGuard):
         self._mtcnn_layer.set_warn_angle(warn_angle)
 
     def check_posture(
-            self,
-            frame: ColorImage,
-            landmarks: NDArray[(68, 2), Int[32]]) -> Tuple[PostureLabel, str]:
+        self, frame: ColorImage, landmarks: NDArray[(68, 2), Int[32]]
+    ) -> Tuple[PostureLabel, str]:
         """Good or slump is determined by the angle of face; if there isn't a
         face, the posture is always slump.
 

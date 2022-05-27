@@ -13,6 +13,7 @@ from util.image_type import ColorImage
 
 class BrightnessMode(Enum):
     """The modes that BrightnessCalculator uses."""
+
     WEBCAM = auto()
     COLOR_SYSTEM = auto()
     BOTH = auto()
@@ -49,9 +50,8 @@ class BrightnessCalculator:
         self._base_value = new_base_value
 
     def calculate_proper_screen_brightness(
-            self,
-            frames: Dict[BrightnessMode, ColorImage],
-            face: Optional[dlib.rectangle]) -> int:
+        self, frames: Dict[BrightnessMode, ColorImage], face: Optional[dlib.rectangle]
+    ) -> int:
         """Returns the suggested screen brightness value, which is between 0 and 100.
 
         Arguments:
@@ -92,8 +92,11 @@ class BrightnessCalculator:
 
         # calculate the brightness of screenshot
         if self._mode in (BrightnessMode.COLOR_SYSTEM, BrightnessMode.BOTH):
-            screenshot_value: float = 100 - BrightnessCalculator.get_brightness_percentage(
-                self._frames[BrightnessMode.COLOR_SYSTEM]
+            screenshot_value: float = (
+                100
+                - BrightnessCalculator.get_brightness_percentage(
+                    self._frames[BrightnessMode.COLOR_SYSTEM]
+                )
             )
 
         new_value: float
@@ -102,7 +105,7 @@ class BrightnessCalculator:
             new_value = frame_value
         elif self._mode is BrightnessMode.COLOR_SYSTEM:
             new_value = screenshot_value
-        else: # BOTH
+        else:  # BOTH
             new_value = 0.7 * frame_value + 0.3 * screenshot_value
         self._new_value = new_value
 
@@ -122,10 +125,8 @@ class BrightnessCalculator:
     def _calculate_weighted_difference(self) -> None:
         if self._pre_weighted_value is None:
             raise ValueError("first frame pass not handled")
-            
-        self._weighted_value_diff = (
-            self._new_weighted_value - self._pre_weighted_value
-        )
+
+        self._weighted_value_diff = self._new_weighted_value - self._pre_weighted_value
 
     def _calculate_brightness_value(self) -> None:
         self._brightness_value += 0.3 * self._weighted_value_diff
@@ -141,8 +142,8 @@ class BrightnessCalculator:
 
     @staticmethod
     def get_brightness_percentage(
-            frame: ColorImage,
-            face: Optional[dlib.rectangle] = None) -> float:
+        frame: ColorImage, face: Optional[dlib.rectangle] = None
+    ) -> float:
         """Returns the mean of value channel, which represents the average
         brightness of the frame.
 
@@ -163,8 +164,8 @@ class BrightnessCalculator:
 
     @staticmethod
     def _generate_face_mask(
-            face: Optional[dlib.rectangle],
-            frame_shape: Tuple[int, int, int]) -> NDArray:
+        face: Optional[dlib.rectangle], frame_shape: Tuple[int, int, int]
+    ) -> NDArray:
         """Gets the boundaries of face area and generates the value with
         corresponding elements masked.
         """
@@ -172,7 +173,7 @@ class BrightnessCalculator:
         fx, fy, fw, fh = face_utils.rect_to_bb(face)
         # generate mask with face area masked
         face_mask = np.zeros(frame_shape, dtype=np.bool8)
-        face_mask[fy:fy+fh+1, fx:fx+fw+1] = True
+        face_mask[fy : fy + fh + 1, fx : fx + fw + 1] = True
         return face_mask
 
     @staticmethod

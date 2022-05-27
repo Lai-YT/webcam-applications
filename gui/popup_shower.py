@@ -8,6 +8,7 @@ class TimeShower(QObject):
     """The layer between Widget and App.
     Knows the current state of time and updates time to the corresponding widget.
     """
+
     def __init__(self) -> None:
         super().__init__()
 

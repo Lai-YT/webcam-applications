@@ -18,6 +18,7 @@ class FaceExistenceRateCounter(QObject):
         s_low_existence_detected:
             Emits when face existence is low and sends its interval.
     """
+
     s_low_existence_detected = pyqtSignal(Interval)
 
     def __init__(self, low_existence: float = 0.66) -> None:
@@ -90,11 +91,14 @@ class FaceExistenceRateCounter(QObject):
         frame_times: SequenceView = self._frame_times.times()
         # Frame time is added every frame but face isn't,
         # so is used as the prerequisite for face existence check.
-        if (frame_times
-                and get_current_time() - frame_times[0] >= ONE_MIN
-                and self.is_low_face()):
+        if (
+            frame_times
+            and get_current_time() - frame_times[0] >= ONE_MIN
+            and self.is_low_face()
+        ):
             self.s_low_existence_detected.emit(
-                Interval(frame_times[0], frame_times[0] + ONE_MIN))
+                Interval(frame_times[0], frame_times[0] + ONE_MIN)
+            )
 
     def _get_face_existence_rate(self) -> float:
         """Returns the face existence rate of the minute.
@@ -117,6 +121,7 @@ class BlinkRateIntervalDetector(QObject):
     Signals:
         s_interval_detected:
     """
+
     s_interval_detected = pyqtSignal(Interval, IntervalType, int)  # rate
 
     def __init__(self, good_rate_range: Tuple[int, int] = (15, 25)) -> None:
@@ -160,7 +165,8 @@ class BlinkRateIntervalDetector(QObject):
             extrude_interval = (
                 Interval(self._last_end_time, one_min_before),
                 IntervalType.EXTRUSION,
-                self._get_blink_rate(WindowType.PREVIOUS))
+                self._get_blink_rate(WindowType.PREVIOUS),
+            )
             return extrude_interval
         return None
 
@@ -194,15 +200,22 @@ class BlinkRateIntervalDetector(QObject):
         one_min_before: int = now_time - ONE_MIN
 
         curr_blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
-        if (now_time - self._last_end_time >= ONE_MIN
-                and self._good_rate_range[0] <= curr_blink_rate <= self._good_rate_range[1]):
-            self.s_interval_detected.emit(Interval(one_min_before, now_time),
-                                          IntervalType.REAL_TIME, curr_blink_rate)
+        if (
+            now_time - self._last_end_time >= ONE_MIN
+            and self._good_rate_range[0] <= curr_blink_rate <= self._good_rate_range[1]
+        ):
+            self.s_interval_detected.emit(
+                Interval(one_min_before, now_time),
+                IntervalType.REAL_TIME,
+                curr_blink_rate,
+            )
         # Make each 60 seconds of the previous a look back interval.
         if one_min_before - self._last_end_time >= ONE_MIN:
-            self.s_interval_detected.emit(Interval(self._last_end_time, one_min_before),
-                                          IntervalType.LOOK_BACK,
-                                          self._get_blink_rate(WindowType.PREVIOUS))
+            self.s_interval_detected.emit(
+                Interval(self._last_end_time, one_min_before),
+                IntervalType.LOOK_BACK,
+                self._get_blink_rate(WindowType.PREVIOUS),
+            )
 
     def _get_blink_rate(self, window_type: WindowType) -> int:
         """Returns the blink rate of the corresponding window.
@@ -225,6 +238,7 @@ class BodyConcentrationCounter:
     criterion, but does not request a grading process, which means the
     BodyConcentrationCounter gives information passively.
     """
+
     def __init__(self) -> None:
         self._concentration_times = DoubleTimeWindow(ONE_MIN)
         self._distraction_times = DoubleTimeWindow(ONE_MIN)
@@ -243,6 +257,7 @@ class BodyConcentrationCounter:
         Arguments:
             window_type: The window to get concentration from.
         """
+
         def count_time_in_interval(times: DoubleTimeWindow) -> int:
             # Assumes that the interval is synced up properly, so the count is
             # simply the length of the corresponding window.
@@ -252,6 +267,7 @@ class BodyConcentrationCounter:
             else:
                 window = times.times()
             return len(window)
+
         concent_count: int = count_time_in_interval(self._concentration_times)
         distract_count: int = count_time_in_interval(self._distraction_times)
         return round(concent_count / (concent_count + distract_count), 2)

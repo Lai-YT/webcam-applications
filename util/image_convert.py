@@ -21,4 +21,6 @@ def ndarray_to_qimage(image: ColorImage) -> QImage:
     # RGB -> 3
     bytes_per_line = 3 * width
 
-    return QImage(image.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
+    return QImage(
+        image.data, width, height, bytes_per_line, QImage.Format_RGB888
+    ).rgbSwapped()

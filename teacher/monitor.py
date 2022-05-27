@@ -4,7 +4,12 @@ from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
-    QGridLayout, QHeaderView, QLabel, QMainWindow, QTreeWidget, QTreeWidgetItem,
+    QGridLayout,
+    QHeaderView,
+    QLabel,
+    QMainWindow,
+    QTreeWidget,
+    QTreeWidgetItem,
     QWidget,
 )
 from more_itertools import SequenceView
@@ -15,10 +20,12 @@ from util.path import to_abs_path
 
 T = TypeVar("T")
 
+
 class Col:
     """A single cell which carries the information of its column number,
     corresponding label and value.
     """
+
     def __init__(self, no: int, label: str, value: T) -> None:
         self._no = no
         self._label = label
@@ -105,7 +112,9 @@ class ColumnHeader:
         for col_no, (label, value_type) in enumerate(self._headers):
             try:
                 if not isinstance(values[label], value_type):
-                    raise TypeError(f'label "{label}" should have type "{value_type.__name__}" but got "{type(values[label]).__name__}"')
+                    raise TypeError(
+                        f'label "{label}" should have type "{value_type.__name__}" but got "{type(values[label]).__name__}"'
+                    )
             except (KeyError, IndexError):
                 # sqlite3 raise IndexError when key not exist
                 # Missing label is allowed.
@@ -128,6 +137,7 @@ class Monitor(QMainWindow):
             Emits when any of the items (row) are expanded. Sends the key value
             of that item.
     """
+
     s_item_clicked = pyqtSignal(str, str)
     s_item_collapsed = pyqtSignal(str)
     s_item_expanded = pyqtSignal(str)
@@ -171,7 +181,9 @@ class Monitor(QMainWindow):
         self.combox = LanguageComboBox()
         self.combox.setFont(QFont("Microsoft JhengHei UI", 9))
         self._layout.addWidget(QLabel("Language:"), 1, 0)
-        self._layout.itemAtPosition(1, 0).widget().setFont(QFont("Microsoft JhengHei UI", 9))
+        self._layout.itemAtPosition(1, 0).widget().setFont(
+            QFont("Microsoft JhengHei UI", 9)
+        )
         self._layout.addWidget(self.combox, 1, 1, alignment=Qt.AlignLeft)
 
     def change_language(self, lang: Language) -> None:
@@ -280,6 +292,7 @@ class Monitor(QMainWindow):
         )
 
     def _map_item_and_column_to_key_and_label(
-            self, item: QTreeWidgetItem, col_no: int) -> Tuple[str, str]:
+        self, item: QTreeWidgetItem, col_no: int
+    ) -> Tuple[str, str]:
         key_index = self._header.labels().index(self._key_label)
         return item.text(key_index), self._header.labels()[col_no]  # always in English

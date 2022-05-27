@@ -26,9 +26,7 @@ class TimeWindow:
         self._time_width = time_width
         self._time_catch_callback: Optional[Callable[[], Any]] = None
 
-    def set_time_catch_callback(
-            self,
-            time_catch_callback: Callable[[], Any]) -> None:
+    def set_time_catch_callback(self, time_catch_callback: Callable[[], Any]) -> None:
         """
         Arguments:
             time_catch_callback: Called after the window catches up the time.
@@ -65,7 +63,7 @@ class TimeWindow:
     def _call_time_catch_callback_if_has(self) -> None:
         if self._has_time_catch_callback():
             self._time_catch_callback()  # type: ignore
-                                         # Nullity already checked above.
+            # Nullity already checked above.
 
     def _has_time_catch_callback(self) -> bool:
         return self._time_catch_callback is not None
@@ -86,6 +84,7 @@ class WindowType(Enum):
     """This is a helper enum that helps to indicate which window one is working
     with.
     """
+
     CURRENT = auto()
     PREVIOUS = auto()
 
@@ -98,6 +97,7 @@ class DoubleTimeWindow(TimeWindow):
     methods work with the current window only. To work with the previous window,
     call the previous property.
     """
+
     # Override
     def __init__(self, time_width: int = 60) -> None:
         """
@@ -163,7 +163,10 @@ class DoubleTimeWindow(TimeWindow):
 
     # Override
     def __str__(self) -> str:
-        return ("DoubleTimeWindow{previous"
-                + str(self._prev_window).lstrip("deque") + ", "
-                + str(self._window).lstrip("deque")
-                + "}")
+        return (
+            "DoubleTimeWindow{previous"
+            + str(self._prev_window).lstrip("deque")
+            + ", "
+            + str(self._window).lstrip("deque")
+            + "}"
+        )

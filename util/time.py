@@ -2,7 +2,7 @@ import time
 
 
 # often-used define constants
-ONE_MIN  = 60
+ONE_MIN = 60
 HALF_MIN = 30
 
 
