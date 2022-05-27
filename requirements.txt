@@ -1,4 +1,4 @@
-뿯붿absl-py==0.13.0
+absl-py==0.13.0
 astunparse==1.6.3
 black==22.3.0
 cachetools==4.2.2
