@@ -251,7 +251,7 @@ class BrightnessPanel(CheckableGroupBox):
         # name | description
         modes: Dict[BrightnessMode, str] = {
             BrightnessMode.WEBCAM: (
-                "Webcam-based brightness detector \n" "(webcam required)"
+                "Webcam-based brightness detector \n(webcam required)"
             ),
             BrightnessMode.COLOR_SYSTEM: "Color-system mode",
         }
