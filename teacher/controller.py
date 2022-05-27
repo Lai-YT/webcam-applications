@@ -19,7 +19,9 @@ import server.main as flask_server
 import server.post as poster
 from gui.language import Language
 from screenshot.compare import (
-    compare_similarity_of_slices, get_compare_slices, get_screenshot
+    compare_similarity_of_slices,
+    get_compare_slices,
+    get_screenshot,
 )
 from teacher.monitor import Col, Monitor, RowContent
 from util.path import to_abs_path
@@ -48,10 +50,12 @@ class MonitorController(QObject):
         self._server_url = f"http://{flask_server.HOST}:{flask_server.PORT}"
         self._fetch_timer = QTimer()
         self._fetch_timer.timeout.connect(self._get_grades_from_server)
-        self._fetch_timer.start(30 * 1000) # 30 sec
+        self._fetch_timer.start(30 * 1000)  # 30 sec
 
         self._screenshot_worker = TaskWorker(self._get_screenshot_slices_periodically)
-        self._compare_worker = TaskWorker(self._compare_screenshot_similarity_periodically)
+        self._compare_worker = TaskWorker(
+            self._compare_screenshot_similarity_periodically
+        )
         self._screenshot_worker.start()
         self._compare_worker.start()
 
@@ -71,7 +75,9 @@ class MonitorController(QObject):
         db.parent.mkdir(parents=True, exist_ok=True)
         db.touch()
         # PARSE_DECLTYPES so TIMESTAMP may be converted back to datetime
-        self._conn = sqlite3.connect(db, check_same_thread=False, detect_types=sqlite3.PARSE_DECLTYPES)
+        self._conn = sqlite3.connect(
+            db, check_same_thread=False, detect_types=sqlite3.PARSE_DECLTYPES
+        )
         # so we can retrieve rows as dictionary
         self._conn.row_factory = sqlite3.Row
 
@@ -88,7 +94,8 @@ class MonitorController(QObject):
     def _connect_signals(self):
         self._monitor.s_item_clicked.connect(
             lambda student_id, label: self._plot_histories(student_id)
-                                      if label == "grade" else None
+            if label == "grade"
+            else None
         )
         self._monitor.s_item_collapsed.connect(
             lambda student_id: self._monitor.remove_histories_of_row(
@@ -96,9 +103,13 @@ class MonitorController(QObject):
             )
         )
         self._monitor.s_item_expanded.connect(self._show_histories_on_monitor)
-        self._s_screen_similarity_refreshed.connect(self._show_similarity_of_screenshot_to_monitor)
+        self._s_screen_similarity_refreshed.connect(
+            self._show_similarity_of_screenshot_to_monitor
+        )
         # index is designed to be as same as the value of enum Language
-        self._monitor.combox.currentIndexChanged.connect(self._change_language_of_monitor)
+        self._monitor.combox.currentIndexChanged.connect(
+            self._change_language_of_monitor
+        )
 
     def _get_grades_from_server(self) -> None:
         """Get new grades from the server and
@@ -112,7 +123,9 @@ class MonitorController(QObject):
             self.store_new_grade(datum)
             self.show_new_grade(datum)
 
-    def _get_histories_from_database(self, student_id: str, amount: int) -> List[sqlite3.Row]:
+    def _get_histories_from_database(
+        self, student_id: str, amount: int
+    ) -> List[sqlite3.Row]:
         """Gets latest histories of the student specified by id from the database.
 
         Histories are in descending order with repect to their time.
@@ -177,7 +190,9 @@ class MonitorController(QObject):
         """
         row_no = self._monitor.search_row_no(("id", student_id))
         # Fetch one more grade and remove the current one.
-        for row in self._get_histories_from_database(student_id, Monitor.MAX_HISTORY_NUM + 1)[1:]:
+        for row in self._get_histories_from_database(
+            student_id, Monitor.MAX_HISTORY_NUM + 1
+        )[1:]:
             hist_item = self._monitor.add_history_of_row(
                 row_no, self._monitor.col_header.to_row(row)  # type: ignore
             )  # sqlite3.Row does support mapping
@@ -188,10 +203,12 @@ class MonitorController(QObject):
         # We assume that a single course takes 50 minutes, so at most 50
         # histories will be plotted and history farther than 50 minutes from now
         # will be ignored.
-        histories: List[sqlite3.Row] = list(filter(
-            lambda row: row["time"] > datetime.now() - timedelta(minutes=50),
-            self._get_histories_from_database(student_id, 50)
-        ))
+        histories: List[sqlite3.Row] = list(
+            filter(
+                lambda row: row["time"] > datetime.now() - timedelta(minutes=50),
+                self._get_histories_from_database(student_id, 50),
+            )
+        )
         time_of_earliest_grade: int = histories[-1]["time"].timestamp()
         grades: List[float] = []
         times: List[float] = []
@@ -201,7 +218,9 @@ class MonitorController(QObject):
             times.append(1 + (row["time"].timestamp() - time_of_earliest_grade) / 60)
         ax = plt.subplot()
         ax.plot(times, grades)
-        ax.set_title(f"Concentration grade of id: {student_id} from {to_date_time(time_of_earliest_grade)}")
+        ax.set_title(
+            f"Concentration grade of id: {student_id} from {to_date_time(time_of_earliest_grade)}"
+        )
         ax.set_ylabel("grade")
         ax.set_xlabel("time (min)")
         ax.set_xticks(range(math.ceil(times[0]) + 1))
@@ -218,7 +237,9 @@ class MonitorController(QObject):
     def _get_screenshot_slices_periodically(self) -> None:
         now = datetime.now()
         minute = (now.minute // 5) * 5
-        next_fire = now.replace(minute=minute, second=0, microsecond=0) + timedelta(minutes=5)
+        next_fire = now.replace(minute=minute, second=0, microsecond=0) + timedelta(
+            minutes=5
+        )
         BUSY_CHECK_GAP = 2
         sleep = (next_fire - now).seconds
 
@@ -241,13 +262,21 @@ class MonitorController(QObject):
             self._s_screen_similarity_refreshed.emit(data["id"], similarity)
 
     @pyqtSlot(str, float)
-    def _show_similarity_of_screenshot_to_monitor(self, student_id: str, similarity: float) -> None:
+    def _show_similarity_of_screenshot_to_monitor(
+        self, student_id: str, similarity: float
+    ) -> None:
         """Shows the similarity of screen to the corresponding student's screen label."""
         row_no = self._monitor.search_row_no(("id", student_id))
-        row = RowContent([Col(no=self._monitor.col_header.labels().index("screen"),
-                              label="screen",
-                              # round to 2 decimal places
-                              value=Decimal(f"{similarity:.2f}"))])
+        row = RowContent(
+            [
+                Col(
+                    no=self._monitor.col_header.labels().index("screen"),
+                    label="screen",
+                    # round to 2 decimal places
+                    value=Decimal(f"{similarity:.2f}"),
+                )
+            ]
+        )
         if row_no == -1:  # row not found
             row_item = self._monitor.insert_row(row)
         else:
@@ -262,10 +291,9 @@ class MonitorController(QObject):
         now = datetime.now()
         # generate a time offset to make sure screenshot are gotten
         minute = (now.minute // 5) * 5 + 1
-        next_fire = (
-            now.replace(minute=minute, second=0, microsecond=0)
-            + timedelta(minutes=5 * 2)  # an extra delta to make sure the 1st screenshot of teacher is gotten
-        )
+        next_fire = now.replace(minute=minute, second=0, microsecond=0) + timedelta(
+            minutes=5 * 2
+        )  # an extra delta to make sure the 1st screenshot of teacher is gotten
         BUSY_CHECK_GAP = 2
         sleep = (next_fire - now).seconds
 

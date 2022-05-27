@@ -10,6 +10,7 @@ from util.image_type import ColorImage
 
 class BrightnessController:
     """Store arguments and controls the optimizing method."""
+
     def __init__(self, base_value: int, mode: BrightnessMode) -> None:
         """
         All arguments can be set later with their corresponding setters.
@@ -59,7 +60,9 @@ class BrightnessController:
         """
         self._frames[BrightnessMode.COLOR_SYSTEM] = get_screenshot()
 
-    def optimize_brightness(self, frame: ColorImage, face: Optional[dlib.rectangle]) -> int:
+    def optimize_brightness(
+        self, frame: ColorImage, face: Optional[dlib.rectangle]
+    ) -> int:
         """Sets brightness of screen to a suggested brightness with respect to
         mode, the base value and frames.
 

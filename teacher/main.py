@@ -10,13 +10,15 @@ from teacher.monitor import ColumnHeader, Monitor
 app = QApplication([])
 
 monitor = Monitor(
-    ColumnHeader((
-        ("id", str),
-        ("time", datetime),
-        ("grade", float),
-        ("screen", float),
-    )),
-    key_label="id"
+    ColumnHeader(
+        (
+            ("id", str),
+            ("time", datetime),
+            ("grade", float),
+            ("screen", float),
+        )
+    ),
+    key_label="id",
 )
 controller = MonitorController(monitor)
 monitor.show()

@@ -10,6 +10,8 @@ PORT = 5000
 app = Flask(__name__)
 
 grade = []
+
+
 @app.route("/grade", methods=["POST", "GET"])
 def update_grade():
     if request.method == "POST":
@@ -24,6 +26,8 @@ def update_grade():
 
 
 screenshots = []
+
+
 @app.route("/screenshot", methods=["POST", "GET"])
 def update_screenshot():
     if request.method == "POST":

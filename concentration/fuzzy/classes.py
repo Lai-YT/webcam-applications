@@ -9,6 +9,7 @@ class Interval:
 
     Interval is comparable as if it's the tuple (start, end).
     """
+
     start: int
     end: int
     # When comparing the intervals, grades aren't taken under consideration.

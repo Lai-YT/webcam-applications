@@ -21,7 +21,8 @@ from brightness.controller import BrightnessController
 from concentration.fuzzy.classes import Interval
 from concentration.grader import ConcentrationGrader
 from distance.calculator import (
-    DistanceCalculator, draw_landmarks_used_by_distance_calculator
+    DistanceCalculator,
+    draw_landmarks_used_by_distance_calculator,
 )
 from distance.guard import DistanceGuard, DistanceState
 from focus_time.guard import TimeGuard
@@ -86,7 +87,9 @@ class WebcamApplication(QObject):
     s_screenshot_refreshed = pyqtSignal(np.ndarray)
     s_time_refreshed = pyqtSignal(int, TimeState)
 
-    s_started = pyqtSignal()  # emits just before getting in to the while-loop of start()
+    s_started = (
+        pyqtSignal()
+    )  # emits just before getting in to the while-loop of start()
     s_stopped = pyqtSignal()  # emits just before leaving start()
 
     def __init__(self) -> None:
@@ -123,7 +126,9 @@ class WebcamApplication(QObject):
         """Creates face detector and shape predictor."""
         self._face: Optional[dlib.rectangle] = None
         self._landmarks: NDArray[(68, 2), Int[32]] = None
-        self._face_detector: dlib.fhog_object_detector = dlib.get_frontal_face_detector()
+        self._face_detector: dlib.fhog_object_detector = (
+            dlib.get_frontal_face_detector()
+        )
         self._shape_predictor = dlib.shape_predictor(
             to_abs_path("dlib_model/shape_predictor_68_face_landmarks.dat")
         )
@@ -160,12 +165,11 @@ class WebcamApplication(QObject):
         self._distance_measure = settings.getboolean("ENABLED")
         self._distance_guard = DistanceGuard(
             DistanceCalculator(
-                self._ref_landmarks,
-                settings.getfloat("REFERENCE_DISTANCE")
+                self._ref_landmarks, settings.getfloat("REFERENCE_DISTANCE")
             ),
             settings.getfloat("LIMIT"),
             settings.getboolean("WARNING"),
-            self._concentration_grader
+            self._concentration_grader,
         )
 
     def _create_time_guard(self) -> None:
@@ -175,7 +179,7 @@ class WebcamApplication(QObject):
         self._time_guard = TimeGuard(
             settings.getint("LIMIT"),
             settings.getint("BREAK_TIME"),
-            settings.getboolean("WARNING")
+            settings.getboolean("WARNING"),
         )
         self._timer = Timer()
         if self._focus_time:
@@ -189,16 +193,18 @@ class WebcamApplication(QObject):
         self._posture_guard = PostureGuard(
             settings.getfloat("ANGLE"),
             settings.getboolean("WARNING"),
-            self._concentration_grader
+            self._concentration_grader,
         )
 
     def set_distance_measure(
-            self, *,
-            enabled: Optional[bool] = None,
-            ref_img_path: Optional[str] = None,
-            camera_dist: Optional[float] = None,
-            warn_dist: Optional[float] = None,
-            warning_enabled: Optional[bool] = None) -> None:
+        self,
+        *,
+        enabled: Optional[bool] = None,
+        ref_img_path: Optional[str] = None,
+        camera_dist: Optional[float] = None,
+        warn_dist: Optional[float] = None,
+        warning_enabled: Optional[bool] = None
+    ) -> None:
         settings = self._settings[ApplicationType.DISTANCE_MEASUREMENT.name]
 
         if camera_dist is not None or ref_img_path is not None:
@@ -209,8 +215,7 @@ class WebcamApplication(QObject):
                 self._update_ref_landmarks()
             self._distance_guard.set_calculator(
                 DistanceCalculator(
-                    self._ref_landmarks,
-                    settings.getfloat("REFERENCE_DISTANCE")
+                    self._ref_landmarks, settings.getfloat("REFERENCE_DISTANCE")
                 )
             )
         if warn_dist is not None:
@@ -225,11 +230,13 @@ class WebcamApplication(QObject):
             self._keep_grading_if_related_apps_enabled()
 
     def set_focus_time(
-            self, *,
-            enabled: Optional[bool] = None,
-            time_limit: Optional[int] = None,
-            break_time: Optional[int] = None,
-            warning_enabled: Optional[bool] = None) -> None:
+        self,
+        *,
+        enabled: Optional[bool] = None,
+        time_limit: Optional[int] = None,
+        break_time: Optional[int] = None,
+        warning_enabled: Optional[bool] = None
+    ) -> None:
         settings = self._settings[ApplicationType.FOCUS_TIMING.name]
 
         if time_limit is not None:
@@ -252,10 +259,12 @@ class WebcamApplication(QObject):
                 self._time_guard.hide()
 
     def set_posture_detect(
-            self, *,
-            enabled: Optional[bool] = None,
-            warn_angle: Optional[float] = None,
-            warning_enabled: Optional[bool] = None) -> None:
+        self,
+        *,
+        enabled: Optional[bool] = None,
+        warn_angle: Optional[float] = None,
+        warning_enabled: Optional[bool] = None
+    ) -> None:
         settings = self._settings[ApplicationType.POSTURE_DETECTION.name]
 
         if warn_angle is not None:
@@ -270,10 +279,12 @@ class WebcamApplication(QObject):
             self._keep_grading_if_related_apps_enabled()
 
     def set_brightness_optimization(
-            self, *,
-            enabled: Optional[bool] = None,
-            slider_value: Optional[int] = None,
-            mode: Optional[BrightnessMode] = None) -> None:
+        self,
+        *,
+        enabled: Optional[bool] = None,
+        slider_value: Optional[int] = None,
+        mode: Optional[BrightnessMode] = None
+    ) -> None:
         settings = self._settings[ApplicationType.BRIGHTNESS_OPTIMIZATION.name]
 
         if slider_value is not None:
@@ -384,12 +395,15 @@ class WebcamApplication(QObject):
     def _do_brightness_optimization(self, frame) -> None:
         if self._brightness_optimize:
             # Optimize brightness after passing required images.
-            bright: int = self._brightness_controller.optimize_brightness(frame, self._face)
+            bright: int = self._brightness_controller.optimize_brightness(
+                frame, self._face
+            )
             self.s_brightness_refreshed.emit(bright)
         self._task_barrier.wait()
 
     def _send_slices_of_screenshot(self) -> None:
         """Sends the slices of screenshot precisely on every XX:XX:00 and XX:XX:30."""
+
         def _do_real_data_send() -> None:
             data: ColorImage = get_screenshot()
             # don't need that much precision
@@ -403,7 +417,9 @@ class WebcamApplication(QObject):
         #   get the largest multiple smaller than now and
         #   set the fire time to the smallest multiple greater than now.
         minute = (now.minute // 5) * 5
-        next_fire = now.replace(minute=minute, second=0, microsecond=0) + timedelta(minutes=5)
+        next_fire = now.replace(minute=minute, second=0, microsecond=0) + timedelta(
+            minutes=5
+        )
 
         # How long we might be busy waiting and checking to approach the precise
         # time, better be longer than the task time.
@@ -428,9 +444,13 @@ class WebcamApplication(QObject):
         # Need both distance measurement and posture detection to have
         # the concentration grader work.
         relate_enabled = all(
-            [self._settings.getboolean(app_type.name, "ENABLED")
-             for app_type in (ApplicationType.DISTANCE_MEASUREMENT,
-                              ApplicationType.POSTURE_DETECTION)]
+            [
+                self._settings.getboolean(app_type.name, "ENABLED")
+                for app_type in (
+                    ApplicationType.DISTANCE_MEASUREMENT,
+                    ApplicationType.POSTURE_DETECTION,
+                )
+            ]
         )
 
         if relate_enabled:
@@ -458,13 +478,17 @@ class WebcamApplication(QObject):
     def _update_ref_landmarks(self) -> None:
         """Updates the reference landmarks with the reference image path."""
         ref_img: ColorImage = cv2.imread(
-            self._settings[ApplicationType.DISTANCE_MEASUREMENT.name]["REFERENCE_IMAGE_PATH"]
+            self._settings[ApplicationType.DISTANCE_MEASUREMENT.name][
+                "REFERENCE_IMAGE_PATH"
+            ]
         )
         faces: dlib.rectangles = self._face_detector(ref_img)
         if len(faces) != 1:
             # must have exactly one face in the reference image
             raise ValueError("should have exactly 1 face in the reference image")
-        self._ref_landmarks = face_utils.shape_to_np(self._shape_predictor(ref_img, faces[0]))
+        self._ref_landmarks = face_utils.shape_to_np(
+            self._shape_predictor(ref_img, faces[0])
+        )
 
     def _has_face(self) -> bool:
         """Returns whether the landmarks indicate a face."""
@@ -480,9 +504,10 @@ def get_biggest_face(faces: dlib.rectangles) -> Optional[dlib.rectangle]:
 
 
 def mark_face(
-        canvas: ColorImage,
-        face: Tuple[int, int, int, int],
-        landmarks: NDArray[(68, 2), Int[32]]) -> None:
+    canvas: ColorImage,
+    face: Tuple[int, int, int, int],
+    landmarks: NDArray[(68, 2), Int[32]],
+) -> None:
     """Modifies the canvas with face area framed up and landmarks dotted.
 
     Arguments:
@@ -491,6 +516,6 @@ def mark_face(
         landmarks: (x, y) coordinates of the 68 face landmarks.
     """
     fx, fy, fw, fh = face
-    cv2.rectangle(canvas, (fx, fy), (fx+fw, fy+fh), MAGENTA, 1)
+    cv2.rectangle(canvas, (fx, fy), (fx + fw, fy + fh), MAGENTA, 1)
     for lx, ly in landmarks:
         cv2.circle(canvas, (lx, ly), 1, GREEN, -1)

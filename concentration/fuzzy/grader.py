@@ -12,7 +12,8 @@ class FuzzyGrader:
     """A fuzzy-based grader which takes blink rate and body concentration value
     into consideration.
     """
-    def __init__(self) ->  None:
+
+    def __init__(self) -> None:
         self._create_membership_func_of_blink()
         self._create_membership_func_of_body()
         self._create_membership_func_of_center()
@@ -22,11 +23,13 @@ class FuzzyGrader:
         self._grader = ctrl.ControlSystemSimulation(ctrl.ControlSystem(rules))
 
     def compute_grade(
-            self,
-            blink_rate: float,
-            body_concent: float,
-            center_value: float,
-            *, normalized: bool = True) -> float:
+        self,
+        blink_rate: float,
+        body_concent: float,
+        center_value: float,
+        *,
+        normalized: bool = True,
+    ) -> float:
         """Computes the grade base on fuzzy logics.
 
         The grade is rounded to two decimal places.
@@ -74,10 +77,14 @@ class FuzzyGrader:
     def _create_membership_func_of_center(self) -> None:
         self._center = ctrl.Antecedent(np.arange(0, 1, 0.01), "center")
         self._center["good"] = fuzz.trapmf(self._center.universe, [0, 0, 0.2, 0.27])
-        self._center["average"] = fuzz.trapmf(self._center.universe, [0.2, 0.27, 0.34, 0.67])
+        self._center["average"] = fuzz.trapmf(
+            self._center.universe, [0.2, 0.27, 0.34, 0.67]
+        )
         self._center["poor"] = fuzz.trapmf(self._center.universe, [0.34, 0.67, 1, 1])
 
-    def _create_membership_func_of_grade(self, defuzzify_method: str = "centroid") -> None:
+    def _create_membership_func_of_grade(
+        self, defuzzify_method: str = "centroid"
+    ) -> None:
         """
         Arguments:
             defuzzify_method:
@@ -101,24 +108,24 @@ class FuzzyGrader:
         rule1 = ctrl.Rule(
             # at least two poors to lead to poor
             antecedent=(self._blink["poor"] & self._body["poor"])
-                       | (self._body["poor"] & self._center["poor"])
-                       | (self._center["poor"] & self._blink["poor"]),
-            consequent=self._grade["low"]
+            | (self._body["poor"] & self._center["poor"])
+            | (self._center["poor"] & self._blink["poor"]),
+            consequent=self._grade["low"],
         )
         rule2 = ctrl.Rule(
             # medium if not all good
-            antecedent=~(self._blink["good"]
-                         & self._body["good"]
-                         & self._center["good"]),
-            consequent=self._grade["medium"]
+            antecedent=~(
+                self._blink["good"] & self._body["good"] & self._center["good"]
+            ),
+            consequent=self._grade["medium"],
         )
         rule3 = ctrl.Rule(
             # two goods are suffcient for a high grade
             # NOTE: blink is a loose constraint, good & average is both enough
             antecedent=(~self._blink["poor"] & self._body["good"])
-                       | (self._body["good"] & self._center["good"])
-                       | (self._center["good"] & ~self._blink["poor"]),
-            consequent=self._grade["high"]
+            | (self._body["good"] & self._center["good"])
+            | (self._center["good"] & ~self._blink["poor"]),
+            consequent=self._grade["high"],
         )
         return [rule1, rule2, rule3]
 
@@ -145,8 +152,15 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import numpy as np
 
-    if len(sys.argv) != 2 or sys.argv[1] not in ("membership", "distribution", "distribution-slice", "input"):
-        raise RuntimeError(f"\n\t usage: python {__file__} membership | distribution | distribution-slice | input")
+    if len(sys.argv) != 2 or sys.argv[1] not in (
+        "membership",
+        "distribution",
+        "distribution-slice",
+        "input",
+    ):
+        raise RuntimeError(
+            f"\n\t usage: python {__file__} membership | distribution | distribution-slice | input"
+        )
 
     fuzzy_grader = FuzzyGrader()
 
@@ -156,7 +170,7 @@ if __name__ == "__main__":
     elif sys.argv[1] == "distribution":
         # show distribution over all possible values, which makes the plot 4D
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection="3d")
 
         x, y, z, c = [], [], [], []
         for blink_rate in np.arange(0, 20):
@@ -165,7 +179,11 @@ if __name__ == "__main__":
                     x.append(blink_rate)
                     y.append(body_concent)
                     z.append(center_value)
-                    c.append(fuzzy_grader.compute_grade(blink_rate, body_concent, center_value))
+                    c.append(
+                        fuzzy_grader.compute_grade(
+                            blink_rate, body_concent, center_value
+                        )
+                    )
         ax.set_xlabel("blink")
         ax.set_ylabel("body")
         ax.set_zlabel("center")
@@ -176,15 +194,19 @@ if __name__ == "__main__":
     elif sys.argv[1] == "distribution-slice":
         # show distribution under specific blink rate, which makes the plot 3D
         fixed_blink_rate = int(input("fixed blink rate: "))
-        
+
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection="3d")
         x, y, z = [], [], []
         for body_concent in np.linspace(0, 1, num=20):
             for center_value in np.linspace(0, 1, num=20):
                 x.append(body_concent)
                 y.append(center_value)
-                z.append(fuzzy_grader.compute_grade(fixed_blink_rate, body_concent, center_value))
+                z.append(
+                    fuzzy_grader.compute_grade(
+                        fixed_blink_rate, body_concent, center_value
+                    )
+                )
         ax.set_xlabel("body")
         ax.set_ylabel("center")
         ax.set_zlabel("grade")
@@ -197,9 +219,11 @@ if __name__ == "__main__":
         body_concent = float(input("body concent: "))
         center_value = float(input("center value: "))
         raw_grade: float = fuzzy_grader.compute_grade(
-            blink_rate, body_concent, center_value, normalized=False)
+            blink_rate, body_concent, center_value, normalized=False
+        )
         norm_grade: float = fuzzy_grader.compute_grade(
-            blink_rate, body_concent, center_value)
+            blink_rate, body_concent, center_value
+        )
         print(f"raw: {raw_grade}")
         print(f"grade: {norm_grade}")
 

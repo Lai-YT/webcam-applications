@@ -32,13 +32,17 @@ def get_compare_slices(image: ColorImage) -> NDArray[(36,), Float[64]]:
     h //= 12
     w //= 12
     # 144 slices in total, take 36 of them
-    slices = [np.mean(gray_image[h*i:h*(i+1), w*j:w*(j+1)]) for i in range(0, 12, 2) for j in range(0, 12, 2)]
+    slices = [
+        np.mean(gray_image[h * i : h * (i + 1), w * j : w * (j + 1)])
+        for i in range(0, 12, 2)
+        for j in range(0, 12, 2)
+    ]
     return np.array(slices, dtype=np.float64)
 
 
 def compare_similarity_of_slices(
-        slices1: NDArray[(36,), Float],
-        slices2: NDArray[(36,), Float]) -> float:
+    slices1: NDArray[(36,), Float], slices2: NDArray[(36,), Float]
+) -> float:
     """Calculates how similar these 2 set of slices are by the RMS value of differece.
 
     Returns:
@@ -57,7 +61,6 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
 
-
     app = QApplication([])
     editor: ColorImage = get_screenshot()
     # open a new google website to create really different screenshots
@@ -65,8 +68,8 @@ if __name__ == "__main__":
     time.sleep(3)  # time for loading
     google: ColorImage = get_screenshot()
 
-    diff: NDArray[(36,), Float[64]] = (
-        get_compare_slices(editor) - get_compare_slices(google)
+    diff: NDArray[(36,), Float[64]] = get_compare_slices(editor) - get_compare_slices(
+        google
     )
     print("6 x 6 value diffs: ")
     print(diff)

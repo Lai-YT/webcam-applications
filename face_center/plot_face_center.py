@@ -37,22 +37,32 @@ def main(target: Path) -> None:
 
     fig, ax = plt.subplots()
     # select the leading colors
-    colors = list(mcolors.BASE_COLORS.values())[:len(centers)]
+    colors = list(mcolors.BASE_COLORS.values())[: len(centers)]
 
     for k, (cluster_center, color) in enumerate(zip(centers, colors)):
-        ax.scatter(all_cents[labels == k, 0], all_cents[labels == k, 1],
-                   color=color, alpha=0.5)
+        ax.scatter(
+            all_cents[labels == k, 0], all_cents[labels == k, 1], color=color, alpha=0.5
+        )
         ax.scatter(*cluster_center, color="w", edgecolor=color)
     # noises
-    ax.scatter(all_cents[labels == -1, 0], all_cents[labels == -1, 1],
-               color=mcolors.CSS4_COLORS["dodgerblue"], alpha=0.5, label="noise")
+    ax.scatter(
+        all_cents[labels == -1, 0],
+        all_cents[labels == -1, 1],
+        color=mcolors.CSS4_COLORS["dodgerblue"],
+        alpha=0.5,
+        label="noise",
+    )
     # center of all points
-    ax.scatter(*calculator.center_of_points, color="m", edgecolor="k", label="all center")
+    ax.scatter(
+        *calculator.center_of_points, color="m", edgecolor="k", label="all center"
+    )
 
     dist = math.dist(calculator.center_of_points, calculator.center_of_biggest_cluster)
     print(f"{calculator.ratio_of_biggest_cluster:.2f} in the biggest cluster")
     print(f"{dist:.2f} far from the center of all points")
-    plt.text(50, 50, f"ratio: {calculator.ratio_of_biggest_cluster:.2f}; dist: {dist:.2f}")
+    plt.text(
+        50, 50, f"ratio: {calculator.ratio_of_biggest_cluster:.2f}; dist: {dist:.2f}"
+    )
 
     ax.legend()
 

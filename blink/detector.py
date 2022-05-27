@@ -26,8 +26,12 @@ class BlinkDetector:
             eye in the 68 face landmarks.
     """
 
-    LEFT_EYE_START_END_IDXS:  Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
-    RIGHT_EYE_START_END_IDXS: Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
+    LEFT_EYE_START_END_IDXS: Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS[
+        "left_eye"
+    ]
+    RIGHT_EYE_START_END_IDXS: Tuple[int, int] = face_utils.FACIAL_LANDMARKS_IDXS[
+        "right_eye"
+    ]
 
     # critical parameters to fine-tune
     WINDOW_SIZE = 10
@@ -37,13 +41,13 @@ class BlinkDetector:
         self._is_blinking = False
         self._window: Deque[float] = deque(maxlen=self.WINDOW_SIZE)
         self._pre_mean: float = 0
-        self._pre_std:  float = 0
+        self._pre_std: float = 0
         self._cool_down: int = -1
 
     @classmethod
     def get_average_eye_aspect_ratio(
-            cls,
-            landmarks: NDArray[(68, 2), Int[32]]) -> float:
+        cls, landmarks: NDArray[(68, 2), Int[32]]
+    ) -> float:
         """Returns the averaged EAR of the two eyes."""
         # use the left and right eye coordinates to compute
         # the eye aspect ratio for both eyes
@@ -65,7 +69,7 @@ class BlinkDetector:
 
         if self._is_initial_detection():
             self._pre_mean = ratio
-            self._pre_std  = 0
+            self._pre_std = 0
             # dummy samples
             self._window.extend([ratio] * (self.WINDOW_SIZE - 1))
 
@@ -76,8 +80,8 @@ class BlinkDetector:
         # important details when implementing this approach
         self._is_blinking = (
             self._not_too_near()
-                and self._dramatically_changed(cur_std)
-                and self._ear_decreased(cur_mean)
+            and self._dramatically_changed(cur_std)
+            and self._ear_decreased(cur_mean)
         )
         if self._is_blinking:
             self._start_cooling_down()
@@ -85,7 +89,7 @@ class BlinkDetector:
             self._cool_down -= 1
 
         self._pre_mean = cur_mean
-        self._pre_std  = cur_std
+        self._pre_std = cur_std
 
     def _not_too_near(self) -> bool:
         # a near blink is probably caused by noise
@@ -132,14 +136,16 @@ class BlinkDetector:
 
     @classmethod
     def _extract_left_eye(
-            cls,
-            landmarks: NDArray[(68, 2), Int[32]]) -> NDArray[(6, 2), Int[32]]:
-        return landmarks[cls.LEFT_EYE_START_END_IDXS[0]
-                         :cls.LEFT_EYE_START_END_IDXS[1]]
+        cls, landmarks: NDArray[(68, 2), Int[32]]
+    ) -> NDArray[(6, 2), Int[32]]:
+        return landmarks[
+            cls.LEFT_EYE_START_END_IDXS[0] : cls.LEFT_EYE_START_END_IDXS[1]
+        ]
 
     @classmethod
     def _extract_right_eye(
-            cls,
-            landmarks: NDArray[(68, 2), Int[32]]) -> NDArray[(6, 2), Int[32]]:
-        return landmarks[cls.RIGHT_EYE_START_END_IDXS[0]
-                         :cls.RIGHT_EYE_START_END_IDXS[1]]
+        cls, landmarks: NDArray[(68, 2), Int[32]]
+    ) -> NDArray[(6, 2), Int[32]]:
+        return landmarks[
+            cls.RIGHT_EYE_START_END_IDXS[0] : cls.RIGHT_EYE_START_END_IDXS[1]
+        ]

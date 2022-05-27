@@ -14,7 +14,8 @@ class DistanceState(Enum):
     Two states represent two different relationships
     between distance and limit.
     """
-    NORMAL  = auto()
+
+    NORMAL = auto()
     WARNING = auto()
 
 
@@ -24,11 +25,12 @@ class DistanceGuard(SoundRepeatGuard):
     """
 
     def __init__(
-            self,
-            calculator: DistanceCalculator,
-            warn_dist: float,
-            warning_enabled: bool = True,
-            grader: Optional[ConcentrationGrader] = None) -> None:
+        self,
+        calculator: DistanceCalculator,
+        warn_dist: float,
+        warning_enabled: bool = True,
+        grader: Optional[ConcentrationGrader] = None,
+    ) -> None:
         """
         Arguments:
             calculator: Use to calculate the distance between face and screen.
@@ -44,7 +46,7 @@ class DistanceGuard(SoundRepeatGuard):
         super().__init__(
             sound_file=to_abs_path("sounds/too_close.wav"),
             interval=8,
-            warning_enabled=warning_enabled
+            warning_enabled=warning_enabled,
         )
         self._calculator: DistanceCalculator = calculator
         self._warn_dist: float = warn_dist
@@ -65,8 +67,8 @@ class DistanceGuard(SoundRepeatGuard):
         self._warn_dist = warn_dist
 
     def warn_if_too_close(
-            self,
-            landmarks: NDArray[(68, 2), Int[32]]) -> Tuple[float, DistanceState]:
+        self, landmarks: NDArray[(68, 2), Int[32]]
+    ) -> Tuple[float, DistanceState]:
         """Returns the distance and the state of it, also plays the warning
         sound when the distance is less than warn_dist if enabled.
 

@@ -3,8 +3,13 @@ from typing import Dict
 
 from PyQt5.QtCore import QEvent, QObject, QPoint, Qt
 from PyQt5.QtGui import QIcon, QMouseEvent
-from PyQt5.QtWidgets import (QStackedWidget, QVBoxLayout, QToolButton, QWhatsThis,
-                             QWidget)
+from PyQt5.QtWidgets import (
+    QStackedWidget,
+    QVBoxLayout,
+    QToolButton,
+    QWhatsThis,
+    QWidget,
+)
 
 from gui.component import LCDClock
 
@@ -19,6 +24,7 @@ class TimerWidget(QWidget):
     This is a frameless (no title bar), stays-on-top widget with translucent background,
     it contains a whats-this button and a two-state clock.
     """
+
     def __init__(self, parent: QWidget = None) -> None:
         # Note that to make a Frameless Window draggable,
         # mouseMoveEvent and mousePressEvent need to be overriden to provide
@@ -83,12 +89,14 @@ class TimerWidget(QWidget):
         whats_this_action = QWhatsThis.createAction(parent=self._whats_this_button)
         whats_this_action.setIcon(QIcon(":help-icon.svg"))
         # Embed html syntax to provide rich text.
-        whats_this_action.setWhatsThis("""
+        whats_this_action.setWhatsThis(
+            """
             <p style="font-family: Arial; font-size: 14px;">
                 The <span style="color: black; font-weight: bold;">black</span> clock is a normal timer, it shows how long the user has been focusing on the screen;<br>
                 the <span style="color: red; font-weight: bold;">red</span> clock appears when the focusing time reaches the limit, it counts down the break time.
             </p>
-            """)
+            """
+        )
         self._whats_this_button.setDefaultAction(whats_this_action)
         self._general_layout.addWidget(self._whats_this_button)
         # To make the whole window movable by press-and-move on the mouse, need
@@ -106,6 +114,7 @@ class TimerWidget(QWidget):
 
 class StackedClockWidget(QStackedWidget):
     """This widget contains a work clock and a break clock to be switched on the same area."""
+
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
 
