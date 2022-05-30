@@ -120,7 +120,7 @@ class FuzzyGrader:
             consequent=self._grade["medium"],
         )
         rule3 = ctrl.Rule(
-            # two goods are suffcient for a high grade
+            # two goods are sufficient for a high grade
             # NOTE: blink is a loose constraint, good & average is both enough
             antecedent=(~self._blink["poor"] & self._body["good"])
             | (self._body["good"] & self._center["good"])
