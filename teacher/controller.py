@@ -236,9 +236,9 @@ class MonitorController(QObject):
 
     def _get_screenshot_slices_periodically(self) -> None:
         now = datetime.now()
-        minute = (now.minute // 5) * 5
+        minute = (now.minute // 1) * 1
         next_fire = now.replace(minute=minute, second=0, microsecond=0) + timedelta(
-            minutes=5
+            minutes=1
         )
         BUSY_CHECK_GAP = 2
         sleep = (next_fire - now).seconds
@@ -249,8 +249,8 @@ class MonitorController(QObject):
                 pass
             self._screenshot_slices = get_compare_slices(get_screenshot())
 
-            next_fire += timedelta(minutes=5)
-            sleep = 5 * 60 - BUSY_CHECK_GAP
+            next_fire += timedelta(minutes=1)
+            sleep = 1 * 60 - BUSY_CHECK_GAP
 
     def _compare_screenshot_similarity(self) -> None:
         """Compares the slices of students with teacher's."""
@@ -295,13 +295,13 @@ class MonitorController(QObject):
 
     def _compare_screenshot_similarity_periodically(self) -> None:
         now = datetime.now()
-        minute = (now.minute // 5) * 5
+        minute = (now.minute // 1) * 1
         # (1) a 10 second offset to make sure screenshot are gotten
         # (2) an extra delta to make sure the 1st screenshot of teacher is gotten
         #   i.e., the teacher-end starts at 10:05:05, if there's no extra delta,
         #   screenshot similarity checks at 10:05:10 with no teacher-end screenshot from 10:05:00
         next_fire = now.replace(minute=minute, second=10, microsecond=0) + timedelta(
-            minutes=5 * 2
+            minutes=1 * 2
         )
         BUSY_CHECK_GAP = 2
         sleep = (next_fire - now).seconds
@@ -312,8 +312,8 @@ class MonitorController(QObject):
                 pass
             self._compare_screenshot_similarity()
 
-            next_fire += timedelta(minutes=5)
-            sleep = 5 * 60 - BUSY_CHECK_GAP
+            next_fire += timedelta(minutes=1)
+            sleep = 1 * 60 - BUSY_CHECK_GAP
 
     def _change_language_of_monitor(self, lang_no: int) -> None:
         self._lang = Language(lang_no)

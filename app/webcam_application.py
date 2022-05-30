@@ -414,9 +414,9 @@ class WebcamApplication(QObject):
         # Align to the next multiple of 5 minute:
         #   get the largest multiple smaller than now and
         #   set the fire time to the smallest multiple greater than now.
-        minute = (now.minute // 5) * 5
+        minute = (now.minute // 1) * 1
         next_fire = now.replace(minute=minute, second=0, microsecond=0) + timedelta(
-            minutes=5
+            minutes=1
         )
 
         # How long we might be busy waiting and checking to approach the precise
@@ -435,8 +435,8 @@ class WebcamApplication(QObject):
 
             _do_real_data_send()
 
-            next_fire += timedelta(minutes=5)  # advance 5 minutes
-            sleep = 5 * 60 - BUSY_CHECK_GAP
+            next_fire += timedelta(minutes=1)  # advance 1 minutes
+            sleep = 1 * 60 - BUSY_CHECK_GAP
 
     def _keep_grading_if_related_apps_enabled(self) -> None:
         # Need both distance measurement and posture detection to have

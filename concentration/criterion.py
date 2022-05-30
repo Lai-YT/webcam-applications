@@ -30,9 +30,9 @@ class FaceExistenceRateCounter(QObject):
         """
         super().__init__()
         self._low_existence = low_existence
-        self._face_times = TimeWindow(ONE_MIN)
+        self._face_times = TimeWindow(HALF_MIN)
         # it's enough to only set callback on frame
-        self._frame_times = TimeWindow(ONE_MIN)
+        self._frame_times = TimeWindow(HALF_MIN)
         self._frame_times.set_time_catch_callback(self._check_face_existence)
 
     def add_frame(self) -> None:
@@ -93,11 +93,11 @@ class FaceExistenceRateCounter(QObject):
         # so is used as the prerequisite for face existence check.
         if (
             frame_times
-            and get_current_time() - frame_times[0] >= ONE_MIN
+            and get_current_time() - frame_times[0] >= HALF_MIN
             and self.is_low_face()
         ):
             self.s_low_existence_detected.emit(
-                Interval(frame_times[0], frame_times[0] + ONE_MIN)
+                Interval(frame_times[0], frame_times[0] + HALF_MIN)
             )
 
     def _get_face_existence_rate(self) -> float:
@@ -135,7 +135,7 @@ class BlinkRateIntervalDetector(QObject):
         """
         super().__init__()
         self._good_rate_range = good_rate_range
-        self._blink_times = DoubleTimeWindow(ONE_MIN)
+        self._blink_times = DoubleTimeWindow(HALF_MIN)
         self._blink_times.set_time_catch_callback(self._check_blink_rate)
         self._last_end_time: int = get_current_time()
 
@@ -159,11 +159,11 @@ class BlinkRateIntervalDetector(QObject):
         self._blink_times.catch_up_with_current_time()
 
     def get_extrude_interval(self) -> Optional[Tuple[Interval, IntervalType, int]]:
-        one_min_before: int = get_current_time() - ONE_MIN
-        # "== ONE_MIN" should be caught as LOOK_BACK
-        if HALF_MIN <= (one_min_before - self._last_end_time) < ONE_MIN:
+        half_min_before: int = get_current_time() - HALF_MIN
+        # "== HALF_MIN" should be caught as LOOK_BACK
+        if (HALF_MIN / 2) <= (half_min_before - self._last_end_time) < HALF_MIN:
             extrude_interval = (
-                Interval(self._last_end_time, one_min_before),
+                Interval(self._last_end_time, half_min_before),
                 IntervalType.EXTRUSION,
                 self._get_blink_rate(WindowType.PREVIOUS),
             )
@@ -197,22 +197,22 @@ class BlinkRateIntervalDetector(QObject):
             s_interval_detected:
         """
         now_time: int = get_current_time()
-        one_min_before: int = now_time - ONE_MIN
+        half_min_before: int = now_time - HALF_MIN
 
         curr_blink_rate: int = self._get_blink_rate(WindowType.CURRENT)
         if (
-            now_time - self._last_end_time >= ONE_MIN
+            now_time - self._last_end_time >= HALF_MIN
             and self._good_rate_range[0] <= curr_blink_rate <= self._good_rate_range[1]
         ):
             self.s_interval_detected.emit(
-                Interval(one_min_before, now_time),
+                Interval(half_min_before, now_time),
                 IntervalType.REAL_TIME,
                 curr_blink_rate,
             )
-        # Make each 60 seconds of the previous a look back interval.
-        if one_min_before - self._last_end_time >= ONE_MIN:
+        # Make each 30 seconds of the previous a look back interval.
+        if half_min_before - self._last_end_time >= HALF_MIN:
             self.s_interval_detected.emit(
-                Interval(self._last_end_time, one_min_before),
+                Interval(self._last_end_time, half_min_before),
                 IntervalType.LOOK_BACK,
                 self._get_blink_rate(WindowType.PREVIOUS),
             )
@@ -240,8 +240,8 @@ class BodyConcentrationCounter:
     """
 
     def __init__(self) -> None:
-        self._concentration_times = DoubleTimeWindow(ONE_MIN)
-        self._distraction_times = DoubleTimeWindow(ONE_MIN)
+        self._concentration_times = DoubleTimeWindow(HALF_MIN)
+        self._distraction_times = DoubleTimeWindow(HALF_MIN)
 
     def add_concentration(self) -> None:
         self._concentration_times.append_time()

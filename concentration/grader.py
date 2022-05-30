@@ -19,7 +19,7 @@ from face_center.calculator import CenterCalculator
 from util.heap import MinHeap
 from util.logger import setup_logger
 from util.path import to_abs_path
-from util.time import ONE_MIN
+from util.time import HALF_MIN
 from util.time_window import WindowType
 
 
@@ -81,7 +81,7 @@ class ConcentrationGrader(QObject):
             )
         )
 
-        self._face_center_counter = FaceCenterCounter(ONE_MIN)
+        self._face_center_counter = FaceCenterCounter(HALF_MIN)
         self._center_calculator = CenterCalculator()
 
         self._fuzzy_grader = FuzzyGrader()
@@ -264,7 +264,7 @@ class ConcentrationGrader(QObject):
             adjusted_br: float = blink_rate
             if interval_type is IntervalType.EXTRUSION:
                 # Use an average-based BR.
-                adjusted_br = blink_rate * ONE_MIN / (interval.end - interval.start)
+                adjusted_br = blink_rate * HALF_MIN / (interval.end - interval.start)
                 msg = f"EXTRUSION: body_concent({body_concent:.2f}) + blink_rate({adjusted_br:.2f})"
             interval.grade = self._fuzzy_grader.compute_grade(
                 adjusted_br,
