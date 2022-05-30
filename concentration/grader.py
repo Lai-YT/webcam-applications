@@ -260,20 +260,19 @@ class ConcentrationGrader(QObject):
 
         # LOOK_BACK and EXTRUSIONs are always graded and recorded.
         if interval_type in {IntervalType.LOOK_BACK, IntervalType.EXTRUSION}:
-            msg = f"{IntervalType.LOOK_BACK}: body_concent({body_concent:.2f}) + blink_rate({blink_rate})"
+            msg = f"LOOK_BACK: body_concent({body_concent:.2f}) + blink_rate({blink_rate})"
             adjusted_br: float = blink_rate
             if interval_type is IntervalType.EXTRUSION:
                 # Use an average-based BR.
                 adjusted_br = blink_rate * ONE_MIN / (interval.end - interval.start)
-                msg = f"{IntervalType.EXTRUSION}: body_concent({body_concent:.2f}) + blink_rate({adjusted_br:.2f})"
+                msg = f"EXTRUSION: body_concent({body_concent:.2f}) + blink_rate({adjusted_br:.2f})"
             interval.grade = self._fuzzy_grader.compute_grade(
                 adjusted_br,
                 body_concent,
                 combine_face_center_value_from_distance_and_ratio(dist, ratio),
             )
             logger.info(
-                msg
-                + f" + dist({dist:3.2f}) + ratio({ratio:.2f}) => grade({interval.grade:.2f})"
+                f"{msg} + dist({dist:3.2f}) + ratio({ratio:.2f}) => grade({interval.grade:.2f})"
             )
             self.s_concent_interval_refreshed.emit(interval)
             self._clear_windows(window_type)

@@ -267,20 +267,26 @@ class MonitorController(QObject):
     ) -> None:
         """Shows the similarity of screen to the corresponding student's screen label."""
         row_no = self._monitor.search_row_no(("id", student_id))
-        row = RowContent(
-            [
-                Col(
-                    no=self._monitor.col_header.labels().index("screen"),
-                    label="screen",
-                    # round to 2 decimal places
-                    value=Decimal(f"{similarity:.2f}"),
-                )
-            ]
+        screen_col = Col(
+            no=self._monitor.col_header.labels().index("screen"),
+            label="screen",
+            # round to 2 decimal places
+            value=Decimal(f"{similarity:.2f}"),
         )
         if row_no == -1:  # row not found
+            row = RowContent()
+            # we'll have to fill all other cols as blank
+            for i, label in enumerate(self._monitor.col_header.labels()):
+                if label == "screen":
+                    col = screen_col
+                elif label == "id":
+                    col = Col(i, label, student_id)
+                else:
+                    col = Col(i, label, "")
+                row.append(col)
             row_item = self._monitor.insert_row(row)
         else:
-            row_item = self._monitor.update_row(row_no, row)
+            row_item = self._monitor.update_row(row_no, RowContent([screen_col]))
         color: Qt.GlobalColor = Qt.green
         if similarity < 0.6:
             color = Qt.red
@@ -289,11 +295,14 @@ class MonitorController(QObject):
 
     def _compare_screenshot_similarity_periodically(self) -> None:
         now = datetime.now()
-        # generate a time offset to make sure screenshot are gotten
-        minute = (now.minute // 5) * 5 + 1
-        next_fire = now.replace(minute=minute, second=0, microsecond=0) + timedelta(
+        minute = (now.minute // 5) * 5
+        # (1) a 10 second offset to make sure screenshot are gotten
+        # (2) an extra delta to make sure the 1st screenshot of teacher is gotten
+        #   i.e., the teacher-end starts at 10:05:05, if there's no extra delta,
+        #   screenshot similarity checks at 10:05:10 with no teacher-end screenshot from 10:05:00
+        next_fire = now.replace(minute=minute, second=10, microsecond=0) + timedelta(
             minutes=5 * 2
-        )  # an extra delta to make sure the 1st screenshot of teacher is gotten
+        )
         BUSY_CHECK_GAP = 2
         sleep = (next_fire - now).seconds
 
