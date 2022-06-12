@@ -1,6 +1,6 @@
 import json
 
-from flask import Flask, request
+from flask import Flask, jsonify, render_template, request
 
 
 HOST = "127.0.0.1"
@@ -9,34 +9,41 @@ PORT = 5000
 # Create flask instance.
 app = Flask(__name__)
 
-grade = []
+
+@app.route("/")
+def home():
+    return render_template("index.html")
 
 
-@app.route("/grade", methods=["POST", "GET"])
+data = {
+    "grades": [],
+    "screenshots": [],
+}
+
+
+@app.route("/teacher", methods=["GET"])
+def get_data():
+    # get certain data by passing `genre` as parameter
+    if "genre" in request.args and request.args["genre"] in data.keys():
+        # the data are cleared after being gotten
+        res_data = data[request.args["genre"]].copy()
+        data[request.args["genre"]].clear()
+        return jsonify(res_data)
+    return render_template("data.html", **data)
+
+
+@app.route("/student/grades", methods=["POST"])
 def update_grade():
-    if request.method == "POST":
-        grade.append(request.get_json())
-    elif request.method == "GET":
-        # You still have to return the grade so can be "GET",
-        # otherwise can always only get an empty list.
-        ret_pack = grade.copy()
-        grade.clear()
-        return json.dumps(ret_pack)
-    return json.dumps(grade)
+    new_grade = request.get_json()
+    data["grades"].append(new_grade)
+    return jsonify(new_grade)
 
 
-screenshots = []
-
-
-@app.route("/screenshot", methods=["POST", "GET"])
+@app.route("/student/screenshots", methods=["POST"])
 def update_screenshot():
-    if request.method == "POST":
-        screenshots.append(request.get_json())
-    elif request.method == "GET":
-        ret_pack = screenshots.copy()
-        screenshots.clear()
-        return json.dumps(ret_pack)
-    return json.dumps(screenshots)
+    new_screenshot = request.get_json()
+    data["screenshots"].append(new_screenshot)
+    return jsonify(new_screenshot)
 
 
 if __name__ == "__main__":

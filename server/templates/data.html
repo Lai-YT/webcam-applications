@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Server data</title>
+  </head>
+  <body>
+    <header>
+      <h1>
+        All data
+      </h1>
+    </header>
+
+    <h2>Grade Table</h2>
+    {% if grades %}
+    <table border="1">
+      <tr>
+        {% for name in grades[0].keys() %}
+        <th>{{ name }}</th>
+        {% endfor %}
+      </tr>
+
+      {% for grade in grades %}
+      <tr>
+        {% for value in grade.values() %}
+        <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p>no grade yet</p>
+    {% endif %}
+
+    <h2>Screenshot Table</h2>
+    {% if screenshots %}
+    <table border="1">
+      <tr>
+        {% for name in screenshots[0].keys() %}
+        <th>{{ name }}</th>
+        {% endfor %}
+      </tr>
+
+      {% for screenshot in screenshots %}
+      <tr>
+        {% for value in screenshot.values() %}
+        <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p>no screenshot yet</p>
+    {% endif %}
+
+    <footer>
+      <p>Copyright © 2022 Lai-YT</p>
+    </footer>
+  </body>
+</html>
