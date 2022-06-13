@@ -115,7 +115,7 @@ class MonitorController(QObject):
         """Get new grades from the server and
         (1) stores into the database (2) updates to the GUI.
         """
-        r = requests.get(f"{self._server_url}/grade")
+        r = requests.get(f"{self._server_url}/teacher", params={"genre": "grades"})
         for datum in r.json():
             # Convert time string to datetime.
             datum["time"] = datetime.strptime(datum["time"], poster.DATE_STR_FORMAT)
@@ -231,7 +231,7 @@ class MonitorController(QObject):
         plt.show()
 
     def _get_screenshot_slices_from_server(self) -> Dict:
-        r = requests.get(f"{self._server_url}/screenshot")
+        r = requests.get(f"{self._server_url}/teacher", params={"genre": "screenshots"})
         return r.json()
 
     def _get_screenshot_slices_periodically(self) -> None:

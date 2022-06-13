@@ -120,7 +120,7 @@ class WindowController(QObject):
         )
         grade["id"] = self._student_id
         try:
-            requests.post(f"{self._server_url}/grade", json=grade)
+            requests.post(f"{self._server_url}/student/grades", json=grade)
         except requests.ConnectionError:
             # Skip posting if the connection fails,
             # which may be caused by server not running.
@@ -135,7 +135,7 @@ class WindowController(QObject):
             "slices": slices.tolist(),  # ndarray is not JSON serializable
         }
         try:
-            requests.post(f"{self._server_url}/screenshot", json=data)
+            requests.post(f"{self._server_url}/student/screenshots", json=data)
         except requests.ConnectionError:
             # Skip posting if the connection fails,
             # which may be caused by server not running.
