@@ -1,4 +1,5 @@
 import json
+from typing import Dict, List
 
 from flask import Flask, jsonify, render_template, request
 
@@ -15,7 +16,7 @@ def home():
     return render_template("index.html")
 
 
-data = {
+data: Dict[str, List] = {
     "grades": [],
     "screenshots": [],
 }
