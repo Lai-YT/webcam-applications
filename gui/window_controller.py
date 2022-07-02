@@ -9,13 +9,13 @@ import requests
 
 import concentration.fuzzy.parse as parse
 import server.main as flask_server
-import server.post as poster
 from app.app_type import ApplicationType
 from app.webcam_application import WebcamApplication
 from concentration.fuzzy.classes import Interval
 from gui.language import Language
 from gui.panel_controller import PanelController
 from gui.window import Window
+from teacher.controller import DATE_STR_FORMAT
 from util.path import to_abs_path
 from util.task_worker import TaskWorker
 
@@ -115,9 +115,7 @@ class WindowController(QObject):
     def _send_grade_to_server(self, interval: Interval) -> None:
         grade = interval.__dict__
         # add new key info
-        grade["time"] = datetime.fromtimestamp(interval.end).strftime(
-            poster.DATE_STR_FORMAT
-        )
+        grade["time"] = datetime.fromtimestamp(interval.end).strftime(DATE_STR_FORMAT)
         grade["id"] = self._student_id
         try:
             requests.post(f"{self._server_url}/student/grades", json=grade)

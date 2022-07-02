@@ -16,7 +16,6 @@ from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import QTreeWidgetItem
 
 import server.main as flask_server
-import server.post as poster
 from gui.language import Language
 from screenshot.compare import (
     compare_similarity_of_slices,
@@ -27,6 +26,10 @@ from teacher.monitor import Col, Monitor, RowContent
 from util.path import to_abs_path
 from util.task_worker import TaskWorker
 from util.time import to_date_time
+
+
+# TODO: I suggest that the control of databse be extracted
+DATE_STR_FORMAT = "%Y-%m-%d, %H:%M:%S"
 
 
 class MonitorController(QObject):
@@ -118,7 +121,7 @@ class MonitorController(QObject):
         r = requests.get(f"{self._server_url}/teacher", params={"genre": "grades"})
         for datum in r.json():
             # Convert time string to datetime.
-            datum["time"] = datetime.strptime(datum["time"], poster.DATE_STR_FORMAT)
+            datum["time"] = datetime.strptime(datum["time"], DATE_STR_FORMAT)
 
             self.store_new_grade(datum)
             self.show_new_grade(datum)
