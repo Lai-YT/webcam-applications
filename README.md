@@ -3,14 +3,9 @@
 
 # A system of student engagement analysis and self-adjusting eye protection
 
-Under the epidemic, online teaching has gradually become a common teaching pattern. How to attract students' attention when teaching online becomes a big challenge. It's difficult for teachers to know the degree of concentration (DoC) of students when teaching since teachers can't directly see the students' face, so it's impossible to adjust the teaching rhythm in real time. \
-Therefore, this study combines **face detection**, **deep learning**, **fuzzy control** and many other technologies to design several algorithms for extracting students'
-state, and multiple metrics such as **distance**, **posture**, and **blink frequency** are generated. We use these metrics to grade the DoCs of students, and the changes of DoCs are further presented by means of charts.
-While teaching online, these DoCs are transmitted to the teacher, so that the teacher can instantly know the students' attention with respect to the teaching content.
-
-## student engagement analysis
-
-## self-adjusting eye protection
+Under the impact of coronavirus, online teaching has become a common teaching model. For those teachers, it is a big challenge to attract the students in online classes. Because of online teaching, the teachers are hard to know the degree of concentration (DoC) of students during class, so they can't adjust their teaching tempo immediately.  \
+This study combines many techniques, such as **face detection**, **deep learning**, and **fuzzy control**. We also design algorithms to extract the students' states during class, which can then generate several metrics like **distance**, **posture**, and **blinking rate**. Moreover, we use these metrics to grade the DoCs of students and to present the changes of DoCs by means of charts. During online teaching, the DoCs are transmitted to teachers so that they can instantly know the reactions of their students. \
+Lower complexity and hardware requirement are obtained in comparison with former theses, and we have all sources opened to share with teacher and students.
 
 ## Student-end
 
