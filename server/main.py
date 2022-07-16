@@ -1,4 +1,3 @@
-import json
 from typing import Dict, List
 
 from flask import Flask, jsonify, render_template, request
