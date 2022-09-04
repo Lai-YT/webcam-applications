@@ -1,59 +1,60 @@
 import math
-from typing import Optional
+from functools import lru_cache
+from typing import Any, Final
 
 import cv2
-from nptyping import Int, NDArray
+from nptyping import NDArray, Int32
 
 from util.color import BGR, MAGENTA
 from util.image_type import ColorImage
 
+_LEFT_ZYGOMATIC_BONE_IDX: Final[int] = 1
+_RIGHT_ZYGOMATIC_BONE_IDX: Final[int] = 15
 
-class DistanceCalculator:
+Landmarks = NDArray[Any, Int32]
+
+
+class FaceDistanceCalculator:
     """
     The class knows how wide the face is at a certain distance,
     so can calculate the distance when the face width changes relatively.
     """
 
-    def __init__(
-        self, landmarks: NDArray[(68, 2), Int[32]], camera_dist: float
-    ) -> None:
-        """
-        Arguments:
-            landmarks: (x, y) coordinates of the 68 face landmarks in the reference image.
-            camera_dist: Distance between face and camera when taking reference image.
-        """
-        self._product: float = self._get_face_width(landmarks) * camera_dist
-        self._cache: Optional[float] = None
+    def __init__(self, ref_landmarks: Landmarks, camera_dist: float) -> None:
+        ref_face_width: float = get_face_width(ref_landmarks)
+        self._calculator = _FaceDistanceCalculator(ref_face_width, camera_dist)
 
-    def calculate(self, landmarks: NDArray[(68, 2), Int[32]]) -> float:
-        """Returns the real life distance between face and camera.
+    def calculate(self, curr_landmarks: Landmarks) -> float:
+        curr_face_width: float = get_face_width(curr_landmarks)
+        return self._calculator.calculate(curr_face_width)
 
-        Arguments:
-            landmarks: (x, y) coordinates of the 68 face landmarks.
-        """
-        distance = self._product / self._get_face_width(landmarks)
-        self._cache = distance
-        return distance
 
-    def distance(self) -> Optional[float]:
-        """Returns the distance of the lastest calculation; None if haven't
-        calculate any distance yet.
-        """
-        return self._cache
+class _FaceDistanceCalculator:
+    def __init__(self, ref_face_width: float, camera_dist: float) -> None:
+        self._product: Final[float] = ref_face_width * camera_dist
 
-    @staticmethod
-    def _get_face_width(landmarks: NDArray[(68, 2), Int[32]]) -> float:
-        """Returns the Euclidean distance between 2 side points of the zygomatic bone.
+    @lru_cache
+    def calculate(self, curr_face_width: float) -> float:
+        curr_distance: float = self._product / curr_face_width
+        return curr_distance
 
-        Arguments:
-            landmarks: (x, y) coordinates of the 68 face landmarks.
-        """
-        return math.dist(landmarks[1], landmarks[15])
+
+def get_face_width(landmarks: Landmarks) -> float:
+    """Returns the Euclidean distance between 2 side points of the zygomatic bone.
+
+    Arguments:
+        landmarks: (x, y) coordinates of the 68 face landmarks.
+    """
+    return math.dist(
+        landmarks[_LEFT_ZYGOMATIC_BONE_IDX], landmarks[_RIGHT_ZYGOMATIC_BONE_IDX]
+    )
 
 
 # outer util method
 def draw_landmarks_used_by_distance_calculator(
-    canvas: ColorImage, landmarks: NDArray[(68, 2), Int[32]], color: BGR = MAGENTA
+    canvas: ColorImage,
+    landmarks: Landmarks,
+    color: BGR = MAGENTA,
 ) -> ColorImage:
     """Returns the canvas with 2 side points of the zygomatic bone connected by a transparent line.
 
@@ -62,7 +63,7 @@ def draw_landmarks_used_by_distance_calculator(
         landmarks: (x, y) coordinates of the 68 face landmarks.
         color: Color of the lines, magenta (255, 0, 255) in default.
     """
-    canvas_ = canvas.copy()
+    canvas_: ColorImage = canvas.copy()
 
     cv2.line(canvas_, landmarks[1], landmarks[15], color, 2, cv2.LINE_AA)
     # make lines transparent
