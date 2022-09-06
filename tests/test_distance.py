@@ -41,11 +41,11 @@ class TestFaceDistanceCalculator:
     def test_calculate(self, calculator: FaceDistanceCalculator) -> None:
         curr_landmarks = np.zeros(shape=(68, 2), dtype=np.int32)
         curr_landmarks[1] = [150, 550]
-        curr_landmarks[15] = [300, 550]
+        curr_landmarks[15] = [350, 550]
 
         distance: float = calculator.calculate(curr_landmarks)
 
-        assert distance == pytest.approx(54.97, abs=0.01)
+        assert distance == pytest.approx(41.23, abs=0.01)
 
 
 def test_get_face_width() -> None:
