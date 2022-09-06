@@ -1,4 +1,3 @@
-from typing import Final
 import numpy as np
 import pytest
 
@@ -44,7 +43,7 @@ class TestFaceDistanceCalculator:
         curr_landmarks[1] = [150, 550]
         curr_landmarks[15] = [300, 550]
 
-        distance: Final[float] = calculator.calculate(curr_landmarks)
+        distance: float = calculator.calculate(curr_landmarks)
 
         assert distance == pytest.approx(54.97, abs=0.01)
 
@@ -54,6 +53,6 @@ def test_get_face_width() -> None:
     landmarks[1] = [100, 500]
     landmarks[15] = [300, 550]
 
-    width: Final[float] = get_face_width(landmarks)
+    width: float = get_face_width(landmarks)
 
     assert width == pytest.approx(206.16, abs=0.01)
