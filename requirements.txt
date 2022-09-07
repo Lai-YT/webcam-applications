@@ -19,6 +19,7 @@ filelock==3.7.0
 Flask==2.0.3
 flatbuffers==1.12
 fonttools==4.28.2
+freezegun==1.2.2
 gast==0.4.0
 google-auth==1.34.0
 google-auth-oauthlib==0.4.5
