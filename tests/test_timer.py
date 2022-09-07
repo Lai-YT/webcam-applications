@@ -63,6 +63,10 @@ class TestTimer:
         assert self._timer.time() == end_time - start_time - paused_time_length
         assert time_mock.called
 
+    def test_wont_be_paused_before_started(self) -> None:
+        self._timer.pause()
+        assert not self._timer.is_paused()
+
     @patch("time.time")
     def test_reset(self, time_mock: MagicMock) -> None:
         start_time = int(datetime(2022, 9, 17, 10, 10, 0).timestamp())
@@ -78,13 +82,78 @@ class TestTimer:
         assert time_mock.called
 
     def test_is_paused(self) -> None:
-        assert not self._timer.is_paused()
-        self._timer.pause()
-        assert self._timer.is_paused()
         self._timer.start()
         assert not self._timer.is_paused()
         self._timer.pause()
         assert self._timer.is_paused()
+
+    class TestSpecialCase:
+        @pytest.fixture(autouse=True)
+        def setUp(self) -> None:
+            self._timer = Timer()
+
+        @patch("time.time")
+        def test_duplicate_pause(self, time_mock: MagicMock) -> None:
+            start_time = int(datetime(2022, 9, 17, 10, 10, 0).timestamp())
+            time_tick: int = 250
+            first_time_when_paused: int = start_time + time_tick
+            second_time_when_paused: int = start_time + time_tick * 2
+            time_when_started: int = start_time + time_tick * 3
+            end_time: int = start_time + time_tick * 4
+            paused_time_length: int = time_when_started - first_time_when_paused
+
+            time_mock.return_value = start_time
+            self._timer.start()
+            time_mock.return_value = first_time_when_paused
+            self._timer.pause()
+            time_mock.return_value = second_time_when_paused
+            self._timer.pause()
+            time_mock.return_value = time_when_started
+            self._timer.start()
+            time_mock.return_value = end_time
+
+            assert self._timer.time() == end_time - start_time - paused_time_length
+            assert time_mock.called
+
+        @patch("time.time")
+        def test_duplicate_start(self, time_mock: MagicMock) -> None:
+            first_start_time = int(datetime(2022, 9, 17, 10, 10, 0).timestamp())
+            time_tick: int = 250
+            second_start_time: int = first_start_time + time_tick
+            time_when_paused: int = first_start_time + time_tick
+            time_when_started: int = first_start_time + time_tick * 3
+            end_time: int = first_start_time + time_tick * 4
+            paused_time_length: int = time_when_started - time_when_paused
+
+            time_mock.return_value = first_start_time
+            self._timer.start()
+            time_mock.return_value = second_start_time
+            self._timer.start()
+            time_mock.return_value = time_when_paused
+            self._timer.pause()
+            time_mock.return_value = time_when_started
+            self._timer.start()
+            time_mock.return_value = end_time
+
+            assert (
+                self._timer.time() == end_time - first_start_time - paused_time_length
+            )
+            assert time_mock.called
+
+        @patch("time.time")
+        def test_time_pause_before_start(self, time_mock: MagicMock) -> None:
+            pre_pause_time = int(datetime(2022, 9, 17, 10, 10, 0).timestamp())
+            start_time: int = pre_pause_time + 100
+            end_time: int = start_time + 1000
+
+            time_mock.return_value = pre_pause_time
+            self._timer.pause()
+            time_mock.return_value = start_time
+            self._timer.start()
+            time_mock.return_value = end_time
+
+            assert self._timer.time() == end_time - start_time
+            assert time_mock.called
 
 
 @patch("time.time")
