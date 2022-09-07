@@ -1,4 +1,5 @@
-import time
+from datetime import datetime, tzinfo
+from typing import Optional
 
 
 # often-used define constants
@@ -59,11 +60,11 @@ class Timer:
         return self._start_time == Timer._UNSET
 
 
-def now() -> int:
+def now(timezone: Optional[tzinfo] = None) -> int:
     """Returns the time in seconds since the epoch with the precision up to
     1 second.
     """
-    return int(time.time())
+    return int(datetime.now(tz=timezone).timestamp())
 
 
 def min_to_sec(time_in_min: int) -> int:
@@ -71,5 +72,6 @@ def min_to_sec(time_in_min: int) -> int:
     return time_in_min * 60
 
 
-def to_date_time(epoch_time: int) -> str:
-    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(epoch_time))
+def to_date_time(epoch_time: int, timezone: Optional[tzinfo] = None) -> str:
+    date_time = datetime.fromtimestamp(epoch_time, tz=timezone)
+    return date_time.strftime("%Y-%m-%d %H:%M:%S")
