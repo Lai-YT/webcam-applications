@@ -4,7 +4,7 @@ from typing import Any, Callable, Deque, Optional
 
 from more_itertools import SequenceView
 
-from util.time import get_current_time
+from util.time import now
 
 
 class TimeWindow:
@@ -35,7 +35,7 @@ class TimeWindow:
 
     def append_time(self) -> None:
         """Appends the current time to the window."""
-        self._window.append(get_current_time())
+        self._window.append(now())
         self.catch_up_with_current_time()
 
     def catch_up_with_current_time(self) -> None:
@@ -58,7 +58,7 @@ class TimeWindow:
     def _width_of_window(self) -> int:
         if not self._window:
             return 0
-        return get_current_time() - self._window[0]
+        return now() - self._window[0]
 
     def _call_time_catch_callback_if_has(self) -> None:
         if self._has_time_catch_callback():
@@ -155,7 +155,7 @@ class DoubleTimeWindow(TimeWindow):
     def _width_of_prev_window(self) -> int:
         if not self._prev_window:
             return 0
-        return get_current_time() - self._time_width - self._prev_window[0]
+        return now() - self._time_width - self._prev_window[0]
 
     def __len__(self) -> int:
         """Returns how many time records there are in the current and previous window."""

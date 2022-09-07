@@ -2,7 +2,7 @@ import time
 import unittest
 
 from util.time_window import DoubleTimeWindow, TimeWindow, WindowType
-from util.time import get_current_time
+from util.time import now
 
 
 class TimeWindowTestCase(unittest.TestCase):
@@ -16,7 +16,7 @@ class TimeWindowTestCase(unittest.TestCase):
         times = []
         for _ in range(50):
             self.time_window.append_time()
-            times.append(get_current_time())
+            times.append(now())
             time.sleep(1)
 
         self.assertEqual(len(self.time_window), len(times))
@@ -27,7 +27,7 @@ class TimeWindowTestCase(unittest.TestCase):
         times = []
         for _ in range(5):
             self.time_window.append_time()
-            times.append(get_current_time())
+            times.append(now())
             time.sleep(25)
             if len(times) > 3:
                 times.pop(0)
@@ -70,7 +70,7 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
         times = []
         for _ in range(50):
             self.time_window.append_time()
-            times.append(get_current_time())
+            times.append(now())
             time.sleep(1)
 
         self.assertEqual(len(self.time_window), len(times))
@@ -82,7 +82,7 @@ class DoubleTimeWindowTestCase(unittest.TestCase):
         sep_pos = 0
         for _ in range(16):
             self.time_window.append_time()
-            times.append(get_current_time())
+            times.append(now())
             time.sleep(4.5)
             if len(times) - sep_pos > 14:
                 sep_pos += 1

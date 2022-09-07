@@ -21,7 +21,7 @@ from brightness.controller import BrightnessController
 from concentration.fuzzy.classes import Interval
 from concentration.grader import ConcentrationGrader
 from distance.calculator import (
-    DistanceCalculator,
+    FaceDistanceCalculator,
     draw_landmarks_used_by_distance_calculator,
 )
 from distance.guard import DistanceGuard, DistanceState
@@ -164,7 +164,7 @@ class WebcamApplication(QObject):
 
         self._distance_measure = settings.getboolean("ENABLED")
         self._distance_guard = DistanceGuard(
-            DistanceCalculator(
+            FaceDistanceCalculator(
                 self._ref_landmarks, settings.getfloat("REFERENCE_DISTANCE")
             ),
             settings.getfloat("LIMIT"),
@@ -214,7 +214,7 @@ class WebcamApplication(QObject):
                 settings["REFERENCE_IMAGE_PATH"] = ref_img_path
                 self._update_ref_landmarks()
             self._distance_guard.set_calculator(
-                DistanceCalculator(
+                FaceDistanceCalculator(
                     self._ref_landmarks, settings.getfloat("REFERENCE_DISTANCE")
                 )
             )

@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 from nptyping import Int, NDArray
 
 from concentration.grader import ConcentrationGrader
-from distance.calculator import DistanceCalculator
+from distance.calculator import FaceDistanceCalculator
 from sounds.sound_guard import SoundRepeatGuard
 from util.path import to_abs_path
 
@@ -26,7 +26,7 @@ class DistanceGuard(SoundRepeatGuard):
 
     def __init__(
         self,
-        calculator: DistanceCalculator,
+        calculator: FaceDistanceCalculator,
         warn_dist: float,
         warning_enabled: bool = True,
         grader: Optional[ConcentrationGrader] = None,
@@ -48,11 +48,11 @@ class DistanceGuard(SoundRepeatGuard):
             interval=8,
             warning_enabled=warning_enabled,
         )
-        self._calculator: DistanceCalculator = calculator
+        self._calculator: FaceDistanceCalculator = calculator
         self._warn_dist: float = warn_dist
         self._grader: Optional[ConcentrationGrader] = grader
 
-    def set_calculator(self, calculator: DistanceCalculator) -> None:
+    def set_calculator(self, calculator: FaceDistanceCalculator) -> None:
         """
         Arguments:
             calculator: Use to calculate the distance between face and screen.

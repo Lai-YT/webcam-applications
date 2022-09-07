@@ -26,10 +26,10 @@ class Timer:
         No effects when the Timer is already started or not paused.
         """
         if self._has_never_started():
-            self._start_time = get_current_time()
+            self._start_time = now()
             self._pause_time = Timer._UNSET
         elif self.is_paused():
-            self._pause_duration += get_current_time() - self._pause_time
+            self._pause_duration += now() - self._pause_time
             self._pause_time = Timer._UNSET
 
     def pause(self) -> None:
@@ -37,7 +37,7 @@ class Timer:
         No effects when the Timer is already paused or not even started yet.
         """
         if not self.is_paused() and not self._has_never_started():
-            self._pause_time = get_current_time()
+            self._pause_time = now()
 
     def reset(self) -> None:
         self._start_time = Timer._UNSET
@@ -50,7 +50,7 @@ class Timer:
             return 0
         if self.is_paused():
             return self._pause_time - self._start_time - self._pause_duration
-        return get_current_time() - self._start_time - self._pause_duration
+        return now() - self._start_time - self._pause_duration
 
     def is_paused(self) -> bool:
         return self._pause_time != Timer._UNSET
@@ -59,7 +59,7 @@ class Timer:
         return self._start_time == Timer._UNSET
 
 
-def get_current_time() -> int:
+def now() -> int:
     """Returns the time in seconds since the epoch with the precision up to
     1 second.
     """

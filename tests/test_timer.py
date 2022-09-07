@@ -161,7 +161,7 @@ def test_get_current_time(time_mock: MagicMock) -> None:
     current_datetime = int(datetime(2022, 9, 7, 9, 17).timestamp())
     time_mock.return_value = current_datetime
 
-    current_time: int = util.time.get_current_time()
+    current_time: int = util.time.now()
 
     assert current_time == current_datetime
     assert time_mock.called
