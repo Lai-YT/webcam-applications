@@ -10,50 +10,53 @@ class Timer:
     """
     This class makes the measurement of running time easy.
     Simply using start, pause and reset to time your program.
+
+    Resolution: integer second
     """
 
+    _UNSET = -1  # time wouldn't be negative, so it's ok
+
     def __init__(self) -> None:
-        self._start: int = 0
-        self._pause_start: int = 0
+        self._start_time: int = Timer._UNSET
+        self._pause_time: int = Timer._UNSET
         self._pause_duration: int = 0
 
     def start(self) -> None:
-        """Start counting.
-
-        No effects when the Timer is already started and not paused.
         """
-        if self.is_paused():
-            self._pause_duration += get_current_time() - self._pause_start
-            self._pause_start = 0
-        elif self._start == 0:
-            self._start = get_current_time()
+        No effects when the Timer is already started or not paused.
+        """
+        if self._has_never_started():
+            self._start_time = get_current_time()
+            self._pause_time = Timer._UNSET
+        elif self.is_paused():
+            self._pause_duration += get_current_time() - self._pause_time
+            self._pause_time = Timer._UNSET
 
     def pause(self) -> None:
-        """Stop the time count.
-
-        No effects when the Timer is already paused.
         """
-        if not self.is_paused():
-            self._pause_start = get_current_time()
+        No effects when the Timer is already paused or not even started yet.
+        """
+        if not self.is_paused() and not self._has_never_started():
+            self._pause_time = get_current_time()
 
     def reset(self) -> None:
-        """Reset the Timer."""
-        self._start = 0
-        self._pause_start = 0
+        self._start_time = Timer._UNSET
+        self._pause_time = Timer._UNSET
         self._pause_duration = 0
 
     def time(self) -> int:
         """Returns the time count in seconds."""
-        # Doesn't even started.
-        if self._start == 0:
+        if self._has_never_started():
             return 0
         if self.is_paused():
-            return self._pause_start - self._start - self._pause_duration
-        return get_current_time() - self._start - self._pause_duration
+            return self._pause_time - self._start_time - self._pause_duration
+        return get_current_time() - self._start_time - self._pause_duration
 
     def is_paused(self) -> bool:
-        """Returns True if the Timer is paused, otherwise False."""
-        return self._pause_start != 0
+        return self._pause_time != Timer._UNSET
+
+    def _has_never_started(self) -> bool:
+        return self._start_time == Timer._UNSET
 
 
 def get_current_time() -> int:
