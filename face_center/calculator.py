@@ -4,16 +4,24 @@ from typing import List, Tuple
 import numpy as np
 from sklearn import cluster
 
-
+# TODO:
+# The name CenterCalculator tells nothing about cluster,
+# which means it probably violates the SRP.
+# (1) calculates center of points
+# (2) finds the biggest cluster
+#
+# Can we use numpy to have the calculation on center of points more straight forward?
 class CenterCalculator:
-    # label 0 is the biggest cluster by sklearn
-    _LABEL_OF_BIGGEST_CLUSTER = 0
+    _LABEL_OF_BIGGEST_CLUSTER: int = 0  # label 0 is the biggest cluster by sklearn
+    GOOD_CONCENTATION_CLUSTER_RADIUS: int = 50  # not rigorous
 
     def __init__(self) -> None:
         # MeanShift fails on non-smooth density data, but it's still good at finding
         # the biggest cluster.
-        # I defined the good concentrating cluster to be within a circle of radius 50.
-        self._ms = cluster.MeanShift(bandwidth=50, cluster_all=False)
+        self._ms = cluster.MeanShift(
+            bandwidth=CenterCalculator.GOOD_CONCENTATION_CLUSTER_RADIUS,
+            cluster_all=False,
+        )
 
     def fit_points(self, points: List[Tuple[float, float]]) -> None:
         self._points = points
@@ -40,5 +48,5 @@ class CenterCalculator:
 
     @property
     def ratio_of_biggest_cluster(self) -> float:
-        count: Counter = Counter(self._ms.labels_)
-        return count[0] / len(self._points)
+        count = Counter(self._ms.labels_)
+        return count[CenterCalculator._LABEL_OF_BIGGEST_CLUSTER] / len(self._points)
