@@ -1,9 +1,8 @@
-# FIXME: some tests are skipped to due the lack of mocking techniques
-
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
+import pytz
 
 import util.time
 from util.time import Timer
@@ -156,21 +155,21 @@ class TestTimer:
             assert time_mock.called
 
 
-@patch("util.time.now")
-def test_get_current_time(time_mock: MagicMock) -> None:
-    current_datetime = int(datetime(2022, 9, 7, 9, 17).timestamp())
-    time_mock.return_value = current_datetime
-
-    current_time: int = util.time.now()
-
-    assert current_time == current_datetime
-    assert time_mock.called
-
-
-@pytest.mark.skip("depends on time zone")
 def test_epoch_to_date_time() -> None:
-    date_time: str = util.time.to_date_time(0)
+    date_time: str = util.time.to_date_time(0, timezone=pytz.utc)
     assert date_time == "1970-01-01 00:00:00"
+
+    assert (
+        util.time.to_date_time(
+            int(
+                datetime.strptime(
+                    "2022-09-07 08:25:13 +0000", "%Y-%m-%d %H:%M:%S %z"
+                ).timestamp()
+            ),
+            timezone=pytz.utc,
+        )
+        == "2022-09-07 08:25:13"
+    )
 
 
 def test_min_to_sec() -> None:
