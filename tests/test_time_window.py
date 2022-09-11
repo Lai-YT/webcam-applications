@@ -5,6 +5,7 @@ from util.time_window import DoubleTimeWindow, TimeWindow, WindowType
 from util.time import now
 
 
+@unittest.skip("time consuming, should use mockings")
 class TimeWindowTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.time_window = TimeWindow(60)
@@ -51,6 +52,7 @@ class TimeWindowTestCase(unittest.TestCase):
         self.assertEqual(len(self.time_window), 0)
 
 
+@unittest.skip("time consuming, should use mockings")
 class DoubleTimeWindowTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.time_window = DoubleTimeWindow(60)
