@@ -1,4 +1,5 @@
 import unittest
+from typing import List
 
 from teacher.monitor import Col, ColumnHeader, RowContent
 
@@ -29,7 +30,7 @@ class ColumnHeaderTestCase(unittest.TestCase):
             "budget": 100_000,
             "list": ["shoes", ["computer", "headphone"]],
         }
-        expected_row = [
+        expected_row: List[Col] = [
             Col(0, "name", "Willy"),
             Col(1, "budget", 100_000),
             Col(2, "list", ["shoes", ["computer", "headphone"]]),
@@ -61,7 +62,7 @@ class ColumnHeaderTestCase(unittest.TestCase):
             "budget": 100_000,
             "list": ["shoes", ["computer", "headphone"]],
         }
-        expected_row = [
+        expected_row: List[Col] = [
             Col(0, "name", "Willy"),
             Col(1, "budget", 100_000),
             Col(2, "list", ["shoes", ["computer", "headphone"]]),
