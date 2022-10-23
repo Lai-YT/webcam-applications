@@ -171,7 +171,7 @@ class MonitorController(QObject):
             if item.isExpanded():
                 self._monitor.remove_histories_of_row(i)
                 self._show_histories_on_monitor(
-                    item.text(self._monitor.col_header.labels().index("id"))
+                    item.text(self._monitor.col_header.labels().index("id"))  # type: ignore  # pyqtSlot isn't well-typed
                 )
 
     def _set_background_by_grade(self, row_item: QTreeWidgetItem, grade: float) -> None:
