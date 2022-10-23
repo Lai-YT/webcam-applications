@@ -281,7 +281,7 @@ class MonitorController(QObject):
             # we'll have to fill all other cols as blank
             for i, label in enumerate(self._monitor.col_header.labels()):
                 if label == "screen":
-                    col = screen_col
+                    col: Col[Any] = screen_col
                 elif label == "id":
                     col = Col(i, label, student_id)
                 else:
