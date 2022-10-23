@@ -37,7 +37,7 @@ class BlinkDetector:
     DRAMATIC_STD_CHANGE: float = 0.008
 
     def __init__(self) -> None:
-        self._is_blinking = False
+        self._is_blinking: bool = False
         self._window: Deque[float] = deque(maxlen=self.WINDOW_SIZE)
         self._pre_mean: float = 0
         self._pre_std: float = 0
@@ -74,7 +74,7 @@ class BlinkDetector:
         cur_std: float = statistics.stdev(self._window)
 
         # important details when implementing this approach
-        self._is_blinking: bool = (
+        self._is_blinking = (
             self._not_too_near()
             and self._dramatically_changed(cur_std)
             and self._ear_decreased(cur_mean)

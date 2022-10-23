@@ -1,5 +1,5 @@
 import json
-from typing import Any, Iterable, List, Mapping, Tuple, TypeVar
+from typing import Any, Generic, Iterable, List, Mapping, Tuple, TypeVar
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
@@ -21,7 +21,7 @@ from util.path import to_abs_path
 T = TypeVar("T")
 
 
-class Col:
+class Col(Generic[T]):
     """A single cell which carries the information of its column number,
     corresponding label and value.
     """
