@@ -3,9 +3,8 @@
 import math
 import statistics
 from collections import deque
-from typing import Deque, Tuple, Union
+from typing import Deque, List, Tuple
 
-import numpy as np
 from imutils import face_utils
 from nptyping import Int, NDArray
 
@@ -34,8 +33,8 @@ class BlinkDetector:
     ]
 
     # critical parameters to fine-tune
-    WINDOW_SIZE = 10
-    DRAMATIC_STD_CHANGE = 0.008
+    WINDOW_SIZE: int = 10
+    DRAMATIC_STD_CHANGE: float = 0.008
 
     def __init__(self) -> None:
         self._is_blinking = False
@@ -50,35 +49,32 @@ class BlinkDetector:
     ) -> float:
         """Returns the averaged EAR of the two eyes."""
         # use the left and right eye coordinates to compute
-        # the eye aspect ratio for both eyes
-        left_ratio = BlinkDetector._get_eye_aspect_ratio(
+        # the eye aspect ratio of both eyes
+        left_ratio: float = BlinkDetector._get_eye_aspect_ratio(
             cls._extract_left_eye(landmarks)
         )
-        right_ratio = BlinkDetector._get_eye_aspect_ratio(
+        right_ratio: float = BlinkDetector._get_eye_aspect_ratio(
             cls._extract_right_eye(landmarks)
         )
-
-        # average the eye aspect ratio together for both eyes
         return statistics.mean((left_ratio, right_ratio))
 
     def detect_blink(self, landmarks: NDArray[(68, 2), Int[32]]) -> None:
         if not landmarks.any():
             raise ValueError("landmarks should represent a face")
 
-        ratio = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
+        ratio: float = BlinkDetector.get_average_eye_aspect_ratio(landmarks)
 
         if self._is_initial_detection():
             self._pre_mean = ratio
             self._pre_std = 0
-            # dummy samples
-            self._window.extend([ratio] * (self.WINDOW_SIZE - 1))
+            self._window.extend([ratio] * (self.WINDOW_SIZE - 1))  # dummy samples
 
         self._window.append(ratio)
-        cur_mean = statistics.mean(self._window)
-        cur_std = statistics.stdev(self._window)
+        cur_mean: float = statistics.mean(self._window)
+        cur_std: float = statistics.stdev(self._window)
 
         # important details when implementing this approach
-        self._is_blinking = (
+        self._is_blinking: bool = (
             self._not_too_near()
             and self._dramatically_changed(cur_std)
             and self._ear_decreased(cur_mean)
@@ -102,7 +98,7 @@ class BlinkDetector:
         return cur_mean - self._pre_mean < 0
 
     def _start_cooling_down(self) -> None:
-        # no frequent blinkings can happen within 3 slides
+        # ASSUMPTION: no frequent blinkings can happen within 3 slides
         self._cool_down = 3
 
     def is_blinking(self) -> bool:
@@ -110,7 +106,7 @@ class BlinkDetector:
         return self._is_blinking
 
     def _is_initial_detection(self) -> bool:
-        # it's impossible for the mean to be 0
+        # impossible for the mean to be 0, unless it's the initial value
         return self._pre_mean == 0
 
     @staticmethod
@@ -123,13 +119,13 @@ class BlinkDetector:
         """
         # compute the euclidean distances between the two sets of
         # vertical eye landmarks
-        vert = []
+        vert: List[float] = []
         vert.append(math.dist(eye[1], eye[5]))
         vert.append(math.dist(eye[2], eye[4]))
 
         # compute the euclidean distance between the horizontal
         # eye landmarks
-        hor = []
+        hor: List[float] = []
         hor.append(math.dist(eye[0], eye[3]))
 
         return statistics.mean(vert) / statistics.mean(hor)
