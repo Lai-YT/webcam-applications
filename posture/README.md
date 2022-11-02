@@ -15,8 +15,8 @@ If the face is detected successfully, we get the corresponding landmarks and uti
 
 If the frame fails the detection of *HOG*, a 2<sup>nd</sup> face detection layer, *MTCNN*, is used.
 The reason why it fails is usually because of large face rotation or severe occlusion, which *MTCNN* is especially good at.
-*MTCNN* also provide landmarks, so we can calculate the angle.
-It's greatest drawback is that it's about 10 times slower than *HOG*.
+*MTCNN* also provides landmarks, so we can calculate the angle.
+Its greatest drawback is that it's about 10 times slower than *HOG*.
 
 ### no-face
 
