@@ -39,22 +39,32 @@ def main(target: Path) -> None:
     # select the leading colors
     colors = list(mcolors.BASE_COLORS.values())[: len(centers)]
 
-    for k, (cluster_center, color) in enumerate(zip(centers, colors)):
-        ax.scatter(
-            all_cents[labels == k, 0], all_cents[labels == k, 1], color=color, alpha=0.5
-        )
-        ax.scatter(*cluster_center, color="w", edgecolor=color)
     # noises
     ax.scatter(
         all_cents[labels == -1, 0],
         all_cents[labels == -1, 1],
         color=mcolors.CSS4_COLORS["dodgerblue"],
-        alpha=0.5,
-        label="noise",
+        alpha=0.3,
+        label="scattered",
     )
+
+    for k, (cluster_center, color) in enumerate(zip(centers, colors)):
+        label: str = f"cluster {k}"
+        if k == 0:
+            label = "the biggest cluster"
+
+        ax.scatter(
+            all_cents[labels == k, 0],
+            all_cents[labels == k, 1],
+            color=color,
+            alpha=0.5,
+            label=label,
+        )
+        ax.scatter(*cluster_center, color="w", edgecolor=color)
+
     # center of all points
     ax.scatter(
-        *calculator.center_of_points, color="m", edgecolor="k", label="all center"
+        *calculator.center_of_points, color="m", edgecolor="k", label="overall center"
     )
 
     dist = math.dist(calculator.center_of_points, calculator.center_of_biggest_cluster)
