@@ -53,7 +53,6 @@ class AngleCalculator(ABC):
 
 
 class HogAngleCalculator(AngleCalculator):
-
     # For dlib’s 68-point facial landmark detector
     NOSE_BRIDGE_IDXS: List[int] = [27, 30]
     LEFT_EYESIDE_IDXS: List[int] = [36, 39]
