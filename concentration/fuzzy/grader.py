@@ -146,28 +146,30 @@ class FuzzyGrader:
         return 0.1382 * raw_grade - 0.1986
 
 
-if __name__ == "__main__":
-    import sys
+# The following code is not necessary for the grading system.
+# It is included for interactive visualization purposes.
 
-    import matplotlib.pyplot as plt
-    import numpy as np
+import argparse
+from enum import Enum, auto, unique
 
-    if len(sys.argv) != 2 or sys.argv[1] not in (
-        "membership",
-        "distribution",
-        "distribution-slice",
-        "input",
-    ):
-        raise RuntimeError(
-            f"\n\t usage: python {__file__} membership | distribution | distribution-slice | input"
-        )
+import matplotlib.pyplot as plt
 
+
+@unique
+class _InteractiveMode(Enum):
+    MEMBERSHIP = auto()
+    DISTRIBUTION = auto()
+    DISTRIBUTION_SLICE = auto()
+    INPUT = auto()
+
+
+def interact(mode: _InteractiveMode) -> None:
     fuzzy_grader = FuzzyGrader()
 
-    if sys.argv[1] == "membership":
+    if mode is _InteractiveMode.MEMBERSHIP:
         fuzzy_grader.view_membership_func()
         input("(press any key to exit)")
-    elif sys.argv[1] == "distribution":
+    elif mode is _InteractiveMode.DISTRIBUTION:
         # show distribution over all possible values, which makes the plot 4D
         fig = plt.figure()
         ax = fig.add_subplot(111, projection="3d")
@@ -191,7 +193,7 @@ if __name__ == "__main__":
         img = ax.scatter(x, y, z, c=c, cmap=plt.hot())
         fig.colorbar(img)
         plt.show()
-    elif sys.argv[1] == "distribution-slice":
+    elif mode is _InteractiveMode.DISTRIBUTION_SLICE:
         # show distribution under specific blink rate, which makes the plot 3D
         fixed_blink_rate = int(input("fixed blink rate: "))
 
@@ -213,7 +215,7 @@ if __name__ == "__main__":
 
         img = ax.scatter(x, y, z)
         plt.show()
-    elif sys.argv[1] == "input":
+    elif mode is _InteractiveMode.INPUT:
         # compute for a single case of grade
         blink_rate = float(input("blink rate: "))
         body_concent = float(input("body concent: "))
@@ -229,3 +231,25 @@ if __name__ == "__main__":
 
         fuzzy_grader.view_grading_result()
         input("(press any key to exit)")
+    else:
+        raise NotImplementedError(f"unknown mode {mode}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "mode",
+        metavar="MODE",
+        choices=[mode for mode in _InteractiveMode],
+        type=lambda x: _InteractiveMode[x.upper()],
+        help="interactive modes: membership, distribution, distribution_slice, input",
+    )
+    args: argparse.Namespace = parser.parse_args()
+
+    interact(args.mode)
+
+
+if __name__ == "__main__":
+    main()
